@@ -1,0 +1,93 @@
+<Project>
+
+  <!--
+    macOS 빌드 프로필.
+    macos/scripts/build-engine.sh 가 아래 전역 속성과 함께 모든 프로젝트에 주입한다.
+      TargetFramework=net8.0, UseWPF=false, RomForgeMac=true,
+      CustomAfterMicrosoftCommonTargets=<이 파일>
+    upstream 파일은 수정하지 않는다. Windows 빌드(BUILD.bat)는 이 파일을 쓰지 않는다.
+
+    결과:
+      - Core 라이브러리: 그대로 net8.0 빌드
+      - RomForge.Core / Common.WPF / NSW.WPF: WPF 대신 Compat(shim)으로 빌드
+      - RomForge(WPF 앱): 화면 코드(.xaml.cs)를 빼고 macos/Engine 코드를 넣어 "화면 없는 엔진" 실행 파일로 빌드
+  -->
+
+  <PropertyGroup>
+    <RomForgeMacDir>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..'))/</RomForgeMacDir>
+    <_RfIsWpfProject Condition="'$(MSBuildProjectName)' == 'RomForge' or '$(MSBuildProjectName)' == 'RomForge.Core' or '$(MSBuildProjectName)' == 'Common.WPF' or '$(MSBuildProjectName)' == 'NSW.WPF'">true</_RfIsWpfProject>
+  </PropertyGroup>
+
+  <!-- 모든 프로젝트: 참조 프로젝트도 net8.0으로 빌드(net8.0-windows 협상을 건너뜀) -->
+  <ItemGroup>
+    <ProjectReference Update="@(ProjectReference)" SetTargetFramework="TargetFramework=net8.0" SkipGetTargetFrameworkProperties="true" />
+  </ItemGroup>
+
+  <!-- WPF 프로젝트 공통: Compat(shim) 연결, 화면 코드와 Windows 전용 패키지 제외 -->
+  <ItemGroup Condition="'$(_RfIsWpfProject)' == 'true'">
+    <ProjectReference Include="$(RomForgeMacDir)Compat/Compat.csproj" SetTargetFramework="TargetFramework=net8.0" SkipGetTargetFrameworkProperties="true" />
+    <Compile Remove="**/*.xaml.cs" />
+    <PackageReference Remove="Ookii.Dialogs.Wpf" />
+  </ItemGroup>
+
+  <!-- RomForge.Core: 창 핸들·Win32에 묶인 화면 보조 코드 제외, 클립보드는 macOS 구현으로 교체 -->
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'RomForge.Core'">
+    <Compile Remove="Services/UsbDetector.cs;UI/Helpers/LogAutoScrollBehavior.cs;Services/Util/ClipboardHelper.cs" />
+    <Compile Include="$(RomForgeMacDir)Overrides/RomForge.Core/**/*.cs" Link="MacOverrides/%(RecursiveDir)%(Filename)%(Extension)" />
+    <!-- XciMergeService.cs의 사용하지 않는 using System.DirectoryServices.ActiveDirectory 컴파일용(WPF 프레임워크에는 포함됨) -->
+    <PackageReference Include="System.DirectoryServices" Version="8.0.0" />
+    <!-- WMI는 Compat의 System.Management 대체 구현을 쓴다 -->
+    <PackageReference Remove="System.Management" />
+  </ItemGroup>
+
+  <!-- Common: Windows 7z.dll(SevenZipSharp)을 Compat의 SharpCompress 기반 대체 구현으로 바꾼다 -->
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'Common'">
+    <ProjectReference Include="$(RomForgeMacDir)Compat/Compat.csproj" SetTargetFramework="TargetFramework=net8.0" SkipGetTargetFrameworkProperties="true" />
+    <PackageReference Remove="Squid-Box.SevenZipSharp.Lite" />
+    <Compile Remove="7z/NativeSevenZip.cs" />
+    <Compile Include="$(RomForgeMacDir)Overrides/Common/**/*.cs" Link="MacOverrides/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- PickPack.Disk(Windows 물리 디스크 계층): WMI는 Compat 대체 구현, 디스크 목록·열기·기록은 macOS 대체 파일(diskutil·authopen) -->
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'PickPack.Disk'">
+    <ProjectReference Include="$(RomForgeMacDir)Compat/Compat.csproj" SetTargetFramework="TargetFramework=net8.0" SkipGetTargetFrameworkProperties="true" />
+    <PackageReference Remove="System.Management" />
+    <Compile Remove="DriveInfos.cs;ImageWriter.cs;ImageReader.cs;ETC/DiskUtil.cs;ETC/PartitionUtil.cs" />
+    <Compile Include="$(RomForgeMacDir)Overrides/PickPack.Disk/**/*.cs" Link="MacOverrides/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- Common.WPF: XAML 전용 보조 코드 제외 -->
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'Common.WPF'">
+    <Compile Remove="ListViewColumnSorter.cs" />
+  </ItemGroup>
+
+  <!-- NSW.WPF: XAML 전용 보조 코드 제외 -->
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'NSW.WPF'">
+    <Compile Remove="UI/Extends.cs" />
+  </ItemGroup>
+
+  <!-- RomForge: 화면 대신 엔진. ViewModel은 upstream 그대로, 진입점과 브리지는 macos/Engine -->
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'RomForge'">
+    <!-- macos/Native/build-native.sh 로 만든 dylib(엔진의 NativeLibraries가 native/ 폴더에서 찾는다) -->
+    <None Include="$(RomForgeMacDir).build/native/*.dylib" Link="native/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Include="$(RomForgeMacDir)Engine/**/*.cs" Exclude="$(RomForgeMacDir)Engine/obj/**;$(RomForgeMacDir)Engine/bin/**" Link="MacEngine/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="$(RomForgeMacDir)Overrides/RomForge/**/*.cs" Link="MacOverrides/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!--
+    BCL의 Windows 전용 타입(System.Security.Principal.WindowsIdentity 등)을 Compat 대체 타입으로 바꾸기 위해
+    컴파일할 때만 BCL 쪽 어셈블리 참조에 별칭을 붙인다(별칭을 붙인 참조는 전역 네임스페이스에서 보이지 않는다).
+  -->
+  <Target Name="_RfAliasWindowsOnlyBcl" BeforeTargets="CoreCompile" Condition="'$(_RfIsWpfProject)' == 'true'">
+    <ItemGroup>
+      <ReferencePathWithRefAssemblies Update="@(ReferencePathWithRefAssemblies)" Condition="'%(Filename)' == 'System.Security.Principal.Windows'" Aliases="rfbclwin" />
+    </ItemGroup>
+  </Target>
+
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'RomForge'">
+    <OutputType>Exe</OutputType>
+    <StartupObject>RomForge.Mac.Engine.Program</StartupObject>
+    <ApplicationIcon />
+  </PropertyGroup>
+
+</Project>

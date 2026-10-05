@@ -1,0 +1,176 @@
+# RomForge macOS 포트 CI (macos/ 아래 파일과 함께 이 저장소에만 추가한 워크플로)
+#  - build: macOS 빌드·종단 간 테스트·앱/DMG 결과물
+#  - upstream-sync: 매일 원본(sinjunyoung/RomForge)을 머지한 브랜치로 테스트하고, 고칠 곳 리포트를 붙여 PR을 연다
+name: macOS
+
+on:
+  push:
+    branches: [main, "macos-*"]
+    paths-ignore: ["docs/**", "mkdocs.yml"]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 21 * * *" # 매일 06:00 KST
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: macos-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+
+jobs:
+  build:
+    if: github.event_name != 'schedule'
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: 테스트 도구
+        run: brew install sevenzip
+
+      - uses: actions/cache@v4
+        with:
+          path: macos/.build/native-src
+          key: native-src-${{ hashFiles('macos/Native/build-native.sh') }}
+
+      - name: 네이티브 라이브러리(유니버설)
+        run: macos/Native/build-native.sh all && macos/Native/build-native.sh tools
+
+      - name: 엔진
+        run: macos/scripts/build-engine.sh build
+
+      - name: 점검·종단 간 테스트
+        run: |
+          RomForge/bin/Release/net8.0/RomForge --selftest
+          RomForge/bin/Release/net8.0/RomForge --dump-schema vm-schema.json
+          python3 macos/tests/e2e_compress_chd.py
+          python3 macos/tests/e2e_patch_xdelta.py
+          python3 macos/tests/e2e_archive_7z.py
+          python3 macos/tests/e2e_bridge_features.py
+          bash macos/tests/test_7z_variants.sh
+
+      - name: 앱·DMG
+        run: |
+          macos/scripts/build-app.sh
+          macos/scripts/package-dmg.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RomForge-macOS
+          path: |
+            macos/.build/dist/*.dmg
+            vm-schema.json
+
+  upstream-sync:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: upstream 확인
+        id: fetch
+        run: |
+          git remote add upstream https://github.com/sinjunyoung/RomForge.git
+          git fetch --no-tags upstream main
+          if git merge-base --is-ancestor upstream/main HEAD; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-dotnet@v4
+        if: steps.fetch.outputs.changed == 'true'
+        with:
+          dotnet-version: "8.0.x"
+
+      - uses: actions/cache@v4
+        if: steps.fetch.outputs.changed == 'true'
+        with:
+          path: macos/.build/native-src
+          key: native-src-${{ hashFiles('macos/Native/build-native.sh') }}
+
+      - name: 머지 전 스키마
+        if: steps.fetch.outputs.changed == 'true'
+        run: |
+          brew install sevenzip
+          macos/Native/build-native.sh all && macos/Native/build-native.sh tools
+          macos/scripts/build-engine.sh build
+          RomForge/bin/Release/net8.0/RomForge --dump-schema "$RUNNER_TEMP/schema-old.json"
+
+      - name: 머지
+        id: merge
+        if: steps.fetch.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          BRANCH="sync/upstream-$(date +%Y%m%d)"
+          git switch -c "$BRANCH"
+          BEFORE="$(git rev-parse HEAD)"
+          if git merge --no-edit upstream/main; then
+            echo "conflict=false" >> "$GITHUB_OUTPUT"
+          else
+            git merge --abort
+            echo "conflict=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "before=$BEFORE" >> "$GITHUB_OUTPUT"
+
+      - name: 머지 후 빌드·테스트
+        id: test
+        if: steps.fetch.outputs.changed == 'true' && steps.merge.outputs.conflict == 'false'
+        continue-on-error: true
+        run: |
+          macos/Native/build-native.sh all
+          macos/scripts/build-engine.sh build
+          RomForge/bin/Release/net8.0/RomForge --selftest
+          RomForge/bin/Release/net8.0/RomForge --dump-schema "$RUNNER_TEMP/schema-new.json"
+          python3 macos/tests/e2e_compress_chd.py
+          python3 macos/tests/e2e_patch_xdelta.py
+          python3 macos/tests/e2e_archive_7z.py
+          python3 macos/tests/e2e_bridge_features.py
+
+      - name: 리포트·PR
+        if: steps.fetch.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "upstream(sinjunyoung/RomForge) 변경을 반영하는 자동 PR입니다."
+            echo
+            if [ "${{ steps.merge.outputs.conflict }}" = "true" ]; then
+              echo "**머지 충돌**: upstream 파일을 macOS 쪽에서 고친 곳이 있는지 확인하세요(원칙상 없어야 함)."
+            elif [ "${{ steps.test.outcome }}" != "success" ]; then
+              echo "**머지 후 빌드·테스트 실패**: 아래 리포트와 Actions 로그를 확인하세요."
+            else
+              echo "머지 후 빌드·테스트 통과."
+            fi
+            echo
+            if [ "${{ steps.merge.outputs.conflict }}" = "false" ]; then
+              SCHEMA_ARGS=""
+              [ -f "$RUNNER_TEMP/schema-new.json" ] && SCHEMA_ARGS="--schema-old $RUNNER_TEMP/schema-old.json --schema-new $RUNNER_TEMP/schema-new.json"
+              python3 macos/scripts/ui-sync-report.py "${{ steps.merge.outputs.before }}" HEAD $SCHEMA_ARGS
+            fi
+          } > "$RUNNER_TEMP/report.md"
+
+          if [ "${{ steps.merge.outputs.conflict }}" = "true" ]; then
+            gh issue create --title "upstream 머지 충돌 $(date +%Y-%m-%d)" --body-file "$RUNNER_TEMP/report.md"
+            exit 0
+          fi
+
+          git push origin "${{ steps.merge.outputs.branch }}"
+          DRAFT=""
+          [ "${{ steps.test.outcome }}" != "success" ] && DRAFT="--draft"
+          gh pr create $DRAFT --base "${{ github.ref_name }}" --head "${{ steps.merge.outputs.branch }}" \
+            --title "upstream 반영 $(date +%Y-%m-%d)" --body-file "$RUNNER_TEMP/report.md"

@@ -1,0 +1,382 @@
+// upstream: RomForge/Controls/ConvertTab.xaml(.cs)
+// ViewModel: ConvertMainViewModel
+import AppKit
+import SwiftUI
+
+/// 변환 탭: 파일 목록(번호·파일명·입력·출력·용량·진행률) + 출력 폴더 변경 + 파일/폴더 추가 · 선택/전체 삭제 · 시작 · 취소.
+/// 생략한 code-behind: ScrollToItemRequested(변환 중인 항목으로 스크롤).
+struct ConvertScreen: View {
+    @Environment(EngineClient.self) private var engine
+    let vmId: Int
+
+    @State private var selection = Set<Int>()
+    /// GridViewColumnHeader_Click(ListViewColumnSorter): 머리글을 누르면 그 열(Tag) 기준으로 화면에서만 정렬
+    @State private var sortOrder: [ConvertSortComparator] = []
+
+    var body: some View {
+        ChildVM(id: vmId) { vm in
+            let locked = vm["IsLocked"]?.bool ?? false
+            let items = engine.items(vm, "FileItems")
+            let rows = sortOrder.isEmpty ? items : items.sorted(using: sortOrder)
+
+            ToolLayout(vm: vm) {
+                fileTable(vm, rows: rows, locked: locked)
+            } options: {
+                VStack(spacing: 8) {
+                    outputRow(vm, locked: locked)
+                    buttonBar(vm, locked: locked)
+                }
+            }
+        }
+    }
+
+    /// 아래쪽 버튼 줄(모두 IsEnabled="{Binding UnifiedConvertVM.IsLocked, Converter=InverseBool}", 취소만 IsLocked)
+    private func buttonBar(_ vm: RemoteObject, locked: Bool) -> some View {
+        HStack(spacing: 6) {
+            IconButton(title: "파일 추가", icon: "AddFile.png", enabled: !locked) { addFiles(vm) }
+            IconButton(title: "폴더 추가", icon: "AddFolder.png", enabled: !locked) { addFolder(vm) }
+            IconButton(title: "선택 삭제", icon: "Delete.png", enabled: !locked) { remove(vm, selection) }
+            IconButton(title: "전체 삭제", icon: "Clear.png", enabled: !locked) { clear(vm) }
+
+            Spacer()
+
+            CommandIconButton(title: "시작", icon: "Run.png", vm: vm, command: "RunCommand", enabled: !locked, prominent: true)
+            CommandIconButton(title: "취소", icon: "Cancel.png", vm: vm, command: "CancelCommand", enabled: locked)
+        }
+    }
+
+    // MARK: - 파일 목록
+
+    private func fileTable(_ vm: RemoteObject, rows: [RemoteObject], locked: Bool) -> some View {
+        Table(rows, selection: $selection, sortOrder: $sortOrder) {
+            // upstream 머리글은 글자 없이 List.png 아이콘만 있다.
+            TableColumn("", sortUsing: ConvertSortComparator(prop: "No")) { item in
+                Text(item.string("No"))
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                    .frame(maxWidth: .infinity)
+            }
+            .width(50)
+
+            TableColumn("파일명", sortUsing: ConvertSortComparator(prop: "FileName")) { item in
+                Text(item.string("FileName"))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+            .width(min: 120, ideal: 260)
+
+            TableColumn("입력", sortUsing: ConvertSortComparator(prop: "Extension")) { item in
+                ExtensionBadge(item: item)
+                    .frame(maxWidth: .infinity)
+            }
+            .width(80)
+
+            TableColumn("출력", sortUsing: ConvertSortComparator(prop: "SelectedTargetFormat")) { item in
+                ConvertTargetFormatPicker(engine: engine, item: item)
+            }
+            .width(120)
+
+            TableColumn("용량", sortUsing: ConvertSortComparator(prop: "FileSizeBytes")) { item in
+                Text(item.string("FileSize"))
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+            .width(100)
+
+            TableColumn("진행률", sortUsing: ConvertSortComparator(prop: "Progress")) { item in
+                HStack(spacing: 6) {
+                    ProgressCell(item: item)
+                    Text(String(item["Progress"]?.int ?? 0) + "%")
+                        .font(.caption.weight(.bold))
+                        .monospacedDigit()
+                        .frame(width: 36, alignment: .trailing)
+                }
+            }
+            .width(min: 100, ideal: 140)
+        }
+        .disabled(locked)
+        .overlay {
+            if vm.isVisible("HintVisibility") {
+                ConvertHint()
+            }
+        }
+        // LvFiles_Drop
+        .dropDestination(for: URL.self) { urls, _ in
+            guard !locked, !urls.isEmpty else { return false }
+            engine.invoke(vm, "AddPaths", [.strings(urls.map(\.path))])
+            return true
+        }
+        // LvFiles_KeyUp(Delete)
+        .onDeleteCommand {
+            if !locked { remove(vm, selection) }
+        }
+        // ListView.ContextMenu. LvFiles_ContextMenuOpening: 선택이 없으면 열지 않는다.
+        .contextMenu(forSelectionType: Int.self) { ids in
+            if !ids.isEmpty && !locked {
+                Button {
+                    openFolder(ids, rows: rows)
+                } label: {
+                    menuLabel("폴더 열기", icon: "AddFolder.png")
+                }
+                Divider()
+                Button {
+                    remove(vm, ids)
+                } label: {
+                    menuLabel("선택 삭제", icon: "Delete.png")
+                }
+                Button {
+                    clear(vm)
+                } label: {
+                    menuLabel("전체 삭제", icon: "Clear.png")
+                }
+            }
+        }
+    }
+
+    private func menuLabel(_ title: String, icon: String) -> some View {
+        Label {
+            Text(title)
+        } icon: {
+            Image(nsImage: ConvertScreen.icon(icon, size: 16))
+        }
+    }
+
+    // MARK: - 출력 폴더
+
+    /// [출력 폴더 변경 토글] [OutputPath 입력(토글이 켜졌을 때)] [찾아보기(토글이 켜졌을 때)], 작업 중에는 전체 비활성
+    private func outputRow(_ vm: RemoteObject, locked: Bool) -> some View {
+        let custom = vm["UseCustomOutputPath"]?.bool ?? false
+
+        return HStack(spacing: 8) {
+            Toggle(isOn: engine.bool(vm, "UseCustomOutputPath")) {
+                Text("출력 폴더 변경").bold()
+            }
+            TextField("", text: engine.string(vm, "OutputPath"))
+                .textFieldStyle(.roundedBorder)
+                .disabled(!custom)
+            ToolIconButton(icon: "AddFolder.png", enabled: custom && engine.canRun(vm, "BrowseOutputCommand")) {
+                engine.run(vm, "BrowseOutputCommand")
+            }
+        }
+        .disabled(locked)
+    }
+
+    // MARK: - code-behind 동작
+
+    /// BtnAddFiles_Click. upstream 필터는 "지원 파일|SupportedExtensions…|모든 파일|*.*"인데 '모든 파일'이 있어
+    /// UiHostHandler와 같이 형식을 제한하지 않는다(SupportedExtensions는 정적 필드라 브리지로 읽을 수도 없다).
+    private func addFiles(_ vm: RemoteObject) {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = true
+
+        if panel.runModal() == .OK {
+            engine.invoke(vm, "AddPaths", [.strings(panel.urls.map(\.path))])
+        }
+    }
+
+    /// BtnAddFolder_Click
+    private func addFolder(_ vm: RemoteObject) {
+        let panel = NSOpenPanel()
+        panel.title = "추가할 폴더를 선택하세요"
+        panel.message = "추가할 폴더를 선택하세요"
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+
+        if panel.runModal() == .OK, let url = panel.url {
+            engine.invoke(vm, "AddPaths", [.strings([url.path])])
+        }
+    }
+
+    /// BtnRemove_Click · Delete 키 → RemoveItems(선택 항목)
+    private func remove(_ vm: RemoteObject, _ ids: Set<Int>) {
+        engine.invoke(vm, "RemoveItems", [EngineClient.refs(ids)])
+        selection.subtract(ids)
+    }
+
+    /// BtnClear_Click → ClearItems()
+    private func clear(_ vm: RemoteObject) {
+        engine.invoke(vm, "ClearItems")
+        selection.removeAll()
+    }
+
+    /// MenuItem_OpenFolder_Click: 첫 선택 항목의 폴더를 연다.
+    private func openFolder(_ ids: Set<Int>, rows: [RemoteObject]) {
+        guard let path = rows.first(where: { ids.contains($0.id) })?.string("FilePath"), !path.isEmpty else { return }
+        NSWorkspace.shared.open(URL(fileURLWithPath: (path as NSString).deletingLastPathComponent))
+    }
+
+    /// 메뉴·툴바처럼 AppKit이 그리는 자리에 넣을 upstream 아이콘(크기를 정한 사본)
+    fileprivate static func icon(_ name: String, size: CGFloat) -> NSImage {
+        guard let image = UpstreamAssets.nsImage(name)?.copy() as? NSImage else { return NSImage() }
+        image.size = NSSize(width: size, height: size)
+        return image
+    }
+}
+
+/// 출력 열: ComboBox ItemsSource=AvailableFormats, SelectedItem=SelectedTargetFormat(양방향)
+/// engine은 @Environment로 읽지 않고 받는다. Table 셀은 행이 지워질 때 상위 환경 없이 한 번 더 갱신되어
+/// 셀 안에서 @Environment(EngineClient.self)를 읽으면 "No Observable object"로 멈춘다.
+private struct ConvertTargetFormatPicker: View {
+    let engine: EngineClient
+    let item: RemoteObject
+
+    var body: some View {
+        let listId = item.ref("AvailableFormats")
+        let formats = engine.store.items(listId).compactMap(\.string)
+
+        Picker("", selection: engine.string(item, "SelectedTargetFormat")) {
+            // upstream 목록에 같은 값이 두 번 들어 있을 수 있다(예: ISO → CHD, CSO, ZSO, CHD).
+            ForEach(Array(formats.enumerated()), id: \.offset) { _, format in
+                Text(format).tag(format)
+            }
+        }
+        .labelsHidden()
+        .pickerStyle(.menu)
+        .task(id: listId) { await engine.observeList(listId) }
+    }
+}
+
+/// ListViewColumnSorter 자리: 열의 Tag(속성 이름) 값으로 비교한다(숫자는 크기, 문자열은 이름 순).
+private struct ConvertSortComparator: SortComparator {
+    let prop: String
+    var order: SortOrder = .forward
+
+    func compare(_ lhs: RemoteObject, _ rhs: RemoteObject) -> ComparisonResult {
+        // 정렬은 화면(body)에서만 하므로 메인 스레드다.
+        let result = MainActor.assumeIsolated { Self.compareValues(lhs[prop], rhs[prop]) }
+
+        guard order == .reverse else { return result }
+        switch result {
+        case .orderedAscending: return .orderedDescending
+        case .orderedDescending: return .orderedAscending
+        case .orderedSame: return .orderedSame
+        }
+    }
+
+    private static func compareValues(_ a: JSONValue?, _ b: JSONValue?) -> ComparisonResult {
+        if let x = a?.double, let y = b?.double {
+            return x < y ? .orderedAscending : (x > y ? .orderedDescending : .orderedSame)
+        }
+        return (a?.string ?? "").localizedStandardCompare(b?.string ?? "")
+    }
+}
+
+// MARK: - 빈 목록 안내(HintVisibility)
+
+/// 안내 표의 한 줄: [아이콘] [이름] [: 원본 ➔ 결과 | …]. XAML의 Run 순서와 종류를 그대로 옮긴다.
+private struct ConvertHintLine: Identifiable {
+    enum Run {
+        case plain(String)   // #CCCCCC
+        case strong(String)  // #FFFFFF Bold
+        case separator       // "  |  " #555555
+        case convert         // " ➔ " #AB47BC
+        case compress        // " ➔ " #FF9800
+        case decompress      // " ➔ " #00BCD4
+    }
+
+    let icon: String
+    let name: String
+    let runs: [Run]
+    var id: String { name }
+
+    var text: Text {
+        runs.reduce(Text(verbatim: "")) { result, run in
+            switch run {
+            case .plain(let s): result + Text(verbatim: s).foregroundStyle(.secondary)
+            case .strong(let s): result + Text(verbatim: s).bold()
+            case .separator: result + Text(verbatim: "  |  ").foregroundStyle(.tertiary)
+            case .convert: result + Text(verbatim: " ➔ ").bold().foregroundStyle(.purple)
+            case .compress: result + Text(verbatim: " ➔ ").bold().foregroundStyle(.orange)
+            case .decompress: result + Text(verbatim: " ➔ ").bold().foregroundStyle(.cyan)
+            }
+        }
+    }
+}
+
+private struct ConvertHint: View {
+    private static let consoles: [ConvertHintLine] = [
+        ConvertHintLine(icon: "Switch.png", name: "Switch", runs: [
+            .plain(": NSP"), .convert, .strong("NSZ, XCI, XCZ"), .separator,
+            .plain("NSZ"), .convert, .strong("NSP, XCI, XCZ"), .separator,
+            .plain("XCI"), .convert, .strong("NSP, NSZ, XCZ"), .separator,
+            .plain("XCZ"), .convert, .strong("NSP, NSZ, XCI"),
+        ]),
+        ConvertHintLine(icon: "WiiU.png", name: "Wii U", runs: [
+            .plain(": WUP"), .convert, .strong("Loadiine, WUA"), .separator,
+            .plain("Loadiine"), .convert, .strong("WUP, WUA"), .separator,
+            .plain("WUD/WUX"), .convert, .strong("WUA, WUP, Loadiine"), .separator,
+            .plain("WUA"), .convert, .strong("WUP, Loadiine"),
+        ]),
+        ConvertHintLine(icon: "3DS.png", name: "3DS", runs: [
+            .plain(": 3DS(CCI와 같은 포맷)"), .convert, .strong("CIA, ZCCI"), .separator,
+            .plain("CCI"), .convert, .strong("CIA, ZCCI"), .separator,
+            .plain("CIA"), .convert, .strong("CCI, ZCCI"), .separator,
+            .plain("ZCCI"), .convert, .strong("CCI, CIA"),
+        ]),
+        ConvertHintLine(icon: "PS1.png", name: "PS", runs: [
+            .plain(": ISO"), .compress, .strong("CSO, ZSO, CHD"), .separator,
+            .plain("CSO"), .convert, .strong("ISO, ZSO, CHD"), .separator,
+            .plain("ZSO"), .convert, .strong("ISO, CSO, CHD"), .separator,
+            .plain("CHD(ISO 기반)"), .convert, .strong("ISO, CSO, ZSO"), .separator,
+            .plain("PBP"), .decompress, .strong("CUE+BIN"),
+        ]),
+    ]
+
+    private static let images: [ConvertHintLine] = [
+        ConvertHintLine(icon: "Mame.png", name: "CHDMAN", runs: [
+            .plain(": ISO(표준), CUE+BIN, GDI+BIN+RAW, CCD+IMG+SUB"), .compress, .strong("CHD"), .separator,
+            .strong("CHD"), .decompress, .plain("ISO, CUE+BIN, GDI+BIN+RAW"),
+        ]),
+        ConvertHintLine(icon: "Dolphin.png", name: "GC/Wii", runs: [
+            .plain(": ISO(GC/Wii), GCM, WBFS, WIA, GCZ"), .compress, .strong("RVZ"), .separator,
+            .strong("RVZ"), .decompress, .plain("ISO(GC/Wii), WBFS"), .separator,
+            .strong("ISO(Wii)"), .compress, .strong("WBFS"), .separator,
+            .strong("WBFS"), .decompress, .plain("ISO(Wii)"),
+        ]),
+        ConvertHintLine(icon: "CUE.png", name: "CD Image", runs: [
+            .plain(": MDF+MDS, CCD+IMG+SUB"), .convert, .strong("BIN+CUE, ISO"),
+        ]),
+    ]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            UpstreamIcon(name: "drag.png", size: 28)
+                .padding(.bottom, 8)
+            Text("파일 또는 폴더를 여기에 드래그&드롭하세요")
+                .font(.headline)
+            Text("하기 기준으로 압축, 해제 및 포맷 변환을 진행합니다")
+                .font(.subheadline.weight(.bold))
+                .foregroundStyle(.secondary)
+                .padding(.top, 8)
+
+            Grid(alignment: .leading, horizontalSpacing: 0, verticalSpacing: 4) {
+                ForEach(Self.consoles) { line in row(line) }
+                // RowDefinition Height="10"(빈 줄). 가로 크기는 표 너비에 영향을 주지 않게 한다.
+                Color.clear
+                    .frame(height: 6)
+                    .gridCellUnsizedAxes(.horizontal)
+                ForEach(Self.images) { line in row(line) }
+            }
+            .font(.caption)
+            .padding(.top, 15)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .allowsHitTesting(false)
+    }
+
+    private func row(_ line: ConvertHintLine) -> some View {
+        GridRow {
+            UpstreamIcon(name: line.icon, size: 16)
+                .padding(.trailing, 6)
+            Text(line.name)
+                .bold()
+                .padding(.trailing, 8)
+            line.text
+        }
+    }
+}

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    macOS 빌드에서 upstream WPF 프로젝트(RomForge, RomForge.Core, Common.WPF, NSW.WPF)가
+    참조하는 WPF API의 최소 대체 구현. 화면은 없고, 대화상자·메시지 상자는 UiHost를 통해
+    SwiftUI 앱으로 넘긴다.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>RomForge.Mac.Compat</AssemblyName>
+    <RootNamespace>RomForge.Mac.Compat</RootNamespace>
+  </PropertyGroup>
+
+  <!-- 버전은 upstream 프로젝트와 같게 맞춘다(NuGet이 가장 높은 버전으로 통일하므로 어긋나면 경고가 난다). -->
+  <ItemGroup>
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+    <PackageReference Include="SharpCompress" Version="0.50.0" />
+    <PackageReference Include="System.IO.Hashing" Version="10.0.9" />
+  </ItemGroup>
+
+</Project>

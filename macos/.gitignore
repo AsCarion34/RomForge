@@ -1,0 +1,4 @@
+# macOS 빌드 산출물과 내려받은 외부 소스
+.build/
+bin/
+obj/
