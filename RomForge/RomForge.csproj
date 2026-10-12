@@ -125,7 +125,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Ookii.Dialogs.Wpf" Version="5.0.1" />
-    <PackageReference Include="System.IO.Hashing" Version="10.0.9" />
+    <PackageReference Include="System.IO.Hashing" Version="10.0.12" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="App.xaml" />

@@ -360,12 +360,16 @@ public class PackingMainViewModel : ToolTabViewModel
             byte[] bytes = File.ReadAllBytes(filePath);
             string ext = Path.GetExtension(filePath).ToLowerInvariant();
 
-            if (ext == ".wav")
-                BgmBytes = At3Encoder.ConvertWavToAt3(bytes);
-            else
-                BgmBytes = bytes;
+            BgmBytes = ext switch
+            {
+                ".mp3" => At3Encoder.Convert(bytes, isWav: false),
+                ".wav" => At3Encoder.Convert(bytes, isWav: true),                
+                ".at3" => bytes,
+                _ => throw new NotSupportedException($"지원하지 않는 오디오 형식입니다: {ext}")
+            };
 
             BgmFilePath = filePath;
+            AppendLog($"배경음 설정 완료: {Path.GetFileName(filePath)}", LogLevel.Info);
         }
         catch (Exception ex)
         {

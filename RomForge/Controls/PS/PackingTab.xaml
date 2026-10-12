@@ -285,13 +285,13 @@
                     </TabItem.Header>
                     <StackPanel>
                         <Viewbox Stretch="Uniform">
-                            <Border Width="480" Height="272" Margin="5" CornerRadius="18" BorderBrush="#40FFFFFF" BorderThickness="1" Background="#10FFFFFF" AllowDrop="True" Drop="Bgm_Drop" MouseLeftButtonDown="Bgm_MouseLeftButtonDown" Cursor="Hand">
+                            <Border Width="480" Height="272" Margin="5" CornerRadius="18" BorderBrush="#40FFFFFF" BorderThickness="1" Background="Transparent" AllowDrop="True" Drop="Bgm_Drop" MouseLeftButtonDown="Bgm_MouseLeftButtonDown" Cursor="Hand">
                                 <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
-                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+
+                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="{Binding HasBgm, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
                                         <Image Source="/Assets/Images/Drag.png" Width="28" Height="28" Margin="0,0,0,8" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="오디오 파일을 드래그&amp;드롭하거나 클릭하세요" FontSize="12" Foreground="#8A8A8A" TextAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                                        <!--<TextBlock Text="{Binding BgmFileName, FallbackValue='오디오 파일을 드래그&amp;드롭하거나 클릭하세요'}" FontSize="12" FontWeight="Bold" TextAlignment="Center" HorizontalAlignment="Center" Foreground="#40FFFFFF" Margin="0,0,0,6"/>
-                                        <TextBlock Text="* WAV 파일 추가 시 자동으로 AT3 포맷으로 변환됩니다." FontSize="12" Foreground="#8A8A8A" TextAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,6"/>-->
+                                        <TextBlock Text="오디오 파일을 드래그&amp;드롭하거나 클릭하세요" FontSize="12" FontWeight="Bold" TextAlignment="Center" HorizontalAlignment="Center" Foreground="#40FFFFFF" Margin="0,0,0,6"/>
+                                        <TextBlock Text="MP3, WAV 파일 추가 시 자동으로 AT3 포맷으로 변환됩니다." FontSize="12" Foreground="#D4AF37" TextAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,6"/>
                                         <ItemsControl HorizontalAlignment="Center">
                                             <ItemsControl.ItemsPanel>
                                                 <ItemsPanelTemplate>
@@ -299,23 +299,36 @@
                                                 </ItemsPanelTemplate>
                                             </ItemsControl.ItemsPanel>
                                             <ItemsControl.Items>
-                                                <!--<Border Background="#1A4D56B2" BorderBrush="#4D4D56B2" BorderThickness="1" CornerRadius="6" Padding="12,4" Margin="4,0">
-                                                    <TextBlock Text="WAV" Foreground="#8FA3FF" FontWeight="Bold" FontSize="11" VerticalAlignment="Center">
+                                                <Border Background="#1A4D56B2" BorderBrush="#4D4D56B2" BorderThickness="1" CornerRadius="6" Padding="10,4" Margin="4,0">
+                                                    <TextBlock Text="MP3" Foreground="#8FA3FF" FontWeight="Bold" FontSize="11" VerticalAlignment="Center">
                                                         <TextBlock.Effect>
                                                             <DropShadowEffect BlurRadius="4" ShadowDepth="0" Color="#8FA3FF" Opacity="0.4"/>
                                                         </TextBlock.Effect>
                                                     </TextBlock>
-                                                </Border>-->
-                                                <Border Background="#1A1B8A5A" BorderBrush="#551B8A5A" BorderThickness="1" CornerRadius="6" Padding="12,4" Margin="4,0">
-                                                    <TextBlock Text="AT3" Foreground="#54FFB5" FontWeight="Bold" FontSize="11" VerticalAlignment="Center">
+                                                </Border>
+                                                <Border Background="#1A9E5B24" BorderBrush="#559E5B24" BorderThickness="1" CornerRadius="6" Padding="10,4" Margin="4,0">
+                                                    <TextBlock Text="WAV" Foreground="#FFA254" FontWeight="Bold" FontSize="11" VerticalAlignment="Center">
                                                         <TextBlock.Effect>
-                                                            <DropShadowEffect BlurRadius="4" ShadowDepth="0" Color="#54FFB5" Opacity="0.4"/>
+                                                            <DropShadowEffect BlurRadius="4" ShadowDepth="0" Color="#FFA254" Opacity="0.4"/>
+                                                        </TextBlock.Effect>
+                                                    </TextBlock>
+                                                </Border>
+                                                <Border Background="#1A9E2469" BorderBrush="#559E2469" BorderThickness="1" CornerRadius="6" Padding="10,4" Margin="4,0">
+                                                    <TextBlock Text="AT3" Foreground="#FF73C9" FontWeight="Bold" FontSize="11" VerticalAlignment="Center">
+                                                        <TextBlock.Effect>
+                                                            <DropShadowEffect BlurRadius="4" ShadowDepth="0" Color="#FF73C9" Opacity="0.4"/>
                                                         </TextBlock.Effect>
                                                     </TextBlock>
                                                 </Border>
                                             </ItemsControl.Items>
                                         </ItemsControl>
                                     </StackPanel>
+
+                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="{Binding HasBgm, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <TextBlock Text="{Binding BgmFileName}" FontSize="14" FontWeight="Bold" Foreground="White" TextAlignment="Center" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="440"/>
+                                        <TextBlock Text="클릭하거나 파일을 드롭하여 변경할 수 있습니다." FontSize="11" Foreground="#D4AF37" TextAlignment="Center" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                                    </StackPanel>
+
                                 </Grid>
                             </Border>
                         </Viewbox>

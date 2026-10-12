@@ -12,7 +12,7 @@ namespace RomForge.Controls.PS;
 public partial class PackingTab : UserControl
 {
     private readonly string[] _imgExts = [".jpg", ".jpeg", ".png", ".bmp", ".webp"];
-    private readonly string[] _audioExts = [".wav", ".at3"];
+    private readonly string[] _audioExts = [".mp3", ".wav", ".at3"];
 
     private PackingMainViewModel? ViewModel => DataContext as PackingMainViewModel;
 
@@ -158,8 +158,7 @@ public partial class PackingTab : UserControl
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            //Filter = "Audio Files (*.wav;*.at3)|*.wav;*.at3|WAV Files (*.wav)|*.wav|AT3 Files (*.at3)|*.at3"
-            Filter = "AT3 Files (*.at3)|*.at3"
+            Filter = "Audio Files (*.mp3;*.wav;*.at3)|*.mp3;*.wav;*.at3|MP3 Files (*.mp3)|*.mp3|WAV Files (*.wav)|*.wav|AT3 Files (*.at3)|*.at3"
         };
 
         if (dialog.ShowDialog() == true)
@@ -194,6 +193,7 @@ public partial class PackingTab : UserControl
         using (var fs = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write))
         {
             var encoder = new PngBitmapEncoder();
+
             encoder.Frames.Add(BitmapFrame.Create(bmp));
             encoder.Save(fs);
         }

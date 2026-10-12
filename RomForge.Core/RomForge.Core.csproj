@@ -14,8 +14,8 @@
   <ItemGroup>
     <PackageReference Include="HtmlAgilityPack" Version="1.12.4" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
-    <PackageReference Include="System.IO.Hashing" Version="10.0.9" />
-    <PackageReference Include="System.Management" Version="10.0.9" />
+    <PackageReference Include="System.IO.Hashing" Version="10.0.12" />
+    <PackageReference Include="System.Management" Version="10.0.12" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\3DS.Core\3DS.Core.csproj" />
