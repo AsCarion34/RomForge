@@ -156,6 +156,9 @@ public partial class PackingTab : UserControl
 
     private void Bgm_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
+        if (ViewModel is { IsBgmConverting: true })
+            return;
+
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
             Filter = "Audio Files (*.mp3;*.wav;*.at3)|*.mp3;*.wav;*.at3|MP3 Files (*.mp3)|*.mp3|WAV Files (*.wav)|*.wav|AT3 Files (*.at3)|*.at3"
@@ -167,17 +170,21 @@ public partial class PackingTab : UserControl
 
     private void Bgm_Reset_Click(object sender, RoutedEventArgs e)
     {
+        if (ViewModel is { IsBgmConverting: true })
+            return;
+
         ViewModel?.ResetBgm();
     }
 
-    private void ProcessAudioFile(string filePath)
+    private async void ProcessAudioFile(string filePath)
     {
         string ext = Path.GetExtension(filePath).ToLowerInvariant();
 
         if (!_audioExts.Contains(ext))
             return;
 
-        ViewModel?.SetBgmPath(filePath);
+        if (ViewModel != null)
+            await ViewModel.SetBgmPathAsync(filePath);
     }
 
     private void ExportImage(BitmapImage? bmp, string fileNameBase)

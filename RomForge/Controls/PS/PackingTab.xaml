@@ -286,12 +286,11 @@
                     <StackPanel>
                         <Viewbox Stretch="Uniform">
                             <Border Width="480" Height="272" Margin="5" CornerRadius="18" BorderBrush="#40FFFFFF" BorderThickness="1" Background="Transparent" AllowDrop="True" Drop="Bgm_Drop" MouseLeftButtonDown="Bgm_MouseLeftButtonDown" Cursor="Hand">
-                                <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
-
+                                <Grid VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="{Binding HasBgm, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
                                         <Image Source="/Assets/Images/Drag.png" Width="28" Height="28" Margin="0,0,0,8" HorizontalAlignment="Center"/>
                                         <TextBlock Text="오디오 파일을 드래그&amp;드롭하거나 클릭하세요" FontSize="12" FontWeight="Bold" TextAlignment="Center" HorizontalAlignment="Center" Foreground="#40FFFFFF" Margin="0,0,0,6"/>
-                                        <TextBlock Text="MP3, WAV 파일 추가 시 자동으로 AT3 포맷으로 변환됩니다." FontSize="12" Foreground="#D4AF37" TextAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                        <TextBlock Text="MP3, WAV 파일 추가 시 자동으로 AT3 포맷으로 변환됩니다. (1분 제한)" FontSize="12" Foreground="#D4AF37" TextAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,6"/>
                                         <ItemsControl HorizontalAlignment="Center">
                                             <ItemsControl.ItemsPanel>
                                                 <ItemsPanelTemplate>
@@ -329,6 +328,14 @@
                                         <TextBlock Text="클릭하거나 파일을 드롭하여 변경할 수 있습니다." FontSize="11" Foreground="#D4AF37" TextAlignment="Center" HorizontalAlignment="Center" Margin="0,6,0,0"/>
                                     </StackPanel>
 
+                                    <Border Background="#CC000000" CornerRadius="18" Visibility="{Binding IsBgmConverting, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="300">
+                                            <TextBlock Text="AT3로 변환 중..." FontSize="14" FontWeight="Bold" Foreground="White" TextAlignment="Center" Margin="0,0,0,10"/>
+                                            <ProgressBar Minimum="0" Maximum="100" Value="{Binding BgmProgressPct, Mode=OneWay}" Height="6"/>
+                                            <TextBlock Text="{Binding BgmProgressText}" FontSize="12" Foreground="#D4AF37" TextAlignment="Center" Margin="0,8,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                    
                                 </Grid>
                             </Border>
                         </Viewbox>

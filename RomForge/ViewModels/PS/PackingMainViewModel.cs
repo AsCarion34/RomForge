@@ -1,7 +1,7 @@
 ﻿using Common;
 using Common.WPF.ViewModels;
-using LibHac;
 using NSW.WPF.Services;
+using PBP.Core.AT3.Models;
 using PBP.Core.Models;
 using PBP.Core.Services;
 using RomForge.Core;
@@ -23,10 +23,7 @@ public class PackingMainViewModel : ToolTabViewModel
 
     public record FmvFixOption(string Label, uint Value);
 
-    public ObservableCollection<FmvFixOption> FmvFixPresets { get; } = [
-        new("0x04 (다수 게임에서 검증됨)", 0x04),
-        new("0x07 (실험적)", 0x07)
-    ];
+    public ObservableCollection<FmvFixOption> FmvFixPresets { get; } = [ new("0x04 (다수 게임에서 검증됨)", 0x04), new("0x07 (실험적)", 0x07) ];
 
     private readonly DiscImportService _importService = new();
     private readonly CoverArtUpdater _coverArtUpdater = new();
@@ -184,6 +181,24 @@ public class PackingMainViewModel : ToolTabViewModel
             SetProperty(ref _bootLogoImage, value);
             OnPropertyChanged(nameof(HasBootLogo));
             OnPropertyChanged(nameof(ShowBootLogoHint));
+        }
+    }
+
+    private bool _isBgmConverting;
+    public bool IsBgmConverting
+    {
+        get => _isBgmConverting;
+        private set => SetProperty(ref _isBgmConverting, value);
+    }
+
+    private int _bgmProgressPct;
+    public int BgmProgressPct
+    {
+        get => _bgmProgressPct;
+        private set
+        {
+            if (SetProperty(ref _bgmProgressPct, value))
+                OnPropertyChanged(nameof(BgmProgressText));
         }
     }
 
@@ -353,20 +368,45 @@ public class PackingMainViewModel : ToolTabViewModel
         BootLogoImage = img;
     }
 
-    public void SetBgmPath(string filePath)
+    public string BgmProgressText => $"{BgmProgressPct}%";
+
+    public async Task SetBgmPathAsync(string filePath)
     {
+        if (IsBgmConverting)
+            return;
+
+        IsBgmConverting = true;
+        BgmProgressPct = 0;
+
         try
         {
-            byte[] bytes = File.ReadAllBytes(filePath);
             string ext = Path.GetExtension(filePath).ToLowerInvariant();
-
-            BgmBytes = ext switch
+            int lastPct = -1;
+            var options = new ConverterOptions
             {
-                ".mp3" => At3Encoder.Convert(bytes, isWav: false),
-                ".wav" => At3Encoder.Convert(bytes, isWav: true),                
-                ".at3" => bytes,
-                _ => throw new NotSupportedException($"지원하지 않는 오디오 형식입니다: {ext}")
+                BitrateKbps = At3Bitrate.Kbps66,
+                MaxSeconds = 60,
+                OnProgress = p =>
+                {
+                    int pct = (int)(p * 100);
+                    if (pct == lastPct)
+                        return;
+                    lastPct = pct;
+                    Application.Current.Dispatcher.InvokeAsync(() => BgmProgressPct = pct);
+                }
             };
+
+            BgmBytes = await Task.Run(() =>
+            {
+                byte[] bytes = File.ReadAllBytes(filePath);
+                return ext switch
+                {
+                    ".mp3" => At3Encoder.Convert(bytes, isWav: false, options),
+                    ".wav" => At3Encoder.Convert(bytes, isWav: true, options),
+                    ".at3" => bytes,
+                    _ => throw new NotSupportedException($"지원하지 않는 오디오 형식입니다: {ext}")
+                };
+            });
 
             BgmFilePath = filePath;
             AppendLog($"배경음 설정 완료: {Path.GetFileName(filePath)}", LogLevel.Info);
@@ -374,6 +414,10 @@ public class PackingMainViewModel : ToolTabViewModel
         catch (Exception ex)
         {
             AppendLog($"배경음 처리 중 오류 발생: {ex.Message}", LogLevel.Error);
+        }
+        finally
+        {
+            IsBgmConverting = false;
         }
     }
 
@@ -477,12 +521,11 @@ public class PackingMainViewModel : ToolTabViewModel
             try
             {
                 AppendLog($"작업 시작: {gameTitle} [{mainGameId}] ({orderedItems.Count}개 디스크)", LogLevel.Highlight);
-
                 await PackingJobRunner.RunAsync(orderedItems, gameTitle, mainGameId, plan, AppConfig.Instance.PS1.CompressLevel, assets, popsConfig, BuildProgressReporter(), _cts.Token);
 
                 ProgressPct = 100;
-                AppendLog($"작업 완료: {plan.TargetOutputPath}", LogLevel.Ok);
 
+                AppendLog($"작업 완료: {plan.TargetOutputPath}", LogLevel.Ok);
                 Path.GetDirectoryName(plan.TargetOutputPath).OpenFolder();
             }
             catch (OperationCanceledException)
