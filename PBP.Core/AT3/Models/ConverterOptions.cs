@@ -2,7 +2,7 @@
 
 public class ConverterOptions
 {
-    public At3Bitrate BitrateKbps { get; set; } = At3Bitrate.Kbps132;
+    public Bitrate BitrateKbps { get; set; } = Bitrate.Kbps132;
 
     public int MaxSeconds { get; set; } = 30;
 

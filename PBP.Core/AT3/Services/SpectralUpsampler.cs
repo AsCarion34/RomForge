@@ -1,6 +1,6 @@
 using PBP.Core.AT3.Models;
 
-namespace PBP.Core.AT3;
+namespace PBP.Core.AT3.Services;
 
 public sealed class SpectralUpsampler
 {

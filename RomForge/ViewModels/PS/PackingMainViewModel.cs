@@ -1,5 +1,6 @@
 ﻿using Common;
 using Common.WPF.ViewModels;
+using NAudio.Wave;
 using NSW.WPF.Services;
 using PBP.Core.AT3.Models;
 using PBP.Core.Models;
@@ -41,6 +42,9 @@ public class PackingMainViewModel : ToolTabViewModel
     private bool _isValidating;
     private bool _useFmvFix;
     private bool _useCdTimingFix;
+    private byte[]? _previewPcmBytes;
+    private WaveOutEvent? _waveOut;
+    private WaveStream? _waveStream;
 
     public byte[] Icon0Bytes { get; set; } = EmbeddedAssetProvider.GetDefaultIcon0();
 
@@ -67,6 +71,33 @@ public class PackingMainViewModel : ToolTabViewModel
     public string BgmFileName => !string.IsNullOrEmpty(BgmFilePath) ? Path.GetFileName(BgmFilePath) : string.Empty;
 
     public bool HasBgm => !string.IsNullOrEmpty(BgmFilePath);
+
+    public bool IsHighQualityMode
+    {
+        get => AppConfig.Instance.PS1.IsHighQualityMode;
+        set
+        {
+            if (IsBgmConverting)
+                return;
+
+            if (AppConfig.Instance.PS1.IsHighQualityMode != value)
+            {
+                AppConfig.Instance.PS1.IsHighQualityMode = value;
+
+                OnPropertyChanged();
+
+                if (!string.IsNullOrEmpty(BgmFilePath))
+                    _ = SetBgmPathAsync(BgmFilePath);
+            }
+        }
+    }
+
+    private bool _isPlayingBgm;
+    public bool IsPlayingBgm
+    {
+        get => _isPlayingBgm;
+        set => SetProperty(ref _isPlayingBgm, value);
+    }
 
     public string GameTitle
     {
@@ -224,6 +255,8 @@ public class PackingMainViewModel : ToolTabViewModel
 
     public ICommand SettingsCommand { get; }
 
+    public ICommand TogglePlayBgmCommand { get; }
+
     public event EventHandler RunNavigateSettings;
 
     public PackingMainViewModel()
@@ -231,6 +264,7 @@ public class PackingMainViewModel : ToolTabViewModel
         RunCommand = new RelayCommand(async _ => await RunAsync(), _ => CanRun);
         CancelCommand = new RelayCommand(_ => _cts.Cancel(), _ => IsLocked);
         SettingsCommand = new RelayCommand(async _ => RunNavigateSettings?.Invoke(this, EventArgs.Empty), _ => !IsLocked);
+        TogglePlayBgmCommand = new RelayCommand(_ => TogglePlayBgm());
 
         Icon0Image = Icon0Bytes.ToBitmapImage();
         Pic0Image = Pic0Bytes.ToBitmapImage();
@@ -384,28 +418,64 @@ public class PackingMainViewModel : ToolTabViewModel
             int lastPct = -1;
             var options = new ConverterOptions
             {
-                BitrateKbps = At3Bitrate.Kbps66,
-                MaxSeconds = 60,
+                BitrateKbps = IsHighQualityMode ? Bitrate.Kbps132 : Bitrate.Kbps66,
+                MaxSeconds = IsHighQualityMode ? 30 : 60,
                 OnProgress = p =>
                 {
                     int pct = (int)(p * 100);
+
                     if (pct == lastPct)
                         return;
+
                     lastPct = pct;
+
                     Application.Current.Dispatcher.InvokeAsync(() => BgmProgressPct = pct);
                 }
             };
 
-            BgmBytes = await Task.Run(() =>
+            await Task.Run(() =>
             {
-                byte[] bytes = File.ReadAllBytes(filePath);
-                return ext switch
+                byte[] rawBytes = File.ReadAllBytes(filePath);
+
+                if (ext == ".at3")
                 {
-                    ".mp3" => At3Encoder.Convert(bytes, isWav: false, options),
-                    ".wav" => At3Encoder.Convert(bytes, isWav: true, options),
-                    ".at3" => bytes,
-                    _ => throw new NotSupportedException($"지원하지 않는 오디오 형식입니다: {ext}")
-                };
+                    BgmBytes = rawBytes;
+                    _previewPcmBytes = null;
+                }
+                else
+                {
+                    using (var reader = new AudioFileReader(filePath))
+                    {
+                        long maxSamples = reader.WaveFormat.SampleRate * options.MaxSeconds;
+                        var sampleBuffer = new float[reader.WaveFormat.Channels * 4096];
+
+                        using (var memStream = new MemoryStream())
+                        {
+                            using (var writer = new WaveFileWriter(memStream, reader.WaveFormat))
+                            {
+                                long totalSamplesWritten = 0;
+                                int read;
+                                while ((read = reader.Read(sampleBuffer, 0, sampleBuffer.Length)) > 0)
+                                {
+                                    long remainingSamples = maxSamples - totalSamplesWritten;
+                                    if (remainingSamples <= 0)
+                                        break;
+
+                                    int samplesToWrite = (int)Math.Min(read, remainingSamples);
+                                    writer.WriteSamples(sampleBuffer, 0, samplesToWrite);
+                                    totalSamplesWritten += samplesToWrite / reader.WaveFormat.Channels;
+
+                                    if (totalSamplesWritten >= maxSamples)
+                                        break;
+                                }
+                            }
+                            _previewPcmBytes = memStream.ToArray();
+                        }
+                    }
+
+                    bool isWav = ext == ".wav";
+                    BgmBytes = At3Encoder.Convert(rawBytes, isWav, options);
+                }
             });
 
             BgmFilePath = filePath;
@@ -435,12 +505,6 @@ public class PackingMainViewModel : ToolTabViewModel
     {
         BootLogoBytes = null;
         BootLogoImage = null;
-    }
-
-    public void ResetBgm()
-    {
-        BgmBytes = null;
-        BgmFilePath = null;
     }
 
     private async Task UpdateImageAsync()
@@ -584,4 +648,71 @@ public class PackingMainViewModel : ToolTabViewModel
     }
 
     public static string GetFileDialogFilter() => DiscImportService.GetFileDialogFilter();
+
+    private void TogglePlayBgm()
+    {
+        if (IsPlayingBgm)
+        {
+            StopBgmPreview();
+        }
+        else
+        {
+            StartBgmPreview();
+        }
+    }
+
+    private void StartBgmPreview()
+    {
+        if (_previewPcmBytes == null || _previewPcmBytes.Length == 0)
+            return;
+
+        try
+        {
+            StopBgmPreview();
+
+            var ms = new MemoryStream(_previewPcmBytes);
+
+            _waveStream = new WaveFileReader(ms);
+
+            _waveOut = new WaveOutEvent();
+            _waveOut.Init(_waveStream);
+            _waveOut.PlaybackStopped += (s, e) =>
+            {
+                StopBgmPreview();
+            };
+
+            _waveOut.Play();
+            IsPlayingBgm = true;
+        }
+        catch (Exception ex)
+        {
+            AppendLog($"미리듣기 재생 중 오류: {ex.Message}", LogLevel.Error);
+            StopBgmPreview();
+        }
+    }
+
+    private void StopBgmPreview()
+    {
+        try
+        {
+            _waveOut?.Stop();
+            _waveOut?.Dispose();
+            _waveOut = null;
+
+            _waveStream?.Dispose();
+            _waveStream = null;
+        }
+        catch { }
+        finally
+        {
+            IsPlayingBgm = false;
+        }
+    }
+    public void ResetBgm()
+    {
+        StopBgmPreview();
+        BgmBytes = null;
+        BgmFilePath = null;
+        _previewPcmBytes = null;
+    }
 }

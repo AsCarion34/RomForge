@@ -55,10 +55,10 @@ public static class ChannelMixer
             if ((channelMask & (1u << bit)) == 0)
                 continue;
 
-            var g = Gains(bit);
+            var (L, R) = Gains(bit);
 
-            gainL[ch] = g.L;
-            gainR[ch] = g.R;
+            gainL[ch] = L;
+            gainR[ch] = R;
             ch++;
         }
 

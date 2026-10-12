@@ -26,7 +26,7 @@ public sealed class Encoder
     private bool _lookAheadPending = true;
     private float _loudness = LoudFactor;
 
-    public Encoder(Writer container, ContainerParams containerParams, int channels, Atrac3EncoderSettings settings)
+    public Encoder(Writer container, ContainerParams containerParams, int channels, EncoderSettings settings)
     {
         if (channels != 1 && channels != 2)
             throw new ArgumentException("Only mono and stereo are supported", nameof(channels));

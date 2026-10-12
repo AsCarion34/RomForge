@@ -142,6 +142,9 @@ public class PS1Config : ViewModelBase
 
     private bool _useUpperCase = false;
     public bool UseUpperCase { get => _useUpperCase; set => SetProperty(ref _useUpperCase, value); }
+
+    private bool _isHighQualityMode = true;
+    public bool IsHighQualityMode { get => _isHighQualityMode; set => SetProperty(ref _isHighQualityMode, value); }
 }
 
 public class TistoryConfig : ViewModelBase

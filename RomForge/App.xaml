@@ -32,6 +32,7 @@
             <converters:CdOutputFormatLabelConverter x:Key="CdOutputFormatLabelConverter"/>
             <converters:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
             <converters:StringHasValueConverter x:Key="StringHasValueConverter" />
+            <converters:BoolToPlayStopTextConverter x:Key="BoolToPlayStopTextConverter" />            
 
             <Style TargetType="TabControl">
                 <Setter Property="Background" Value="Transparent"/>

@@ -5,7 +5,7 @@ namespace PBP.Core.AT3.Services;
 
 public static class FileEncoder
 {
-    public static void Encode(PcmData pcm, Stream output, Atrac3EncoderSettings settings, bool leaveOpen = false, Action<double>? progress = null)
+    public static void Encode(PcmData pcm, Stream output, EncoderSettings settings, bool leaveOpen = false, Action<double>? progress = null)
     {
         if (pcm.Channels != 1 && pcm.Channels != 2)
             throw new NotSupportedException("Only mono and stereo input is supported");

@@ -1,7 +1,4 @@
-using PBP.Core.AT3.Models;
-using PBP.Core.AT3.Services;
-
-namespace PBP.Core.AT3;
+namespace PBP.Core.AT3.Services;
 
 internal sealed class BitAllocHandler
 {

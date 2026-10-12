@@ -1,7 +1,6 @@
 using PBP.Core.AT3.Helpers;
-using PBP.Core.AT3.Models;
 
-namespace PBP.Core.AT3;
+namespace PBP.Core.AT3.Models;
 
 internal sealed class EncodeCtx
 {

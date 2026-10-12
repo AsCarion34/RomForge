@@ -1,6 +1,6 @@
 ﻿namespace PBP.Core.AT3.Models;
 
-public enum At3Bitrate
+public enum Bitrate
 {
     Kbps66 = 66,
 

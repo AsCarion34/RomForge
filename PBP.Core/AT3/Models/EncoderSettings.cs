@@ -1,6 +1,6 @@
 ﻿namespace PBP.Core.AT3.Models;
 
-public sealed class Atrac3EncoderSettings
+public sealed class EncoderSettings
 {
     public uint Bitrate;
 

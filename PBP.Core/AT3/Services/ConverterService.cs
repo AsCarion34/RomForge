@@ -13,9 +13,9 @@ namespace PBP.Core.AT3.Services
 
             uint bitrate = options.BitrateKbps switch
             {
-                At3Bitrate.Kbps66 => 66150u,
-                At3Bitrate.Kbps105 => 104738u,
-                At3Bitrate.Kbps132 => 132300u,
+                Bitrate.Kbps66 => 66150u,
+                Bitrate.Kbps105 => 104738u,
+                Bitrate.Kbps132 => 132300u,
                 _ => throw new ArgumentException("비트레이트는 66, 105, 132 중 하나여야 합니다.", nameof(options))
             };
 
@@ -28,7 +28,7 @@ namespace PBP.Core.AT3.Services
                     pcm.Samples = pcm.Samples[..(int)(maxFrames * pcm.Channels)];
             }
 
-            var settings = new Atrac3EncoderSettings
+            var settings = new EncoderSettings
             {
                 Bitrate = bitrate,
                 NoTonalComponents = !options.EnableTonal,
