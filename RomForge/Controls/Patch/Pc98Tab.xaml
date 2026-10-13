@@ -23,7 +23,7 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Image Grid.Column="0" Source="/Assets/Images/PC98.png" Width="28" Height="28" Margin="0,0,6,0" VerticalAlignment="Center" ToolTip="{Binding PatchVM.Pc98VM.SourcePath}"/>
+                        <Image Grid.Column="0" Source="/Assets/Images/Diskette.png" Width="28" Height="28" Margin="0,0,6,0" VerticalAlignment="Center" ToolTip="{Binding PatchVM.Pc98VM.SourcePath}"/>
                         <TextBlock Grid.Column="1" Text="{Binding PatchVM.Pc98VM.SourceLabel}" Foreground="#888888" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip="{Binding PatchVM.Pc98VM.SourcePath}"/>
                     </Grid>
                     <TextBlock Text="원본" Foreground="#888" FontSize="11" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,2,-8,0" ToolTip="{Binding PatchVM.Pc98VM.SourcePath}"/>
