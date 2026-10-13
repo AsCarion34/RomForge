@@ -60,13 +60,14 @@
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
 
-                            <GridViewColumn Width="60">
+                            <GridViewColumn Width="90">
                                 <GridViewColumn.Header>
                                     <GridViewColumnHeader Tag="Extension"/>
                                 </GridViewColumn.Header>
                                 <GridViewColumn.HeaderTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <Image Source="/Assets/Images/Extension.png" Width="24" Height="24" Margin="0,0,5,0" VerticalAlignment="Center"/>
                                             <TextBlock Text="확장자" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </DataTemplate>
@@ -80,8 +81,22 @@
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
 
-                            <GridViewColumn Header="게임ID" DisplayMemberBinding="{Binding GameId}" Width="80"/>
-
+                            <GridViewColumn Width="90">
+                                <GridViewColumn.Header>
+                                    <GridViewColumnHeader Tag="FileName">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Image Source="/Assets/Images/CD.png" Width="24" Height="24" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="게임ID" Foreground="#BBBBBB" FontSize="13" FontWeight="Bold" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </GridViewColumnHeader>
+                                </GridViewColumn.Header>
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding GameId}" TextAlignment="Right"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            
                             <GridViewColumn Width="90">
                                 <GridViewColumn.Header>
                                     <GridViewColumnHeader Tag="FileSizeBytes">
@@ -103,7 +118,7 @@
                 
                 <Border IsHitTestVisible="False" Visibility="{Binding HintVisibility}" BorderBrush="#333337" BorderThickness="1" Margin="15,55,15,15" CornerRadius="6" Background="#E6181818">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.9">
-                        <Image Source="/Assets/Images/drag.png" Width="32" Height="32" Margin="0,0,0,12"/>
+                        <Image Source="/Assets/Images/Info.png" Width="32" Height="32" Margin="0,0,0,12"/>
                         <TextBlock Text="파일 또는 폴더를 여기에 드래그&amp;드롭하세요" Foreground="LightGray" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
                         <TextBlock Text="최대 5개의 파일까지 패킹 가능" Foreground="#D4AF37" FontSize="13" FontWeight="Bold" Margin="0,8,0,0" HorizontalAlignment="Center"/>
                         <ItemsControl HorizontalAlignment="Center" Margin="0,4,0,0">
@@ -222,7 +237,7 @@
                                                 </Style.Triggers>
                                             </Style>
                                         </StackPanel.Style>
-                                        <Image Source="/Assets/Images/Drag.png" Width="28" Height="28" Margin="0,0,0,8"/>
+                                        <Image Source="/Assets/Images/Info.png" Width="28" Height="28" Margin="0,0,0,8"/>
                                         <TextBlock Text="이미지 파일을 드래그&amp;드롭하세요" FontSize="12" TextAlignment="Center" HorizontalAlignment="Center" Foreground="#40FFFFFF" Margin="0,0,0,6"/>
                                         <ItemsControl HorizontalAlignment="Center">
                                             <ItemsControl.ItemsPanel>
@@ -290,10 +305,9 @@
                                 <Grid VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
 
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="{Binding HasBgm, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
-                                        <Image Source="/Assets/Images/Drag.png" Width="28" Height="28" Margin="0,0,0,8" HorizontalAlignment="Center"/>
+                                        <Image Source="/Assets/Images/Info.png" Width="28" Height="28" Margin="0,0,0,8" HorizontalAlignment="Center"/>
                                         <TextBlock Text="오디오 파일을 드래그&amp;드롭하거나 클릭하세요" FontSize="12" FontWeight="Bold" TextAlignment="Center" HorizontalAlignment="Center" Foreground="#40FFFFFF" Margin="0,0,0,6"/>
                                         <TextBlock Text="MP3, WAV 파일 추가 시 자동으로 AT3 포맷으로 변환됩니다." FontSize="12" Foreground="#D4AF37" TextAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,6"/>
-
                                         <ItemsControl HorizontalAlignment="Center" Margin="0,4,0,0">
                                             <ItemsControl.ItemsPanel>
                                                 <ItemsPanelTemplate>
@@ -326,13 +340,11 @@
 
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="{Binding HasBgm, Converter={StaticResource BooleanToVisibilityConverter}}">
                                         <TextBlock Text="{Binding BgmFileName}" FontSize="14" FontWeight="Bold" Foreground="White" TextAlignment="Center" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="440"/>
-
                                         <Button Command="{Binding TogglePlayBgmCommand}" Background="#208FA3FF" BorderBrush="#508FA3FF" BorderThickness="1" Padding="12,4" Margin="0,8,0,6" Cursor="Hand" HorizontalAlignment="Center">
                                             <StackPanel Orientation="Horizontal">
                                                 <TextBlock Text="{Binding IsPlayingBgm, Converter={StaticResource BoolToPlayStopTextConverter}, ConverterParameter='정지|재생'}" Foreground="#8FA3FF" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Button>
-
                                         <TextBlock Text="클릭하거나 파일을 드롭하여 변경할 수 있습니다." FontSize="11" Foreground="#D4AF37" TextAlignment="Center" HorizontalAlignment="Center" Margin="0,2,0,0"/>
                                     </StackPanel>
 

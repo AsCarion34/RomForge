@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <VersionPrefix>1.8.0.7</VersionPrefix>
+    <VersionPrefix>1.8.0.8</VersionPrefix>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
@@ -19,6 +19,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Assets\Images\Arcade.png" />
+    <None Remove="Assets\Images\ArcadeCartridge.png" />
     <None Remove="Assets\Images\Blu-ray.png" />
     <None Remove="Assets\Images\Categories.png" />
     <None Remove="Assets\Images\CD.png" />
@@ -48,6 +49,7 @@
     <None Remove="Assets\Images\Recover.png" />
     <None Remove="Assets\Images\Region.png" />
     <None Remove="Assets\Images\Repack.png" />
+    <None Remove="Assets\Images\Resource.png" />
     <None Remove="Assets\Images\Right.png" />
     <None Remove="Assets\Images\Saturn.png" />
     <None Remove="Assets\Images\Search.png" />
@@ -71,6 +73,7 @@
   <ItemGroup>
     <Resource Include="Assets\Images\3DS.png" />
     <Resource Include="Assets\Images\Arcade.png" />
+    <Resource Include="Assets\Images\ArcadeCartridge.png" />
     <Resource Include="Assets\Images\Blu-ray.png" />
     <Resource Include="Assets\Images\Cartridge.png" />
     <Resource Include="Assets\Images\CD.png" />
@@ -99,6 +102,7 @@
     <Resource Include="Assets\Images\PSP.png" />
     <Resource Include="Assets\Images\Recover.png" />
     <Resource Include="Assets\Images\Repack.png" />
+    <Resource Include="Assets\Images\Resource.png" />
     <Resource Include="Assets\Images\Right.png" />
     <Resource Include="Assets\Images\Saturn.png" />
     <Resource Include="Assets\Images\SD.png" />

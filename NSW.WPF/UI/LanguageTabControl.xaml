@@ -175,7 +175,7 @@
                                 </Style.Triggers>
                             </Style>
                         </StackPanel.Style>
-                        <Image Source="/Assets/Images/Drag.png" Width="28" Height="28" Margin="0,0,0,8"/>
+                        <Image Source="/Assets/Images/Info.png" Width="28" Height="28" Margin="0,0,0,8"/>
                         <TextBlock Text="이미지 파일을 드래그&amp;드롭하세요" FontSize="11" TextAlignment="Center" HorizontalAlignment="Center" Foreground="#40FFFFFF" Margin="0,0,0,6"/>
                         <ItemsControl HorizontalAlignment="Center">
                             <ItemsControl.ItemsPanel>
