@@ -413,8 +413,13 @@ public class Nca
 
     public IStorage OpenRawStorageWithPatch(Nca patchNca, int index)
     {
-        IStorage patchStorage = patchNca.OpenRawStorage(index);
         IStorage baseStorage = SectionExists(index) ? OpenRawStorage(index) : new NullStorage();
+        return CreatePatchedRawStorage(patchNca, index, baseStorage);
+    }
+
+    private static IStorage CreatePatchedRawStorage(Nca patchNca, int index, IStorage baseStorage)
+    {
+        IStorage patchStorage = patchNca.OpenRawStorage(index);
 
         patchStorage.GetSize(out long patchSize).ThrowIfFailure();
         baseStorage.GetSize(out long baseSize).ThrowIfFailure();
@@ -445,6 +450,27 @@ public class Nca
         storage.SetStorage(1, patchStorage, 0, patchSize);
 
         return storage;
+    }
+
+    public IStorage OpenStorageWithoutBase(int index, IntegrityCheckLevel integrityCheckLevel)
+    {
+        IStorage rawStorage = CreatePatchedRawStorage(this, index, new NullStorage());
+        NcaFsHeader header = GetFsHeader(index);
+
+        IStorage returnStorage = CreateVerificationStorage(integrityCheckLevel, header, rawStorage);
+
+        if (header.ExistsCompressionLayer())
+        {
+            returnStorage = OpenCompressedStorage(header, returnStorage);
+        }
+
+        return returnStorage;
+    }
+
+    public IFileSystem OpenFileSystemWithoutBase(NcaSectionType type, IntegrityCheckLevel integrityCheckLevel)
+    {
+        int index = GetSectionIndexFromType(type);
+        return OpenFileSystem(OpenStorageWithoutBase(index, integrityCheckLevel), GetFsHeader(index));
     }
 
     public IStorage OpenStorage(int index, IntegrityCheckLevel integrityCheckLevel)

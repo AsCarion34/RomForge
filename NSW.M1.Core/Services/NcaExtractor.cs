@@ -56,7 +56,9 @@ public sealed class NcaExtractor(KeySet keySet, Func<string, bool> shouldExtract
 
         using var fs = updateProg != null
             ? baseProg.OpenFileSystemWithPatch(updateProg, NcaSectionType.Data, IntegrityCheckLevel.None)
-            : baseProg.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.None);
+            : baseProg.IsPatch
+                ? baseProg.OpenFileSystemWithoutBase(NcaSectionType.Data, IntegrityCheckLevel.None)
+                : baseProg.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.None);
 
         ExtractFileSystem(fs, dir, "RomFS", ctx, progress, ct);
 

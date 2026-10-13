@@ -33,7 +33,7 @@
                     </StackPanel>
                 </Border>
 
-                <StackPanel Grid.Column="1" Margin="5,0,5,0" Orientation="Horizontal" VerticalAlignment="Center">
+                <StackPanel Grid.Column="1" Margin="5,0,5,0" Orientation="Horizontal" VerticalAlignment="Center" IsEnabled="{Binding IsIdle}">
                     <Button Background="Transparent" BorderThickness="0" Click="BtnSettings_Click" Height="30" HorizontalContentAlignment="Center" Margin="5,0,0,0" Padding="0" Style="{StaticResource GrayButton}" VerticalContentAlignment="Center" Width="36" x:Name="btnSettings">
                         <Button.ToolTip>
                             <ToolTip Content="압축 설정"/>
