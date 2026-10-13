@@ -24,7 +24,7 @@ public class PackingMainViewModel : ToolTabViewModel
 
     public record FmvFixOption(string Label, uint Value);
 
-    public ObservableCollection<FmvFixOption> FmvFixPresets { get; } = [ new("0x04 (다수 게임에서 검증됨)", 0x04), new("0x07 (실험적)", 0x07) ];
+    public ObservableCollection<FmvFixOption> FmvFixPresets { get; } = [new("0x04 (다수 게임에서 검증됨)", 0x04), new("0x07 (실험적)", 0x07)];
 
     private readonly DiscImportService _importService = new();
     private readonly CoverArtUpdater _coverArtUpdater = new();
@@ -436,45 +436,18 @@ public class PackingMainViewModel : ToolTabViewModel
             await Task.Run(() =>
             {
                 byte[] rawBytes = File.ReadAllBytes(filePath);
+                byte[] bgm = ext == ".at3" ? rawBytes : At3Encoder.Convert(rawBytes, ext == ".wav", options);
 
-                if (ext == ".at3")
+                BgmBytes = bgm;
+
+                try
                 {
-                    BgmBytes = rawBytes;
-                    _previewPcmBytes = null;
+                    _previewPcmBytes = At3Decoder.ToWav(bgm);
                 }
-                else
+                catch (Exception ex)
                 {
-                    using (var reader = new AudioFileReader(filePath))
-                    {
-                        long maxSamples = reader.WaveFormat.SampleRate * options.MaxSeconds;
-                        var sampleBuffer = new float[reader.WaveFormat.Channels * 4096];
-
-                        using (var memStream = new MemoryStream())
-                        {
-                            using (var writer = new WaveFileWriter(memStream, reader.WaveFormat))
-                            {
-                                long totalSamplesWritten = 0;
-                                int read;
-                                while ((read = reader.Read(sampleBuffer, 0, sampleBuffer.Length)) > 0)
-                                {
-                                    long remainingSamples = maxSamples - totalSamplesWritten;
-                                    if (remainingSamples <= 0)
-                                        break;
-
-                                    int samplesToWrite = (int)Math.Min(read, remainingSamples);
-                                    writer.WriteSamples(sampleBuffer, 0, samplesToWrite);
-                                    totalSamplesWritten += samplesToWrite / reader.WaveFormat.Channels;
-
-                                    if (totalSamplesWritten >= maxSamples)
-                                        break;
-                                }
-                            }
-                            _previewPcmBytes = memStream.ToArray();
-                        }
-                    }
-
-                    bool isWav = ext == ".wav";
-                    BgmBytes = At3Encoder.Convert(rawBytes, isWav, options);
+                    _previewPcmBytes = null;
+                    AppendLog($"미리듣기 준비 실패: {ex.Message}", LogLevel.Info);
                 }
             });
 
