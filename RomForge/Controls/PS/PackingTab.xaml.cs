@@ -16,17 +16,14 @@ public partial class PackingTab : UserControl
 
     private PackingMainViewModel? ViewModel => DataContext as PackingMainViewModel;
 
-    public PackingTab()
-    {
-        InitializeComponent();
-    }
+    public PackingTab() => InitializeComponent();
 
     private void LvFiles_Drop(object sender, DragEventArgs e)
     {
         if (e.Data.GetData(DataFormats.FileDrop) is not string[] paths)
             return;
 
-        ViewModel?.AddPaths(paths);
+        ViewModel?.Files.AddPaths(paths);
     }
 
     private void LvFiles_KeyUp(object sender, KeyEventArgs e)
@@ -35,7 +32,7 @@ public partial class PackingTab : UserControl
             return;
 
         var selected = lvFiles.SelectedItems.Cast<DiscFileItem>().ToList();
-        ViewModel?.RemoveItems(selected);
+        ViewModel?.Files.Remove(selected);
     }
 
     private void Icon0_Drop(object sender, DragEventArgs e)
@@ -53,7 +50,7 @@ public partial class PackingTab : UserControl
             return;
 
         byte[] rawBytes = File.ReadAllBytes(files[0]);
-        ViewModel?.SetIcon0FromBytes(rawBytes);
+        ViewModel?.Images.SetIcon0FromBytes(rawBytes);
     }
 
     private void Pic0_Drop(object sender, DragEventArgs e)
@@ -71,7 +68,7 @@ public partial class PackingTab : UserControl
             return;
 
         byte[] rawBytes = File.ReadAllBytes(files[0]);
-        ViewModel?.SetPic0FromBytes(rawBytes);
+        ViewModel?.Images.SetPic0FromBytes(rawBytes);
     }
 
     private void Pic1_Drop(object sender, DragEventArgs e)
@@ -89,28 +86,16 @@ public partial class PackingTab : UserControl
             return;
 
         byte[] rawBytes = File.ReadAllBytes(files[0]);
-        ViewModel?.SetPic1FromBytes(rawBytes);
+        ViewModel?.Images.SetPic1FromBytes(rawBytes);
     }
 
-    private void Icon0_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        ExportImage(ViewModel?.Icon0Image, "Cover.PNG");
-    }
+    private void Icon0_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => ExportImage(ViewModel?.Images.Icon0Image, "Cover.PNG");
 
-    private void Pic0_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        ExportImage(ViewModel?.Pic0Image, "Logo.PNG");
-    }
+    private void Pic0_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => ExportImage(ViewModel?.Images.Pic0Image, "Logo.PNG");
 
-    private void Pic1_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        ExportImage(ViewModel?.Pic1Image, "Background.PNG");
-    }
+    private void Pic1_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => ExportImage(ViewModel?.Images.Pic1Image, "Background.PNG");
 
-    private void BaseImage_Reset_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel?.ResetBaseImages();
-    }
+    private void BaseImage_Reset_Click(object sender, RoutedEventArgs e) => ViewModel?.Images.ResetBaseImages();
 
     private void BootLogo_Drop(object sender, DragEventArgs e)
     {
@@ -128,19 +113,16 @@ public partial class PackingTab : UserControl
 
         byte[] rawBytes = File.ReadAllBytes(files[0]);
 
-        ViewModel?.SetBootLogoFromBytes(rawBytes);
+        ViewModel?.Images.SetBootLogoFromBytes(rawBytes);
     }
 
     private void BootLogo_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (ViewModel?.BootLogoImage != null)
-            ExportImage(ViewModel.BootLogoImage, "BootLogo.PNG");
+        if (ViewModel?.Images.BootLogoImage != null)
+            ExportImage(ViewModel.Images.BootLogoImage, "BootLogo.PNG");
     }
 
-    private void BootLogo_Reset_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel?.ResetBootLogo();
-    }
+    private void BootLogo_Reset_Click(object sender, RoutedEventArgs e) => ViewModel?.Images.ResetBootLogo();
 
     private void Bgm_Drop(object sender, DragEventArgs e)
     {
@@ -156,7 +138,7 @@ public partial class PackingTab : UserControl
 
     private void Bgm_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (ViewModel is { IsBgmConverting: true })
+        if (ViewModel is { Bgm.IsConverting: true })
             return;
 
         var dialog = new Microsoft.Win32.OpenFileDialog
@@ -168,27 +150,18 @@ public partial class PackingTab : UserControl
             ProcessAudioFile(dialog.FileName);
     }
 
-    private void BgmPlayer_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-    {
-        e.Handled = true;
-    }
+    private void BgmPlayer_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => e.Handled = true;
 
-    private void BgmSlider_DragStarted(object sender, System.Windows.Controls.Primitives.DragStartedEventArgs e)
-    {
-        ViewModel?.BeginPreviewSeek();
-    }
+    private void BgmSlider_DragStarted(object sender, System.Windows.Controls.Primitives.DragStartedEventArgs e) => ViewModel?.Bgm.Preview.BeginSeek();
 
-    private void BgmSlider_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
-    {
-        ViewModel?.EndPreviewSeek();
-    }
+    private void BgmSlider_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e) => ViewModel?.Bgm.Preview.EndSeek();
 
     private void Bgm_Reset_Click(object sender, RoutedEventArgs e)
     {
-        if (ViewModel is { IsBgmConverting: true })
+        if (ViewModel is { Bgm.IsConverting: true })
             return;
 
-        ViewModel?.ResetBgm();
+        ViewModel?.Bgm.Reset();
     }
 
     private async void ProcessAudioFile(string filePath)
@@ -199,7 +172,7 @@ public partial class PackingTab : UserControl
             return;
 
         if (ViewModel != null)
-            await ViewModel.SetBgmPathAsync(filePath);
+            await ViewModel.Bgm.SetPathAsync(filePath);
     }
 
     private void ExportImage(BitmapImage? bmp, string fileNameBase)
@@ -241,11 +214,11 @@ public partial class PackingTab : UserControl
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
             Multiselect = true,
-            Filter = PackingMainViewModel.GetFileDialogFilter()
+            Filter = DiscListViewModel.GetFileDialogFilter()
         };
 
         if (dialog.ShowDialog() == true)
-            ViewModel?.AddPaths(dialog.FileNames);
+            ViewModel?.Files.AddPaths(dialog.FileNames);
     }
 
     private void BtnAddFolder_Click(object sender, RoutedEventArgs e)
@@ -257,20 +230,17 @@ public partial class PackingTab : UserControl
         };
 
         if (dialog.ShowDialog() == true)
-            ViewModel?.AddPaths([dialog.SelectedPath]);
+            ViewModel?.Files.AddPaths([dialog.SelectedPath]);
     }
 
     private void BtnRemove_Click(object sender, RoutedEventArgs e)
     {
         var selected = lvFiles.SelectedItems.Cast<DiscFileItem>().ToList();
 
-        ViewModel?.RemoveItems(selected);
+        ViewModel?.Files.Remove(selected);
     }
 
-    private void BtnClear_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel?.ClearItems();
-    }
+    private void BtnClear_Click(object sender, RoutedEventArgs e) => ViewModel?.Files.Clear();
 
     private void LvFiles_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
