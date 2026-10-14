@@ -145,24 +145,17 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
             {
                 _lastProcessedPatchPath = namingPatchPath;
 
-                if (namingPatchPath is not null && File.Exists(namingPatchPath))
-                {
-                    var (v, d, l) = PatchVersionInfoExtractor.Extract(Path.GetFileName(namingPatchPath));
-                    _cachedPatchVersion = v;
-                    _cachedPatchDate = d ?? File.GetLastWriteTime(namingPatchPath).ToString("yyMMdd");
-                    _cachedPatchLanguage = l;
-                }
-                else
-                {
-                    _cachedPatchVersion = null;
-                    _cachedPatchDate = null;
-                    _cachedPatchLanguage = null;
-                }
+                var (v, d, l) = PatchVersionInfoExtractor.GetPatchMetadata(namingPatchPath);
+
+                _cachedPatchVersion = v;
+                _cachedPatchDate = d;
+                _cachedPatchLanguage = l;
             }
 
             string version = _cachedPatchVersion ?? "1.0";
             string date = _cachedPatchDate ?? DateTime.Now.ToString("yyMMdd");
             string? language = _cachedPatchLanguage;
+
             string result = PatchVersionInfoExtractor.ApplyFormat(baseFileName, version, date, language, NamingFormat, AppConfig.Instance.Common.Language);
 
             NamingPreview = result;

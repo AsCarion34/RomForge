@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Text.RegularExpressions;
 
 namespace RomForge.Core.Services.Patch;
@@ -11,8 +9,7 @@ public static class PatchVersionInfoExtractor
 
     private static readonly Regex VersionRegex = new(@"(?<![A-Za-z0-9])(?:v(?<Version>\d+(?:\.\d+)*[A-Za-z]*)|(?<Version>\d+\.\d+[A-Za-z]*)(?:v)?)(?![A-Za-z0-9])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex DateRegex = new(@"(?<!\d)(?:\d{4}|(\d{2}))(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])(?!\d)", RegexOptions.Compiled);
-    private static readonly Regex LanguageRegex = new(@"(?<![A-Za-z])(?<Language>Japan|USA|Europe|Asia|Korea|Korean|World|En|Ja|Ko|Zh|Fr|De|Es|It|J|K|U|E|C|A|W|F|D|S|I)(?![A-Za-z])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
+    private static readonly Regex LanguageRegex = new(@"(?<=[\(\[\-_]|\b)(?<Language>Japan|USA|Europe|Asia|Korea|Korean|World|En|Ja|Ko|Zh|Fr|De|Es|It)(?=\b|[\)\]\-_])|(?<=[\(\[]\s*)(?<Language>[JKUECAWFDSI])(?=\s*[\)\]])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex FileNameTokenRegex = new(@"\{fileName\}", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex VersionTokenRegex = new(@"[ _\-]?\{Version\}[ _\-]?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex DateTokenRegex = new(@"\{Date(?::(?<Format>[^{}]+))?\}", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -95,7 +92,6 @@ public static class PatchVersionInfoExtractor
         var versionMatch = VersionRegex.Match(name);
         var dateMatch = DateRegex.Match(name);
         var langMatch = LanguageRegex.Match(name);
-
         string? version = versionMatch.Success ? versionMatch.Groups["Version"].Value : null;
         string? language = langMatch.Success ? langMatch.Groups["Language"].Value : null;
         string? date = null;
@@ -114,9 +110,7 @@ public static class PatchVersionInfoExtractor
         if (!namingEnabled)
             return fileName;
 
-        var (version, date, language) = Extract(Path.GetFileName(patchFilePath));
-
-        date ??= File.GetCreationTime(patchFilePath).ToString("yyMMdd");
+        var (version, date, language) = GetPatchMetadata(patchFilePath);
 
         return ApplyFormat(fileName, version, date, language, namingFormat, appLanguage);
     }
@@ -127,23 +121,20 @@ public static class PatchVersionInfoExtractor
 
         string? originalLanguage = null;
         var origLangMatch = LanguageRegex.Match(rawNameOnly);
+
         if (origLangMatch.Success)
-        {
             originalLanguage = origLangMatch.Groups["Language"].Value;
-        }
 
         string patchLanguage = !string.IsNullOrEmpty(language) ? language : appLanguage;
-
         string nameOnly = Regex.Replace(rawNameOnly, @"[\(\[]\s*(?:Japan|USA|Europe|Asia|Korea|Korean|World|En|Ja|Ko|Zh|Fr|De|Es|It|J|K|U|E|C|A|W|F|D|S|I)\s*[\)\]]", string.Empty, RegexOptions.IgnoreCase).Trim();
+
         nameOnly = Regex.Replace(nameOnly, @"\s+", " ");
 
         string ext = Path.GetExtension(fileName);
         string format = IsValidFormat(namingFormat) ? namingFormat! : DefaultNamingFormat;
-
         string result = FileNameTokenRegex.Replace(format, nameOnly);
 
         result = VersionTokenRegex.Replace(result, m => version is null ? string.Empty : Regex.Replace(m.Value, @"\{Version\}", version, RegexOptions.IgnoreCase));
-
         result = Lan1TokenRegex.Replace(result, m =>
         {
             if (string.IsNullOrEmpty(originalLanguage))
@@ -230,5 +221,23 @@ public static class PatchVersionInfoExtractor
             return false;
 
         return true;
+    }
+        public static (string? Version, string Date, string? Language) GetPatchMetadata(string? patchFilePath)
+    {
+        string? version = null;
+        string? date = null;
+        string? language = null;
+
+        if (!string.IsNullOrEmpty(patchFilePath) && File.Exists(patchFilePath))
+        {
+            var extracted = Extract(Path.GetFileName(patchFilePath));
+            version = extracted.Version;
+            date = extracted.Date;
+            language = extracted.Language;
+
+            date ??= File.GetLastWriteTime(patchFilePath).ToString("yyMMdd");
+        }
+
+        return (version, date ?? DateTime.Now.ToString("yyMMdd"), language);
     }
 }
