@@ -12,18 +12,16 @@ public static class SwitchBulkPatchMatcher
     public static BulkPatchReport MatchFromFolder(IReadOnlyList<GameFile> targets, string rootFolder, Func<GameFile, IReadOnlyList<string>> expectedIds)
     {
         var source = SwitchPatchSource.FromFolder(rootFolder);
-
         return Match(targets, source, null, expectedIds, file => FindNamedArchive(rootFolder, file.TitleID));
     }
 
     public static BulkPatchReport MatchFromArchive(IReadOnlyList<GameFile> targets, IArchivePatchSource archive, string archivePath, string? password, Func<GameFile, IReadOnlyList<string>> expectedIds)
     {
         var source = SwitchPatchSource.FromArchive(archivePath, archive);
-
         return Match(targets, source, password, expectedIds, _ => null);
     }
 
-    private static readonly string[] sourceArray = [ ".zip", ".7z" ];
+    private static readonly string[] sourceArray = [".zip", ".7z"];
 
     private static string? FindNamedArchive(string rootFolder, string? titleId)
     {
@@ -72,7 +70,7 @@ public static class SwitchBulkPatchMatcher
             if (path == null)
             {
                 if (!isDlc && !isUpdate)
-                    details.AppendLine($"✘ {name}: 일치하는 폴더 없음 (필요: {string.Join(", ", ids)})");
+                    details.AppendLine($"{name}: 일치하는 폴더 없음 (필요: {string.Join(", ", ids)})");
 
                 continue;
             }
@@ -91,21 +89,21 @@ public static class SwitchBulkPatchMatcher
                 continue;
 
             if (note != null)
-                details.AppendLine($"✔ {name}: {note}");
+                details.AppendLine($"{name}: {note}");
             else
-                details.AppendLine($"✔ {name}: 프로그램 {match.Covered.Count}/{ids.Count}" + (match.Missing.Count > 0 ? $" — 패치 없음: {string.Join(", ", match.Missing)}" : string.Empty));
+                details.AppendLine($"{name}: 프로그램 {match.Covered.Count}/{ids.Count}" + (match.Missing.Count > 0 ? $" | 일부 프로그램 패치 없음: {string.Join(", ", match.Missing)}" : string.Empty));
         }
 
         if (dlcTotal > 0)
             details.AppendLine($"DLC {dlcMatched}/{dlcTotal}");
 
         if (!source.HasIdDirs && !source.HasGeneric)
-            details.AppendLine("타이틀 ID 폴더도 exefs/romfs/ips/xdelta도 찾지 못했습니다.");
+            details.AppendLine("[지정 실패] 타이틀 ID 폴더도 exefs/romfs/ips/xdelta도 찾지 못했습니다.");
 
         var unused = source.FoundIds.Where(id => !allIds.Contains(id)).ToList();
 
         if (unused.Count > 0)
-            details.AppendLine($"불러온 게임과 무관한 패치 폴더 {unused.Count}개: {string.Join(", ", unused.Take(5))}{(unused.Count > 5 ? " ..." : string.Empty)}");
+            details.AppendLine($"[지정 경고] 불러온 게임과 무관한 패치 폴더 {unused.Count}개: {string.Join(", ", unused.Take(5))}{(unused.Count > 5 ? " ..." : string.Empty)}");
 
         return new BulkPatchReport(targets.Count, matched, details.ToString().TrimEnd());
     }

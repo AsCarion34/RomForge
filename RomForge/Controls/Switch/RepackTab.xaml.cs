@@ -23,6 +23,9 @@ public partial class RepackTab : UserControl
         if (System.ComponentModel.DesignerProperties.GetIsInDesignMode(this))
             return;
 
+        if (titleList.DataContext is SwitchTitleListViewModel vm)
+            vm.LogAction = (msg, level) => ViewModel.Log(msg, level);
+
         titleList.FileListChanged += SyncAll;
         SyncAll();
     }
