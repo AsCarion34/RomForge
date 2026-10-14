@@ -4,8 +4,10 @@ using NSW.Core;
 using NSW.WPF.Services;
 using NSW.WPF.ViewModels;
 using Patch.Core.Services;
+using RomForge.Core.Services.Switch;
 using RomForge.Views;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -123,9 +125,9 @@ public partial class SwitchTitleListControl : UserControl
         if (dlg.ShowDialog() != System.Windows.Forms.DialogResult.OK)
             return;
 
-        int matched = SwitchBulkPatchMatcher.MatchFromFolder(targets, dlg.SelectedPath);
+        var report = SwitchBulkPatchMatcher.MatchFromFolder(targets, dlg.SelectedPath, GetExpectedIds);
 
-        ShowBulkPatchResult(targets.Count, matched);
+        ShowBulkPatchResult(report);
     }
 
     private async void BulkPatchMenu_FromArchive_Click(object sender, RoutedEventArgs e)
@@ -144,7 +146,7 @@ public partial class SwitchTitleListControl : UserControl
         if (dlg.ShowDialog() != true)
             return;
 
-        int matched;
+        BulkPatchReport report;
 
         try
         {
@@ -155,7 +157,7 @@ public partial class SwitchTitleListControl : UserControl
 
             using var archive = opened.Value.Archive;
 
-            matched = SwitchBulkPatchMatcher.MatchFromArchive(targets, archive, dlg.FileName, opened.Value.Password);
+            report = SwitchBulkPatchMatcher.MatchFromArchive(targets, archive, dlg.FileName, opened.Value.Password, GetExpectedIds);
         }
         catch (Exception ex)
         {
@@ -163,7 +165,7 @@ public partial class SwitchTitleListControl : UserControl
             return;
         }
 
-        ShowBulkPatchResult(targets.Count, matched);
+        ShowBulkPatchResult(report);
     }
 
     private List<GameFile>? GetBulkPatchTargets()
@@ -179,7 +181,77 @@ public partial class SwitchTitleListControl : UserControl
         return targets;
     }
 
-    private static void ShowBulkPatchResult(int total, int matched) => MessageBox.Show($"{total}개 중 {matched}개에 패치 매칭됨.", "한글패치 일괄 지정", MessageBoxButton.OK, MessageBoxImage.Information);
+    private static void ShowBulkPatchResult(BulkPatchReport report)
+    {
+        string text = $"{report.Total}개 중 {report.Matched}개에 패치 지정됨.";
+
+        if (report.Details.Length > 0)
+            text += "\n\n" + report.Details;
+
+        MessageBox.Show(text, "한글패치 일괄 지정", MessageBoxButton.OK, report.Matched == 0 ? MessageBoxImage.Warning : MessageBoxImage.Information);
+    }
+
+    private IReadOnlyList<string> GetExpectedIds(GameFile file)
+    {
+        if (file.FileType.Contains('D'))
+            return [(file.TitleID ?? string.Empty).ToUpperInvariant()];
+
+        var baseRow = GameFiles.FirstOrDefault(f => f.FileType.Contains('B'));
+        var updateRow = GameFiles.FirstOrDefault(f => f.FileType.Contains('U'));
+        string? baseId = baseRow?.TitleID;
+
+        if (string.IsNullOrEmpty(baseId) && ulong.TryParse(updateRow?.TitleID, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ulong updateValue))
+            baseId = (updateValue & ~0x800UL).ToString("X16");
+
+        if (!ulong.TryParse(baseId, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out ulong baseValue))
+            return [(file.TitleID ?? string.Empty).ToUpperInvariant()];
+
+        IEnumerable<byte> baseOffsets = baseRow?.ProgramIdOffsets ?? Enumerable.Empty<byte>();
+        IEnumerable<byte> updateOffsets = updateRow?.ProgramIdOffsets ?? Enumerable.Empty<byte>();
+        var offsets = baseOffsets.Concat(updateOffsets).Distinct().OrderBy(o => o).ToList();
+
+        if (offsets.Count == 0)
+            offsets.Add(0);
+
+        return [.. offsets.Select(o => (baseValue + o).ToString("X16"))];
+    }
+
+    private bool TryAssignPatch(GameFile file, SwitchPatchSource source, string? password)
+    {
+        var ids = GetExpectedIds(file);
+        var match = source.Match(ids);
+        string? path = match.Path;
+        string? notice = null;
+
+        if (path == null)
+        {
+            if (source.HasIdDirs || !source.HasGeneric)
+            {
+                string reason = source.HasIdDirs
+                    ? $"이 게임과 일치하는 타이틀 ID 폴더가 없어 지정하지 않았습니다.\n\n패치: {string.Join(", ", source.FoundIds)}\n게임: {string.Join(", ", ids)}"
+                    : "패치에서 타이틀 ID 폴더도, exefs/romfs/ips/xdelta도 찾지 못해 지정하지 않았습니다.";
+
+                MessageBox.Show(reason, "한글패치 지정", MessageBoxButton.OK, MessageBoxImage.Warning);
+
+                return false;
+            }
+
+            path = source.GenericPath;
+
+            if (ids.Count > 1)
+                notice = "타이틀 ID 폴더가 없는 일반 패치입니다.\n프로그램이 여러 개인 게임이라 모든 프로그램에 같은 파일이 적용됩니다.";
+        }
+        else if (match.Missing.Count > 0)
+            notice = $"패치가 없는 프로그램: {string.Join(", ", match.Missing)}\n해당 프로그램은 원본 그대로 빌드됩니다.";
+
+        file.PatchPath = path;
+        file.PatchPassword = password;
+
+        if (notice != null)
+            MessageBox.Show(notice, "한글패치 지정", MessageBoxButton.OK, MessageBoxImage.Warning);
+
+        return true;
+    }
 
     private void BtnRemoveFile_Click(object sender, RoutedEventArgs e)
     {
@@ -278,7 +350,7 @@ public partial class SwitchTitleListControl : UserControl
         };
 
         if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            file.PatchPath = dlg.SelectedPath;
+            TryAssignPatch(file, SwitchPatchSource.FromFolder(dlg.SelectedPath), null);
     }
 
     private async void PatchMenu_SelectArchive_Click(object sender, RoutedEventArgs e)
@@ -323,7 +395,7 @@ public partial class SwitchTitleListControl : UserControl
         if (ArchivePatchSourceFactory.IsArchivePath(path))
             await TryAssignArchivePatchAsync(file, path);
         else
-            file.PatchPath = path;
+            TryAssignPatch(file, SwitchPatchSource.FromFolder(path), null);
     }
 
     private async Task<bool> TryAssignArchivePatchAsync(GameFile file, string archivePath)
@@ -335,12 +407,11 @@ public partial class SwitchTitleListControl : UserControl
             if (opened == null)
                 return false;
 
+            var source = SwitchPatchSource.FromArchive(archivePath, opened.Value.Archive);
+
             opened.Value.Archive.Dispose();
 
-            file.PatchPath = archivePath;
-            file.PatchPassword = opened.Value.Password;
-
-            return true;
+            return TryAssignPatch(file, source, opened.Value.Password);
         }
         catch (Exception ex)
         {

@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Windows;
 
-namespace RomForge.Controls.Switch;
+namespace RomForge.Core.Services.Switch;
 
 public static class SwitchPatchDropValidator
 {

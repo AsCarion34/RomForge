@@ -2,7 +2,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 
-namespace RomForge.Controls.Switch;
+namespace RomForge.Core.Services.Switch;
 
 public sealed class GameFilePatchSyncManager(ObservableCollection<GameFile> gameFiles)
 {

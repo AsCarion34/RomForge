@@ -7,7 +7,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using Res = NSW.Core.Properties.Resources;
 
-namespace RomForge.Controls.Switch;
+namespace RomForge.Core.Services.Switch;
 
 public sealed class SwitchGameFileImporter(ObservableCollection<GameFile> gameFiles, GameFilePatchSyncManager patchSync, HashSet<string> supportedExtensions)
 {
@@ -50,6 +50,7 @@ public sealed class SwitchGameFileImporter(ObservableCollection<GameFile> gameFi
                         var baseVm = new GameFile(path)
                         {
                             FileType = "B",
+                            ProgramIdOffsets = app.ProgramIdOffsets ?? [],
                             TitleID = app.TitleId,
                             Version = app.GetEffectiveDisplayVersion(),
                             TitleName = titleName,
@@ -66,6 +67,7 @@ public sealed class SwitchGameFileImporter(ObservableCollection<GameFile> gameFi
                         var updateVm = new GameFile(path)
                         {
                             FileType = "U",
+                            ProgramIdOffsets = patch.ProgramIdOffsets ?? [],
                             TitleID = patch.TitleId,
                             Version = patch.GetEffectiveDisplayVersion(),
                             TitleName = titleName,

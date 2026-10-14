@@ -22,6 +22,7 @@
     <ProjectReference Include="..\CD.Core\CD.Core.csproj" />
     <ProjectReference Include="..\CHD.Core\CHD.Core.csproj" />
     <ProjectReference Include="..\Common.WPF\Common.WPF.csproj" />
+    <ProjectReference Include="..\NSW.M1.Core\NSW.M1.Core.csproj" />
     <ProjectReference Include="..\NSW.WPF\NSW.WPF.csproj" />
     <ProjectReference Include="..\Patch.Core\Patch.Core.csproj" />
     <ProjectReference Include="..\PBP.Core\PBP.Core.csproj" />

@@ -10,56 +10,44 @@ public static class NspPatchApplier
     {
         string exefsDir = unpackResult.ExefsDirs.GetValueOrDefault(sourceIdOffset, string.Empty);
         string romfsDir = unpackResult.RomfsDirs.GetValueOrDefault(sourceIdOffset, string.Empty);
-        string programId = GetProgramId(exefsDir, romfsDir);
+
+        if (sourceIdOffset != 0 || unpackResult.ExefsDirs.Count > 1)
+            patchPath = ResolveProgramPatchPath(patchPath, GetProgramId(exefsDir, romfsDir));
+
         int matchedCount = 0;
 
         if (ArchivePatchSourceFactory.IsArchivePath(patchPath))
         {
             using var archive = ArchivePatchSourceFactory.Open(patchPath, patchPassword);
 
-            var scoped = ScopeArchive(archive, programId, sourceIdOffset, log);
-
-            if (scoped == null)
-                return;
-
-            if (exefsDir.Length > 0)
-                matchedCount += NspPatchMergeHelper.ApplyArchiveSubDir(scoped, "exefs", exefsDir, progress, log, "한글패치 ExeFS");
-
-            if (romfsDir.Length > 0)
-                matchedCount += NspPatchMergeHelper.ApplyArchiveSubDir(scoped, "romfs", romfsDir, progress, log, "한글패치 RomFS");
-
-            matchedCount += NspXdeltaPatcher.ApplyArchiveXdelta(scoped, exefsDir, romfsDir, progress, log);
-            matchedCount += NspExefsPatchApplier.ApplyArchiveExefsPatches(scoped, exefsDir, progress, log);
+            matchedCount += NspPatchMergeHelper.ApplyArchiveSubDir(archive, "exefs", exefsDir, progress, log, "한글패치 ExeFS");
+            matchedCount += NspPatchMergeHelper.ApplyArchiveSubDir(archive, "romfs", romfsDir, progress, log, "한글패치 RomFS");
+            matchedCount += NspXdeltaPatcher.ApplyArchiveXdelta(archive, exefsDir, romfsDir, progress, log);
+            matchedCount += NspExefsPatchApplier.ApplyArchiveExefsPatches(archive, exefsDir, progress, log);
         }
         else
         {
-            string? root = ResolveFolderRoot(patchPath, programId, sourceIdOffset, log);
+            string? patchExefs = PatchFolderResolver.FindSubDir(patchPath, "exefs");
+            string? patchRomfs = PatchFolderResolver.FindSubDir(patchPath, "romfs");
 
-            if (root == null)
-                return;
-
-            string? patchExefs = PatchFolderResolver.FindSubDir(root, "exefs");
-            string? patchRomfs = PatchFolderResolver.FindSubDir(root, "romfs");
-
-            if (patchExefs != null && exefsDir.Length > 0)
+            if (patchExefs != null)
             {
                 progress.Report((-1, "한글패치 ExeFS 병합 중..."));
                 log($"한글패치 ExeFS 병합: {patchExefs}", LogLevel.Info);
-
                 matchedCount += NspPatchMergeHelper.MergeDirectory(patchExefs, exefsDir, log);
             }
-            if (patchRomfs != null && romfsDir.Length > 0)
+
+            if (patchRomfs != null)
             {
                 progress.Report((-1, "한글패치 RomFS 병합 중..."));
                 log($"한글패치 RomFS 병합: {patchRomfs}", LogLevel.Info);
-
                 matchedCount += NspPatchMergeHelper.MergeDirectory(patchRomfs, romfsDir, log);
             }
 
-            if (Directory.Exists(root))
+            if (Directory.Exists(patchPath))
             {
-                matchedCount += NspXdeltaPatcher.ApplyFolderXdelta(root, exefsDir, romfsDir, progress, log);
-                matchedCount += NspExefsPatchApplier.ApplyFolderExefsPatches(root, exefsDir, progress, log);
+                matchedCount += NspXdeltaPatcher.ApplyFolderXdelta(patchPath, exefsDir, romfsDir, progress, log);
+                matchedCount += NspExefsPatchApplier.ApplyFolderExefsPatches(patchPath, exefsDir, progress, log);
             }
         }
 
@@ -71,47 +59,38 @@ public static class NspPatchApplier
     {
         string dir = exefsDir.Length > 0 ? exefsDir : romfsDir;
 
-        if (dir.Length == 0)
-            return string.Empty;
-
-        return Path.GetFileName(Path.GetDirectoryName(dir)) ?? string.Empty;
+        return dir.Length == 0 ? string.Empty : Path.GetFileName(Path.GetDirectoryName(dir)) ?? string.Empty;
     }
 
-    private static IArchivePatchSource? ScopeArchive(IArchivePatchSource archive, string programId, byte sourceIdOffset, Action<string, LogLevel> log)
+    private static string ResolveProgramPatchPath(string patchPath, string programId)
     {
-        if (!ArchivePatchFolderResolver.HasTitleIdDirs(archive.EntryPaths))
-            return sourceIdOffset == 0 ? archive : null;
+        if (programId.Length == 0)
+            return patchPath;
 
-        string? prefix = programId.Length == 0 ? null : ArchivePatchFolderResolver.FindTitleIdDir(archive.EntryPaths, programId);
+        var (archivePath, scope) = ArchivePatchSourceFactory.SplitScope(patchPath);
 
-        if (prefix == null)
+        if (scope.Length > 0)
         {
-            log($"한글패치에 프로그램 {programId} 폴더가 없어 건너뜁니다.", LogLevel.Info);
-            return null;
+            string trimmed = scope.Trim('/');
+            int slash = trimmed.LastIndexOf('/');
+            string name = trimmed[(slash + 1)..];
+
+            if (!IsTitleIdName(name) || string.Equals(name, programId, StringComparison.OrdinalIgnoreCase))
+                return patchPath;
+
+            return ArchivePatchSourceFactory.CombineScope(archivePath, trimmed[..(slash + 1)] + programId + "/");
         }
 
-        log($"한글패치 범위: {prefix}", LogLevel.Info);
+        string folder = patchPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        string folderName = Path.GetFileName(folder);
 
-        return new ScopedArchivePatchSource(archive, prefix);
+        if (!IsTitleIdName(folderName) || string.Equals(folderName, programId, StringComparison.OrdinalIgnoreCase))
+            return patchPath;
+
+        return Path.Combine(Path.GetDirectoryName(folder) ?? string.Empty, programId);
     }
 
-    private static string? ResolveFolderRoot(string patchPath, string programId, byte sourceIdOffset, Action<string, LogLevel> log)
-    {
-        if (!PatchFolderResolver.HasTitleIdDirs(patchPath))
-            return sourceIdOffset == 0 ? patchPath : null;
-
-        string? dir = programId.Length == 0 ? null : PatchFolderResolver.FindSubDir(patchPath, programId);
-
-        if (dir == null)
-        {
-            log($"한글패치에 프로그램 {programId} 폴더가 없어 건너뜁니다.", LogLevel.Info);
-            return null;
-        }
-
-        log($"한글패치 범위: {dir}", LogLevel.Info);
-
-        return dir;
-    }
+    private static bool IsTitleIdName(string name) => name.Length == 16 && name.All(Uri.IsHexDigit);
 
     public static void ApplyDlcPatch(string patchPath, string titleIdStr, string romfsDir, IProgress<(int pct, string label)> progress, Action<string, LogLevel> log, string? patchPassword = null)
     {
@@ -135,7 +114,6 @@ public static class NspPatchApplier
             {
                 progress.Report((-1, $"DLC 패치 RomFS 병합 중... ({titleIdStr})"));
                 log($"DLC 패치 RomFS 병합: {patchRomfs}", LogLevel.Info);
-
                 matchedCount += NspPatchMergeHelper.MergeDirectory(patchRomfs, romfsDir, log);
             }
 

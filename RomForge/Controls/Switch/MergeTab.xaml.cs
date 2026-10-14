@@ -1,4 +1,5 @@
 ﻿using NSW.WPF.UI;
+using RomForge.Core.Services.Switch;
 using RomForge.ViewModels.Switch;
 using System.Windows;
 using System.Windows.Controls;

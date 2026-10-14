@@ -1,7 +1,7 @@
 ﻿using NSW.WPF.ViewModels;
 using System.Collections.ObjectModel;
 
-namespace RomForge.Controls.Switch;
+namespace RomForge.Core.Services.Switch;
 
 public static class SwitchGameFileListOrganizer
 {

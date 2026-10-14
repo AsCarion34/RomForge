@@ -262,7 +262,14 @@ public static class MetadataReader
                     }
                 }
 
-                results.Add(new MetadataResult(titleId, version, displayVer, krTitle, enTitle, 0, type, cnmtNcaName, path, contentNcaIds));
+                var programIdOffsets = cnmt.ContentEntries
+                    .Where(e => e.Type == LibHac.Ncm.ContentType.Program)
+                    .Select(e => e.IdOffset)
+                    .Distinct()
+                    .OrderBy(o => o)
+                    .ToList();
+
+                results.Add(new MetadataResult(titleId, version, displayVer, krTitle, enTitle, 0, type, cnmtNcaName, path, contentNcaIds, programIdOffsets));
             }
             catch
             { 
