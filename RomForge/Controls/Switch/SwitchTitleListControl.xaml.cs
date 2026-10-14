@@ -221,7 +221,8 @@ public partial class SwitchTitleListControl : UserControl
         var ids = GetExpectedIds(file);
         var match = source.Match(ids);
         string? path = match.Path;
-        string? notice = null;
+        string message;
+        bool warning;
 
         if (path == null)
         {
@@ -237,18 +238,27 @@ public partial class SwitchTitleListControl : UserControl
             }
 
             path = source.GenericPath;
-
-            if (ids.Count > 1)
-                notice = "타이틀 ID 폴더가 없는 일반 패치입니다.\n프로그램이 여러 개인 게임이라 모든 프로그램에 같은 파일이 적용됩니다.";
+            warning = ids.Count > 1;
+            message = warning
+                ? "타이틀 ID 폴더가 없는 일반 패치(exefs/romfs)로 지정했습니다.\n프로그램이 여러 개인 게임이라 모든 프로그램에 같은 파일이 적용됩니다."
+                : "타이틀 ID 폴더가 없는 일반 패치(exefs/romfs)로 지정했습니다.";
         }
-        else if (match.Missing.Count > 0)
-            notice = $"패치가 없는 프로그램: {string.Join(", ", match.Missing)}\n해당 프로그램은 원본 그대로 빌드됩니다.";
+        else
+        {
+            warning = match.Missing.Count > 0;
+
+            var lines = ids.Select(id => $"{(match.Covered.Contains(id, StringComparer.OrdinalIgnoreCase) ? "✔" : "✘")} {id}");
+
+            message = $"프로그램 {match.Covered.Count}/{ids.Count} 패치 확인\n\n{string.Join("\n", lines)}";
+
+            if (warning)
+                message += "\n\n✘ 프로그램은 패치가 없어 원본 그대로 빌드됩니다.";
+        }
 
         file.PatchPath = path;
         file.PatchPassword = password;
 
-        if (notice != null)
-            MessageBox.Show(notice, "한글패치 지정", MessageBoxButton.OK, MessageBoxImage.Warning);
+        MessageBox.Show(message, "한글패치 지정", MessageBoxButton.OK, warning ? MessageBoxImage.Warning : MessageBoxImage.Information);
 
         return true;
     }
