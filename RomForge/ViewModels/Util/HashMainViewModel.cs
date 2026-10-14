@@ -2,6 +2,7 @@
 using Common.WPF.ViewModels;
 using RomForge.Core.Models;
 using RomForge.Core.Models.Util;
+using RomForge.Core.Services;
 using RomForge.Core.UI.Command;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
@@ -212,12 +213,14 @@ public class HashMainViewModel : ToolTabViewModel
                 FlushUiQueue();
 
                 AppendLog($"작업 완료 (성공: {successCount} / 전체: {FileItems.Count})", LogLevel.Highlight);
+                await SoundPlayer.PlayCompleteAsync();
                 MainViewModel.SetTaskbarProgress(100);
             }
             catch (OperationCanceledException)
             {
                 FlushUiQueue();
                 AppendLog("작업이 취소되었습니다.", LogLevel.Error);
+                await SoundPlayer.PlayCancelAsync();
                 MainViewModel.SetTaskbarProgress(0);
 
                 foreach (var item in FileItems.Where(i => i.Status == "변환중" || i.Status == "대기중"))
@@ -230,6 +233,7 @@ public class HashMainViewModel : ToolTabViewModel
             {
                 FlushUiQueue();
                 AppendLog($"오류 발생: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
             }
             finally

@@ -6,6 +6,7 @@ using NSW.WPF.UI;
 using RomForge.Core;
 using RomForge.Core.Models;
 using RomForge.Core.Models.Wii;
+using RomForge.Core.Services;
 using RomForge.Core.Services.Wii;
 using RomForge.Core.UI.Command;
 using RomForge.Views;
@@ -332,16 +333,19 @@ public class RepackMainViewModel : ToolTabViewModel
             MainViewModel.SetTaskbarProgress(100);
 
             Log($"완료! 총 소요: {sw.Elapsed:mm\\:ss}", LogLevel.Ok);
+            await SoundPlayer.PlayCompleteAsync();
             OutputPath.OpenFolder();
         }
         catch (OperationCanceledException)
         {
             Log("작업이 취소되었습니다.", LogLevel.Error);
+            await SoundPlayer.PlayCancelAsync();
             MainViewModel.SetTaskbarProgress(0);
         }
         catch (Exception ex)
         {
             Log($"오류: {ex.Message}", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
         }
         finally

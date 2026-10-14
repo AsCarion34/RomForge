@@ -6,6 +6,7 @@ using NSW.WPF.ViewModels;
 using RomForge.Core;
 using RomForge.Core.Models;
 using RomForge.Core.Models.Switch;
+using RomForge.Core.Services;
 using RomForge.Core.Services.Switch;
 using RomForge.Core.UI.Command;
 using System.Collections.ObjectModel;
@@ -206,18 +207,20 @@ public class MergeMainViewModel : ToolTabViewModel
                 {
                     Log(string.Format(Res.Main_Log_AllComplete, _totalSw.Elapsed.ToString(@"mm\:ss")), LogLevel.Ok);
                     Log(Res.Main_Msg_Done);
-
+                    await SoundPlayer.PlayCompleteAsync();
                     outputDir.OpenFolder();
                 }
             }
             catch (OperationCanceledException)
             {
                 Log($"병합이 취소되었습니다.", LogLevel.Error);
+                await SoundPlayer.PlayCancelAsync();
                 ProgressPct = 0;
             }
             catch (Exception ex)
             {
                 Log($"{Res.Log_Error}: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
             }
             finally

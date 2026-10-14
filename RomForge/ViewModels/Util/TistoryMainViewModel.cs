@@ -4,6 +4,7 @@ using NSW.WPF.Services;
 using RomForge.Core;
 using RomForge.Core.Models;
 using RomForge.Core.Models.Util;
+using RomForge.Core.Services;
 using RomForge.Core.Services.Util;
 using RomForge.Core.UI.Command;
 using System.Collections.ObjectModel;
@@ -163,15 +164,24 @@ public class TistoryMainViewModel : ToolTabViewModel
                 if (FileItems.Count > 0)
                     ScrollToItemRequested?.Invoke(FileItems[^1]);
 
-                AppendLog(addedCount > 0 ? $"[분석 완료] 첨부파일 {addedCount}개를 추가했습니다." : "[분석 완료] 새로 추가된 첨부파일이 없습니다.", addedCount > 0 ? LogLevel.Highlight : LogLevel.Error);
+                if (addedCount > 0)
+                {
+                    AppendLog($"[분석 완료] 첨부파일 {addedCount}개를 추가했습니다.", LogLevel.Highlight);
+                    await SoundPlayer.PlayCompleteAsync();
+                    MainViewModel.SetTaskbarProgress(100);
+                }
+                else
+                    AppendLog("[분석 완료] 새로 추가된 첨부파일이 없습니다.", LogLevel.Error);
             }
             catch (OperationCanceledException)
             {
                 AppendLog("분석이 취소되었습니다.", LogLevel.Error);
+                await SoundPlayer.PlayCancelAsync();
             }
             catch (Exception ex)
             {
                 AppendLog($"[분석 실패] {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
             }
             finally
@@ -265,11 +275,15 @@ public class TistoryMainViewModel : ToolTabViewModel
                 AppendLog("모든 작업이 종료되었습니다.", LogLevel.Highlight);
 
                 if (successCount > 0)
+                {
+                    await SoundPlayer.PlayCompleteAsync();
                     SaveDirectory.OpenFolder();
+                }
             }
             catch (OperationCanceledException)
             {
                 AppendLog("작업이 취소되었습니다.", LogLevel.Error);
+                await SoundPlayer.PlayCancelAsync();
                 MainViewModel.SetTaskbarProgress(0);
 
                 foreach (var item in FileItems.Where(i => i.Status == "대기중" || i.Status == "다운로드중"))
@@ -360,6 +374,7 @@ public class TistoryMainViewModel : ToolTabViewModel
                 }
 
                 AppendLog($"[압축해제 실패] {representative.FileName}: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
             }
         }

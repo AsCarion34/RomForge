@@ -1,8 +1,10 @@
 ﻿using Common;
 using Common.WPF.ViewModels;
-using RomForge.Core.UI.Command;
+using LibHac.Tools.Ncm;
 using RomForge.Core.Models;
 using RomForge.Core.Models.Util;
+using RomForge.Core.Services;
+using RomForge.Core.UI.Command;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
@@ -168,12 +170,21 @@ public class CueMainViewModel : ToolTabViewModel
                     }
                 }
 
-                AppendLog($"작업 완료 (성공: {successCount} / 전체: {totalCount})", LogLevel.Highlight);
+                if (successCount > 0)
+                {
+                    AppendLog($"작업 완료 (성공: {successCount} / 전체: {totalCount})", LogLevel.Highlight);
+                    await SoundPlayer.PlayCompleteAsync();
+                    MainViewModel.SetTaskbarProgress(100);
+                }
+                else
+                    AppendLog("성공한 작업이 없습니다.", LogLevel.Error);
+
                 MainViewModel.SetTaskbarProgress(100);
             }
             catch (OperationCanceledException)
             {
                 AppendLog("작업이 취소되었습니다.", LogLevel.Error);
+                await SoundPlayer.PlayCancelAsync();
                 MainViewModel.SetTaskbarProgress(0);
 
                 foreach (var item in FileItems.Where(i => i.Status == "대기중" || i.Status == "변환중"))
@@ -185,6 +196,7 @@ public class CueMainViewModel : ToolTabViewModel
             catch (Exception ex)
             {
                 AppendLog($"오류 발생: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
 
                 foreach (var item in FileItems.Where(i => i.Status == "변환중"))

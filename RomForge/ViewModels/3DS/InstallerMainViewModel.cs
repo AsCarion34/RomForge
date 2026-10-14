@@ -8,6 +8,7 @@ using Common.WPF.ViewModels;
 using NSW.WPF.UI;
 using RomForge.Core.Models;
 using RomForge.Core.Models._3DS;
+using RomForge.Core.Services;
 using RomForge.Core.Services._3DS;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -171,18 +172,21 @@ public class InstallerMainViewModel : ToolTabViewModel
             await operation(cts.Token);
             StatusMessage = successMsg;
             AppendLog(successMsg, LogLevel.Info);
+            await SoundPlayer.PlayCompleteAsync();
         }
         catch (OperationCanceledException)
         {
             StatusMessage = "취소되었습니다.";
             MainViewModel.SetTaskbarProgress(0);
             AppendLog("추출이 취소되었습니다.", LogLevel.Error);
+            await SoundPlayer.PlayCancelAsync();
         }
         catch (Exception ex)
         {
             StatusMessage = $"오류: {ex.Message}";
             MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
             AppendLog($"오류: {ex.Message}", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             throw;
         }
         finally
@@ -265,8 +269,9 @@ public class InstallerMainViewModel : ToolTabViewModel
 
                 var (rebuilt, skipped) = await rebuilder.RebuildAsync(Report, ct);
 
-                StatusMessage = $"복구 완료: {rebuilt}개 타이틀";
+                StatusMessage = $"복구 완료: {rebuilt}개 타이틀";                
                 AppendLog($"복구 완료: {rebuilt}개 등록", LogLevel.Ok);
+                await SoundPlayer.PlayCompleteAsync();
 
                 if (skipped > 0)
                     AppendLog($"{skipped}개는 읽을 수 없어 제외되었습니다. 위 로그를 확인하세요.", LogLevel.Error);
@@ -276,12 +281,14 @@ public class InstallerMainViewModel : ToolTabViewModel
                 StatusMessage = "취소되었습니다.";
                 MainViewModel.SetTaskbarProgress(0);
                 AppendLog("복구가 취소되었습니다.", LogLevel.Error);
+                await SoundPlayer.PlayCancelAsync();
             }
             catch (Exception ex)
             {
-                StatusMessage = $"오류: {ex.Message}";
+                StatusMessage = $"오류: {ex.Message}";                
                 MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
                 AppendLog($"오류: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
             }
         }
 
@@ -324,11 +331,13 @@ public class InstallerMainViewModel : ToolTabViewModel
                             await extractor.ExtractToCiaAsync(selected.Title, outputPath, extractProgress, ct);
                     },
                     $"추출 완료: {selected.ShortDescription}");
+                await SoundPlayer.PlayCompleteAsync();
             }
             catch (CertsBinNotFoundException)
             {
                 MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
                 RunNavigateCerts?.Invoke(this, EventArgs.Empty);
+                await SoundPlayer.PlayErrorAsync();
             }
             finally
             {
@@ -415,8 +424,9 @@ public class InstallerMainViewModel : ToolTabViewModel
                         throw new NotSupportedException($"지원하지 않는 파일 형식: {ext}");
                 }
 
-                StatusMessage = $"설치 완료: {selected.ShortDescription}";
+                StatusMessage = $"설치 완료: {selected.ShortDescription}";                
                 AppendLog($"설치 완료: {selected.ShortDescription}", LogLevel.Ok);
+                await SoundPlayer.PlayCompleteAsync();
                 AppendLog($"3DS에서 [홈브루 런처]를 이용해, 3ds 폴더 내부의 'custom-install-finalize'를 실행해야 게임 아이콘이 생성됩니다.", LogLevel.Highlight);
 
                 if (selected.ForcedLanguage != Locale3dsLanguage.None)
@@ -434,6 +444,7 @@ public class InstallerMainViewModel : ToolTabViewModel
             {
                 StatusMessage = "취소되었습니다.";
                 AppendLog("설치가 취소되었습니다.", LogLevel.Error);
+                await SoundPlayer.PlayCancelAsync();
                 MainViewModel.SetTaskbarProgress(0);
                 if (Directory.Exists(titleRoot))
                     try { Directory.Delete(titleRoot, true); } catch { }
@@ -441,9 +452,10 @@ public class InstallerMainViewModel : ToolTabViewModel
             }
             catch (Exception ex)
             {
-                StatusMessage = $"오류: {ex.Message}";
+                StatusMessage = $"오류: {ex.Message}";                
                 MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
                 AppendLog($"오류: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 throw;
             }
             finally

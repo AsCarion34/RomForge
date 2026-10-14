@@ -12,6 +12,7 @@ using RomForge.Core.UI.Command;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Media;
 using System.Text;
 using System.Windows;
 using System.Windows.Input;
@@ -295,16 +296,19 @@ namespace RomForge.ViewModels.Switch
                 try
                 {
                     await RunConversionProcess(_cts.Token);
-                    Log($"완료! 총 소요: {_totalSw.Elapsed:mm\\:ss}", LogLevel.Ok);
+                    await Core.Services.SoundPlayer.PlayCompleteAsync();
+                    Log($"완료! 총 소요: {_totalSw.Elapsed:mm\\:ss}", LogLevel.Ok);                    
                 }
                 catch (OperationCanceledException)
                 {
                     Log($"작업이 취소되었습니다.", LogLevel.Error);
+                    await Core.Services.SoundPlayer.PlayCancelAsync();
                     ProgressPct = 0;
                 }
                 catch (Exception ex)
                 {
                     Log($"오류: {ex.Message}", LogLevel.Error);
+                    await Core.Services.SoundPlayer.PlayErrorAsync();
                     MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
                 }
                 finally

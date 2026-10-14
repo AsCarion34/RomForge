@@ -3,6 +3,7 @@ using Common.WPF.ViewModels;
 using NSW.WPF.Services;
 using Patch.Core.Services.PC98;
 using RomForge.Core.Models;
+using RomForge.Core.Services;
 using RomForge.Core.Services.Patch;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -106,19 +107,21 @@ public class Pc98PatchMainViewModel : ToolTabViewModel, IPatchViewModel
                 Log($"HDI에서 찾지 못한 파일 {result.MissingFiles.Count}개는 건너뛰었습니다.", LogLevel.Error);
 
             Log($"패치 완료: {result.AppliedCount}개 파일 적용 → {Path.GetFileName(outputPath)}", LogLevel.Ok);
-
+            await SoundPlayer.PlayCompleteAsync();
             outputDir.OpenFolder();
         }
         catch (OperationCanceledException)
         {
             TryDeleteIncompleteOutput(outputPath);
             Log($"패치 취소: {Path.GetFileName(SourcePath)}", LogLevel.Error);
+            await SoundPlayer.PlayCancelAsync();
             MainViewModel.SetTaskbarProgress(0);
         }
         catch (Exception ex)
         {
             TryDeleteIncompleteOutput(outputPath);
             Log($"패치 실패: {ex.Message}", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
         }
         finally

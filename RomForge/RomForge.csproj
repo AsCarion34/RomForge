@@ -65,6 +65,7 @@
     <None Remove="Assets\Images\WiiU.png" />
     <None Remove="Assets\Images\WorkSpace.png" />
     <None Remove="Assets\Images\zRIF.png" />
+    <None Remove="Assets\Sounds\cancel.mp3" />
     <None Remove="Assets\Sounds\complete.mp3" />
     <None Remove="Assets\Sounds\error.mp3" />
   </ItemGroup>
@@ -189,6 +190,7 @@
     <Resource Include="Assets\Images\ZipFile.png" />
     <Resource Include="Assets\Images\ZipFolder.png" />
     <Resource Include="Assets\Images\zRIF.png" />
+    <Resource Include="Assets\Sounds\cancel.mp3" />
     <Resource Include="Assets\Sounds\complete.mp3" />
     <Resource Include="Assets\Sounds\error.mp3" />
   </ItemGroup>

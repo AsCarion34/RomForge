@@ -1,5 +1,4 @@
 ﻿using Common;
-using Common.WPF;
 using Common.WPF.ViewModels;
 using LibHac.Ns;
 using NSW.Core.Enums;
@@ -186,13 +185,14 @@ namespace RomForge.ViewModels.Switch
                     string finalResult = await NspBuildService.Run(req, mode, progress, (msg, lvl) => Log(msg, lvl), token);
 
                     Log($"완료! 총 소요: {_totalSw.Elapsed:mm\\:ss}", LogLevel.Ok);
-                    await SoundPlayer.Play("complete.mp3");
+                    await SoundPlayer.PlayCompleteAsync();
 
                     req.OutputDir?.OpenFolder();
                 }
                 catch (OperationCanceledException)
                 {
                     Log($"작업이 취소되었습니다.", LogLevel.Error);
+                    await SoundPlayer.PlayCancelAsync();
                     MainViewModel.SetTaskbarProgress(0);
 
                     try
@@ -210,13 +210,13 @@ namespace RomForge.ViewModels.Switch
                 catch (UnpackMetadataNotFoundException bex)
                 {
                     Log($"실패: {bex.Message}", LogLevel.Error);
-                    await SoundPlayer.Play("error.mp3");                    
+                    await SoundPlayer.PlayErrorAsync();
                     MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
                 }
                 catch (Exception ex)
                 {
                     Log($"오류: {ex.Message}", LogLevel.Error);
-                    await SoundPlayer.Play("error.mp3");
+                    await SoundPlayer.PlayErrorAsync();
                     MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
                 }
                 finally

@@ -3,6 +3,7 @@ using Common.WPF.ViewModels;
 using NSW.WPF.Services;
 using RomForge.Core.Models;
 using RomForge.Core.Models.Patch;
+using RomForge.Core.Services;
 using RomForge.Core.Services.Patch;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -171,22 +172,23 @@ public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
         try
         {
             await PatchService.ApplyPatchedZipAsync(SourcePath, outputZipPath, patchesByEntryName, progressReporter, ct);
-
             outputDir.OpenFolder();
-
             Log($"패치 완료: {SourcePath}", LogLevel.Ok);
+            await SoundPlayer.PlayCompleteAsync();
         }
         catch (OperationCanceledException)
         {
             TryDeleteIncompleteOutput(outputZipPath);
             MainViewModel.SetTaskbarProgress(0);
             Log($"패치 취소: {Path.GetFileName(SourcePath)}", LogLevel.Error);
+            await SoundPlayer.PlayCancelAsync();
         }
         catch (Exception ex)
         {
             TryDeleteIncompleteOutput(outputZipPath);
-            MainViewModel.SetTaskbarProgress(TotalProgress, System.Windows.Shell.TaskbarItemProgressState.Error);
+            MainViewModel.SetTaskbarProgress(TotalProgress, System.Windows.Shell.TaskbarItemProgressState.Error);            
             Log($"패치 실패: {ex.Message}", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
         }
     }
 

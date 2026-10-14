@@ -10,6 +10,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
+using RomForge.Core.Services;
 
 namespace RomForge.ViewModels.PS;
 
@@ -215,7 +216,7 @@ public class PSPConverterViewModel : ToolTabViewModel
 
                         item.Progress = 100;
                         MainViewModel.SetTaskbarProgress(100);
-                        item.Status = "완료";
+                        item.Status = "완료";                        
                         cnt++;
                     }
                     catch (OperationCanceledException)
@@ -234,18 +235,26 @@ public class PSPConverterViewModel : ToolTabViewModel
                         }
 
                         AppendLog($"[{item.FileName}] 변환 실패: {ex.Message}", LogLevel.Error);
-
+                        await SoundPlayer.PlayErrorAsync();
                         item.Status = "실패";
                         item.Progress = 0;
                         MainViewModel.SetTaskbarProgress(0);
                     }
                 }
 
-                AppendLog(cnt > 0 ? $"총 {cnt}개의 작업을 성공적으로 완료했습니다." : "성공한 작업이 없습니다.", cnt > 0 ? LogLevel.Ok : LogLevel.Error);
+                if (cnt > 0)
+                {
+                    AppendLog($"총 {cnt}개의 작업을 성공적으로 완료했습니다.", LogLevel.Ok);
+                    await SoundPlayer.PlayCompleteAsync();
+                    MainViewModel.SetTaskbarProgress(100);
+                }
+                else
+                    AppendLog("성공한 작업이 없습니다.", LogLevel.Error);
             }
             catch (OperationCanceledException)
             {
                 AppendLog("작업이 취소되었습니다.", LogLevel.Error);
+                await SoundPlayer.PlayCancelAsync();
                 MainViewModel.SetTaskbarProgress(0);
 
                 foreach (var item in FileItems.Where(i => i.Status is "대기중" or "변환중"))
@@ -254,6 +263,7 @@ public class PSPConverterViewModel : ToolTabViewModel
             catch (Exception ex)
             {
                 AppendLog($"오류: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
 
                 foreach (var item in FileItems.Where(i => i.Status == "변환중"))

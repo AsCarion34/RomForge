@@ -15,6 +15,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using System.Windows.Shell;
+using RomForge.Core.Services;
 
 namespace RomForge.ViewModels.Util;
 
@@ -307,16 +308,19 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
                 StatusText1 = "굽기 취소";
                 PartitionUtil.RescanDisk(SelectedDrive.DiskNumber);
                 AppendLog("굽기가 취소 되었습니다.", LogLevel.Error);
+                await SoundPlayer.PlayCancelAsync();
             }
             catch (Win32Exception ex)
             {
                 AppendLog(ex.Message, LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
 
             }
             catch (Exception ex)
             {
                 AppendLog(ex.Message, LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
             }
             finally
@@ -410,15 +414,18 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
                 StatusText1 = "저장 취소";
                 DeleteArchiveTempAndPartialFiles(ReadImagePath);
                 AppendLog("저장이 취소되었습니다.", LogLevel.Error);
+                await SoundPlayer.PlayCancelAsync();
             }
             catch (Win32Exception ex)
             {
                 AppendLog(ex.Message, LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
             }
             catch (Exception ex)
             {
                 AppendLog(ex.Message, LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
             }
             finally
@@ -444,11 +451,12 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
 
     private void OnWriteEnded(object? sender, EventArgs e)
     {
-        Application.Current.Dispatcher.Invoke(() =>
+        Application.Current.Dispatcher.Invoke(async () =>
         {
             Progress = 100;
             StatusText1 = "이미지 굽기 완료";
 
+            await SoundPlayer.PlayCompleteAsync();
             PartitionUtil.RescanDisk(SelectedDrive!.DiskNumber);
             PartitionUtil.AssignNextAvailableDriveLetter();
 
@@ -458,11 +466,12 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
 
     private void OnReaderEnded(object? sender, EventArgs e)
     {
-        Application.Current.Dispatcher.Invoke(() =>
+        Application.Current.Dispatcher.Invoke(async () =>
         {
             Progress = 100;
             StatusText1 = "이미지 저장 완료";
 
+            await SoundPlayer.PlayCompleteAsync();
             Path.GetDirectoryName(ReadImagePath).OpenFolder();
 
             AppendLog("이미지 저장이 완료되었습니다.", LogLevel.Ok);

@@ -11,6 +11,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shell;
+using RomForge.Core.Services;
 
 namespace RomForge.ViewModels.Util;
 
@@ -197,6 +198,7 @@ public class CertsMainViewModel : ToolTabViewModel
                     SelectedFile.Progress = 100;
                     MainViewModel.SetTaskbarProgress(100);
                     SelectedFile.Status = "완료";
+                    await SoundPlayer.PlayCompleteAsync();
 
                     OnPropertyChanged(nameof(ProgressText));
                     AppendLog($"추출 완료: {OutputFileName}", LogLevel.Highlight);

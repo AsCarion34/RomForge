@@ -13,6 +13,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using RomForge.Core.Services;
 
 namespace RomForge.ViewModels._3DS;
 
@@ -191,10 +192,11 @@ public class DecryptorMainViewModel : ToolTabViewModel
                     catch (Exception ex)
                     {
                         AppendLog($"[{item.FileName}] 복호화 실패: {ex.Message}", LogLevel.Error);
+                        await SoundPlayer.PlayErrorAsync();
                         MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
 
-                        item.Status = "실패";
-                        item.Progress = 0;                        
+                        item.Status = "실패";                        
+                        item.Progress = 0;
 
                         DeletePartialOutput(outputPath);
                     }
@@ -203,6 +205,7 @@ public class DecryptorMainViewModel : ToolTabViewModel
                 if (cnt > 0)
                 {
                     AppendLog($"총 {cnt}개의 작업을 성공적으로 완료했습니다.", LogLevel.Ok);
+                    await SoundPlayer.PlayCompleteAsync();
                     MainViewModel.SetTaskbarProgress(100);
                 }
                 else
@@ -211,6 +214,7 @@ public class DecryptorMainViewModel : ToolTabViewModel
             catch (OperationCanceledException)
             {
                 AppendLog("작업이 취소되었습니다.", LogLevel.Error);
+                await SoundPlayer.PlayCancelAsync();
 
                 foreach (var item in FileItems.Where(i => i.Status is "대기중" or "복호화중"))
                     item.Status = "취소";
@@ -218,6 +222,7 @@ public class DecryptorMainViewModel : ToolTabViewModel
             catch (Exception ex)
             {
                 AppendLog($"오류: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
 
                 foreach (var item in FileItems.Where(i => i.Status == "복호화중"))
                     item.Status = "실패";

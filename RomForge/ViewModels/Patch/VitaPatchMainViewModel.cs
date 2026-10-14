@@ -3,6 +3,7 @@ using Common.WPF.ViewModels;
 using NSW.WPF.Services;
 using RomForge.Core;
 using RomForge.Core.Models;
+using RomForge.Core.Services;
 using RomForge.Core.Services.Patch;
 using RomForge.Core.UI.Command;
 using System.Collections.ObjectModel;
@@ -450,17 +451,20 @@ public class VitaPatchMainViewModel : ToolTabViewModel, IPatchViewModel
                 }
 
                 Log($"전체 완료 ({_totalSw.Elapsed:mm\\:ss})", LogLevel.Ok);
+                await SoundPlayer.PlayCompleteAsync();
                 OutputPath?.OpenFolder();
             }
             catch (OperationCanceledException)
             {
-                Log("작업이 취소되었습니다.", LogLevel.Error);                
+                Log("작업이 취소되었습니다.", LogLevel.Error);
+                await SoundPlayer.PlayCancelAsync();
                 SafeDeleteFile(zipFileName);
                 MainViewModel.SetTaskbarProgress(0);
             }
             catch (Exception ex)
             {
                 Log($"오류: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 SafeDeleteFile(zipFileName);
                 MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
             }

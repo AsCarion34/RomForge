@@ -450,12 +450,13 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
             await orchestrator.PatchAsync(actualSourcePath, patchPaths, detected, outputDir, outputPath, sourceIsTemporary, ct);
             stopwatch.Stop();
             Log($"패치 완료: {Path.GetFileName(outputPath)} ({stopwatch.Elapsed:mm\\:ss})", LogLevel.Ok);
-            await SoundPlayer.Play("complete.mp3");
+            await SoundPlayer.PlayCompleteAsync();
             outputDir.OpenFolder();
         }
         catch (OperationCanceledException)
         {
             Log($"패치 취소: {SourcePath}", LogLevel.Error);
+            await SoundPlayer.PlayCancelAsync();
             CleanupTask();
 
             if (outputPath is not null)
@@ -464,7 +465,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         catch (Exception ex)
         {
             Log($"패치 실패: {ex.Message}", LogLevel.Error);
-            await SoundPlayer.Play("error.mp3");
+            await SoundPlayer.PlayErrorAsync();
             CleanupTask();
             MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
 

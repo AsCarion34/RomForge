@@ -291,13 +291,13 @@ public class CompressMainViewModel : ToolTabViewModel
                     }
 
                     item.Progress = 100;
-                    item.Status = "완료";
-                    await SoundPlayer.Play("complete.mp3");
+                    item.Status = "완료";                    
                     cnt++;
                 }
                 catch (OperationCanceledException)
                 {
                     AppendLog("작업이 취소되었습니다.", LogLevel.Error);
+                    await SoundPlayer.PlayCancelAsync();
                     CancelRemainingItems();
 
                     break;
@@ -305,7 +305,7 @@ public class CompressMainViewModel : ToolTabViewModel
                 catch (Exception ex)
                 {
                     AppendLog($"오류 ([{item.FileName}]): {ex.Message}", LogLevel.Error);
-                    await SoundPlayer.Play("error.mp3");
+                    await SoundPlayer.PlayErrorAsync();
                     MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);                    
                     item.Status = "실패";
                 }
@@ -313,8 +313,12 @@ public class CompressMainViewModel : ToolTabViewModel
 
             if (cnt > 0)
             {
-                AppendLog($"총 {cnt}개의 작업을 완료했습니다.", LogLevel.Ok);
+                AppendLog($"총 {cnt}개의 작업을 성공적으로 완료했습니다.", LogLevel.Ok);
+                await SoundPlayer.PlayCompleteAsync();
+                MainViewModel.SetTaskbarProgress(100);
             }
+            else
+                AppendLog("성공한 작업이 없습니다.", LogLevel.Error);
         }
     }
 

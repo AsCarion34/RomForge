@@ -18,6 +18,7 @@ using RomForge.Core.Models.Compression;
 using RomForge.Core.Models.PS;
 using RomForge.Core.Models.Switch;
 using RomForge.Core.Models.WiiU;
+using RomForge.Core.Services;
 using RomForge.Core.Services.Compression;
 using RomForge.Core.Services.PS;
 using RomForge.Core.Services.Switch;
@@ -370,6 +371,7 @@ public class ConvertMainViewModel : ToolTabViewModel
                     catch (CertsBinNotFoundException e)
                     {
                         AppendLog(e.Message, LogLevel.Error);
+                        await SoundPlayer.PlayErrorAsync();
                         MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
                         RunNavigateCerts?.Invoke(this, EventArgs.Empty);
                         tracker.Status = "실패";                        
@@ -381,17 +383,26 @@ public class ConvertMainViewModel : ToolTabViewModel
                     catch (Exception ex)
                     {
                         AppendLog($"[{GetDisplayName(item)}] 변환 실패: {ex.Message}", LogLevel.Error);
+                        await SoundPlayer.PlayErrorAsync();
                         MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
-                        tracker.Status = "실패";
+                        tracker.Status = "실패";                        
                         tracker.Progress = 0;                        
                     }
                 }
 
-                AppendLog(cnt > 0 ? $"총 {cnt}개의 작업을 성공적으로 완료했습니다." : "성공한 작업이 없습니다.", cnt > 0 ? LogLevel.Ok : LogLevel.Error);
+                if (cnt > 0)
+                {
+                    AppendLog($"총 {cnt}개의 작업을 성공적으로 완료했습니다.", LogLevel.Ok);
+                    await SoundPlayer.PlayCompleteAsync();
+                    MainViewModel.SetTaskbarProgress(100);
+                }
+                else
+                    AppendLog("성공한 작업이 없습니다.", LogLevel.Error);
             }
             catch (OperationCanceledException)
             {
                 AppendLog("작업이 취소되었습니다.", LogLevel.Error);
+                await SoundPlayer.PlayCancelAsync();
                 MainViewModel.SetTaskbarProgress(0);
 
                 foreach (var item in FileItems)
