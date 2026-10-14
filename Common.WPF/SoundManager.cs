@@ -1,4 +1,5 @@
 ﻿using NAudio.Wave;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Resources;
@@ -22,7 +23,7 @@ public static class SoundManager
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"WPF 리소스 로드 오류: {ex.Message}");
+            Debug.WriteLine($"WPF 리소스 로드 오류: {ex.Message}");
             return;
         }
 
@@ -62,7 +63,7 @@ public static class SoundManager
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"오디오 재생 중 오류 발생: {ex.Message}");
+                    Debug.WriteLine($"오디오 재생 중 오류 발생: {ex.Message}");
                     DisposeResources();
                 }
             }

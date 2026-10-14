@@ -15,6 +15,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace RomForge.ViewModels.PS;
 
@@ -45,6 +46,10 @@ public class PackingMainViewModel : ToolTabViewModel
     private byte[]? _previewPcmBytes;
     private WaveOutEvent? _waveOut;
     private WaveStream? _waveStream;
+    private readonly DispatcherTimer _previewTimer = new() { Interval = TimeSpan.FromMilliseconds(100) };
+    private bool _isSeeking;
+    private double _previewPositionSeconds;
+    private double _previewDurationSeconds;
 
     public byte[] Icon0Bytes { get; set; } = EmbeddedAssetProvider.GetDefaultIcon0();
 
@@ -257,6 +262,39 @@ public class PackingMainViewModel : ToolTabViewModel
 
     public ICommand TogglePlayBgmCommand { get; }
 
+    public bool HasPreview => _previewPcmBytes is { Length: > 0 };
+
+    public double PreviewDurationSeconds
+    {
+        get => _previewDurationSeconds;
+        private set
+        {
+            if (SetProperty(ref _previewDurationSeconds, value))
+                OnPropertyChanged(nameof(PreviewDurationText));
+        }
+    }
+
+    public double PreviewPositionSeconds
+    {
+        get => _previewPositionSeconds;
+        set
+        {
+            value = Math.Clamp(value, 0, _previewDurationSeconds);
+
+            if (Math.Abs(value - _previewPositionSeconds) < 0.001)
+                return;
+
+            SetPreviewPosition(value);
+
+            if (!_isSeeking)
+                SeekPreview(value);
+        }
+    }
+
+    public string PreviewPositionText => FormatPreviewTime(_previewPositionSeconds);
+
+    public string PreviewDurationText => FormatPreviewTime(_previewDurationSeconds);
+
     public event EventHandler RunNavigateSettings;
 
     public PackingMainViewModel()
@@ -265,6 +303,7 @@ public class PackingMainViewModel : ToolTabViewModel
         CancelCommand = new RelayCommand(_ => _cts.Cancel(), _ => IsLocked);
         SettingsCommand = new RelayCommand(async _ => RunNavigateSettings?.Invoke(this, EventArgs.Empty), _ => !IsLocked);
         TogglePlayBgmCommand = new RelayCommand(_ => TogglePlayBgm());
+        _previewTimer.Tick += (_, _) => UpdatePreviewPosition();
 
         Icon0Image = Icon0Bytes.ToBitmapImage();
         Pic0Image = Pic0Bytes.ToBitmapImage();
@@ -412,6 +451,9 @@ public class PackingMainViewModel : ToolTabViewModel
         IsBgmConverting = true;
         BgmProgressPct = 0;
 
+        ReleasePreviewPlayer();
+        SetPreviewPosition(0);
+
         try
         {
             string ext = Path.GetExtension(filePath).ToLowerInvariant();
@@ -450,6 +492,9 @@ public class PackingMainViewModel : ToolTabViewModel
                     AppendLog($"미리듣기 준비 실패: {ex.Message}", LogLevel.Info);
                 }
             });
+
+            PreviewDurationSeconds = GetPreviewDuration(_previewPcmBytes);
+            OnPropertyChanged(nameof(HasPreview));
 
             BgmFilePath = filePath;
             AppendLog($"배경음 설정 완료: {Path.GetFileName(filePath)}", LogLevel.Info);
@@ -625,52 +670,123 @@ public class PackingMainViewModel : ToolTabViewModel
     private void TogglePlayBgm()
     {
         if (IsPlayingBgm)
-        {
-            StopBgmPreview();
-        }
+            PausePreview();
         else
-        {
             StartBgmPreview();
+    }
+
+    private bool EnsurePreviewPlayer()
+    {
+        if (_waveOut != null && _waveStream != null)
+            return true;
+
+        if (_previewPcmBytes == null || _previewPcmBytes.Length == 0)
+            return false;
+
+        try
+        {
+            _waveStream = new WaveFileReader(new MemoryStream(_previewPcmBytes));
+            _waveOut = new WaveOutEvent();
+            _waveOut.Init(_waveStream);
+            _waveOut.PlaybackStopped += OnPreviewPlaybackStopped;
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            AppendLog($"미리듣기 재생 중 오류: {ex.Message}", LogLevel.Error);
+            ReleasePreviewPlayer();
+
+            return false;
         }
     }
 
     private void StartBgmPreview()
     {
-        if (_previewPcmBytes == null || _previewPcmBytes.Length == 0)
+        if (!EnsurePreviewPlayer())
             return;
 
         try
         {
-            StopBgmPreview();
-
-            var ms = new MemoryStream(_previewPcmBytes);
-
-            _waveStream = new WaveFileReader(ms);
-
-            _waveOut = new WaveOutEvent();
-            _waveOut.Init(_waveStream);
-            _waveOut.PlaybackStopped += (s, e) =>
-            {
-                StopBgmPreview();
-            };
-
-            _waveOut.Play();
+            _waveOut!.Play();
             IsPlayingBgm = true;
+            _previewTimer.Start();
         }
         catch (Exception ex)
         {
             AppendLog($"미리듣기 재생 중 오류: {ex.Message}", LogLevel.Error);
-            StopBgmPreview();
+            ReleasePreviewPlayer();
         }
     }
 
-    private void StopBgmPreview()
+    private void PausePreview()
     {
+        _waveOut?.Pause();
+        _previewTimer.Stop();
+        IsPlayingBgm = false;
+        UpdatePreviewPosition();
+    }
+
+    private void SeekPreview(double seconds)
+    {
+        if (!EnsurePreviewPlayer())
+            return;
+
+        _waveStream!.CurrentTime = TimeSpan.FromSeconds(seconds);
+    }
+
+    public void BeginPreviewSeek()
+    {
+        _isSeeking = true;
+    }
+
+    public void EndPreviewSeek()
+    {
+        _isSeeking = false;
+        SeekPreview(_previewPositionSeconds);
+    }
+
+    private void UpdatePreviewPosition()
+    {
+        if (_isSeeking || _waveStream == null)
+            return;
+
+        SetPreviewPosition(_waveStream.CurrentTime.TotalSeconds);
+    }
+
+    private void SetPreviewPosition(double seconds)
+    {
+        _previewPositionSeconds = Math.Clamp(seconds, 0, _previewDurationSeconds);
+
+        OnPropertyChanged(nameof(PreviewPositionSeconds));
+        OnPropertyChanged(nameof(PreviewPositionText));
+    }
+
+    private void OnPreviewPlaybackStopped(object? sender, StoppedEventArgs e)
+    {
+        if (!ReferenceEquals(sender, _waveOut))
+            return;
+
+        if (e.Exception != null)
+            AppendLog($"미리듣기 재생 중 오류: {e.Exception.Message}", LogLevel.Error);
+
+        ReleasePreviewPlayer();
+        SetPreviewPosition(0);
+    }
+
+    private void ReleasePreviewPlayer()
+    {
+        _previewTimer.Stop();
+
         try
         {
-            _waveOut?.Stop();
-            _waveOut?.Dispose();
-            _waveOut = null;
+            if (_waveOut != null)
+            {
+                _waveOut.PlaybackStopped -= OnPreviewPlaybackStopped;
+                _waveOut.Stop();
+                _waveOut.Dispose();
+                _waveOut = null;
+            }
 
             _waveStream?.Dispose();
             _waveStream = null;
@@ -681,11 +797,34 @@ public class PackingMainViewModel : ToolTabViewModel
             IsPlayingBgm = false;
         }
     }
+
+    private static double GetPreviewDuration(byte[]? wav)
+    {
+        if (wav == null || wav.Length == 0)
+            return 0;
+
+        using var reader = new WaveFileReader(new MemoryStream(wav));
+
+        return reader.TotalTime.TotalSeconds;
+    }
+
+    private static string FormatPreviewTime(double seconds)
+    {
+        var t = TimeSpan.FromSeconds(Math.Max(0, seconds));
+
+        return $"{(int)t.TotalMinutes}:{t.Seconds:00}";
+    }
+
     public void ResetBgm()
     {
-        StopBgmPreview();
+        ReleasePreviewPlayer();
+        SetPreviewPosition(0);
+
+        PreviewDurationSeconds = 0;
         BgmBytes = null;
         BgmFilePath = null;
         _previewPcmBytes = null;
+
+        OnPropertyChanged(nameof(HasPreview));
     }
 }

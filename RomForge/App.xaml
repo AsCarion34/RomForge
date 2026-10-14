@@ -211,26 +211,29 @@
 
             <Style x:Key="SliderStyle" TargetType="Slider">
                 <Setter Property="IsMoveToPointEnabled" Value="True"/>
+                <Setter Property="TickPlacement" Value="BottomRight"/>
+                <Setter Property="TickFrequency" Value="1"/>
+                <Setter Property="IsSnapToTickEnabled" Value="True"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Slider">
-                            <Grid>
+                            <Grid Background="Transparent" VerticalAlignment="Center">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto" MinHeight="{TemplateBinding MinHeight}"/>
+                                    <RowDefinition Height="Auto" MinHeight="16"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
-                                <Track x:Name="PART_Track" Grid.Row="1">
+                                <Track x:Name="PART_Track" Grid.Row="1" VerticalAlignment="Center">
                                     <Track.DecreaseRepeatButton>
                                         <RepeatButton Command="Slider.DecreaseLarge">
                                             <RepeatButton.Style>
                                                 <Style TargetType="RepeatButton">
                                                     <Setter Property="Background" Value="#007ACC"/>
-                                                    <Setter Property="Height" Value="4"/>
+                                                    <Setter Property="Height" Value="6"/>
                                                     <Setter Property="Template">
                                                         <Setter.Value>
                                                             <ControlTemplate TargetType="RepeatButton">
-                                                                <Border Background="{TemplateBinding Background}" CornerRadius="2"/>
+                                                                <Border Background="{TemplateBinding Background}" CornerRadius="3,0,0,3" VerticalAlignment="Center" Height="6"/>
                                                             </ControlTemplate>
                                                         </Setter.Value>
                                                     </Setter>
@@ -243,11 +246,11 @@
                                             <RepeatButton.Style>
                                                 <Style TargetType="RepeatButton">
                                                     <Setter Property="Background" Value="#3F3F46"/>
-                                                    <Setter Property="Height" Value="4"/>
+                                                    <Setter Property="Height" Value="6"/>
                                                     <Setter Property="Template">
                                                         <Setter.Value>
                                                             <ControlTemplate TargetType="RepeatButton">
-                                                                <Border Background="{TemplateBinding Background}" CornerRadius="2"/>
+                                                                <Border Background="{TemplateBinding Background}" CornerRadius="0,3,3,0" VerticalAlignment="Center" Height="6"/>
                                                             </ControlTemplate>
                                                         </Setter.Value>
                                                     </Setter>
@@ -259,12 +262,12 @@
                                         <Thumb>
                                             <Thumb.Style>
                                                 <Style TargetType="Thumb">
-                                                    <Setter Property="Width" Value="16"/>
-                                                    <Setter Property="Height" Value="16"/>
+                                                    <Setter Property="Width" Value="8"/>
+                                                    <Setter Property="Height" Value="18"/>
                                                     <Setter Property="Template">
                                                         <Setter.Value>
                                                             <ControlTemplate TargetType="Thumb">
-                                                                <Ellipse Fill="#1C97EA" Stroke="#007ACC" StrokeThickness="1"/>
+                                                                <Border Background="#FFFFFF" BorderBrush="#007ACC" BorderThickness="1" CornerRadius="2" Width="8" Height="18"/>
                                                             </ControlTemplate>
                                                         </Setter.Value>
                                                     </Setter>
@@ -273,6 +276,7 @@
                                         </Thumb>
                                     </Track.Thumb>
                                 </Track>
+                                <TickBar x:Name="BottomPipe" Grid.Row="2" Height="4" Margin="0,2,0,0" Visibility="Visible" Fill="#71717A" Placement="Bottom" TickFrequency="{TemplateBinding TickFrequency}" Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}"/>
                             </Grid>
                         </ControlTemplate>
                     </Setter.Value>

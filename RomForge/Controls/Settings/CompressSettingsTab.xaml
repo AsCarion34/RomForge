@@ -57,7 +57,7 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <Image Grid.Column="0" Source="/Assets/Images/Level.png" Width="24" Margin="0,0,5,0"/>
-                            <Slider Grid.Column="1" x:Name="sliderSwitch" Style="{StaticResource SliderStyle}" Minimum="2" Maximum="18" Value="{Binding SwitchCompressLevel}" SmallChange="1" LargeChange="1" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center"/>
+                            <Slider Grid.Column="1" x:Name="sliderSwitch" Style="{StaticResource SliderStyle}" Minimum="2" Maximum="18" Value="{Binding SwitchCompressLevel}" SmallChange="1" LargeChange="1" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" Cursor="Hand"/>
                             <TextBlock Grid.Column="2" Text="{Binding ElementName=sliderSwitch, Path=Value, Converter={StaticResource CompressLevelTextConverter}}" Foreground="{Binding ElementName=sliderSwitch, Path=Value, Converter={StaticResource LevelToColorConverter}}" 
                                        FontWeight="Bold" VerticalAlignment="Center" Width="30" TextAlignment="Center" Margin="5,0,0,0" MinWidth="45"/>
                         </Grid>
@@ -113,7 +113,7 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <Image Grid.Column="0" Source="/Assets/Images/Level.png" Width="24" Margin="0,0,10,0"/>
-                            <Slider Grid.Column="1" x:Name="sliderAzahar" Style="{StaticResource SliderStyle}" Minimum="3" Maximum="18" Value="{Binding AzaharCompressLevel}" SmallChange="1" LargeChange="1" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center"/>
+                            <Slider Grid.Column="1" x:Name="sliderAzahar" Style="{StaticResource SliderStyle}" Minimum="3" Maximum="18" Value="{Binding AzaharCompressLevel}" SmallChange="1" LargeChange="1" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" Cursor="Hand"/>
                             <TextBlock Grid.Column="2" Text="{Binding ElementName=sliderAzahar, Path=Value}" Foreground="{Binding ElementName=sliderAzahar, Path=Value, Converter={StaticResource LevelToColorConverter}}" 
                                        FontWeight="Bold" VerticalAlignment="Center" Width="30" TextAlignment="Center" Margin="10,0,0,0"/>
                         </Grid>
@@ -146,7 +146,7 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <Image Grid.Column="0" Source="/Assets/Images/Level.png" Width="24" Margin="0,0,10,0"/>
-                            <Slider Grid.Column="1" x:Name="sliderDolphin" Style="{StaticResource SliderStyle}" Minimum="3" Maximum="18" Value="{Binding WiiGCCompressLevel}" SmallChange="1" LargeChange="1" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center"/>
+                            <Slider Grid.Column="1" x:Name="sliderDolphin" Style="{StaticResource SliderStyle}" Minimum="3" Maximum="18" Value="{Binding WiiGCCompressLevel}" SmallChange="1" LargeChange="1" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" Cursor="Hand"/>
                             <TextBlock Grid.Column="2" Text="{Binding ElementName=sliderDolphin, Path=Value}" Foreground="{Binding ElementName=sliderDolphin, Path=Value, Converter={StaticResource LevelToColorConverter}}" 
                                        FontWeight="Bold" VerticalAlignment="Center" Width="30" TextAlignment="Center" Margin="10,0,0,0"/>
                         </Grid>

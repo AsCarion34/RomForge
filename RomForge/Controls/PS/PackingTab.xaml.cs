@@ -168,6 +168,21 @@ public partial class PackingTab : UserControl
             ProcessAudioFile(dialog.FileName);
     }
 
+    private void BgmPlayer_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        e.Handled = true;
+    }
+
+    private void BgmSlider_DragStarted(object sender, System.Windows.Controls.Primitives.DragStartedEventArgs e)
+    {
+        ViewModel?.BeginPreviewSeek();
+    }
+
+    private void BgmSlider_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+    {
+        ViewModel?.EndPreviewSeek();
+    }
+
     private void Bgm_Reset_Click(object sender, RoutedEventArgs e)
     {
         if (ViewModel is { IsBgmConverting: true })
