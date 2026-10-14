@@ -3,10 +3,12 @@ using CD.Core.Services.Readers;
 using CD.Core.Services.Writers;
 using CHD.Core.Services;
 using Common;
+using Common.WPF;
 using Common.WPF.ViewModels;
 using RomForge.Core;
 using RomForge.Core.Models;
 using RomForge.Core.Models.Compression;
+using RomForge.Core.Services;
 using RomForge.Core.Services.Compression;
 using RomForge.Core.Services.Switch;
 using RomForge.Core.UI.Command;
@@ -290,6 +292,7 @@ public class CompressMainViewModel : ToolTabViewModel
 
                     item.Progress = 100;
                     item.Status = "완료";
+                    await SoundPlayer.Play("complete.mp3");
                     cnt++;
                 }
                 catch (OperationCanceledException)
@@ -302,8 +305,8 @@ public class CompressMainViewModel : ToolTabViewModel
                 catch (Exception ex)
                 {
                     AppendLog($"오류 ([{item.FileName}]): {ex.Message}", LogLevel.Error);
-                    MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
-
+                    await SoundPlayer.Play("error.mp3");
+                    MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);                    
                     item.Status = "실패";
                 }
             }

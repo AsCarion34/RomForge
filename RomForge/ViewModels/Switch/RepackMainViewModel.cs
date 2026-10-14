@@ -1,22 +1,24 @@
 ﻿using Common;
+using Common.WPF;
 using Common.WPF.ViewModels;
 using LibHac.Ns;
 using NSW.Core.Enums;
 using NSW.Core.Exceptions;
 using NSW.HacPack.Models;
+using NSW.M1.Core.Models;
 using NSW.M1.Core.Services;
 using NSW.WPF.Services;
 using NSW.WPF.UI;
 using NSW.WPF.ViewModels;
 using RomForge.Core;
-using RomForge.Core.UI.Command;
 using RomForge.Core.Models;
+using RomForge.Core.Services;
+using RomForge.Core.UI.Command;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
-using NSW.M1.Core.Models;
 
 namespace RomForge.ViewModels.Switch
 {
@@ -184,6 +186,7 @@ namespace RomForge.ViewModels.Switch
                     string finalResult = await NspBuildService.Run(req, mode, progress, (msg, lvl) => Log(msg, lvl), token);
 
                     Log($"완료! 총 소요: {_totalSw.Elapsed:mm\\:ss}", LogLevel.Ok);
+                    await SoundPlayer.Play("complete.mp3");
 
                     req.OutputDir?.OpenFolder();
                 }
@@ -207,11 +210,13 @@ namespace RomForge.ViewModels.Switch
                 catch (UnpackMetadataNotFoundException bex)
                 {
                     Log($"실패: {bex.Message}", LogLevel.Error);
+                    await SoundPlayer.Play("error.mp3");                    
                     MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
                 }
                 catch (Exception ex)
                 {
                     Log($"오류: {ex.Message}", LogLevel.Error);
+                    await SoundPlayer.Play("error.mp3");
                     MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
                 }
                 finally

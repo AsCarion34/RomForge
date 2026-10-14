@@ -13,6 +13,8 @@ public class GeneralSettingsMainViewModel : ToolTabViewModel
                 OnPropertyChanged(nameof(Topmost));
             else if (e.PropertyName == nameof(CommonConfig.AutoCheckUpdate))
                 OnPropertyChanged(nameof(AutoCheckUpdate));
+            else if (e.PropertyName == nameof(CommonConfig.IsMuted))
+                OnPropertyChanged(nameof(IsMuted));
         };
     }
 
@@ -32,6 +34,16 @@ public class GeneralSettingsMainViewModel : ToolTabViewModel
         set
         {
             AppConfig.Instance.Common.AutoCheckUpdate = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool IsMuted
+    {
+        get => AppConfig.Instance.Common.IsMuted;
+        set
+        {
+            AppConfig.Instance.Common.IsMuted = value;
             OnPropertyChanged();
         }
     }

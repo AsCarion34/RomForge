@@ -8,6 +8,7 @@ using RomForge.Core;
 using RomForge.Core.Models;
 using RomForge.Core.Models.Compression;
 using RomForge.Core.Models.Patch;
+using RomForge.Core.Services;
 using RomForge.Core.Services.Compression;
 using RomForge.Core.Services.Patch;
 using System.Diagnostics;
@@ -162,15 +163,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
             string version = _cachedPatchVersion ?? "1.0";
             string date = _cachedPatchDate ?? DateTime.Now.ToString("yyMMdd");
             string? language = _cachedPatchLanguage;
-
-            string result = PatchVersionInfoExtractor.ApplyFormat(
-                baseFileName,
-                version,
-                date,
-                language,
-                NamingFormat,
-                AppConfig.Instance.Common.Language
-            );
+            string result = PatchVersionInfoExtractor.ApplyFormat(baseFileName, version, date, language, NamingFormat, AppConfig.Instance.Common.Language);
 
             NamingPreview = result;
 
@@ -457,6 +450,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
             await orchestrator.PatchAsync(actualSourcePath, patchPaths, detected, outputDir, outputPath, sourceIsTemporary, ct);
             stopwatch.Stop();
             Log($"패치 완료: {Path.GetFileName(outputPath)} ({stopwatch.Elapsed:mm\\:ss})", LogLevel.Ok);
+            await SoundPlayer.Play("complete.mp3");
             outputDir.OpenFolder();
         }
         catch (OperationCanceledException)
@@ -470,6 +464,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         catch (Exception ex)
         {
             Log($"패치 실패: {ex.Message}", LogLevel.Error);
+            await SoundPlayer.Play("error.mp3");
             CleanupTask();
             MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
 

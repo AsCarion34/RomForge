@@ -35,6 +35,13 @@ public class CommonConfig : ViewModelBase
         get => _language;
         set { SetProperty(ref _language, value); }
     }
+
+    private bool _isMuted;
+    public bool IsMuted
+    {
+        get => _isMuted;
+        set { SetProperty(ref _isMuted, value); }
+    }
 }
 
 public class WindowConfig : ViewModelBase
