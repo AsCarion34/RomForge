@@ -179,8 +179,6 @@ public sealed class NcaCollector(KeySet keySet)
                 {
                     baseProgs[upOffset] = nca;
                     createOnlyOffsets.Add(upOffset);
-                    createOnlyRawNcas[upOffset] = nca;
-                    createOnlyNcaIds[upOffset] = currentId;
                 }
                 else if (deltaToBaseNcaId.TryGetValue(currentId, out var targetBaseId) && baseProgReverse.TryGetValue(targetBaseId, out var realBaseOffset))
                     updateProgs[realBaseOffset] = nca;

@@ -89,4 +89,13 @@ public static class PatchFolderResolver
 
         return null;
     }
+
+    public static bool HasTitleIdDirs(string? patchRoot)
+    {
+        if (string.IsNullOrEmpty(patchRoot) || !Directory.Exists(patchRoot))
+            return false;
+
+        return Directory.EnumerateDirectories(patchRoot, "*", SearchOption.AllDirectories)
+            .Any(d => Path.GetFileName(d) is { Length: 16 } name && name.All(Uri.IsHexDigit));
+    }
 }

@@ -8,7 +8,6 @@ using NSW.HacPack.Enums;
 using NSW.HacPack.Services;
 using NSW.M1.Core.Models;
 using NSW.Utils;
-using Patch.Core.Services;
 using System.Diagnostics;
 using Path = System.IO.Path;
 
@@ -103,7 +102,7 @@ public static class NspBuildService
                 string dest = Path.Combine(dirs.BuildNca, $"{realNcaId}.nca");
 
                 File.Copy(rawPath, dest, overwrite: true);
-                settings.ProgramNcaPath = dest;
+                settings.ProgramNcaPath = dest;                
             }
             else
             {
@@ -215,11 +214,11 @@ public static class NspBuildService
 
         var sw = Stopwatch.StartNew();
 
-        log("━━ 4단계(4/9): Program NCA 생성 ━━", LogLevel.Highlight);
+        log($"━━ 4단계(4/9): Program NCA 생성 (IdOffset={settings.IdOffset}) ━━", LogLevel.Highlight);
         progress.Report((0, "Program NCA 생성 중..."));
 
         if (req.HasPatch)
-            NspPatchApplier.ApplyPatch(req.PatchDir, unpackResult, progress, log, req.PatchPassword);
+            NspPatchApplier.ApplyPatch(req.PatchDir, unpackResult, settings.SourceIdOffset, progress, log, req.PatchPassword);
 
         settings.NcaType = LibHac.FsSystem.NcaHeader.ContentType.Program;
         settings.ProgramNcaPath = NcaGenerator.GenerateProgramNca(settings, progress, ct) ?? string.Empty;
