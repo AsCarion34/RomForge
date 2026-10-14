@@ -271,15 +271,20 @@ public class MergeMainViewModel : ToolTabViewModel
                 Log(string.Format(Res.Main_Log_AllComplete, _totalSw.Elapsed.ToString(@"mm\:ss")), LogLevel.Ok);
 
                 if (resultCount > 0)
+                {
                     Log(Res.Main_Msg_SplitDone);
+                    await SoundPlayer.PlayCompleteAsync();
+                }
             }
             catch (OperationCanceledException)
             {
                 Log($"분리가 취소되었습니다.", LogLevel.Error);
+                await SoundPlayer.PlayCancelAsync();
             }
             catch (Exception ex)
             {
                 Log($"{Res.Log_Error}: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
             }
             finally
             {

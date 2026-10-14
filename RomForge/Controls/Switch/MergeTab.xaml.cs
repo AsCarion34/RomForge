@@ -1,5 +1,4 @@
 ﻿using NSW.WPF.UI;
-using RomForge.Core.Services.Switch;
 using RomForge.ViewModels.Switch;
 using System.Windows;
 using System.Windows.Controls;
@@ -14,7 +13,6 @@ public partial class MergeTab : UserControl
     public MergeTab()
     {
         InitializeComponent();
-        fileMgr.FileListChanged += () => SwitchGameFileListOrganizer.Reorganize(fileMgr.GameFiles);
     }
 
     private void BtnSettings_Click(object sender, RoutedEventArgs e)
