@@ -90,30 +90,30 @@ public static class Ppf
         }
 
         long pos = 60;
+
         if (version == 1)
-        {
             pos = 56;
-            pat.Position = pos;
-        }
         else if (version == 2)
         {
             ValidateBlockcheckInternal(pat, src, 0, 2);
             pos = 1084;
-            pat.Position = pos;
         }
         else
         {
             byte blockcheck = header[57];
+
             isUndoAvailable = header[58] == 1;
+
             byte imagetype = header[56];
 
             if (blockcheck != 0)
             {
                 ValidateBlockcheckInternal(pat, src, imagetype, 3);
                 pos = 1084;
-                pat.Position = pos;
             }
         }
+
+        pat.Position = pos;
 
         long srcSize = src.Length;
         long patchDataStartPos = pos;
