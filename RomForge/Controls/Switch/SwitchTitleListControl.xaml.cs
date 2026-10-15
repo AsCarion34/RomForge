@@ -199,12 +199,11 @@ public partial class SwitchTitleListControl : UserControl
 
     private void MenuItem_OpenFolder_Click(object sender, RoutedEventArgs e)
     {
-        var selected = lvFiles.SelectedIndex;
-
-        if (selected < 0)
+        if (lvFiles.SelectedItem is not GameFile selected)
             return;
 
-        string? dir = Path.GetDirectoryName(_viewModel.GameFiles[selected].FilePath);
+        string? dir = Path.GetDirectoryName(selected.FilePath);
+
         dir?.OpenFolder();
     }
 

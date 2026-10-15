@@ -50,7 +50,7 @@ public abstract class NspUnpackerBase(KeySet keySet)
                 _keySet.RegisterTickets(pfs);
             }
 
-            var ncas = collector.Collect(partitions);
+            var ncas = collector.Collect(partitions, uniquePaths, req);
 
             if (!ncas.BaseProgs.ContainsKey(0))
                 throw new Exception("Base Program NCA를 찾을 수 없습니다.");

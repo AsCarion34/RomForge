@@ -25,4 +25,6 @@ public sealed record BuildRequest(string BaseFilePath, string UpdateFilePath, IR
     public ulong? OverrideTitleId { get; set; }
 
     public byte? TargetIdOffset { get; set; }
+
+    public IReadOnlyDictionary<string, HashSet<string>>? DlcTitleIdsByFile { get; init; }
 }

@@ -288,9 +288,17 @@ namespace RomForge.ViewModels.Switch
             var dlcPatchPasswords = dlcEntries
                 .Where(f => !string.IsNullOrEmpty(f.PatchPath) && !string.IsNullOrEmpty(f.TitleID) && !string.IsNullOrEmpty(f.PatchPassword))
                 .ToDictionary(f => f.TitleID!, f => f.PatchPassword!, StringComparer.OrdinalIgnoreCase);
+            bool hasUnresolvedRow = gameFiles.Any(f => f.FileType.Contains('D') && (f.FileType.Contains('B') || f.FileType.Contains('U')));
+            Dictionary<string, HashSet<string>>? dlcTitleIds = hasUnresolvedRow
+                ? null
+                : dlcEntries
+                    .Where(f => !string.IsNullOrEmpty(f.TitleID))
+                    .GroupBy(f => f.FilePath, StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.Select(f => f.TitleID!).ToHashSet(StringComparer.OrdinalIgnoreCase), StringComparer.OrdinalIgnoreCase);
 
             req = new BuildRequest(baseEntry.FilePath, updateEntry?.FilePath ?? string.Empty, [.. dlcEntries.Select(f => f.FilePath)], mainPatch, OutputPath)
             {
+                DlcTitleIdsByFile = dlcTitleIds,
                 DlcPatchDirs = dlcPatchDirs,
                 PatchPassword = mainPatchPassword,
                 DlcPatchPasswords = dlcPatchPasswords

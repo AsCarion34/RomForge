@@ -9,4 +9,6 @@ public record MetadataResult(
     public string GetEffectiveDisplayVersion() => string.IsNullOrWhiteSpace(DisplayVersion) || DisplayVersion == "0" ? TitleVersion.ToString() : DisplayVersion;
 
     public string GetTypeTag() => MetadataReader.GetContentMetaTypeTag(Type);
+
+    public byte[]? IconData { get; init; }
 }

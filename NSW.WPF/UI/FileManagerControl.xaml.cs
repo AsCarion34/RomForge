@@ -42,45 +42,39 @@ public partial class FileManagerControl : UserControl
 
     public static bool KeyExists() => KeySetProvider.Instance.KeySet != null;
 
-    public void RecalcKeyMissingFiles(Action onCompleted)
+    public void RecalcKeyMissingFiles(Action onCompleted) => _ = RecalcKeyMissingFilesAsync(onCompleted);
+
+    private async Task RecalcKeyMissingFilesAsync(Action onCompleted)
     {
-        var targets = GameFiles.Where(f => f.IsKeyMissing).ToList();
-
-        if (targets.Count == 0)
+        try
         {
-            onCompleted();
-            return;
-        }
+            var keySet = KeySetProvider.Instance.KeySet;
 
-        var keySet = KeySetProvider.Instance.KeySet;
+            if (keySet == null)
+                return;
 
-        if (keySet == null)
-        {
-            onCompleted();
-            return;
-        }
+            var targets = GameFiles.Where(f => f.IsKeyMissing).ToList();
 
-        int remaining = targets.Count;
-
-        foreach (var vm in targets)
-        {
-            string capturedPath = vm.FilePath;
-
-            _ = Task.Run(() =>
+            foreach (var vm in targets)
             {
-                string result = MetadataReader.DetectFileType(keySet, capturedPath);
-
-                if (Interlocked.Decrement(ref remaining) == 0)
+                var info = await Task.Run<GameFileInfo?>(() =>
                 {
-                    Dispatcher.Invoke(() =>
+                    try
                     {
-                        vm.FileType = result;
-                        onCompleted();
-                    });
-                }
-                else
-                    Dispatcher.Invoke(() => vm.FileType = result);
-            });
+                        return MetadataReader.ReadGameFileInfo(keySet.Clone(), vm.FilePath);
+                    }
+                    catch
+                    {
+                        return null;
+                    }
+                });
+
+                ApplyInfo(vm, info);
+            }
+        }
+        finally
+        {
+            onCompleted();
         }
     }
 
@@ -157,88 +151,64 @@ public partial class FileManagerControl : UserControl
     private async Task AddFilesAsync(IEnumerable<string> paths)
     {
         var keySet = KeySetProvider.Instance.KeySet;
-        var existingPaths = GameFiles.Select(f => f.FilePath)
-                                     .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var newPaths = await Task.Run(() =>
-            paths.Where(p => SupportedExtensions.Contains(Path.GetExtension(p)))
-                 .Where(p => !existingPaths.Contains(p))
-                 .ToList()
-        );
+        var candidates = await Task.Run(() => paths.Where(p => SupportedExtensions.Contains(Path.GetExtension(p))).ToList());
+        var added = new List<GameFile>();
 
-        foreach (var path in newPaths)
+        foreach (var path in candidates)
         {
-            string titleName = Path.GetFileNameWithoutExtension(path);
-            System.Windows.Media.Imaging.BitmapImage? icon = null;
-            string fileType = keySet == null ? Res.Status_NoKey : Res.Status_Analyzing;
-            string titleId = string.Empty;
-            string version = string.Empty;
-
-            if (keySet != null)
-            {
-                var info = MetadataReader.GetGameFileInfo(keySet, path);
-
-                if (info != null)
-                {
-                    if (!string.IsNullOrEmpty(info.TitleName))
-                        titleName = info.TitleName;
-
-                    if (info.IconData != null)
-                        icon = info.IconData.ToBitmapImage();
-
-                    titleId = info.TitleId;
-                    version = info.DisplayVersion;
-                    fileType = info.Type;
-                }
-
-                try
-                {
-                    var allMeta = MetadataReader.GetMetadataFromContainer(keySet, path);
-                    if (allMeta.Count > 0)
-                    {
-                        var types = new List<string>();
-
-                        if (allMeta.Any(m => m.Type == ContentMetaType.Application))
-                            types.Add("B");
-
-                        if (allMeta.Any(m => m.Type == ContentMetaType.Patch))
-                            types.Add("U");
-
-                        if (allMeta.Any(m => m.Type is ContentMetaType.AddOnContent or ContentMetaType.Delta))
-                            types.Add("D");
-
-                        if (types.Count > 0)
-                            fileType = string.Join("+", types);
-
-                        var mainMeta = allMeta.FirstOrDefault(m => m.Type == ContentMetaType.Application) ?? allMeta.FirstOrDefault(m => m.Type == ContentMetaType.Patch) ?? allMeta.FirstOrDefault();
-
-                        if (mainMeta != null)
-                        {
-                            if (string.IsNullOrEmpty(titleId))
-                                titleId = mainMeta.TitleId;
-
-                            string effectiveVer = mainMeta.GetEffectiveDisplayVersion();
-
-                            if (!string.IsNullOrEmpty(effectiveVer))
-                                version = effectiveVer;
-                        }
-                    }
-                }
-                catch { }
-            }
+            if (GameFiles.Any(f => string.Equals(f.FilePath, path, StringComparison.OrdinalIgnoreCase)))
+                continue;
 
             var vm = new GameFile(path)
             {
-                FileType = fileType,
-                TitleID = titleId,
-                Version = version,
-                TitleName = titleName,
-                Icon = icon
+                FileType = keySet == null ? Res.Status_NoKey : Res.Status_Analyzing,
+                TitleName = Path.GetFileNameWithoutExtension(path)
             };
 
             GameFiles.Add(vm);
+            added.Add(vm);
         }
 
         UpdateDropHint();
+
+        if (keySet == null)
+            return;
+
+        foreach (var vm in added)
+        {
+            var info = await Task.Run<GameFileInfo?>(() =>
+            {
+                try
+                {
+                    return MetadataReader.ReadGameFileInfo(keySet.Clone(), vm.FilePath);
+                }
+                catch
+                {
+                    return null;
+                }
+            });
+
+            ApplyInfo(vm, info);
+        }
+    }
+
+    private static void ApplyInfo(GameFile vm, GameFileInfo? info)
+    {
+        if (info == null)
+        {
+            vm.FileType = "?";
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(info.TitleName))
+            vm.TitleName = info.TitleName;
+
+        if (info.IconData != null)
+            vm.Icon = info.IconData.ToBitmapImage();
+
+        vm.TitleID = info.TitleId;
+        vm.Version = info.DisplayVersion;
+        vm.FileType = info.Type;
     }
 
     private void GridViewColumnHeader_Click(object sender, RoutedEventArgs e) => _sorter.HandleHeaderClick(e, lvFiles);
@@ -251,12 +221,10 @@ public partial class FileManagerControl : UserControl
 
     private void MenuItem_OpenFolder_Click(object sender, RoutedEventArgs e)
     {
-        var selected = lvFiles.SelectedIndex;
-
-        if (selected < 0)
+        if (lvFiles.SelectedItem is not GameFile selected)
             return;
 
-        string? dir = Path.GetDirectoryName(GameFiles[selected].FilePath);
+        string? dir = Path.GetDirectoryName(selected.FilePath);
 
         dir?.OpenFolder();
     }

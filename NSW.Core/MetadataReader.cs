@@ -179,7 +179,7 @@ public static class MetadataReader
         return info;
     }
 
-    public static List<MetadataResult> GetMetadataFromContainer(KeySet keySet, string path)
+    public static List<MetadataResult> GetMetadataFromContainer(KeySet keySet, string path, bool readIcon = false)
     {
         var results = new List<MetadataResult>();
 
@@ -222,6 +222,7 @@ public static class MetadataReader
                 string krTitle = string.Empty;
                 string enTitle = string.Empty;
                 string displayVer = "1.0.0";
+                byte[]? iconData = null;
                 var ctrlRecord = cnmt.ContentEntries
                     .FirstOrDefault(x => x.Type == LibHac.Ncm.ContentType.Control);
 
@@ -258,6 +259,9 @@ public static class MetadataReader
                             if (string.IsNullOrWhiteSpace(enTitle)) enTitle = krTitle;
 
                             displayVer = current.DisplayVersionString.ToString().Trim('\0', ' ');
+
+                            if (readIcon)
+                                iconData = ReadControlIcon(allFiles[ctrlName], keySet, current.GetTitleByLanguage(Current).Language);
                         }
                     }
                 }
@@ -269,7 +273,7 @@ public static class MetadataReader
                     .OrderBy(o => o)
                     .ToList();
 
-                results.Add(new MetadataResult(titleId, version, displayVer, krTitle, enTitle, 0, type, cnmtNcaName, path, contentNcaIds, programIdOffsets));
+                results.Add(new MetadataResult(titleId, version, displayVer, krTitle, enTitle, 0, type, cnmtNcaName, path, contentNcaIds, programIdOffsets) { IconData = iconData });
             }
             catch
             { 
@@ -284,6 +288,57 @@ public static class MetadataReader
             d.Dispose();
 
         return results;
+    }
+
+    private static byte[]? ReadControlIcon(IStorage ncaStorage, KeySet keySet, Language language)
+    {
+        try
+        {
+            var nca = new Nca(keySet, ncaStorage);
+            using var ctrlFs = nca.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.None);
+
+            return ctrlFs.GetIconData(language);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public static GameFileInfo ReadGameFileInfo(KeySet keySet, string path)
+    {
+        var info = new GameFileInfo { Path = path };
+
+        if (string.IsNullOrEmpty(path) || !File.Exists(path))
+            return info;
+
+        var metas = GetMetadataFromContainer(keySet, path, readIcon: true);
+
+        if (metas.Count == 0)
+            return info;
+
+        var types = new List<string>();
+
+        if (metas.Any(m => m.Type == ContentMetaType.Application))
+            types.Add("B");
+
+        if (metas.Any(m => m.Type == ContentMetaType.Patch))
+            types.Add("U");
+
+        if (metas.Any(m => m.Type is ContentMetaType.AddOnContent or ContentMetaType.Delta))
+            types.Add("D");
+
+        var main = metas.FirstOrDefault(m => m.Type == ContentMetaType.Application)
+            ?? metas.FirstOrDefault(m => m.Type == ContentMetaType.Patch)
+            ?? metas[0];
+
+        info.Type = types.Count > 0 ? string.Join("+", types) : "?";
+        info.TitleId = main.TitleId;
+        info.DisplayVersion = main.GetEffectiveDisplayVersion();
+        info.TitleName = !string.IsNullOrEmpty(main.KrTitle) ? main.KrTitle : main.EnTitle;
+        info.IconData = main.IconData;
+
+        return info;
     }
 
     public static List<Cnmt> GetCnmtsFromContainer(KeySet keySet, string path)

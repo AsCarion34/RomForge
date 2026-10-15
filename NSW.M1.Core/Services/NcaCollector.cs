@@ -7,6 +7,7 @@ using LibHac.NSZ;
 using LibHac.Tools.Fs;
 using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.NcaUtils;
+using NSW.M1.Core.Models;
 using System.Diagnostics;
 using ContentType = LibHac.Ncm.ContentType;
 using Path = System.IO.Path;
@@ -25,7 +26,7 @@ public sealed class NcaCollector(KeySet keySet)
 
     public IReadOnlyList<Stream> NscStreams => _nscStreams;
 
-    public CollectedNcas Collect(List<IFileSystem> partitions)
+    public CollectedNcas Collect(List<IFileSystem> partitions, List<string> sourcePaths, BuildRequest req)
     {
         var baseProgIds = new Dictionary<byte, string>();
         var updateProgIds = new Dictionary<byte, string>();
@@ -46,13 +47,19 @@ public sealed class NcaCollector(KeySet keySet)
         var allNcas = new Dictionary<string, Nca>();
         var cnmtList = new List<LibHac.Tools.Ncm.Cnmt>();
 
-        foreach (var pfs in partitions)
+        bool filtering = req.DlcTitleIdsByFile != null;
+
+        for (int i = 0; i < partitions.Count; i++)
         {
+            var pfs = partitions[i];
+            string sourcePath = sourcePaths[i];
+
             foreach (var entry in EnumerateNcaEntries(pfs))
             {
                 string currentId = Path.GetFileNameWithoutExtension(entry.Name).ToLower();
+                bool isNew = processedIds.Add(currentId);
 
-                if (!processedIds.Add(currentId))
+                if (!isNew && !filtering)
                     continue;
 
                 var nca = OpenNca(pfs, entry.FullPath);
@@ -60,7 +67,8 @@ public sealed class NcaCollector(KeySet keySet)
                 if (nca == null)
                     continue;
 
-                allNcas[currentId] = nca;
+                if (isNew)
+                    allNcas[currentId] = nca;
 
                 if (nca.Header.ContentType != NcaContentType.Meta)
                     continue;
@@ -69,7 +77,7 @@ public sealed class NcaCollector(KeySet keySet)
                 {
                     using var metaFs = nca.OpenFileSystem(NcaSectionType.Data, IntegrityCheckLevel.None);
 
-                    cnmtList.AddRange(ReadCnmtsFromFs(metaFs));
+                    cnmtList.AddRange(ReadCnmtsFromFs(metaFs).Where(c => IsAllowedCnmt(c, sourcePath, req)));
                 }
                 catch (Exception ex)
                 {
@@ -202,6 +210,20 @@ public sealed class NcaCollector(KeySet keySet)
         }
 
         return new CollectedNcas(baseProgs, updateProgs, baseControls, updateControls, baseHtmls, updateHtmls, baseLegals, updateLegals, dlcNcas, patchVersion, createOnlyOffsets, createOnlyRawNcas, createOnlyNcaIds);
+    }
+
+    private static bool IsAllowedCnmt(LibHac.Tools.Ncm.Cnmt cnmt, string sourcePath, BuildRequest req)
+    {
+        if (req.DlcTitleIdsByFile == null)
+            return true;
+
+        return cnmt.Type switch
+        {
+            ContentMetaType.Application => string.Equals(sourcePath, req.BaseFilePath, StringComparison.OrdinalIgnoreCase),
+            ContentMetaType.Patch => string.Equals(sourcePath, req.UpdateFilePath, StringComparison.OrdinalIgnoreCase),
+            ContentMetaType.AddOnContent => req.DlcTitleIdsByFile.TryGetValue(sourcePath, out var ids) && ids.Contains(cnmt.TitleId.ToString("X16")),
+            _ => true
+        };
     }
 
     private static IEnumerable<LibHac.Tools.Ncm.Cnmt> ReadCnmtsFromFs(IFileSystem metaFs)
