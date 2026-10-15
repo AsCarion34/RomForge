@@ -28,6 +28,7 @@ public sealed class SwitchGameFileImporter(ObservableCollection<GameFile> gameFi
             if (keySet != null)
             {
                 var info = MetadataReader.GetGameFileInfo(keySet, path);
+
                 if (info != null)
                 {
                     if (!string.IsNullOrEmpty(info.TitleName))
@@ -38,8 +39,14 @@ public sealed class SwitchGameFileImporter(ObservableCollection<GameFile> gameFi
 
                 List<MetadataResult> allMeta;
 
-                try { allMeta = MetadataReader.GetMetadataFromContainer(keySet, path); }
-                catch { allMeta = []; }
+                try 
+                { 
+                    allMeta = MetadataReader.GetMetadataFromContainer(keySet, path);
+                }
+                catch 
+                { 
+                    allMeta = [];
+                }
 
                 if (allMeta.Count > 0)
                 {
@@ -176,7 +183,21 @@ public sealed class SwitchGameFileImporter(ObservableCollection<GameFile> gameFi
 
         if (vm.FileType.Contains('D'))
         {
-            if (gameFiles.Any(f => f.FilePath.Equals(vm.FilePath, StringComparison.OrdinalIgnoreCase) && f.TitleID == vm.TitleID))
+            var existingDlc = gameFiles.FirstOrDefault(f => f.FileType.Contains('D') && f.TitleID.Equals(vm.TitleID, StringComparison.OrdinalIgnoreCase) && !string.Equals(f.FilePath, vm.FilePath, StringComparison.OrdinalIgnoreCase));
+
+            if (existingDlc != null)
+            {
+                if (vm.PatchPath == null)
+                {
+                    vm.PatchPath = existingDlc.PatchPath;
+                    vm.PatchPassword = existingDlc.PatchPassword;
+                }
+
+                patchSync.Detach(existingDlc);
+                gameFiles.Remove(existingDlc);
+            }
+
+            if (gameFiles.Any(f => f.FilePath.Equals(vm.FilePath, StringComparison.OrdinalIgnoreCase) && f.FileType.Contains('D') && f.TitleID.Equals(vm.TitleID, StringComparison.OrdinalIgnoreCase)))
                 return;
         }
 

@@ -17,13 +17,14 @@ namespace NSW.WPF.UI;
 public partial class FileManagerControl : UserControl
 {
     private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase) { ".nsp", ".xci", ".nsz", ".xcz" };
-
     private readonly ListViewColumnSorter _sorter = new();
 
     public Button ExtraButton1 => btnExtra1;
+
     public Action ExtraButton1Clicked;
 
     public Button ExtraButton2 => btnExtra2;
+
     public Action ExtraButton2Clicked;
 
     public ObservableCollection<GameFile> GameFiles { get; set; } = [];
@@ -129,15 +130,9 @@ public partial class FileManagerControl : UserControl
         UpdateDropHint();
     }
 
-    private void BtnExtra1_Click(object sender, RoutedEventArgs e)
-    {
-        ExtraButton1Clicked?.Invoke();
-    }
+    private void BtnExtra1_Click(object sender, RoutedEventArgs e) => ExtraButton1Clicked?.Invoke();
 
-    private void BtnExtra2_Click(object sender, RoutedEventArgs e)
-    {
-        ExtraButton2Clicked?.Invoke();
-    }
+    private void BtnExtra2_Click(object sender, RoutedEventArgs e) => ExtraButton2Clicked?.Invoke();
 
     private void LvFiles_KeyUp(object sender, KeyEventArgs e)
     {
@@ -166,7 +161,7 @@ public partial class FileManagerControl : UserControl
                                      .ToHashSet(StringComparer.OrdinalIgnoreCase);
         var newPaths = await Task.Run(() =>
             paths.Where(p => SupportedExtensions.Contains(Path.GetExtension(p)))
-                 .Where(p => existingPaths.Add(p))
+                 .Where(p => !existingPaths.Contains(p))
                  .ToList()
         );
 
@@ -214,12 +209,17 @@ public partial class FileManagerControl : UserControl
                         if (types.Count > 0)
                             fileType = string.Join("+", types);
 
-                        var appMeta = allMeta.FirstOrDefault(m => m.Type == ContentMetaType.Application);
+                        var mainMeta = allMeta.FirstOrDefault(m => m.Type == ContentMetaType.Application) ?? allMeta.FirstOrDefault(m => m.Type == ContentMetaType.Patch) ?? allMeta.FirstOrDefault();
 
-                        if (appMeta != null)
+                        if (mainMeta != null)
                         {
-                            titleId = appMeta.TitleId;
-                            version = appMeta.GetEffectiveDisplayVersion();
+                            if (string.IsNullOrEmpty(titleId))
+                                titleId = mainMeta.TitleId;
+
+                            string effectiveVer = mainMeta.GetEffectiveDisplayVersion();
+
+                            if (!string.IsNullOrEmpty(effectiveVer))
+                                version = effectiveVer;
                         }
                     }
                 }

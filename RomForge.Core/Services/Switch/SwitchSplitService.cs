@@ -34,6 +34,7 @@ public class SwitchSplitService : BaseSwitchService
         try
         {
             var storage = new LocalStorage(sourcePath, FileAccess.Read);
+
             disposables.Add(storage);
 
             string inputExt = Path.GetExtension(sourcePath).ToLowerInvariant();
@@ -157,7 +158,6 @@ public class SwitchSplitService : BaseSwitchService
             cnmtFs.OpenFile(ref cFile.Ref, cnmtFsEntry.FullPath.ToU8Span(), OpenMode.Read).ThrowIfFailure();
 
             var cnmt = new Cnmt(cFile.Get.AsStream());
-
             var fileEntries = new List<(string Name, Func<Stream, Action<long>, Task> Writer, long EstimatedSize, string Label)>();
             string titleIdHex = meta.TitleId.ToUpper();
 
@@ -169,6 +169,7 @@ public class SwitchSplitService : BaseSwitchService
                         continue;
 
                     var fileRef = new UniqueRef<IFile>();
+
                     if (fs.OpenFile(ref fileRef.Ref, ("/" + kvp.Value.EntryName).ToU8Span(), OpenMode.Read).IsFailure())
                         continue;
 
@@ -179,7 +180,6 @@ public class SwitchSplitService : BaseSwitchService
                     IStorage tikStorage = new FileStorage(rawFile);
 
                     disposables.Add(tikStorage);
-
                     tikStorage.GetSize(out long tikSize).ThrowIfFailure();
 
                     var cap = tikStorage;
@@ -220,7 +220,6 @@ public class SwitchSplitService : BaseSwitchService
                 IStorage currentStorage = new FileStorage(rawFile);
 
                 disposables.Add(currentStorage);
-
                 currentStorage.GetSize(out long size).ThrowIfFailure();
 
                 var nca = new Nca(keySet, currentStorage);
@@ -236,21 +235,16 @@ public class SwitchSplitService : BaseSwitchService
                 fileEntries.Add((result.Value.FinalName, result.Value.Writer, result.Value.Size, result.Value.Label));
             }
 
-            NswContainerFormat format = outputAsXci
-                ? (useCompression ? NswContainerFormat.Xcz : NswContainerFormat.Xci)
-                : (useCompression ? NswContainerFormat.Nsz : NswContainerFormat.Nsp);
-
+            NswContainerFormat format = outputAsXci ? (useCompression ? NswContainerFormat.Xcz : NswContainerFormat.Xci) : (useCompression ? NswContainerFormat.Nsz : NswContainerFormat.Nsp);
             string outName = NspNameBuilder.SplitFileNameBuild(meta.KrTitle, meta.EnTitle, meta.TitleId, meta.GetEffectiveDisplayVersion(), typeTag, format);
+
             finalPath = Utils.GetUniqueFilePath(Path.Combine(outputDir, outName));
 
             string displayName = NspNameBuilder.DisplayNameBuild(meta.EnTitle, meta.TitleId, meta.DisplayVersion);
-
             using var fout = File.Open(finalPath, FileMode.Create, FileAccess.ReadWrite);
 
             if (outputAsXci)
-            {
                 await WriteXciAsync(displayName, meta.TitleId, xciPrefixBuffer!, rootEntriesTemplate!, srcStream, fileEntries, fout, progress, ct);
-            }
             else
             {
                 await Pfs0Builder.WriteAsync($"{Res.Log_Splitting} {displayName}", meta.TitleId, fileEntries, fout, 0x20, progress, ct);
@@ -287,9 +281,7 @@ public class SwitchSplitService : BaseSwitchService
                         string vlabel = $"{baseTitle} [{typeTag}]";
 
                         log?.Invoke($"- {vlabel} {Res.ToolTip_ValidateCompress}", LogLevel.Info, meta.TitleId);
-
                         await converter.ValidateAsync(nczFile.Get.AsStream(), meta.TitleId, totalValidationSize, vlabel, progress, ct);
-
                         log?.Invoke($"- {vlabel} OK", LogLevel.Ok, meta.TitleId);
                     }
 
@@ -298,6 +290,7 @@ public class SwitchSplitService : BaseSwitchService
             }
 
             isCompleted = true;
+
             log?.Invoke($"{string.Format(Res.Log_SplitComplete, outName)} ({index}/{groupCount})", LogLevel.Ok, meta.TitleId);
 
             return true;

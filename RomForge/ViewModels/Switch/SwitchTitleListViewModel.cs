@@ -35,6 +35,7 @@ public class SwitchTitleListViewModel : ToolTabViewModel
     public void RecalcKeyMissingFiles(Action onCompleted)
     {
         var targets = GameFiles.Where(f => f.IsKeyMissing).ToList();
+
         if (targets.Count == 0)
         {
             onCompleted();
@@ -42,6 +43,7 @@ public class SwitchTitleListViewModel : ToolTabViewModel
         }
 
         var keySet = KeySetProvider.Instance.KeySet;
+
         if (keySet == null)
         {
             onCompleted();
@@ -49,12 +51,15 @@ public class SwitchTitleListViewModel : ToolTabViewModel
         }
 
         int remaining = targets.Count;
+
         foreach (var vm in targets)
         {
             string capturedPath = vm.FilePath;
+
             _ = Task.Run(() =>
             {
                 string result = MetadataReader.DetectFileType(keySet, capturedPath);
+
                 if (Interlocked.Decrement(ref remaining) == 0)
                     Application.Current.Dispatcher.Invoke(() => { vm.FileType = result; onCompleted(); });
                 else

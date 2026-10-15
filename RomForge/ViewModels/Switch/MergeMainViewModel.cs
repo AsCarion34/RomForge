@@ -289,12 +289,14 @@ public class MergeMainViewModel : ToolTabViewModel
             finally
             {
                 _cts?.Dispose();
+
                 _cts = null;
                 ProgressPct = 0;
             }
         }
 
         _currentMode = null;
+
         NotifyButtonStates();
     }
 
