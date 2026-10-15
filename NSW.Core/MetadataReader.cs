@@ -183,7 +183,7 @@ public static class MetadataReader
     {
         var results = new List<MetadataResult>();
 
-        if (string.IsNullOrEmpty(path) || !File.Exists(path)) 
+        if (string.IsNullOrEmpty(path) || !File.Exists(path))
             return results;
 
         using var storage = new LocalStorage(path, FileAccess.Read);
@@ -211,13 +211,40 @@ public static class MetadataReader
                 string titleId = cnmt.TitleId.ToString("X16");
                 uint version = cnmt.TitleVersion.Version;
                 ContentMetaType type = cnmt.Type;
+
                 var contentNcaIds = cnmt.ContentEntries
                     .Select(e => BitConverter.ToString(e.NcaId).Replace("-", string.Empty).ToLowerInvariant())
                     .ToList();
+
                 string selfNcaId = System.IO.Path.GetFileNameWithoutExtension(System.IO.Path.GetFileNameWithoutExtension(cnmtNcaName));
 
                 if (!string.IsNullOrEmpty(selfNcaId))
                     contentNcaIds.Add(selfNcaId.ToLowerInvariant());
+
+                long calculatedSize = 0;
+
+                foreach (var ncaId in contentNcaIds)
+                {
+                    var matchedKey = allFiles.Keys.FirstOrDefault(k => k.StartsWith(ncaId, StringComparison.OrdinalIgnoreCase));
+
+                    if (matchedKey != null)
+                    {
+                        try
+                        {
+                            using var targetFile = allFiles[matchedKey].AsFile(OpenMode.Read);
+                            targetFile.GetSize(out long size);
+                            calculatedSize += size;
+                        }
+                        catch { }
+                    }
+                }
+
+                try
+                {
+                    ncaFile.GetSize(out long size);
+                    calculatedSize += size;
+                }
+                catch { }
 
                 string krTitle = string.Empty;
                 string enTitle = string.Empty;
@@ -234,6 +261,18 @@ public static class MetadataReader
 
                     if (ctrlName != null)
                     {
+                        try
+                        {
+                            using var ctrlFile = allFiles[ctrlName].AsFile(OpenMode.Read);
+
+                            ctrlFile.GetSize(out long size);
+
+                            calculatedSize += size;
+                        }
+                        catch
+                        {
+                        }
+
                         var control = allFiles[ctrlName].GetControlProperty(keySet);
 
                         if (control != null)
@@ -249,9 +288,9 @@ public static class MetadataReader
                                 {
                                     var name = t.NameString.ToString().Trim('\0', ' ');
 
-                                    if (!string.IsNullOrWhiteSpace(name)) 
+                                    if (!string.IsNullOrWhiteSpace(name))
                                     {
-                                        krTitle = name; 
+                                        krTitle = name;
                                         break;
                                     }
                                 }
@@ -273,15 +312,19 @@ public static class MetadataReader
                     .OrderBy(o => o)
                     .ToList();
 
-                results.Add(new MetadataResult(titleId, version, displayVer, krTitle, enTitle, 0, type, cnmtNcaName, path, contentNcaIds, programIdOffsets) { IconData = iconData });
+                results.Add(new MetadataResult(titleId, version, displayVer, krTitle, enTitle, 0, type, cnmtNcaName, path, contentNcaIds, programIdOffsets)
+                {
+                    IconData = iconData,
+                    Size = calculatedSize
+                });
             }
             catch
-            { 
+            {
                 throw;
             }
         }
 
-        foreach (var s in allFiles.Values) 
+        foreach (var s in allFiles.Values)
             s.Dispose();
 
         if (fs is IDisposable d)

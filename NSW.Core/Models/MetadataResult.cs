@@ -11,4 +11,6 @@ public record MetadataResult(
     public string GetTypeTag() => MetadataReader.GetContentMetaTypeTag(Type);
 
     public byte[]? IconData { get; init; }
+
+    public long Size { get; init; }
 }
