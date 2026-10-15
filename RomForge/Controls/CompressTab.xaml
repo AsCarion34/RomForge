@@ -225,9 +225,8 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <ToggleButton Grid.Column="0" Style="{StaticResource ToggleStyle}" Background="Transparent" BorderThickness="0" IsChecked="{Binding CompressVM.UseCustomOutputPath}" VerticalAlignment="Center" Height="36" Margin="0">
-                    <StackPanel Orientation="Horizontal">
-                        <Image Width="18" Margin="10,0,10,0" Source="{Binding CompressVM.UseCustomOutputPath, Converter={StaticResource BoolToImageConverter}}"/>
+                <ToggleButton Grid.Column="0" Style="{StaticResource LeftSlideToggleStyle}" Background="Transparent" BorderThickness="0" IsChecked="{Binding CompressVM.UseCustomOutputPath}" VerticalAlignment="Center" Height="40" Margin="0">
+                    <StackPanel Orientation="Horizontal">                        
                         <TextBlock Text="출력 폴더 변경" VerticalAlignment="Center" Foreground="#FFFFFF" FontWeight="Bold" Margin="0,0,10,0"/>
                     </StackPanel>
                 </ToggleButton>
