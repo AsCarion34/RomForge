@@ -8,29 +8,39 @@ namespace Common.WPF;
 
 public static class SoundManager
 {
-    private static readonly object _lock = new object();
-    private static IWavePlayer? _waveOutDevice;
+    private static readonly object _lock = new();
+    private static WaveOutEvent? _waveOutDevice;
     private static Mp3FileReader? _audioFileReader;
-    private static MemoryStream? _memoryStream;
+    private static Stream? _audioStream;
 
     public static async Task PlayFromWpfResourceAsync(string packUriString)
     {
-        StreamResourceInfo resourceStreamInfo = null;
+        Stream stream;
+
         try
         {
-            var uri = new Uri(packUriString, UriKind.Absolute);
-            resourceStreamInfo = Application.GetResourceStream(uri);
+            if (Path.IsPathRooted(packUriString) || File.Exists(packUriString))
+                stream = new FileStream(packUriString, FileMode.Open, FileAccess.Read, FileShare.Read);
+            else
+            {
+                var uri = new Uri(packUriString, UriKind.Absolute);
+                StreamResourceInfo resourceStreamInfo = Application.GetResourceStream(uri) ?? throw new FileNotFoundException($"WPF 리소스를 찾을 수 없습니다: {packUriString}");
+                var memoryStream = new MemoryStream();
+
+                resourceStreamInfo.Stream.CopyTo(memoryStream);
+
+                memoryStream.Position = 0;
+                stream = memoryStream;
+            }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"WPF 리소스 로드 오류: {ex.Message}");
+            Debug.WriteLine($"오디오 스트림 로드 오류: {ex.Message}");
             return;
         }
 
-        if (resourceStreamInfo == null)
-        {
-            throw new FileNotFoundException($"WPF 리소스를 찾을 수 없습니다: {packUriString}");
-        }
+        lock (_lock)
+            StopInternal();
 
         await Task.Run(() =>
         {
@@ -38,16 +48,8 @@ public static class SoundManager
             {
                 try
                 {
-                    StopInternal();
-
-                    var memoryStream = new MemoryStream();
-
-                    resourceStreamInfo.Stream.CopyTo(memoryStream);
-
-                    memoryStream.Position = 0;
-                    _memoryStream = memoryStream;
-
-                    _audioFileReader = new Mp3FileReader(_memoryStream);
+                    _audioStream = stream;
+                    _audioFileReader = new Mp3FileReader(_audioStream);
                     _waveOutDevice = new WaveOutEvent();
 
                     _waveOutDevice.Init(_audioFileReader);
@@ -70,6 +72,8 @@ public static class SoundManager
         });
     }
 
+    public static async Task PlayFromFileAsync(string filePath) => await PlayFromWpfResourceAsync(filePath);
+
     public static void Stop()
     {
         lock (_lock)
@@ -81,9 +85,6 @@ public static class SoundManager
         try
         {
             _waveOutDevice?.Stop();
-        }
-        catch
-        {
         }
         finally
         {
@@ -99,7 +100,7 @@ public static class SoundManager
         _audioFileReader?.Dispose();
         _audioFileReader = null;
 
-        _memoryStream?.Dispose();
-        _memoryStream = null;
+        _audioStream?.Dispose();
+        _audioStream = null;
     }
 }

@@ -29,7 +29,7 @@ public class CommonConfig : ViewModelBase
         set { SetProperty(ref _autoCheckUpdate, value); }
     }
 
-    private string? _language = "Korean"; 
+    private string? _language = "Korean";
     public string? Language
     {
         get => _language;
@@ -41,6 +41,27 @@ public class CommonConfig : ViewModelBase
     {
         get => _isMuted;
         set { SetProperty(ref _isMuted, value); }
+    }
+
+    private string _completeSoundPath = "complete.mp3";
+    public string CompleteSoundPath
+    {
+        get => _completeSoundPath;
+        set { SetProperty(ref _completeSoundPath, value); }
+    }
+
+    private string _cancelSoundPath = "cancel.mp3";
+    public string CancelSoundPath
+    {
+        get => _cancelSoundPath;
+        set { SetProperty(ref _cancelSoundPath, value); }
+    }
+
+    private string _errorSoundPath = "error.mp3";
+    public string ErrorSoundPath
+    {
+        get => _errorSoundPath;
+        set { SetProperty(ref _errorSoundPath, value); }
     }
 }
 
