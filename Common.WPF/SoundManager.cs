@@ -10,17 +10,20 @@ public static class SoundManager
 {
     private static readonly object _lock = new();
     private static WaveOutEvent? _waveOutDevice;
-    private static Mp3FileReader? _audioFileReader;
+    private static WaveStream? _audioFileReader;
     private static Stream? _audioStream;
 
     public static async Task PlayFromWpfResourceAsync(string packUriString)
     {
         Stream stream;
+        string extension = Path.GetExtension(packUriString).ToLowerInvariant();
 
         try
         {
             if (Path.IsPathRooted(packUriString) || File.Exists(packUriString))
+            {
                 stream = new FileStream(packUriString, FileMode.Open, FileAccess.Read, FileShare.Read);
+            }
             else
             {
                 var uri = new Uri(packUriString, UriKind.Absolute);
@@ -28,9 +31,10 @@ public static class SoundManager
                 var memoryStream = new MemoryStream();
 
                 resourceStreamInfo.Stream.CopyTo(memoryStream);
-
                 memoryStream.Position = 0;
                 stream = memoryStream;
+
+                extension = Path.GetExtension(uri.AbsolutePath).ToLowerInvariant();
             }
         }
         catch (Exception ex)
@@ -49,9 +53,15 @@ public static class SoundManager
                 try
                 {
                     _audioStream = stream;
-                    _audioFileReader = new Mp3FileReader(_audioStream);
-                    _waveOutDevice = new WaveOutEvent();
 
+                    if (extension == ".wav")
+                        _audioFileReader = new WaveFileReader(_audioStream);
+                    else if (extension == ".mp3")
+                        _audioFileReader = new Mp3FileReader(_audioStream);
+                    else
+                        throw new NotSupportedException($"지원하지 않는 오디오 형식입니다: {extension}");
+
+                    _waveOutDevice = new WaveOutEvent();
                     _waveOutDevice.Init(_audioFileReader);
 
                     _waveOutDevice.PlaybackStopped += (s, e) => {

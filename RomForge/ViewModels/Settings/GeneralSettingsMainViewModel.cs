@@ -1,6 +1,7 @@
 ﻿using Common.WPF.ViewModels;
 using Microsoft.Win32;
 using RomForge.Core;
+using RomForge.Core.Services;
 using RomForge.Core.UI.Command;
 using System.Windows.Input;
 
@@ -76,6 +77,7 @@ public class GeneralSettingsMainViewModel : ToolTabViewModel
         set
         {
             AppConfig.Instance.Common.CompleteSoundPath = value;
+            _ = SoundPlayer.PlayAsync(value, "complete.mp3");
             OnPropertyChanged();
             OnPropertyChanged(nameof(CompleteSoundHintVisibility));
         }
@@ -87,6 +89,7 @@ public class GeneralSettingsMainViewModel : ToolTabViewModel
         set
         {
             AppConfig.Instance.Common.CancelSoundPath = value;
+            _ = SoundPlayer.PlayAsync(value, "cancel.mp3");
             OnPropertyChanged();
             OnPropertyChanged(nameof(CancelSoundHintVisibility));
         }
@@ -98,6 +101,7 @@ public class GeneralSettingsMainViewModel : ToolTabViewModel
         set
         {
             AppConfig.Instance.Common.ErrorSoundPath = value;
+            _ = SoundPlayer.PlayAsync(value, "error.mp3");
             OnPropertyChanged();
             OnPropertyChanged(nameof(ErrorSoundHintVisibility));
         }
@@ -115,7 +119,7 @@ public class GeneralSettingsMainViewModel : ToolTabViewModel
 
     public ICommand BrowseErrorSoundCommand { get; }
 
-    private void BrowseSoundFile(Action<string> setPathAction)
+    private static void BrowseSoundFile(Action<string> setPathAction)
     {
         var openFileDialog = new OpenFileDialog
         {

@@ -10,7 +10,7 @@ public static class SoundPlayer
 
     public static async Task PlayErrorAsync() => await PlayAsync(AppConfig.Instance.Common.ErrorSoundPath, "error.mp3");
 
-    private static async Task PlayAsync(string targetPath, string defaultFileName)
+    public static async Task PlayAsync(string targetPath, string defaultFileName)
     {
         if (!AppConfig.Instance.Common.IsMuted)
         {
