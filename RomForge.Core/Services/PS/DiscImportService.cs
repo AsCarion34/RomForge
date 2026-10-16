@@ -12,7 +12,7 @@ public class DiscImportService
 {
     private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
-        ".cue", ".m3u", ".iso", ".chd"
+        ".cue", ".m3u", ".iso", ".chd", ".bin"
     };
 
     public async Task<ImportResult> ImportAsync(IEnumerable<string> inputPaths, IEnumerable<string> existingPaths, int roomAvailable)
@@ -33,11 +33,22 @@ public class DiscImportService
 
         foreach (var p in explodedPaths)
         {
-            if (!SupportedExtensions.Contains(Path.GetExtension(p)))
+            var targetPath = p;
+
+            if (Path.GetExtension(p).Equals(".bin", StringComparison.OrdinalIgnoreCase))
+            {
+                var cuePath = Path.ChangeExtension(p, ".cue");
+                if (File.Exists(cuePath))
+                {
+                    targetPath = cuePath;
+                }
+            }
+
+            if (!SupportedExtensions.Contains(Path.GetExtension(targetPath)))
                 continue;
 
-            if (existing.Add(p))
-                newCandidates.Add(p);
+            if (existing.Add(targetPath))
+                newCandidates.Add(targetPath);
         }
 
         var toValidate = newCandidates.Take(Math.Max(roomAvailable, 0)).ToList();

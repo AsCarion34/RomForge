@@ -538,11 +538,9 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         _runCts?.Cancel();
 
         SourcePath = null;
+
         ResetPatchSlots();
-        AutoCompress = false;
-
         CleanupTask();
-
         LogEntries.Clear();
     }
 }

@@ -70,6 +70,8 @@ public static class GainCurve
         subframeLow?.Clear();
         subframeHigh?.Clear();
 
+        Span<float> microBuffer = stackalloc float[64];
+
         for (uint pos = 0; pos < len; pos += step)
         {
             var window = input.Slice((int)pos, (int)step);
@@ -81,27 +83,34 @@ public static class GainCurve
             {
                 const uint chunks = 8;
                 uint chunkSz = Math.Max(1u, step / chunks);
-                var micro = new List<float>();
+                int chunkCount = (int)((step + chunkSz - 1) / chunkSz);
+
+                Span<float> micro = chunkCount <= 64 ? microBuffer[..chunkCount] : new float[chunkCount];
+                int mi = 0;
 
                 for (uint off = 0; off < step; off += chunkSz)
                 {
                     uint n = Math.Min(chunkSz, step - off);
                     var chunk = input.Slice((int)(pos + off), (int)n);
 
-                    micro.Add(useRms ? CalculateRms(chunk) : CalculatePeak(chunk));
+                    micro[mi++] = useRms ? CalculateRms(chunk) : CalculatePeak(chunk);
                 }
 
                 micro.Sort();
 
-                int loIdx = micro.Count / 4;
-                int hiIdx = (micro.Count * 3) / 4;
+                int loIdx = micro.Length / 4;
+                int hiIdx = (micro.Length * 3) / 4;
 
                 subframeLow?.Add(micro[loIdx]);
                 subframeHigh?.Add(micro[hiIdx]);
             }
         }
+
         return res;
     }
+
+    [ThreadStatic]
+    private static double[]? _energyScratch;
 
     public static List<float> AnalyzeGainOverlappingRms(ReadOnlySpan<float> input, uint totalLen, uint regionOffset, uint regionLen, uint maxPoints, uint windowLen)
     {
@@ -116,7 +125,12 @@ public static class GainCurve
             return result;
 
         uint effectiveWindow = Math.Max(1u, windowLen);
-        var accumulatedEnergy = new double[(long)totalLen + 1];
+        var accumulatedEnergy = _energyScratch;
+
+        if (accumulatedEnergy == null || accumulatedEnergy.Length < (long)totalLen + 1)
+            _energyScratch = accumulatedEnergy = new double[(long)totalLen + 1];
+
+        accumulatedEnergy[0] = 0.0;
 
         for (uint i = 0; i < totalLen; ++i)
             accumulatedEnergy[i + 1] = accumulatedEnergy[i] + (double)input[(int)i] * input[(int)i];

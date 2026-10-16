@@ -1,5 +1,4 @@
-﻿using LibHac.Ncm;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using RomForge.Core.Models.Patch;
 using RomForge.Core.Services.Patch;
 using RomForge.Core.UI.Helpers;

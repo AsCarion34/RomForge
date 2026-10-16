@@ -41,7 +41,23 @@ public sealed class GainControlAnalyzer
         public byte PitchHistorySize;
     }
 
-    private readonly SpectralUpsampler _upsampler = new(11025.0f, 800.0f);
+    private sealed class BandAnalysis
+    {
+        public UpsamplerResult Result = null!;
+
+        public List<float> GainLow = [];
+
+        public List<float> GainHigh = [];
+
+        public List<float> ShortGain = [];
+
+        public List<float> PitchGain = [];
+
+        public uint PitchWindow;
+    }
+
+    private readonly SpectralUpsampler[][] _upsamplers = NewUpsamplers();
+    private readonly BandAnalysis[][] _pending = [new BandAnalysis[4], new BandAnalysis[4]];
     private readonly CurveBuilderCtx[][] _curveCtx = NewCtx();
     private readonly CurveBuilderCtx[][] _pitchCurveCtx = NewCtx();
     private readonly HarmonicGainCtx[][] _harmonicCtx = NewHarmonic();
@@ -56,6 +72,21 @@ public sealed class GainControlAnalyzer
 
             for (int b = 0; b < 4; b++)
                 a[c][b] = new CurveBuilderCtx();
+        }
+
+        return a;
+    }
+
+    private static SpectralUpsampler[][] NewUpsamplers()
+    {
+        var a = new SpectralUpsampler[2][];
+
+        for (int c = 0; c < 2; c++)
+        {
+            a[c] = new SpectralUpsampler[4];
+
+            for (int b = 0; b < 4; b++)
+                a[c][b] = new SpectralUpsampler(11025.0f, 800.0f);
         }
 
         return a;
@@ -194,16 +225,52 @@ public sealed class GainControlAnalyzer
 
     private static bool IsAliasLinked(HarmonicAliasEvidence e) => e.SpectralCoherence >= MinAliasCoherence && e.SharedPeakRatio >= MinAliasSharedPeakRatio && e.MatchedPeaks >= MinAliasMatchedPeaks;
 
+    private BandAnalysis AnalyzeBand(int channel, int band, float[] input)
+    {
+        var orientation = (band == 1 || band == 3) ? SpectrumOrientation.Inverted : SpectrumOrientation.Direct;
+        var result = _upsamplers[channel][band].Process(input.AsSpan(0, SpectralUpsampler.InN), orientation);
+        var analysis = new BandAnalysis { Result = result };
+
+        if (result.HighFreqRatio < SpectralUpsampler.HighFreqThreshold)
+            return analysis;
+
+        analysis.ShortGain = GainCurve.AnalyzeGain(result.Signal.AsSpan(1024), 2048, 32, true, analysis.GainLow, analysis.GainHigh);
+        analysis.PitchWindow = (uint)Math.Max(64L, (long)MathF.Round(result.PitchPeriod * SpectralUpsampler.Upsample, MidpointRounding.AwayFromZero));
+        analysis.PitchGain = GainCurve.AnalyzeGainOverlappingRms(result.Signal, (uint)result.Signal.Length, 1024, 2048, 32, analysis.PitchWindow);
+
+        return analysis;
+    }
+
+    public void Analyze(float[][][] upInput, int channelCount)
+    {
+        int total = channelCount * 4;
+
+        if (total > 1 && Environment.ProcessorCount > 1)
+        {
+            Parallel.For(0, total, i => _pending[i >> 2][i & 3] = AnalyzeBand(i >> 2, i & 3, upInput[i >> 2][i & 3]));
+
+            return;
+        }
+
+        for (int i = 0; i < total; i++)
+            _pending[i >> 2][i & 3] = AnalyzeBand(i >> 2, i & 3, upInput[i >> 2][i & 3]);
+    }
+
     public void CreateSubbandInfo(float[][] upInput, int channel, SubbandInfo subbandInfo)
     {
+        for (int band = 0; band < 4; ++band)
+            _pending[channel][band] = AnalyzeBand(channel, band, upInput[band]);
+
+        CreateSubbandInfo(channel, subbandInfo);
+    }
+
+    public void CreateSubbandInfo(int channel, SubbandInfo subbandInfo)
+    {
+        var pending = _pending[channel];
         var analysis = new UpsamplerResult[4];
 
         for (int band = 0; band < 4; ++band)
-        {
-            var orientation = (band == 1 || band == 3) ? SpectrumOrientation.Inverted : SpectrumOrientation.Direct;
-
-            analysis[band] = _upsampler.Process(upInput[band].AsSpan(0, SpectralUpsampler.InN), orientation);
-        }
+            analysis[band] = pending[band].Result;
 
         var strongHarmonicBand = new bool[4];
 
@@ -260,10 +327,9 @@ public sealed class GainControlAnalyzer
                 continue;
             }
 
-            var gainLow = new List<float>();
-            var gainHigh = new List<float>();
-            var shortGain = GainCurve.AnalyzeGain(result.Signal.AsSpan(1024), 2048, 32, true, gainLow, gainHigh);
-            float shortNextLevel = GainCurve.AnalyzeGain(result.Signal.AsSpan(3072), 64, 1, true)[0];
+            var gainLow = pending[band].GainLow;
+            var gainHigh = pending[band].GainHigh;
+            var shortGain = pending[band].ShortGain;
             var harmonicCtx = _harmonicCtx[channel][band];
             float previousFrameCepstralProminenceDb = harmonicCtx.LastCepstralProminenceDb;
             float previousFrameHighFreqRatio = harmonicCtx.LastHighFreqRatio;
@@ -289,9 +355,8 @@ public sealed class GainControlAnalyzer
             bool hasConfirmedPitch = hasContinuousPitch && harmonicCtx.PitchHistorySize >= 2 && harmonicCtx.PreviousHighFreqRatio >= MinHfrForPitchRms && harmonicCtx.PreviousCepstralProminenceDb >= MinContinuousCepstralProminenceDb && confirmedPitchDeltaCents <= MaxBoundaryPitchDeltaCents;
             bool usePitchRms = useStationaryPitchRms || hasContinuousPitch;
             bool usePitchBoundaryRms = hasContinuousPitch;
-            uint pitchWindow = (uint)Math.Max(64L, (long)MathF.Round(result.PitchPeriod * SpectralUpsampler.Upsample, MidpointRounding.AwayFromZero));
-            var pitchGain = GainCurve.AnalyzeGainOverlappingRms(result.Signal, (uint)result.Signal.Length, 1024, 2048, 32, pitchWindow);
-            float pitchNextLevel = GainCurve.AnalyzeGainOverlappingRms(result.Signal, (uint)result.Signal.Length, 3072, 64, 1, pitchWindow)[0];
+            uint pitchWindow = pending[band].PitchWindow;
+            var pitchGain = pending[band].PitchGain;
             const uint boundarySample = 128 * SpectralUpsampler.Upsample;
             uint planckFlatStartQmf = (uint)(SpectralUpsampler.DefaultEps * SpectralUpsampler.InN + 0.999f);
             uint maxBoundaryWindow = (128 - planckFlatStartQmf) * SpectralUpsampler.Upsample;

@@ -8,22 +8,13 @@ using System.Windows;
 
 namespace RomForge.ViewModels.PS;
 
-public class BgmViewModel : ViewModelBase
+public class BgmViewModel(Action<string, LogLevel> log) : ViewModelBase
 {
-    private readonly Action<string, LogLevel> _log;
-
     private string? _filePath;
     private bool _isConverting;
     private int _progressPct;
 
-    public BgmViewModel(Action<string, LogLevel> log)
-    {
-        _log = log;
-
-        Preview = new BgmPreviewViewModel(log);
-    }
-
-    public BgmPreviewViewModel Preview { get; }
+    public BgmPreviewViewModel Preview { get; } = new BgmPreviewViewModel(log);
 
     public byte[]? Bytes { get; private set; }
 
@@ -96,6 +87,7 @@ public class BgmViewModel : ViewModelBase
             int lastPct = -1;
             var options = new ConverterOptions
             {
+                EnableGain = false,
                 BitrateKbps = IsHighQualityMode ? Bitrate.Kbps132 : Bitrate.Kbps66,
                 MaxSeconds = IsHighQualityMode ? 30 : 60,
                 OnProgress = p =>
@@ -111,7 +103,7 @@ public class BgmViewModel : ViewModelBase
                 }
             };
 
-            _log($"배경음 변환 시작: {Path.GetFileName(filePath)}", LogLevel.Highlight);
+            log($"배경음 변환 시작: {Path.GetFileName(filePath)}", LogLevel.Highlight);
 
             var (bgm, wav) = await Task.Run(() =>
             {
@@ -125,7 +117,7 @@ public class BgmViewModel : ViewModelBase
                 }
                 catch (Exception ex)
                 {
-                    _log($"미리듣기 준비 실패: {ex.Message}", LogLevel.Error);
+                    log($"미리듣기 준비 실패: {ex.Message}", LogLevel.Error);
                 }
 
                 return (converted, preview);
@@ -135,11 +127,11 @@ public class BgmViewModel : ViewModelBase
             Preview.Load(wav);
 
             FilePath = filePath;
-            _log($"배경음 변환 완료: {Path.GetFileName(filePath)}", LogLevel.Ok);
+            log($"배경음 변환 완료: {Path.GetFileName(filePath)}", LogLevel.Ok);
         }
         catch (Exception ex)
         {
-            _log($"배경음 변환 중 오류 발생: {ex.Message}", LogLevel.Error);
+            log($"배경음 변환 중 오류 발생: {ex.Message}", LogLevel.Error);
         }
         finally
         {

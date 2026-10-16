@@ -23,6 +23,11 @@ public sealed class SpectralUpsampler
     private readonly KissFftReal _fwd = new(InN, false);
     private readonly KissFftReal _cepInv = new(InN, true);
     private readonly KissFftReal _inv = new(OutN, true);
+    private readonly float[] _windowed = new float[InN];
+    private readonly float[] _fwdOut = new float[2 * (InN / 2 + 1)];
+    private readonly float[] _cepIn = new float[2 * (InN / 2 + 1)];
+    private readonly float[] _cepstrum = new float[InN];
+    private readonly float[] _invIn = new float[2 * (OutN / 2 + 1)];
 
     public SpectralUpsampler(float sampleRate, float lowCutHz, float epsilon = DefaultEps)
     {
@@ -254,13 +259,13 @@ public sealed class SpectralUpsampler
 
     public UpsamplerResult Process(ReadOnlySpan<float> input, SpectrumOrientation orientation = SpectrumOrientation.Direct)
     {
-        var windowed = new float[InN];
+        var windowed = _windowed;
 
         for (int n = 0; n < InN; ++n)
             windowed[n] = input[n] * _win[n];
 
         const int inBins = InN / 2 + 1;
-        var fwdOut = new float[2 * inBins];
+        var fwdOut = _fwdOut;
 
         _fwd.Forward(windowed, fwdOut);
 
@@ -270,7 +275,7 @@ public sealed class SpectralUpsampler
             maxMagnitude = MathF.Max(maxMagnitude, Hypot(fwdOut[2 * k], fwdOut[2 * k + 1]));
 
         float magnitudeFloor = MathF.Max(maxMagnitude * 1e-6f, 1e-15f);
-        var cepIn = new float[2 * inBins];
+        var cepIn = _cepIn;
 
         for (int k = 0; k < inBins; ++k)
         {
@@ -281,7 +286,7 @@ public sealed class SpectralUpsampler
             cepIn[2 * k + 1] = 0.0f;
         }
 
-        var cepstrum = new float[InN];
+        var cepstrum = _cepstrum;
 
         _cepInv.Inverse(cepIn, cepstrum);
 
@@ -363,8 +368,9 @@ public sealed class SpectralUpsampler
         }
 
         float highFreqRatio = (totalE > 0.0) ? (float)(filtHighE / totalE) : 0.0f;
-        const int outBins = OutN / 2 + 1;
-        var invIn = new float[2 * outBins];
+        var invIn = _invIn;
+
+        Array.Clear(invIn);
         float scale = (float)Upsample;
         int passbandStart = (_lowCutBin == 0) ? 0 : _lowCutBin + 2;
 

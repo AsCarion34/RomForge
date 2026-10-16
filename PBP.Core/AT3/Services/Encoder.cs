@@ -15,11 +15,11 @@ public sealed class Encoder
 
     private readonly float[][] _pcmBuffer = NewArrays(8, 512);
     private readonly float[][] _prevPeak = NewArrays(2, 4);
-    private readonly AnalysisFilterBank[] _analysisFilterBank = [ new(), new() ];
+    private readonly AnalysisFilterBank[] _analysisFilterBank = [new(), new()];
     private readonly Mdct _mdct = new(512, 1.0f);
     private readonly List<SingleChannelElement> _elements;
     private readonly float[][] _prevOverlapGainScale = NewArrays(2, 4, 1.0f);
-    private readonly float[][][] _lookAheadBuf = [ NewArrays(4, 640), NewArrays(4, 640) ];
+    private readonly float[][][] _lookAheadBuf = [NewArrays(4, 640), NewArrays(4, 640)];
 
     private readonly bool _noTonalComponents;
     private readonly GainControlAnalyzer? _gainControl;
@@ -224,7 +224,7 @@ public sealed class Encoder
             } while (i < tonalComponents.Count && tonalComponents[i].Pos == curPos + 1 && i - startPos < 7);
 
             int len = i - startPos;
-            
+
             for (int j = 0; j < len; ++j)
                 tmp[j] = (float)tonalComponents[startPos + j].Val;
 
@@ -383,6 +383,23 @@ public sealed class Encoder
             Matrixing();
         }
 
+        if (_gainControl != null)
+        {
+            var upAll = new float[_channels][][];
+
+            for (int channel = 0; channel < _channels; channel++)
+            {
+                var up = new float[4][];
+
+                for (int b = 0; b < 4; b++)
+                    up[b] = jsStereo ? jsGainInput![channel][b] : _lookAheadBuf[channel][b];
+
+                upAll[channel] = up;
+            }
+
+            _gainControl.Analyze(upAll, _channels);
+        }
+
         var specs = new float[At3CodecInfo.NumSamples];
 
         for (int channel = 0; channel < _channels; channel++)
@@ -395,15 +412,7 @@ public sealed class Encoder
             for (int i = 0; i < sce.GainEnergyScale.Length; i++)
                 sce.GainEnergyScale[i] = GainEnergyScale.Identity;
 
-            if (_gainControl != null)
-            {
-                var up = new float[4][];
-
-                for (int b = 0; b < 4; b++)
-                    up[b] = jsStereo ? jsGainInput![channel][b] : _lookAheadBuf[channel][b];
-
-                _gainControl.CreateSubbandInfo(up, channel, sce.SubbandInfo);
-            }
+            _gainControl?.CreateSubbandInfo(channel, sce.SubbandInfo);
 
             for (int band = 0; band < At3CodecInfo.NumQmf; ++band)
             {
