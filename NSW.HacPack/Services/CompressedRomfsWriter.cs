@@ -144,7 +144,7 @@ public static class CompressedRomfsWriter
             {
                 watch.Restart();
 
-                var (pct, label, _, _) = Common.Utils.CalculateProgress(virtualOffset, totalSize, "RomFS 빌드 중");
+                var (pct, label, _, _) = Common.Utils.CalculateProgress(virtualOffset, totalSize, "RomFS 압축 중");
 
                 progress?.Report((pct, label));
             }

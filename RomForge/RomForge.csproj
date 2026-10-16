@@ -57,6 +57,7 @@
     <None Remove="Assets\Images\Split.png" />
     <None Remove="Assets\Images\Tistory.png" />
     <None Remove="Assets\Images\Unpack.png" />
+    <None Remove="Assets\Images\UnRepack.png" />
     <None Remove="Assets\Images\UpperA.png" />
     <None Remove="Assets\Images\Version.png" />
     <None Remove="Assets\Images\Vita.png" />
@@ -72,6 +73,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="icon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\Images\UnRepack.png" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Assets\Images\3DS.png" />
