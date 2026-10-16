@@ -242,9 +242,9 @@ public sealed class NcaExtractor(KeySet keySet, Func<string, bool> shouldExtract
                     {
                         ctx.LastReport = now;
 
-                        int percent = Math.Min((int)((double)ctx.CurrentRead / ctx.TotalSize * 100), 99);
+                        var (pct, label2, _, _) = Common.Utils.CalculateProgress(ctx.CurrentRead, ctx.TotalSize, $"{label} 언팩 중 - {entry.Name}");
 
-                        progress.Report((percent, $"{label}: {entry.Name}"));
+                        progress.Report((pct, label2));
                     }
                 }
             }

@@ -112,6 +112,5 @@ public class NcaGenerationOptions
         UserMetadata = UserMetadata,
         IdOffset = IdOffset,
         SourceIdOffset = SourceIdOffset,
-        CompressRomfs = CompressRomfs,
     };
 }
