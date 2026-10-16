@@ -41,7 +41,7 @@ public class NcaGenerationOptions
     public uint SdkVersion;
     public byte IdOffset = 0;
     public byte SourceIdOffset = 0;
-
+    public bool CompressRomfs;
 
     public string SdkVersionString
     {
@@ -112,5 +112,6 @@ public class NcaGenerationOptions
         UserMetadata = UserMetadata,
         IdOffset = IdOffset,
         SourceIdOffset = SourceIdOffset,
+        CompressRomfs = CompressRomfs,
     };
 }

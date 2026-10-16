@@ -92,23 +92,8 @@ public static class NspBuildService
 
         foreach (var settings in settingsList)
         {
-            if (unpackResult.RawProgramNcaPaths.TryGetValue(settings.SourceIdOffset, out var rawPath))
-            {
-                byte[] hash;
-                using (var fs = File.OpenRead(rawPath))
-                    hash = System.Security.Cryptography.SHA256.HashData(fs);
-
-                string realNcaId = Convert.ToHexString(hash, 0, 16).ToLowerInvariant();
-                string dest = Path.Combine(dirs.BuildNca, $"{realNcaId}.nca");
-
-                File.Copy(rawPath, dest, overwrite: true);
-                settings.ProgramNcaPath = dest;                
-            }
-            else
-            {
-                StepNpdm(settings, log, ct);
-                StepProgramNca(req, settings, unpackResult, progress, log, ct);
-            }
+            StepNpdm(settings, log, ct);
+            StepProgramNca(req, settings, unpackResult, progress, log, ct);
         }
 
         StepManualNcas(settingsList, unpackResult, progress, log, ct);
@@ -152,7 +137,6 @@ public static class NspBuildService
         var settingsList = new List<NcaGenerationOptions>();
 
         var allIdOffsets = result.ExefsDirs.Keys
-            .Union(result.RawProgramNcaPaths.Keys)
             .OrderBy(k => k);
 
         foreach (var idOffset in allIdOffsets)
@@ -178,7 +162,8 @@ public static class NspBuildService
                 TitleType = LibHac.Ncm.ContentMetaType.Application,
                 SdkVersion = req.OverrideSdkVersion ?? result.BaseSdkVersion,
                 KeyGeneration = req.OverrideKeyGeneration ?? keyGeneration,
-                KeySet = keySet
+                KeySet = keySet,
+                CompressRomfs = result.CompressedRomfs.Contains(idOffset),
             };
 
             if (keygenIdx >= settings.KeySet.KeyAreaKeys.Length)

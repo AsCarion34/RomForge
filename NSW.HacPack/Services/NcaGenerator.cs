@@ -241,20 +241,37 @@ public static class NcaGenerator
         return finalPath;
     }
 
-    private static MemoryStream [] BuildAndWriteRomfsSection(FileStream ncaFile, ref NcaHeader ncaHeader, int sectionIndex, NcaGenerationOptions settings, string tempFileName, IProgress<(int pct, string label)>? progress, CancellationToken ct)
+    private static MemoryStream[] BuildAndWriteRomfsSection(FileStream ncaFile, ref NcaHeader ncaHeader, int sectionIndex, NcaGenerationOptions settings, string tempFileName, IProgress<(int pct, string label)>? progress, CancellationToken ct)
     {
         var ivfcStreams = new MemoryStream[5];
         for (int i = 0; i < 5; i++) ivfcStreams[i] = new MemoryStream();
 
         string romfsTempPath = Path.Combine(settings.TempDirectory, tempFileName);
+        string compressedTempPath = romfsTempPath + "_cmp";
         using var romfsTempFile = new FileStream(romfsTempPath, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 1024 * 1024, FileOptions.SequentialScan);
+        FileStream? compressedTempFile = null;
         try
         {
             RomfsBuilder.BuildRomfsImage(settings.RomfsDirectory, romfsTempFile, out ulong romfsSize, progress, ct);
-            NcaHeaderService.SetIvfcLevel5(ref ncaHeader, sectionIndex, romfsSize);
 
-            romfsTempFile.Position = 0;
-            IvfcGenerator.GenerateHashLevel(ivfcStreams[4], romfsTempFile, out ulong lvlSize4);
+            FileStream dataFile = romfsTempFile;
+            ulong dataSize = romfsSize;
+
+            if (settings.CompressRomfs)
+            {
+                compressedTempFile = new FileStream(compressedTempPath, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 1024 * 1024, FileOptions.SequentialScan);
+
+                var info = CompressedRomfsWriter.Compress(romfsTempFile, compressedTempFile, progress, ct);
+                NcaHeaderService.SetCompressionInfo(ref ncaHeader, sectionIndex, info.TableOffset, info.TableSize, info.TableHeader);
+
+                dataFile = compressedTempFile;
+                dataSize = (ulong)compressedTempFile.Length;
+            }
+
+            NcaHeaderService.SetIvfcLevel5(ref ncaHeader, sectionIndex, dataSize);
+
+            dataFile.Position = 0;
+            IvfcGenerator.GenerateHashLevel(ivfcStreams[4], dataFile, out ulong lvlSize4);
             NcaHeaderService.SetIvfcLevel(ref ncaHeader, sectionIndex, 4, lvlSize4);
 
             for (int b = 3; b >= 0; b--)
@@ -275,8 +292,8 @@ public static class NcaGenerator
             }
 
             ct.ThrowIfCancellationRequested();
-            romfsTempFile.Position = 0;
-            romfsTempFile.CopyTo(ncaFile);
+            dataFile.Position = 0;
+            dataFile.CopyTo(ncaFile);
             progress?.Report((-1, "NCA 기록 중... 6/6"));
 
             WritePadding(ncaFile);
@@ -291,7 +308,11 @@ public static class NcaGenerator
         finally
         {
             romfsTempFile.Close();
+            compressedTempFile?.Dispose();
             File.Delete(romfsTempPath);
+
+            if (File.Exists(compressedTempPath))
+                File.Delete(compressedTempPath);
         }
     }
 

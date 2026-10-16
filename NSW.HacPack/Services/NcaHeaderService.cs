@@ -108,6 +108,15 @@ public static class NcaHeaderService
         WriteU64(hdr.FsHeaders[idx].SuperblockRaw, 0x40, pfs0Size);
     }
 
+    public static void SetCompressionInfo(ref NcaHeader hdr, int idx, long tableOffset, long tableSize, byte[] bucketTreeHeader)
+    {
+        byte[] area = hdr.FsHeaders[idx]._0x148;
+
+        WriteU64(area, 0x30, (ulong)tableOffset);
+        WriteU64(area, 0x38, (ulong)tableSize);
+        Array.Copy(bucketTreeHeader, 0, area, 0x40, 0x10);
+    }
+
     public static void SetPfs0MasterHash(ref NcaHeader hdr, int idx, byte[] hash) => Array.Copy(hash, 0, hdr.FsHeaders[idx].SuperblockRaw, 0, 0x20);
 
     public static void SetSectionHash(ref NcaHeader hdr, int idx, byte[] hash) => Array.Copy(hash, 0, hdr.SectionHashes, idx * 0x20, 0x20);

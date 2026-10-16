@@ -66,45 +66,44 @@ public static class UnpackedDirScanner
         var controlDirs = new Dictionary<byte, string>();
         var htmlDocDirs = new Dictionary<byte, string>();
         var legalDirs = new Dictionary<byte, string>();
-        var rawProgramNcaPaths = new Dictionary<byte, string>();
+        var compressedRomfs = new HashSet<byte>();
 
         foreach (var pd in programDirs)
         {
             byte idOffset = (byte)(pd.Id - baseTitleId);
 
             string exefs = Path.Combine(pd.Dir, "exefs");
-            if (Directory.Exists(exefs)) exefsDirs[idOffset] = exefs;
+
+            if (Directory.Exists(exefs))
+                exefsDirs[idOffset] = exefs;
 
             string romfs = Path.Combine(pd.Dir, "romfs");
-            if (Directory.Exists(romfs)) romfsDirs[idOffset] = romfs;
+            
+            if (Directory.Exists(romfs)) 
+                romfsDirs[idOffset] = romfs;
+
+            if (File.Exists(Path.Combine(pd.Dir, "romfs.compressed")))
+                compressedRomfs.Add(idOffset);
 
             string logo = Path.Combine(pd.Dir, "logo");
-            if (Directory.Exists(logo)) logoDirs[idOffset] = logo;
+
+            if (Directory.Exists(logo))
+                logoDirs[idOffset] = logo;
 
             string control = Path.Combine(pd.Dir, "control");
-            if (Directory.Exists(control)) controlDirs[idOffset] = control;
+
+            if (Directory.Exists(control))
+                controlDirs[idOffset] = control;
 
             string htmldoc = Path.Combine(pd.Dir, "htmldoc");
-            if (Directory.Exists(htmldoc)) htmlDocDirs[idOffset] = htmldoc;
+
+            if (Directory.Exists(htmldoc)) 
+                htmlDocDirs[idOffset] = htmldoc;
 
             string legal = Path.Combine(pd.Dir, "legal");
-            if (Directory.Exists(legal)) legalDirs[idOffset] = legal;
-        }
 
-        string rawDir = Path.Combine(unpackedDir, "rawprograms");
-
-        if (Directory.Exists(rawDir))
-        {
-            var keySet = KeySetProvider.Instance.KeySet ?? throw new InvalidOperationException(Res.Main_Err_NoKeys);
-
-            foreach (var ncaFile in Directory.GetFiles(rawDir, "*.nca"))
-            {
-                using var fs = new FileStream(ncaFile, FileMode.Open, FileAccess.Read);
-                var nca = new Nca(keySet, new StreamStorage(fs, false));
-
-                byte offset = (byte)(nca.Header.TitleId - baseTitleId);
-                rawProgramNcaPaths[offset] = ncaFile;
-            }
+            if (Directory.Exists(legal))
+                legalDirs[idOffset] = legal;
         }
 
         return new UnpackResult
@@ -123,7 +122,7 @@ public static class UnpackedDirScanner
             HtmlDocDirs = htmlDocDirs,
             LegalDirs = legalDirs,
             Dlcs = dlcs,
-            RawProgramNcaPaths = rawProgramNcaPaths,
+            CompressedRomfs = compressedRomfs,
         };
     }
 }

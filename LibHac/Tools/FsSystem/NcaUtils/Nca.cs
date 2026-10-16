@@ -519,7 +519,7 @@ public class Nca
         return returnStorage;
     }
 
-    private static IStorage OpenCompressedStorage(NcaFsHeader header, IStorage baseStorage)
+    private static CompressedStorage CreateCompressedStorage(NcaFsHeader header, IStorage baseStorage)
     {
         ref NcaCompressionInfo compressionInfo = ref header.GetCompressionInfo();
 
@@ -543,7 +543,39 @@ public class Nca
         compressedStorage.Initialize(new ArrayPoolMemoryResource(), in dataStorage, in nodeStorage, in entryStorage,
             bucketTreeHeader.EntryCount).ThrowIfFailure();
 
-        return new CachedStorage(compressedStorage, 0x4000, 32, true);
+        return compressedStorage;
+    }
+
+    private static IStorage OpenCompressedStorage(NcaFsHeader header, IStorage baseStorage)
+    {
+        return new CachedStorage(CreateCompressedStorage(header, baseStorage), 0x4000, 32, true);
+    }
+
+    public List<(long VirtualOffset, long PhysicalOffset, byte Type, sbyte Level, uint PhysicalSize)> ReadCompressionEntries(int index)
+    {
+        NcaFsHeader header = GetFsHeader(index);
+        IStorage verified = CreateVerificationStorage(IntegrityCheckLevel.None, header, OpenRawStorage(index));
+
+        var entries = new List<CompressedStorage.Entry>();
+        CreateCompressedStorage(header, verified).GetEntries(entries).ThrowIfFailure();
+
+        var result = new List<(long, long, byte, sbyte, uint)>();
+
+        foreach (var e in entries)
+            result.Add((e.VirtualOffset, e.PhysicalOffset, (byte)e.CompressionType, e.CompressionLevel, e.PhysicalSize));
+
+        return result;
+    }
+
+    public (long TableOffset, long TableSize, int EntryCount) ReadCompressionTableInfo(int index)
+    {
+        NcaFsHeader header = GetFsHeader(index);
+        ref NcaCompressionInfo info = ref header.GetCompressionInfo();
+
+        Unsafe.SkipInit(out BucketTree.Header bucketTreeHeader);
+        info.TableHeader[..].CopyTo(SpanHelpers.AsByteSpan(ref bucketTreeHeader));
+
+        return (info.TableOffset, info.TableSize, bucketTreeHeader.EntryCount);
     }
 
     private IStorage CreateVerificationStorage(IntegrityCheckLevel integrityCheckLevel, NcaFsHeader header,

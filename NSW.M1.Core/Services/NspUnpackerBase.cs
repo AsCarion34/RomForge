@@ -75,29 +75,18 @@ public abstract class NspUnpackerBase(KeySet keySet)
                 var effectiveProg = baseProg ?? updateProg!;
                 var patchProg = baseProg != null ? updateProg : null;
 
-                if (ncas.CreateOnlyRawNcas.TryGetValue(idOffset, out var rawNca))
+                if (effectiveProg.CanOpenSection(NcaSectionType.Code))
+                    result.ExefsDirs[idOffset] = extractor.ExtractExeFs(effectiveProg, patchProg, "exefs", programDir, progCtx, progress, ct);
+
+                if (effectiveProg.CanOpenSection(NcaSectionType.Data))
                 {
-                    string ncaId = ncas.CreateOnlyNcaIds[idOffset];
-                    string rawDir = Path.Combine(outDir, "rawprograms");
+                    result.RomfsDirs[idOffset] = extractor.ExtractRomFs(effectiveProg, patchProg, "romfs", programDir, progCtx, ncas.CreateOnlyOffsets.Contains(idOffset), progress, ct);
 
-                    Directory.CreateDirectory(rawDir);
-
-                    string rawPath = Path.Combine(rawDir, $"{ncaId}.nca");
-                    using (var inStream = rawNca.BaseStorage.AsStream())
-                    using (var outStream = File.Create(rawPath))
+                    if (HasCompressedSection(effectiveProg) || HasCompressedSection(patchProg))
                     {
-                        await NcaRecryptService.RecryptAsync(inStream, outStream, 0, _keySet, ct: ct);
+                        File.WriteAllText(Path.Combine(programDir, "romfs.compressed"), string.Empty);
+                        result.CompressedRomfs.Add(idOffset);
                     }
-
-                    result.RawProgramNcaPaths[idOffset] = rawPath;
-                }
-                else
-                {
-                    if (effectiveProg.CanOpenSection(NcaSectionType.Code))
-                        result.ExefsDirs[idOffset] = extractor.ExtractExeFs(effectiveProg, patchProg, "exefs", programDir, progCtx, progress, ct);
-
-                    if (effectiveProg.CanOpenSection(NcaSectionType.Data))
-                        result.RomfsDirs[idOffset] = extractor.ExtractRomFs(effectiveProg, patchProg, "romfs", programDir, progCtx, ncas.CreateOnlyOffsets.Contains(idOffset), progress, ct);
                 }
 
                 var logoDir = extractor.ExtractLogo(effectiveProg, "logo", programDir, progCtx, progress, ct);
@@ -160,7 +149,22 @@ public abstract class NspUnpackerBase(KeySet keySet)
         }
     }
 
+    private static bool HasCompressedSection(Nca? nca)
+    {
+        if (nca == null)
+            return false;
+
+        for (int i = 0; i < 4; i++)
+        {
+            if (nca.SectionExists(i) && nca.GetFsHeader(i).ExistsCompressionLayer())
+                return true;
+        }
+
+        return false;
+    }
+
     protected abstract ProgressContext CreateProgressContext(List<string> inputPaths, CollectedNcas ncas);
+
     protected abstract bool ShouldExtract(string entryPath);
 
     private static UnpackResult BuildBaseResult(CollectedNcas ncas)

@@ -1,12 +1,13 @@
-﻿using System;
-using System.Buffers;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using LibHac.Common;
+﻿using LibHac.Common;
 using LibHac.Diag;
 using LibHac.Fs;
 using LibHac.FsSystem;
 using LibHac.Util;
+using System;
+using System.Buffers;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace LibHac.Tools.FsSystem;
 
@@ -51,6 +52,30 @@ internal class CompressedStorage : IStorage
         if (res.IsFailure()) return res.Miss();
 
         _dataStorage.Set(in dataStorage);
+
+        return Result.Success;
+    }
+
+    public Result GetEntries(List<Entry> entries)
+    {
+        Result res = _bucketTree.GetOffsets(out BucketTree.Offsets offsets);
+        if (res.IsFailure()) return res.Miss();
+
+        using BucketTree.Visitor visitor = new();
+
+        res = _bucketTree.Find(ref visitor.Ref, 0);
+        if (res.IsFailure()) return res.Miss();
+
+        while (true)
+        {
+            entries.Add(visitor.Get<Entry>());
+
+            if (!visitor.CanMoveNext())
+                break;
+
+            res = visitor.MoveNext();
+            if (res.IsFailure()) return res.Miss();
+        }
 
         return Result.Success;
     }
