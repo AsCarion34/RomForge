@@ -5,13 +5,12 @@ namespace NSW.M1.Core.Services;
 
 public class NspUnpacker(KeySet keySet) : NspUnpackerBase(keySet)
 {
-    public async Task<UnpackResult> Unpack(BuildRequest req, string outDir, IProgress<(int pct, string label)>? progress = null, CancellationToken ct = default)
-        => await UnpackCore(req, outDir, true, progress, ct);
+    public async Task<UnpackResult> Unpack(BuildRequest req, string outDir, IProgress<(int pct, string label)>? progress = null, CancellationToken ct = default) => await UnpackCore(req, outDir, true, progress, ct);
 
     protected override ProgressContext CreateProgressContext(List<string> inputPaths, CollectedNcas ncas)
     {
-        long totalInputSize = inputPaths.Sum(p => new FileInfo(p).Length);
-        return new ProgressContext(totalInputSize);
+        long totalExtractSize = CalculateMatchedSize(ncas);
+        return new ProgressContext(Math.Max(1L, totalExtractSize));
     }
 
     protected override bool ShouldExtract(string entryPath) => true;

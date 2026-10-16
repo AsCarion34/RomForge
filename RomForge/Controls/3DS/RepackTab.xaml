@@ -193,7 +193,6 @@
                 <TextBlock Grid.Column="1" x:Name="progressPercent" Margin="0,0,10,0" Text="{Binding ProgressPercent}" Foreground="#4CAF50" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
                 <TextBlock Grid.Column="2" x:Name="progressSpeed" Margin="0,0,10,0" Text="{Binding ProgressSpeed}" Foreground="Gray" FontSize="11" VerticalAlignment="Center"/>
                 <TextBlock Grid.Column="3" x:Name="progressTime" Margin="0,0,10,0" Text="{Binding ProgressTime}" Foreground="#4CAF50" FontSize="11" VerticalAlignment="Center"/>
-
                 <Grid Grid.Column="4" Height="10" VerticalAlignment="Center">
                     <Border Background="#25FFFFFF" CornerRadius="5"/>
                     <Border x:Name="barTrack" CornerRadius="5" ClipToBounds="True">

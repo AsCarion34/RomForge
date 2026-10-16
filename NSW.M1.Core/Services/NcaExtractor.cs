@@ -1,4 +1,5 @@
-﻿using LibHac.Common;
+﻿using LibHac;
+using LibHac.Common;
 using LibHac.Common.Keys;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
@@ -232,7 +233,7 @@ public sealed class NcaExtractor(KeySet keySet, Func<string, bool> shouldExtract
             {
                 ct.ThrowIfCancellationRequested();
                 dest.Write(buf, 0, read);
-                ctx.CurrentRead += read;
+                ctx.CurrentRead += read;                
 
                 if (progress != null)
                 {
