@@ -359,7 +359,7 @@
                 </StackPanel>
             </ToggleButton>
 
-            <StackPanel Background="Transparent">                
+            <StackPanel Background="Transparent">
                 <ToggleButton Style="{StaticResource ToggleStyle}" IsChecked="{Binding PatchVM.NormalVM.NamingEnabled}" Margin="0,2,0,2" Height="30">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Image Width="18" Margin="0,0,5,0" Source="{Binding PatchVM.NormalVM.NamingEnabled, Converter={StaticResource BoolToImageConverter}}" VerticalAlignment="Center"/>
@@ -375,16 +375,48 @@
                             </Grid.ColumnDefinitions>
                             <Grid Grid.Column="0">
                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="300" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBox Grid.Column="0" Text="{Binding PatchVM.NormalVM.NamingFormat, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding PatchVM.NormalVM.NamingEnabled}" ToolTip="사용 가능한 값: {fileName}, {Version}, {Date:yyMMdd}" Height="30" FontSize="12" VerticalContentAlignment="Center" Margin="0,0,4,0"/>
-                                <Button Grid.Column="1" Style="{StaticResource GrayButton}" Width="80" Height="30" Padding="0" IsEnabled="{Binding PatchVM.NormalVM.NamingEnabled}" Click="ResetNamingFormat_Click">
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <Image Source="/Assets/Images/Clear.png" Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                        <TextBlock Text="초기화" FontSize="11" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
+                                
+                                <ComboBox Grid.Column="0" ItemsSource="{Binding PatchVM.NormalVM.NamingPresets}" SelectedItem="{Binding PatchVM.NormalVM.SelectedNamingPreset, Mode=TwoWay}" IsEnabled="{Binding PatchVM.NormalVM.NamingEnabled}" Height="30" FontSize="12" Margin="0,0,4,0">
+                                    <ComboBox.ItemContainerStyle>
+                                        <Style TargetType="ComboBoxItem">
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                            <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsSeparator}" Value="True">
+                                                    <Setter Property="IsEnabled" Value="False"/>
+                                                    <Setter Property="Focusable" Value="False"/>
+                                                    <Setter Property="Height" Value="9"/>
+                                                    <Setter Property="Padding" Value="0"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ComboBox.ItemContainerStyle>
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <TextBlock Text="{Binding Name}"/>
+                                                <Border Height="1" Background="Gray" VerticalAlignment="Center" Margin="4,0" Visibility="Collapsed">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsSeparator}" Value="True">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                </Border>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+
+                                <TextBox Grid.Column="1" Text="{Binding PatchVM.NormalVM.NamingFormat, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding PatchVM.NormalVM.IsNamingFormatReadOnly, Mode=OneWay}" IsEnabled="{Binding PatchVM.NormalVM.NamingEnabled}" ToolTip="사용 가능한 값: {fileName}, {Version}, {Date:yyMMdd}, {Lan1:code1}, {Lan2:code1}" Height="30" FontSize="12" VerticalContentAlignment="Center" Margin="0,0,4,0"/>
                             </Grid>
                         </Grid>
                     </StackPanel>

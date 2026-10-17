@@ -31,6 +31,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
     private string _progressSpeed = string.Empty;
     private string _progressTime = "00:00 경과";
     private string _namingPreview = string.Empty;
+    private NamingFormatPreset _selectedNamingPreset = NamingFormatPresets.Resolve(AppConfig.Instance.Patch.NamingFormat);
 
     private string? _cachedPatchVersion;
     private string? _cachedPatchDate;
@@ -109,6 +110,34 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
             OnPropertyChanged(nameof(NamingFormat));
             TriggerPreviewUpdate();
         }
+    }
+
+    public static IReadOnlyList<NamingFormatPreset> NamingPresets => NamingFormatPresets.All;
+
+    public NamingFormatPreset SelectedNamingPreset
+    {
+        get => _selectedNamingPreset;
+        set
+        {
+            if (value is null || ReferenceEquals(_selectedNamingPreset, value))
+                return;
+
+            _selectedNamingPreset = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsNamingFormatReadOnly));
+
+            if (!value.IsCustom)
+                NamingFormat = value.Format!;
+        }
+    }
+
+    public bool IsNamingFormatReadOnly => !_selectedNamingPreset.IsCustom;
+
+    private void SyncNamingPreset()
+    {
+        _selectedNamingPreset = NamingFormatPresets.Resolve(AppConfig.Instance.Patch.NamingFormat);
+        OnPropertyChanged(nameof(SelectedNamingPreset));
+        OnPropertyChanged(nameof(IsNamingFormatReadOnly));
     }
 
     public string NamingPreview
@@ -243,6 +272,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
                 OnPropertyChanged(nameof(AutoCompress));
                 OnPropertyChanged(nameof(NamingEnabled));
                 OnPropertyChanged(nameof(NamingFormat));
+                SyncNamingPreset();
                 TriggerPreviewUpdate();
             }
         };

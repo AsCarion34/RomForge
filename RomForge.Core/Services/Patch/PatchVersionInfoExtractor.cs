@@ -18,87 +18,89 @@ public static class PatchVersionInfoExtractor
     private static readonly Regex Lan2TokenRegex = new(@"[ _\-]?\{Lan2(?::(?<Format>[^{}]+))?\}[ _\-]?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly char[] InvalidFileNameChars = Path.GetInvalidFileNameChars();
 
-    private static readonly Dictionary<string, (string Code1, string Code3, string Full)> LanguageMap = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["J"] = ("J", "Jap", "Japan"),
-        ["Ja"] = ("J", "Jap", "Japan"),
-        ["Jap"] = ("J", "Jap", "Japan"),
-        ["Japan"] = ("J", "Jap", "Japan"),
-        ["Japanese"] = ("J", "Jap", "Japanese"),
+    private static readonly Dictionary<string, (string Code1, string Code2, string Code3, string Full)> LanguageMap =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["J"] = ("J", "Ja", "Jap", "Japan"),
+            ["Ja"] = ("J", "Ja", "Jap", "Japan"),
+            ["Jap"] = ("J", "Ja", "Jap", "Japan"),
+            ["Japan"] = ("J", "Ja", "Jap", "Japan"),
+            ["Japanese"] = ("J", "Ja", "Jap", "Japanese"),
 
-        ["K"] = ("K", "Kor", "Korea"),
-        ["Korea"] = ("K", "Kor", "Korea"),
-        ["Korean"] = ("K", "Kor", "Korea"),
-        ["Ko"] = ("K", "Kor", "Korean"),
+            ["K"] = ("K", "Ko", "Kor", "Korea"),
+            ["Korea"] = ("K", "Ko", "Kor", "Korea"),
+            ["Korean"] = ("K", "Ko", "Kor", "Korean"),
+            ["Ko"] = ("K", "Ko", "Kor", "Korean"),
 
-        ["U"] = ("U", "USA", "USA"),
-        ["USA"] = ("U", "USA", "USA"),
-        ["Us"] = ("U", "Usa", "English (US)"),
+            ["U"] = ("U", "En", "USA", "USA"),
+            ["USA"] = ("U", "En", "USA", "USA"),
+            ["Us"] = ("U", "En", "Usa", "English (US)"),
 
-        ["E"] = ("E", "Eur", "Europe"),
-        ["Europe"] = ("E", "Eur", "Europe"),
-        ["En"] = ("E", "Eng", "English"),
-        ["English"] = ("E", "Eng", "English"),
+            ["E"] = ("E", "En", "Eur", "Europe"),
+            ["Europe"] = ("E", "En", "Eur", "Europe"),
+            ["En"] = ("E", "En", "Eng", "English"),
+            ["English"] = ("E", "En", "Eng", "English"),
 
-        ["C"] = ("C", "Chn", "China"),
-        ["China"] = ("C", "Chn", "China"),
-        ["Cn"] = ("C", "Chn", "Chinese"),
-        ["Zh"] = ("C", "Chn", "Chinese"),
-        ["Chinese"] = ("C", "Chn", "Chinese"),
-        ["Zh-Hans"] = ("C", "Zhs", "Simplified Chinese"),
-        ["Chs"] = ("C", "Zhs", "Simplified Chinese"),
-        ["SimplifiedChinese"] = ("C", "Zhs", "Simplified Chinese"),
-        ["Zh-Hant"] = ("T", "Zht", "Traditional Chinese"),
-        ["Cht"] = ("T", "Zht", "Traditional Chinese"),
-        ["TraditionalChinese"] = ("T", "Zht", "Traditional Chinese"),
+            ["C"] = ("C", "Zh", "Chn", "China"),
+            ["China"] = ("C", "Zh", "Chn", "China"),
+            ["Cn"] = ("C", "Zh", "Chn", "Chinese"),
+            ["Zh"] = ("C", "Zh", "Chn", "Chinese"),
+            ["Chinese"] = ("C", "Zh", "Chn", "Chinese"),
+            ["Zh-Hans"] = ("C", "Zh", "Zhs", "Simplified Chinese"),
+            ["Chs"] = ("C", "Zh", "Zhs", "Simplified Chinese"),
+            ["SimplifiedChinese"] = ("C", "Zh", "Zhs", "Simplified Chinese"),
+            ["Zh-Hant"] = ("T", "Zh", "Zht", "Traditional Chinese"),
+            ["Cht"] = ("T", "Zh", "Zht", "Traditional Chinese"),
+            ["TraditionalChinese"] = ("T", "Zh", "Zht", "Traditional Chinese"),
 
-        ["W"] = ("W", "Wld", "World"),
-        ["World"] = ("W", "Wld", "World"),
+            ["W"] = ("W", "Wo", "Wld", "World"),
+            ["World"] = ("W", "Wo", "Wld", "World"),
 
-        ["A"] = ("A", "Aus", "Australia"),
-        ["Asia"] = ("A", "Asi", "Asia"),
-        ["Australia"] = ("A", "Aus", "Australia"),
-        ["Aus"] = ("A", "Aus", "Australia"),
-        ["Au"] = ("A", "Aus", "English (Australia)"),
-        ["Ar"] = ("A", "Ara", "Arabic"),
+            ["A"] = ("A", "En", "Aus", "Australia"),
+            ["Asia"] = ("A", "En", "Asi", "Asia"),
+            ["Australia"] = ("A", "En", "Aus", "Australia"),
+            ["Aus"] = ("A", "En", "Aus", "Australia"),
+            ["Au"] = ("A", "En", "Aus", "English (Australia)"),
+            ["Ar"] = ("A", "Ar", "Ara", "Arabic"),
 
-        ["Taiwan"] = ("T", "Twn", "Taiwan"),
-        ["Tw"] = ("T", "Twn", "Taiwanese"),
+            ["Taiwan"] = ("T", "Zh", "Twn", "Taiwan"),
+            ["Tw"] = ("T", "Zh", "Twn", "Taiwanese"),
 
-        ["F"] = ("F", "Fra", "French"),
-        ["Fr"] = ("F", "Fra", "French"),
-        ["French"] = ("F", "Fra", "French"),
+            ["F"] = ("F", "Fr", "Fra", "French"),
+            ["Fr"] = ("F", "Fr", "Fra", "French"),
+            ["French"] = ("F", "Fr", "Fra", "French"),
 
-        ["D"] = ("D", "Deu", "German"),
-        ["De"] = ("D", "Deu", "German"),
-        ["German"] = ("D", "Deu", "German"),
+            ["D"] = ("D", "De", "Deu", "German"),
+            ["De"] = ("D", "De", "Deu", "German"),
+            ["German"] = ("D", "De", "Deu", "German"),
 
-        ["S"] = ("S", "Spa", "Spanish"),
-        ["Es"] = ("S", "Spa", "Spanish"),
-        ["Spanish"] = ("S", "Spa", "Spanish"),
+            ["S"] = ("S", "Es", "Spa", "Spanish"),
+            ["Es"] = ("S", "Es", "Spa", "Spanish"),
+            ["Spanish"] = ("S", "Es", "Spa", "Spanish"),
 
-        ["I"] = ("I", "Ita", "Italian"),
-        ["It"] = ("I", "Ita", "Italian"),
-        ["Italian"] = ("I", "Ita", "Italian"),
+            ["I"] = ("I", "It", "Ita", "Italian"),
+            ["It"] = ("I", "It", "Ita", "Italian"),
+            ["Italian"] = ("I", "It", "Ita", "Italian"),
 
-        ["Nl"] = ("N", "Nld", "Dutch"),
-        ["Dutch"] = ("N", "Nld", "Dutch"),
+            ["Nl"] = ("N", "Nl", "Nld", "Dutch"),
+            ["Dutch"] = ("N", "Nl", "Nld", "Dutch"),
 
-        ["Pt"] = ("P", "Por", "Portuguese"),
-        ["Portuguese"] = ("P", "Por", "Portuguese"),
-        ["Pt-BR"] = ("P", "Pbr", "Brazilian Portuguese"),
+            ["Pt"] = ("P", "Pt", "Por", "Portuguese"),
+            ["Portuguese"] = ("P", "Pt", "Por", "Portuguese"),
+            ["Pt-BR"] = ("P", "Pt", "Pbr", "Brazilian Portuguese"),
 
-        ["Ru"] = ("R", "Rus", "Russian"),
-        ["Russian"] = ("R", "Rus", "Russian"),
+            ["Ru"] = ("R", "Ru", "Rus", "Russian"),
+            ["Russian"] = ("R", "Ru", "Rus", "Russian"),
 
-        ["Pl"] = ("P", "Pol", "Polish"),
-        ["Tr"] = ("T", "Tur", "Turkish"),
-        ["Es-MX"] = ("S", "Smx", "Latin American Spanish")
-    };
+            ["Pl"] = ("P", "Pl", "Pol", "Polish"),
+            ["Tr"] = ("T", "Tr", "Tur", "Turkish"),
+            ["Es-MX"] = ("S", "Es", "Smx", "Latin American Spanish")
+        };
 
-    private static readonly Dictionary<string, (string Code1, string Code3, string Full)> LanguageByFull = LanguageMap.Values
-        .GroupBy(x => x.Full, StringComparer.OrdinalIgnoreCase)
-        .ToDictionary(x => x.Key, x => x.First(), StringComparer.OrdinalIgnoreCase);
+    private static readonly Dictionary<string, (string Code1, string Code2, string Code3, string Full)> LanguageByFull =
+        LanguageMap.Values
+            .GroupBy(x => x.Full, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(x => x.Key, x => x.First(), StringComparer.OrdinalIgnoreCase);
 
     public static (string? Version, string? Date, string? Language) Extract(string patchFileName)
     {
@@ -255,6 +257,7 @@ public static class PatchVersionInfoExtractor
             return formatType.ToLowerInvariant() switch
             {
                 "code1" or "1" => mapped.Code1,
+                "code2" or "2" => mapped.Code2,
                 "code3" or "3" => mapped.Code3,
                 _ => mapped.Full
             };
@@ -263,7 +266,12 @@ public static class PatchVersionInfoExtractor
         return formatType.ToLowerInvariant() switch
         {
             "code1" or "1" => normalizedLanguage[..1].ToUpperInvariant(),
-            "code3" or "3" => normalizedLanguage.Length >= 3 ? normalizedLanguage[..3] : normalizedLanguage,
+            "code2" or "2" => normalizedLanguage.Length >= 2
+                ? normalizedLanguage[..2]
+                : normalizedLanguage,
+            "code3" or "3" => normalizedLanguage.Length >= 3
+                ? normalizedLanguage[..3]
+                : normalizedLanguage,
             _ => normalizedLanguage
         };
     }

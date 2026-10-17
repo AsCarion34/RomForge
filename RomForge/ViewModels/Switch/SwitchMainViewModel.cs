@@ -17,6 +17,8 @@ public class SwitchMainViewModel : MultiToolTabViewModel
 
     public KeygenMainViewModel KeygenVM { get; } = new();
 
+    public RenameMainViewModel RenameVM { get; } = new();
+
     public static bool KeysAvailable => KeySetProvider.Instance.KeySet != null;
 
     public static string KeysMissingMessage => Res.Main_Err_NoKeys;
@@ -31,6 +33,7 @@ public class SwitchMainViewModel : MultiToolTabViewModel
         Tools.Add(ConverterVM);
         Tools.Add(ConvertSaturnVM);
         Tools.Add(KeygenVM);
+        Tools.Add(RenameVM);
 
         InitializeMultiTools();
 

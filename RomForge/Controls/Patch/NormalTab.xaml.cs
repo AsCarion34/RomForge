@@ -1,6 +1,5 @@
 ﻿using Microsoft.Win32;
 using RomForge.Core.Models.Patch;
-using RomForge.Core.Services.Patch;
 using RomForge.Core.UI.Helpers;
 using RomForge.ViewModels;
 using RomForge.ViewModels.Patch;
@@ -377,13 +376,5 @@ public partial class NormalTab : UserControl
         return ViewModel.PatchVM.NormalVM.PatchSlots[0];
     }
 
-    private void AddPatch_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel.PatchVM.NormalVM.AddPatchSlot();
-    }
-
-    private void ResetNamingFormat_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel.PatchVM.NormalVM.NamingFormat = PatchVersionInfoExtractor.DefaultNamingFormat;
-    }
+    private void AddPatch_Click(object sender, RoutedEventArgs e) => ViewModel.PatchVM.NormalVM.AddPatchSlot();
 }

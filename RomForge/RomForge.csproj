@@ -49,6 +49,7 @@
     <None Remove="Assets\Images\PSP.png" />
     <None Remove="Assets\Images\Recover.png" />
     <None Remove="Assets\Images\Region.png" />
+    <None Remove="Assets\Images\Rename.png" />
     <None Remove="Assets\Images\Repack.png" />
     <None Remove="Assets\Images\Resource.png" />
     <None Remove="Assets\Images\Saturn.png" />
@@ -76,6 +77,7 @@
     <Content Include="icon.ico" />
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Assets\Images\Rename.png" />
     <Resource Include="Assets\Images\UnRepack.png" />
   </ItemGroup>
   <ItemGroup>
