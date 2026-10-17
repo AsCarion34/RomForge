@@ -79,6 +79,8 @@ public class BgmPreviewViewModel : ViewModelBase
         DurationSeconds = GetDuration(wav);
 
         OnPropertyChanged(nameof(HasPreview));
+
+        Play();
     }
 
     public void Clear()

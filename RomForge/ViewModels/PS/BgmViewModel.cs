@@ -73,42 +73,34 @@ public class BgmViewModel(Action<string, LogLevel> log) : ViewModelBase
 
     public async Task SetPathAsync(string filePath)
     {
-        if (IsConverting)
-            return;
+        string ext = Path.GetExtension(filePath).ToLowerInvariant();
+        bool isAt3 = ext == ".at3";
 
-        IsConverting = true;
-        ProgressPct = 0;
+        if (!isAt3)
+        {
+            if (IsConverting)
+                return;
+
+            IsConverting = true;
+            ProgressPct = 0;
+        }
 
         Preview.Stop();
 
+        string actionName = isAt3 ? "로드" : "변환";
+
         try
         {
-            string ext = Path.GetExtension(filePath).ToLowerInvariant();
-            int lastPct = -1;
-            var options = new ConverterOptions
-            {
-                EnableGain = false,
-                BitrateKbps = IsHighQualityMode ? Bitrate.Kbps132 : Bitrate.Kbps66,
-                MaxSeconds = IsHighQualityMode ? 30 : 60,
-                OnProgress = p =>
-                {
-                    int pct = (int)(p * 100);
-
-                    if (pct == lastPct)
-                        return;
-
-                    lastPct = pct;
-
-                    Application.Current.Dispatcher.InvokeAsync(() => ProgressPct = pct);
-                }
-            };
-
-            log($"배경음 변환 시작: {Path.GetFileName(filePath)}", LogLevel.Highlight);
+            log($"배경음 {actionName} 시작: {Path.GetFileName(filePath)}", LogLevel.Highlight);
 
             var (bgm, wav) = await Task.Run(() =>
             {
                 byte[] rawBytes = File.ReadAllBytes(filePath);
-                byte[] converted = ext == ".at3" ? rawBytes : At3Encoder.Convert(rawBytes, ext == ".wav", options);
+
+                byte[] converted = isAt3
+                    ? rawBytes
+                    : At3Encoder.Convert(rawBytes, ext == ".wav", CreateConverterOptions());
+
                 byte[]? preview = null;
 
                 try
@@ -124,25 +116,49 @@ public class BgmViewModel(Action<string, LogLevel> log) : ViewModelBase
             });
 
             Bytes = bgm;
-            Preview.Load(wav);
-
+            Preview.Load(wav);            
             FilePath = filePath;
-            log($"배경음 변환 완료: {Path.GetFileName(filePath)}", LogLevel.Ok);
+
+            log($"배경음 {actionName} 완료: {Path.GetFileName(filePath)}", LogLevel.Ok);
         }
         catch (Exception ex)
         {
-            log($"배경음 변환 중 오류 발생: {ex.Message}", LogLevel.Error);
+            log($"배경음 {actionName} 중 오류 발생: {ex.Message}", LogLevel.Error);
         }
         finally
         {
-            IsConverting = false;
+            if (!isAt3)
+            {
+                IsConverting = false;
+            }
         }
+    }
+
+    private ConverterOptions CreateConverterOptions()
+    {
+        int lastPct = -1;
+        return new ConverterOptions
+        {
+            EnableGain = false,
+            BitrateKbps = IsHighQualityMode ? Bitrate.Kbps132 : Bitrate.Kbps66,
+            MaxSeconds = IsHighQualityMode ? 30 : 60,
+            OnProgress = p =>
+            {
+                int pct = (int)(p * 100);
+
+                if (pct == lastPct)
+                    return;
+
+                lastPct = pct;
+
+                Application.Current.Dispatcher.InvokeAsync(() => ProgressPct = pct);
+            }
+        };
     }
 
     public void Reset()
     {
         Preview.Clear();
-
         Bytes = null;
         FilePath = null;
     }

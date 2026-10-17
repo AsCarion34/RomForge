@@ -346,7 +346,8 @@
                                         <TextBlock Text="{Binding Bgm.FileName}" FontSize="14" FontWeight="Bold" Foreground="White" TextAlignment="Center" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="440"/>
 
                                         <StackPanel Width="360" Margin="0,8,0,0" HorizontalAlignment="Center" Background="Transparent" MouseLeftButtonDown="BgmPlayer_MouseLeftButtonDown" Visibility="{Binding Bgm.Preview.HasPreview, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                            <Slider Style="{StaticResource SliderStyle}" Minimum="0" Maximum="{Binding Bgm.Preview.DurationSeconds}" Value="{Binding Bgm.Preview.PositionSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SmallChange="1" LargeChange="5" VerticalAlignment="Center" Thumb.DragStarted="BgmSlider_DragStarted" Thumb.DragCompleted="BgmSlider_DragCompleted"/>
+                                            <Slider Style="{StaticResource SliderStyle}" Minimum="0" Maximum="{Binding Bgm.Preview.DurationSeconds}" Value="{Binding Bgm.Preview.PositionSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" SmallChange="1" LargeChange="5" VerticalAlignment="Center"
+                                                    Thumb.DragStarted="BgmSlider_DragStarted" Thumb.DragCompleted="BgmSlider_DragCompleted"/>
                                             <Grid Margin="0,4,0,0">
                                                 <TextBlock Text="{Binding Bgm.Preview.PositionText}" FontSize="11" Foreground="#8FA3FF" HorizontalAlignment="Left"/>
                                                 <TextBlock Text="{Binding Bgm.Preview.DurationText}" FontSize="11" Foreground="#8FA3FF" HorizontalAlignment="Right"/>
@@ -388,18 +389,21 @@
                                                 </ContentControl>
                                             </Button>
                                         </StackPanel>
-
                                         <TextBlock Text="클릭하거나 파일을 드롭하여 변경할 수 있습니다." FontSize="11" Foreground="#D4AF37" TextAlignment="Center" HorizontalAlignment="Center" Margin="0,2,0,0"/>
-                                    </StackPanel>
-
+                                    </StackPanel>                                    
                                     <Border Background="#CC000000" CornerRadius="18" Visibility="{Binding Bgm.IsConverting, Converter={StaticResource BooleanToVisibilityConverter}}">
                                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="300">
                                             <TextBlock Text="AT3로 변환 중..." FontSize="14" FontWeight="Bold" Foreground="White" TextAlignment="Center" Margin="0,0,0,10"/>
-                                            <ProgressBar Minimum="0" Maximum="100" Value="{Binding Bgm.ProgressPct, Mode=OneWay}" Height="6"/>
+                                            <Border Height="10" Background="#33FFFFFF" CornerRadius="5" ClipToBounds="True">
+                                                <Border Background="#4CAF50" CornerRadius="5" RenderTransformOrigin="0,0.5">
+                                                    <Border.RenderTransform>
+                                                        <ScaleTransform ScaleX="{Binding Bgm.ProgressPct, Converter={StaticResource ProgressToStarConverter}, FallbackValue=0}"/>
+                                                    </Border.RenderTransform>
+                                                </Border>
+                                            </Border>
                                             <TextBlock Text="{Binding Bgm.ProgressText}" FontSize="12" Foreground="#D4AF37" TextAlignment="Center" Margin="0,8,0,0"/>
                                         </StackPanel>
                                     </Border>
-
                                 </Grid>
                             </Border>
 
