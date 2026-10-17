@@ -10,7 +10,7 @@ public class DiscFileItem(string filePath) : ProcessableItemBase
 
     public string FileName => Path.GetFileNameWithoutExtension(FilePath);
 
-    public string Extension => Path.GetExtension(FilePath).TrimStart('.').ToUpperInvariant();
+    public string Extension => Path.GetExtension(FilePath).TrimStart('.').ToLowerInvariant();
 
     private string _gameId = "인식중...";
     public string GameId { get => _gameId; set => SetProperty(ref _gameId, value); }

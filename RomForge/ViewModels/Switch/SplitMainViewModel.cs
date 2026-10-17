@@ -1,6 +1,7 @@
 ﻿using Common;
 using Common.WPF.ViewModels;
 using NSW.Core;
+using NSW.Core.Models;
 using NSW.WPF.Services;
 using RomForge.Core;
 using RomForge.Core.Models;
@@ -13,7 +14,6 @@ using System.Windows;
 using System.Windows.Input;
 using Res = NSW.Core.Properties.Resources;
 using RomForge.Core.UI.Command;
-using NSW.WPF.ViewModels;
 using RomForge.Core.Services;
 
 namespace RomForge.ViewModels.Switch;
@@ -25,14 +25,23 @@ public class SplitMainViewModel : ToolTabViewModel
 
     private string _outputPath = string.Empty;
 
+    private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase) { ".nsp", ".xci", ".nsz", ".xcz" };
+
+    private readonly List<SplitRow> _files = [];
+
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
+
+    public ObservableCollection<SplitRow> Rows { get; } = [];
+
+    public bool HasFiles => _files.Count > 0;
 
     private int _progressPct;
     private string _progressLabel = "대기 중...";
     private string _progressPercent = string.Empty;
     private string _progressTime = "00:00 경과";
     private string _progressSpeed = string.Empty;
-    private SwitchOutputFormat _outputFormat = SwitchOutputFormat.NSP;
+    private SplitOutputFormat _outputFormat = SplitOutputFormat.NSP;
+    private bool? _allSelected = false;
 
     public int ProgressPct
     {
@@ -80,10 +89,23 @@ public class SplitMainViewModel : ToolTabViewModel
         }
     }
 
-    public SwitchOutputFormat OutputFormat
+    public SplitOutputFormat OutputFormat
     {
         get => _outputFormat;
         set { _outputFormat = value; OnPropertyChanged(); }
+    }
+
+    public bool? AllSelected
+    {
+        get => _allSelected;
+        set
+        {
+            if (_allSelected != value)
+            {
+                _allSelected = value;
+                OnPropertyChanged();
+            }
+        }
     }
 
     public ICommand OpenWorkSpaceCommand { get; }
@@ -104,8 +126,217 @@ public class SplitMainViewModel : ToolTabViewModel
         OpenWorkSpaceCommand = new RelayCommand(_ => ExecuteOpenWorkSpace());
     }
 
-    public async Task SplitAsync(IList<GameFile> gameFiles)
+    public async Task AddFilesAsync(IEnumerable<string> paths)
     {
+        var candidates = await Task.Run(() => paths.Where(p => SupportedExtensions.Contains(Path.GetExtension(p))).ToList());
+        var added = new List<SplitRow>();
+        bool hasKey = KeySetProvider.Instance.KeySet != null;
+
+        foreach (var path in candidates)
+        {
+            if (_files.Any(f => string.Equals(f.FilePath, path, StringComparison.OrdinalIgnoreCase)))
+                continue;
+
+            var row = new SplitRow(path)
+            {
+                SizeBytes = GetFileLength(path),
+                TypeText = hasKey ? Res.Status_Analyzing : Res.Status_NoKey
+            };
+
+            _files.Add(row);
+            Rows.Add(row);
+            added.Add(row);
+        }
+
+        OnPropertyChanged(nameof(HasFiles));
+
+        foreach (var row in added)
+        {
+            if (_files.Contains(row))
+                await AnalyzeAsync(row);
+        }
+    }
+
+    private static long GetFileLength(string path)
+    {
+        try
+        {
+            return new FileInfo(path).Length;
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    private static string TitleOf(MetadataResult meta) => !string.IsNullOrWhiteSpace(meta.KrTitle) ? meta.KrTitle : !string.IsNullOrWhiteSpace(meta.EnTitle) ? meta.EnTitle : string.Empty;
+
+    private static string Letter(string tag) => tag switch
+    {
+        "Base" => "B",
+        "Update" => "U",
+        "DLC" => "D",
+        _ => "?"
+    };
+
+    private static int TypeOrder(string tag) => tag switch
+    {
+        "Base" => 0,
+        "Update" => 1,
+        _ => 2
+    };
+
+    private static async Task AnalyzeAsync(SplitRow row)
+    {
+        var keySet = KeySetProvider.Instance.KeySet;
+
+        if (keySet == null)
+        {
+            row.TypeText = Res.Status_NoKey;
+            return;
+        }
+
+        row.TypeText = Res.Status_Analyzing;
+
+        var metas = await Task.Run(() =>
+        {
+            try
+            {
+                return MetadataReader.GetMetadataFromContainer(keySet.Clone(), row.FilePath, true);
+            }
+            catch
+            {
+                return null;
+            }
+        });
+
+        if (metas == null || metas.Count == 0)
+        {
+            row.TypeText = "?";
+            return;
+        }
+
+        var ordered = metas.OrderBy(m => TypeOrder(m.GetTypeTag())).ThenBy(m => m.TitleId, StringComparer.OrdinalIgnoreCase).ToList();
+        var main = ordered[0];
+        string mainName = TitleOf(main);
+
+        if (!string.IsNullOrEmpty(mainName))
+            row.Name = mainName;
+
+        row.Icon = ordered.FirstOrDefault(m => m.IconData != null)?.IconData?.ToBitmapImage();
+        row.TitleId = main.TitleId;
+        row.Version = main.GetEffectiveDisplayVersion();
+        row.TypeText = string.Join("+", ordered.Select(m => Letter(m.GetTypeTag())).Distinct());
+
+        row.Children.Clear();
+
+        if (ordered.Count > 1)
+        {
+            foreach (var meta in ordered)
+            {
+                string childName = TitleOf(meta);
+
+                row.Children.Add(new SplitRow(row.FilePath, row)
+                {
+                    Name = string.IsNullOrEmpty(childName) ? row.Name : childName,
+                    TitleId = meta.TitleId,
+                    TypeText = Letter(meta.GetTypeTag()),
+                    Version = meta.GetEffectiveDisplayVersion(),
+                    SizeBytes = meta.Size,
+                });
+            }
+        }
+
+        row.Analyzed = true;
+        row.NotifyStructureChanged();
+    }
+
+    public void ToggleExpand(SplitRow row)
+    {
+        if (!row.CanExpand)
+            return;
+
+        int index = Rows.IndexOf(row);
+
+        if (index < 0)
+            return;
+
+        if (row.IsExpanded)
+        {
+            foreach (var child in row.Children)
+                Rows.Remove(child);
+
+            row.IsExpanded = false;
+            return;
+        }
+
+        for (int i = 0; i < row.Children.Count; i++)
+            Rows.Insert(index + 1 + i, row.Children[i]);
+
+        row.IsExpanded = true;
+    }
+
+    public void RemoveRows(IEnumerable<SplitRow> selected)
+    {
+        var parents = selected.Select(r => r.Parent ?? r).Distinct().ToList();
+
+        foreach (var parent in parents)
+        {
+            foreach (var child in parent.Children)
+                Rows.Remove(child);
+
+            Rows.Remove(parent);
+            _files.Remove(parent);
+        }
+
+        OnPropertyChanged(nameof(HasFiles));
+    }
+
+    public void ClearAll()
+    {
+        Rows.Clear();
+        _files.Clear();
+        OnPropertyChanged(nameof(HasFiles));
+    }
+
+    public void SelectAll(bool isChecked)
+    {
+        foreach (var file in _files)
+            file.SetAll(isChecked);
+    }
+
+    public void SelectExceptBase()
+    {
+        foreach (var file in _files)
+            file.SetExceptBase();
+    }
+
+    public async Task SplitAsync()
+    {
+        foreach (var row in _files.Where(f => !f.Analyzed).ToList())
+        {
+            await AnalyzeAsync(row);
+
+            if (!row.Analyzed)
+                Log($"{row.Name}: 타이틀 정보를 읽지 못해 건너뜁니다.", LogLevel.Error);
+        }
+
+        var jobs = new List<(string FilePath, IReadOnlySet<string> TitleIds)>();
+
+        foreach (var file in _files.Where(f => f.Analyzed))
+        {
+            var ids = file.GetSelectedTitleIds();
+
+            if (ids.Count > 0)
+                jobs.Add((file.FilePath, ids));
+        }
+
+        if (jobs.Count == 0)
+        {
+            Log("분리할 타이틀을 선택하세요.", LogLevel.Error);
+            return;
+        }
+
         string outputDir = OutputPath?.Trim() ?? string.Empty;
 
         if (string.IsNullOrEmpty(outputDir))
@@ -123,16 +354,18 @@ public class SplitMainViewModel : ToolTabViewModel
             try
             {
                 _cts = new CancellationTokenSource();
-                var progress = BuildProgressReporter();
 
-                var config = AppConfig.Instance.Switch;
-                int compressLevel = config.CompressLevel < 3 ? 0 : config.CompressLevel;
                 int resultCount = 0;
+                var progress = BuildProgressReporter();                
+                var config = AppConfig.Instance.Switch;                
+                bool compress = OutputFormat is SplitOutputFormat.NSZ or SplitOutputFormat.XCZ;
+                bool asXci = OutputFormat is SplitOutputFormat.XCI or SplitOutputFormat.XCZ;
+                int compressLevel = compress ? 18 : 0;
 
-                for (int i = 0; i < gameFiles.Count; i++)
+                for (int i = 0; i < jobs.Count; i++)
                 {
                     _cts.Token.ThrowIfCancellationRequested();
-                    resultCount += await SwitchSplitService.Split(gameFiles[i].FilePath, outputDir, compressLevel, config.UseBlockMode, config.VerifyCompress, config.ForceKeyGen0, OutputFormat == SwitchOutputFormat.XCI, i + 1, gameFiles.Count, progress, Log, _cts.Token);
+                    resultCount += await SwitchSplitService.Split(jobs[i].FilePath, outputDir, compressLevel, true, config.VerifyCompress, config.ForceKeyGen0, asXci, i + 1, jobs.Count, progress, Log, jobs[i].TitleIds, _cts.Token);
                 }
 
                 Log(string.Format(Res.Main_Log_AllComplete, _totalSw.Elapsed.ToString(@"mm\:ss")), LogLevel.Ok);
@@ -140,6 +373,7 @@ public class SplitMainViewModel : ToolTabViewModel
                 if (resultCount > 0)
                 {
                     Log(Res.Main_Msg_SplitDone);
+                    AppConfig.Instance.OutputFolders.SwitchSplitOutputPath?.OpenFolder();
                     await SoundPlayer.PlayCompleteAsync();
                 }
             }
@@ -185,6 +419,4 @@ public class SplitMainViewModel : ToolTabViewModel
     }
 
     public void Log(string msg, LogLevel level = LogLevel.Info, string titleId = "") => Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
-
-    public void NavigateSettings() => SettingsClicked?.Invoke(this, EventArgs.Empty);
 }

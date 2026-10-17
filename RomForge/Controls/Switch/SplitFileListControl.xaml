@@ -1,0 +1,247 @@
+﻿<UserControl x:Class="RomForge.Controls.Switch.SplitFileListControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:l="clr-namespace:NSW.Core.Properties;assembly=NSW.Core"
+             mc:Ignorable="d"
+             d:DesignHeight="400" d:DesignWidth="800">
+    <UserControl.Resources>
+        <Style x:Key="SplitCheckBoxStyle" TargetType="CheckBox">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid x:Name="root" Width="16" Height="16" Background="Transparent" SnapsToDevicePixels="True">
+                            <Image x:Name="imgOff" Source="/Assets/Images/Unchecked.png" RenderOptions.BitmapScalingMode="HighQuality"/>
+                            <Image x:Name="imgOn" Source="/Assets/Images/Checked.png" RenderOptions.BitmapScalingMode="HighQuality" Visibility="Collapsed"/>
+                            <Border x:Name="dash" Width="10" Height="3" CornerRadius="1.5" Background="#1C97EA" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="imgOff" Property="Visibility" Value="Collapsed"/>
+                                <Setter TargetName="imgOn" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="{x:Null}">
+                                <Setter TargetName="dash" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="root" Property="Opacity" Value="0.8"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="root" Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SplitExpanderStyle" TargetType="Button">
+            <Setter Property="Width" Value="22"/>
+            <Setter Property="Height" Value="22"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="Transparent" CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#26FFFFFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+    <Border BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="8" Background="#12FFFFFF" Padding="10">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="1">
+                    <StackPanel x:Name="dropHint" VerticalAlignment="Center" HorizontalAlignment="Center" Opacity="0.9" IsHitTestVisible="False" Panel.ZIndex="1"
+                                Visibility="{Binding HasFiles, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                        <Image Source="/Assets/Images/Info.png" Width="28" Height="28" Margin="0,0,0,8"/>
+                        <TextBlock Text="게임 파일 / 폴더를 여기에 드래그&amp;드롭하세요" Foreground="LightGray" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        <TextBlock Text="통합롬은 + 버튼으로 펼쳐서 본편/업데이트/DLC를 골라 분리할 수 있습니다" Foreground="#D4AF37" FontSize="12" Margin="0,6,0,0" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                    <ListView x:Name="lvFiles" ItemsSource="{Binding Rows}" AllowDrop="True" DragEnter="LvFiles_DragEnter" Drop="LvFiles_Drop" KeyUp="LvFiles_KeyUp" SelectionMode="Extended" ContextMenuOpening="LvFiles_ContextMenuOpening">
+                           <ListView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="폴더 열기" Click="MenuItem_OpenFolder_Click">
+                                    <MenuItem.Icon>
+                                        <Image Source="/Common.WPF;component/Assets/Images/AddFolder.png" Width="20" Height="20"/>
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <Separator/>
+                                <MenuItem Header="선택 삭제" Click="BtnRemoveFile_Click">
+                                    <MenuItem.Icon>
+                                        <Image Source="/Assets/Images/Delete.png" Width="20" Height="20"/>
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem Header="전체 삭제" Click="BtnRemoveAllFiles_Click">
+                                    <MenuItem.Icon>
+                                        <Image Source="/Assets/Images/Clear.png" Width="20" Height="20"/>
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                            </ContextMenu>
+                        </ListView.ContextMenu>
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Width="64">
+                                    <GridViewColumn.Header>
+                                        <CheckBox Style="{StaticResource SplitCheckBoxStyle}" HorizontalAlignment="Center" VerticalAlignment="Center" ToolTip="전체 선택 / 해제" Click="HeaderCheckBox_Click"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel x:Name="selectPanel" Orientation="Horizontal" VerticalAlignment="Center" Margin="4,0,0,0">
+                                                <Grid Width="24" Height="22">
+                                                    <Button Style="{StaticResource SplitExpanderStyle}" ToolTip="펼치기 / 접기" Click="BtnExpand_Click" Visibility="{Binding CanExpand, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                        <Path x:Name="chevron" Data="M 0,0 L 4,4 L 0,8" Stroke="#BBBBBB" StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                                            <Path.RenderTransform>
+                                                                <RotateTransform Angle="0"/>
+                                                            </Path.RenderTransform>
+                                                        </Path>
+                                                    </Button>
+                                                </Grid>
+                                                <CheckBox Style="{StaticResource SplitCheckBoxStyle}" IsChecked="{Binding IsChecked, Mode=TwoWay}" IsThreeState="False"/>
+                                            </StackPanel>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                                                    <Setter TargetName="chevron" Property="Stroke" Value="#1C97EA"/>
+                                                    <Setter TargetName="chevron" Property="RenderTransform">
+                                                        <Setter.Value>
+                                                            <RotateTransform Angle="90"/>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Width="70">
+                                    <GridViewColumn.Header>
+                                        <Image Source="/Common.WPF;component/Assets/Images/Categories.png" Width="24" Height="24" Margin="0,0,4,0"/>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Background="{Binding TypeBackground}" CornerRadius="4" Padding="8,3" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="2,0">
+                                                <TextBlock Text="{Binding TypeText}" Foreground="{Binding TypeForeground}" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Width="380">
+                                    <GridViewColumn.Header>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Image Source="/Common.WPF;component/Assets/Images/Title.png" Width="24" Height="24" Margin="0,0,4,0"/>
+                                            <TextBlock Text="타이틀" Foreground="#BBBBBB" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,5">
+                                                <Border x:Name="iconBorder" Width="36" Height="36" CornerRadius="6" Margin="0,0,12,0">
+                                                    <Border.Background>
+                                                        <ImageBrush ImageSource="{Binding Icon}" Stretch="UniformToFill"/>
+                                                    </Border.Background>
+                                                </Border>
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="12" ToolTip="{Binding FilePath}"/>
+                                                    <TextBlock Text="{Binding TitleId}" FontSize="10" Foreground="Gray"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding IsChild}" Value="True">
+                                                    <Setter TargetName="iconBorder" Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Width="120">
+                                    <GridViewColumn.Header>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Image Source="/Common.WPF;component/Assets/Images/Version.png" Width="24" Height="24" Margin="0,0,4,0"/>
+                                            <TextBlock Text="버전" Foreground="#BBBBBB" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Version}" FontWeight="Bold" FontSize="12" Margin="5,2" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Width="50">
+                                    <GridViewColumn.Header>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Image Source="/Assets/Images/Extension.png" Width="24" Height="24" Margin="0,0,4,0"/>
+                                        </StackPanel>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border x:Name="extBorder" Background="{Binding ExtensionBackground}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="2,0">
+                                                <TextBlock Text="{Binding Extension}" Foreground="{Binding ExtensionForeground}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                            </Border>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding IsChild}" Value="True">
+                                                    <Setter TargetName="extBorder" Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Width="75">
+                                    <GridViewColumn.Header>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Image Source="/Common.WPF;component/Assets/Images/FileSizeBytes.png" Width="24" Height="24" Margin="0,0,4,0"/>
+                                            <TextBlock Text="{x:Static l:Resources.Header_Size}" Foreground="#BBBBBB" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding SizeText}" FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </Grid>
+            </Grid>
+
+            <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Top">
+                <Button Width="30" Height="30" Margin="0,0,0,8" Padding="0" BorderThickness="1" ToolTip="{x:Static l:Resources.ToolTip_AddFile}" Style="{StaticResource GrayButton}" Click="BtnAddFile_Click">
+                    <Image Source="/Common.WPF;component/Assets/Images/AddFile.png" Width="30" Height="30" RenderOptions.BitmapScalingMode="HighQuality"/>
+                </Button>
+                <Button Width="30" Height="30" Margin="0,0,0,8" Padding="0" BorderThickness="1" ToolTip="폴더 추가" Style="{StaticResource GrayButton}" Click="BtnAddFolder_Click">
+                    <Image Source="/Common.WPF;component/Assets/Images/AddFolder.png" Width="30" Height="30" RenderOptions.BitmapScalingMode="HighQuality"/>
+                </Button>
+                <Button Width="30" Height="30" Margin="0,0,0,8" Padding="0" BorderThickness="1" ToolTip="{x:Static l:Resources.ToolTip_RemoveSelected}" Style="{StaticResource GrayButton}" Click="BtnRemoveFile_Click">
+                    <Image Source="/Assets/Images/Delete.png" Width="30" Height="30" RenderOptions.BitmapScalingMode="HighQuality"/>
+                </Button>
+                <Button Width="30" Height="30" Padding="0" BorderThickness="1" ToolTip="{x:Static l:Resources.ToolTip_RemoveAll}" Style="{StaticResource GrayButton}" Click="BtnRemoveAllFiles_Click">
+                    <Image Source="/Assets/Images/Clear.png" Width="30" Height="30" RenderOptions.BitmapScalingMode="HighQuality"/>
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

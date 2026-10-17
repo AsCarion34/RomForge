@@ -1,4 +1,4 @@
-﻿using NSW.WPF.UI;
+﻿using NSW.Core;
 using RomForge.ViewModels.Switch;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,15 +10,7 @@ public partial class SplitTab : UserControl
 {
     private SplitMainViewModel ViewModel => (SplitMainViewModel)DataContext;
 
-    public SplitTab()
-    {
-        InitializeComponent();
-    }
-
-    private void BtnSettings_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel.NavigateSettings();
-    }
+    public SplitTab() => InitializeComponent();
 
     private void BtnHelp_Click(object sender, RoutedEventArgs e)
     {
@@ -59,29 +51,18 @@ public partial class SplitTab : UserControl
             return;
         }
 
-        if (!fileMgr.GameFiles.Any())
+        if (!ViewModel.HasFiles)
         {
             ViewModel.Log(Res.Main_Err_NoFiles, Common.LogLevel.Error);
             return;
         }
 
-        if (!FileManagerControl.KeyExists())
+        if (KeySetProvider.Instance.KeySet == null)
         {
             ViewModel.Log(Res.Main_Err_NoKeys, Common.LogLevel.Error);
             return;
         }
 
-        if (fileMgr.GameFiles.Any(f => f.IsKeyMissing))
-            await RecalcKeyMissingAsync();
-
-        await ViewModel.SplitAsync(fileMgr.GameFiles);
-    }
-
-    private Task RecalcKeyMissingAsync()
-    {
-        var tcs = new TaskCompletionSource();
-        fileMgr.RecalcKeyMissingFiles(() => tcs.SetResult());
-
-        return tcs.Task;
+        await ViewModel.SplitAsync();
     }
 }
