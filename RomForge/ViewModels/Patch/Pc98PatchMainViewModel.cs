@@ -18,8 +18,10 @@ public class Pc98PatchMainViewModel : ToolTabViewModel, IPatchViewModel
     private string? _sourcePath;
     private string? _patchPath;
     private int _progressPct;
-    private string _progressLabel = string.Empty;
-    private string _progressPercent = "0%";
+    private string _progressLabel = "대기 중...";
+    private string _progressPercent = string.Empty;
+    private string _progressSpeed = string.Empty;
+    private string _progressTime = "00:00 경과";
 
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
@@ -74,8 +76,19 @@ public class Pc98PatchMainViewModel : ToolTabViewModel, IPatchViewModel
         set { _progressPercent = value; OnPropertyChanged(); }
     }
 
-    public void Log(string message, LogLevel level) =>
-        Application.Current?.Dispatcher?.Invoke(() => LogEntries.Add(new LogEntry { Message = message, Level = level }));
+    public string ProgressTime
+    {
+        get => _progressTime;
+        set { _progressTime = value; OnPropertyChanged(); }
+    }
+
+    public string ProgressSpeed
+    {
+        get => _progressSpeed;
+        set { _progressSpeed = value; OnPropertyChanged(); }
+    }
+
+    public void Log(string message, LogLevel level) => Application.Current?.Dispatcher?.Invoke(() => LogEntries.Add(new LogEntry { Message = message, Level = level }));
 
     public async Task RunAsync()
     {
@@ -90,11 +103,13 @@ public class Pc98PatchMainViewModel : ToolTabViewModel, IPatchViewModel
 
         Log($"패치 시작: {Path.GetFileName(SourcePath)}", LogLevel.Highlight);
 
-        var progress = new Progress<ProgressInfo>(p =>
+        var progress = new Progress<ProgressInfo>(info =>
         {
-            ProgressPct = p.Percent;
-            ProgressLabel = p.Label;
-            ProgressPercent = $"{p.Percent}%";
+            ProgressPct = info.Percent;
+            ProgressLabel = info.Label;
+            ProgressPercent = $"{info.Percent}%";
+            ProgressTime = info.TimeInfo;
+            ProgressSpeed = info.Speed;
         });
 
         try
@@ -128,7 +143,9 @@ public class Pc98PatchMainViewModel : ToolTabViewModel, IPatchViewModel
         {
             ProgressPct = 0;
             ProgressLabel = string.Empty;
-            ProgressPercent = "0%";
+            ProgressPercent = string.Empty;
+            ProgressTime = string.Empty;
+            ProgressSpeed = string.Empty;
         }
     }
 
@@ -143,10 +160,11 @@ public class Pc98PatchMainViewModel : ToolTabViewModel, IPatchViewModel
 
         SourcePath = null;
         PatchPath = null;
-
         ProgressPct = 0;
         ProgressLabel = string.Empty;
-        ProgressPercent = "0%";
+        ProgressPercent = string.Empty;
+        ProgressTime = string.Empty;
+        ProgressSpeed = string.Empty;
 
         LogEntries.Clear();
     }

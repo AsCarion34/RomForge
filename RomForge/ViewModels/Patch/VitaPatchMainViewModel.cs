@@ -28,10 +28,10 @@ public class VitaPatchMainViewModel : ToolTabViewModel, IPatchViewModel
     private bool _buildRetail;
     private bool _mergePatchIntoGame = false;
     private int _progressPct;
-    private string _progressLabel = string.Empty;
+    private string _progressLabel = "대기 중...";
     private string _progressPercent = string.Empty;
-    private string _progressTime = string.Empty;
     private string _progressSpeed = string.Empty;
+    private string _progressTime = "00:00 경과";
     private bool _isSyncing;
 
     public ObservableCollection<LogEntry> LogEntries { get; } = [];

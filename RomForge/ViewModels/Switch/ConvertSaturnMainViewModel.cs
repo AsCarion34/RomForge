@@ -41,7 +41,7 @@ namespace RomForge.ViewModels.Switch
 
         private bool _isConverting;
         private string _progressLabel = "대기 중...";
-        private string _progressPercent = "0%";
+        private string _progressPercent = string.Empty;
         private string _progressSpeed = string.Empty;
         private string _progressTime = "00:00 경과";
         private int _progressPct;

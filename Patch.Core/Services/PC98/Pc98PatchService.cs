@@ -30,7 +30,6 @@ public static class Pc98PatchService
                 log?.Invoke(string.IsNullOrEmpty(mountPoint) ? "마운트 경로: 루트" : $"마운트 경로 자동 감지: {mountPoint}", LogLevel.Info);
 
                 string prefixKey = mountPoint.Length > 0 ? mountPoint + "/" : string.Empty;
-
                 var lookup = new Dictionary<string, Fat16DirEntry>(StringComparer.OrdinalIgnoreCase);
 
                 foreach (var (path, entry) in tree)
@@ -48,6 +47,9 @@ public static class Pc98PatchService
                 var missing = new List<string>();
                 int total = Math.Max(patchFiles.Count, 1);
                 int done = 0;
+
+                var reporter = new ProgressReporter("패치중", string.Empty, total, progress);
+                var report = reporter.CreateAction();
 
                 foreach (var rel in patchFiles)
                 {
@@ -68,7 +70,7 @@ public static class Pc98PatchService
                     }
 
                     done++;
-                    progress?.Report(new ProgressInfo(done * 100 / total, rel, string.Empty, string.Empty, string.Empty));
+                    report?.Invoke(done * 100, total);
                 }
 
                 image.Save(outputPath);

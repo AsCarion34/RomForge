@@ -144,8 +144,6 @@ public class MergeMainViewModel : ToolTabViewModel
 
     public ICommand OpenWorkSpaceCommand { get; }
 
-    public event EventHandler SettingsClicked;
-
     #endregion
 
     #region Constructor
@@ -281,8 +279,6 @@ public class MergeMainViewModel : ToolTabViewModel
     }
 
     public void Log(string msg, LogLevel level = LogLevel.Info, string titleId = "") => Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
-
-    public void NavigateSettings() => SettingsClicked?.Invoke(this, EventArgs.Empty);
 
     #endregion
 }

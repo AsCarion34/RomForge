@@ -97,7 +97,7 @@ public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
         get => $"{_totalProgress}%";
     }
 
-    private string _progressSummary = string.Empty;
+    private string _progressSummary = "대기 중...";
     public string ProgressSummary
     {
         get => _progressSummary;
