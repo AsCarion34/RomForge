@@ -6,7 +6,7 @@ namespace NSW.M1.Core.Services;
 
 public static class NspPatchApplier
 {
-    public static void ApplyPatch(string patchPath, UnpackResult unpackResult, byte sourceIdOffset, IProgress<(int pct, string label)> progress, Action<string, LogLevel> log, string? patchPassword = null)
+    public static void ApplyPatch(string patchPath, UnpackResult unpackResult, byte sourceIdOffset, IProgress<ProgressInfo> progress, Action<string, LogLevel> log, string? patchPassword = null)
     {
         string exefsDir = unpackResult.ExefsDirs.GetValueOrDefault(sourceIdOffset, string.Empty);
         string romfsDir = unpackResult.RomfsDirs.GetValueOrDefault(sourceIdOffset, string.Empty);
@@ -32,14 +32,14 @@ public static class NspPatchApplier
 
             if (patchExefs != null)
             {
-                progress.Report((-1, "한글패치 ExeFS 병합 중..."));
+                progress.ReportStatus("한글패치 ExeFS 병합 중...", -1);
                 log($"한글패치 ExeFS 병합: {patchExefs}", LogLevel.Info);
                 matchedCount += NspPatchMergeHelper.MergeDirectory(patchExefs, exefsDir, log);
             }
 
             if (patchRomfs != null)
             {
-                progress.Report((-1, "한글패치 RomFS 병합 중..."));
+                progress.ReportStatus("한글패치 RomFS 병합 중...", -1);
                 log($"한글패치 RomFS 병합: {patchRomfs}", LogLevel.Info);
                 matchedCount += NspPatchMergeHelper.MergeDirectory(patchRomfs, romfsDir, log);
             }
@@ -92,7 +92,7 @@ public static class NspPatchApplier
 
     private static bool IsTitleIdName(string name) => name.Length == 16 && name.All(Uri.IsHexDigit);
 
-    public static void ApplyDlcPatch(string patchPath, string titleIdStr, string romfsDir, IProgress<(int pct, string label)> progress, Action<string, LogLevel> log, string? patchPassword = null)
+    public static void ApplyDlcPatch(string patchPath, string titleIdStr, string romfsDir, IProgress<ProgressInfo> progress, Action<string, LogLevel> log, string? patchPassword = null)
     {
         int matchedCount = 0;
 
@@ -112,7 +112,7 @@ public static class NspPatchApplier
 
             if (patchRomfs != null)
             {
-                progress.Report((-1, $"DLC 패치 RomFS 병합 중... ({titleIdStr})"));
+                progress.ReportStatus($"DLC 패치 RomFS 병합 중... ({titleIdStr})", -1);
                 log($"DLC 패치 RomFS 병합: {patchRomfs}", LogLevel.Info);
                 matchedCount += NspPatchMergeHelper.MergeDirectory(patchRomfs, romfsDir, log);
             }

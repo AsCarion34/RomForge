@@ -23,7 +23,7 @@ public static class NspExefsPatchApplier
         return (buildId, Read);
     }
 
-    public static int ApplyFolderExefsPatches(string patchPath, string exefsDir, IProgress<(int pct, string label)> progress, Action<string, LogLevel> log)
+    public static int ApplyFolderExefsPatches(string patchPath, string exefsDir, IProgress<ProgressInfo> progress, Action<string, LogLevel> log)
     {
         if (string.IsNullOrEmpty(exefsDir) || !Directory.Exists(exefsDir) || !Directory.Exists(patchPath))
             return 0;
@@ -76,7 +76,7 @@ public static class NspExefsPatchApplier
         }
     }
 
-    public static int ApplyArchiveExefsPatches(IArchivePatchSource archive, string exefsDir, IProgress<(int pct, string label)> progress, Action<string, LogLevel> log)
+    public static int ApplyArchiveExefsPatches(IArchivePatchSource archive, string exefsDir, IProgress<ProgressInfo> progress, Action<string, LogLevel> log)
     {
         var ipsKeys = archive.EntryPaths.Where(k => k.EndsWith(".ips", StringComparison.OrdinalIgnoreCase)).ToList();
 
@@ -88,7 +88,7 @@ public static class NspExefsPatchApplier
         return ApplyExefsPatchesCore(items, exefsDir, progress, log);
     }
 
-    private static int ApplyExefsPatchesCore(IEnumerable<(string BuildId, Func<byte[]> ReadIps)> ipsItems, string exefsDir, IProgress<(int pct, string label)> progress, Action<string, LogLevel> log)
+    private static int ApplyExefsPatchesCore(IEnumerable<(string BuildId, Func<byte[]> ReadIps)> ipsItems, string exefsDir, IProgress<ProgressInfo> progress, Action<string, LogLevel> log)
     {
         var buildIdMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -121,7 +121,7 @@ public static class NspExefsPatchApplier
                 continue;
             }
 
-            progress.Report((-1, $"exefs_patches 적용 중... ({Path.GetFileName(targetNso)})"));
+            progress.ReportStatus($"exefs_patches 적용 중... ({Path.GetFileName(targetNso)})", -1);
 
             byte[] nso = File.ReadAllBytes(targetNso);
             uint originalFlags = BitConverter.ToUInt32(nso, 0x0C);

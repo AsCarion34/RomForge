@@ -1,4 +1,5 @@
-﻿using K4os.Compression.LZ4;
+﻿using Common;
+using K4os.Compression.LZ4;
 using LibHac;
 using LibHac.Fs;
 using LibHac.FsSystem;
@@ -30,7 +31,7 @@ public static class CompressedRomfsWriter
         public uint PhysicalSize;
     }
 
-    public static CompressedRomfsInfo Compress(Stream input, Stream output, IProgress<(int pct, string label)>? progress = null, CancellationToken ct = default)
+    public static CompressedRomfsInfo Compress(Stream input, Stream output, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         long totalSize = input.Length;
         input.Position = 0;
@@ -68,7 +69,8 @@ public static class CompressedRomfsWriter
             targets[i] = new byte[ChunkSize];
         }
 
-        var watch = Stopwatch.StartNew();
+        var reporter = new ProgressReporter("RomFS 압축 중", string.Empty, totalSize, progress);
+        var report = reporter.CreateAction();
 
         while (virtualOffset < totalSize)
         {
@@ -140,15 +142,10 @@ public static class CompressedRomfsWriter
                 virtualOffset += lengths[i];
             }
 
-            if (watch.ElapsedMilliseconds >= 250)
-            {
-                watch.Restart();
-
-                var (pct, label, _, _) = Common.Utils.CalculateProgress(virtualOffset, totalSize, "RomFS 압축 중");
-
-                progress?.Report((pct, label));
-            }
+            report(virtualOffset, totalSize);
         }
+
+        report(totalSize, totalSize);
 
         long tableOffset = (physical + NodeSize - 1) / NodeSize * NodeSize;
         WriteZeros(output, tableOffset - physical);

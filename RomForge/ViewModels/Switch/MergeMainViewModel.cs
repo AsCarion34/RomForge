@@ -31,9 +31,9 @@ public class MergeMainViewModel : ToolTabViewModel
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
     private int _progressPct;
-    private string _progressLabel = string.Empty;
+    private string _progressLabel = "대기 중...";
     private string _progressPercent = string.Empty;
-    private string _progressTime = string.Empty;
+    private string _progressTime = "00:00 경과";
     private string _progressSpeed = string.Empty;
     private SwitchOutputFormat _outputFormat = SwitchOutputFormat.NSP;
 

@@ -30,7 +30,7 @@ public static class NspXdeltaPatcher
         }
     }
 
-    private static int ApplyXdeltaCandidates(List<XdeltaCandidate> candidates, string? exefsDir, string romfsDir, string displayRoot, bool isDlc, IProgress<(int pct, string label)> progress, Action<string, LogLevel> log)
+    private static int ApplyXdeltaCandidates(List<XdeltaCandidate> candidates, string? exefsDir, string romfsDir, string displayRoot, bool isDlc, IProgress<ProgressInfo> progress, Action<string, LogLevel> log)
     {
         int count = 0;
         int successCount = 0;
@@ -73,7 +73,7 @@ public static class NspXdeltaPatcher
         return count;
     }
 
-    public static int ApplyFolderXdelta(string patchPath, string exefsDir, string romfsDir, IProgress<(int pct, string label)> progress, Action<string, LogLevel> log)
+    public static int ApplyFolderXdelta(string patchPath, string exefsDir, string romfsDir, IProgress<ProgressInfo> progress, Action<string, LogLevel> log)
     {
         var xdeltaFiles = Directory.EnumerateFiles(patchPath, "*.xdelta", SearchOption.AllDirectories)
                                    .OrderBy(f => f)
@@ -82,7 +82,7 @@ public static class NspXdeltaPatcher
         if (xdeltaFiles.Count == 0)
             return 0;
 
-        progress.Report((-1, "xdelta 바이너리 패치 적용 중..."));
+        progress.ReportStatus("xdelta 바이너리 패치 적용 중...", -1);
         log($"발견된 xdelta 패치 수: {xdeltaFiles.Count}개", LogLevel.Info);
 
         string unpackedRoot = Path.GetDirectoryName(exefsDir)!;
@@ -101,7 +101,7 @@ public static class NspXdeltaPatcher
         return ApplyXdeltaCandidates(candidates, exefsDir, romfsDir, unpackedRoot, false, progress, log);
     }
 
-    public static int ApplyFolderXdeltaDlc(string patchPath, string romfsDir, string titleIdStr, IProgress<(int pct, string label)> progress, Action<string, LogLevel> log)
+    public static int ApplyFolderXdeltaDlc(string patchPath, string romfsDir, string titleIdStr, IProgress<ProgressInfo> progress, Action<string, LogLevel> log)
     {
         var xdeltaFiles = Directory.EnumerateFiles(patchPath, "*.xdelta", SearchOption.AllDirectories)
                                    .OrderBy(f => f)
@@ -110,7 +110,7 @@ public static class NspXdeltaPatcher
         if (xdeltaFiles.Count == 0)
             return 0;
 
-        progress.Report((-1, $"DLC xdelta 패치 적용 중... ({titleIdStr})"));
+        progress.ReportStatus($"DLC xdelta 패치 적용 중... ({titleIdStr})", -1);
         log($"발견된 DLC xdelta 패치 수: {xdeltaFiles.Count}개", LogLevel.Info);
 
         var candidates = xdeltaFiles
@@ -132,7 +132,7 @@ public static class NspXdeltaPatcher
         return (entryName, targetFileName);
     }
 
-    public static int ApplyArchiveXdelta(IArchivePatchSource archive, string exefsDir, string romfsDir, IProgress<(int pct, string label)> progress, Action<string, LogLevel> log)
+    public static int ApplyArchiveXdelta(IArchivePatchSource archive, string exefsDir, string romfsDir, IProgress<ProgressInfo> progress, Action<string, LogLevel> log)
     {
         var xdeltaKeys = archive.EntryPaths
             .Where(k => k.EndsWith(".xdelta", StringComparison.OrdinalIgnoreCase))
@@ -142,7 +142,7 @@ public static class NspXdeltaPatcher
         if (xdeltaKeys.Count == 0)
             return 0;
 
-        progress.Report((-1, "xdelta 바이너리 패치 적용 중..."));
+        progress.ReportStatus("xdelta 바이너리 패치 적용 중...", -1);
         log($"발견된 xdelta 패치 수: {xdeltaKeys.Count}개", LogLevel.Info);
 
         string unpackedRoot = Path.GetDirectoryName(exefsDir) is { Length: > 0 } d ? d : Path.GetDirectoryName(romfsDir) ?? string.Empty;
@@ -166,7 +166,7 @@ public static class NspXdeltaPatcher
         return ApplyXdeltaCandidates(candidates, exefsDir, romfsDir, unpackedRoot, false, progress, log);
     }
 
-    public static int ApplyArchiveXdeltaDlc(IArchivePatchSource archive, string romfsDir, string titleIdStr, IProgress<(int pct, string label)> progress, Action<string, LogLevel> log)
+    public static int ApplyArchiveXdeltaDlc(IArchivePatchSource archive, string romfsDir, string titleIdStr, IProgress<ProgressInfo> progress, Action<string, LogLevel> log)
     {
         var xdeltaKeys = archive.EntryPaths
             .Where(k => k.EndsWith(".xdelta", StringComparison.OrdinalIgnoreCase))
@@ -176,7 +176,7 @@ public static class NspXdeltaPatcher
         if (xdeltaKeys.Count == 0)
             return 0;
 
-        progress.Report((-1, $"DLC xdelta 패치 적용 중... ({titleIdStr})"));
+        progress.ReportStatus($"DLC xdelta 패치 적용 중... ({titleIdStr})", -1);
         log($"발견된 DLC xdelta 패치 수: {xdeltaKeys.Count}개", LogLevel.Info);
 
         var candidates = new List<XdeltaCandidate>();
@@ -195,7 +195,7 @@ public static class NspXdeltaPatcher
         return ApplyXdeltaCandidates(candidates, null, romfsDir, romfsDir, true, progress, log);
     }
 
-    private static bool ApplyXdeltaToTarget(string xdeltaPath, string targetPath, string displayRoot, IProgress<(int pct, string label)> progress, Action<string, LogLevel> log, bool isDlc = false, string? displayName = null)
+    private static bool ApplyXdeltaToTarget(string xdeltaPath, string targetPath, string displayRoot, IProgress<ProgressInfo> progress, Action<string, LogLevel> log, bool isDlc = false, string? displayName = null)
     {
         string displayPath = Path.GetRelativePath(displayRoot, targetPath);
         string prefix = isDlc ? "DLC xdelta" : "xdelta";
@@ -209,10 +209,8 @@ public static class NspXdeltaPatcher
         {
             var wrapper = new Progress<ProgressInfo>(p =>
             {
-                int currentStep = 80 + (int)(p.Percent * 0.1);
-
-                if (currentStep > 80)
-                    progress?.Report((currentStep, string.Empty));
+                if (p.Percent > 0)
+                    progress.Report(p with { Label = string.IsNullOrEmpty(p.Label) ? $"{prefix} 패치 적용 중 - {shownName}" : p.Label });
             });
 
             Xdelta3.ApplyPatch(targetPath, Path.GetFullPath(xdeltaPath), tempOutPath, wrapper);

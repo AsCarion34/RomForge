@@ -15,14 +15,14 @@ namespace NSW.M1.Core.Services;
 
 public static class NspBuildService
 {
-    public static async Task<string> Run(BuildRequest req, BuildMode mode, IProgress<(int pct, string label)> progress, Action<string, LogLevel> log, CancellationToken ct = default)
+    public static async Task<string> Run(BuildRequest req, BuildMode mode, IProgress<ProgressInfo> progress, Action<string, LogLevel> log, CancellationToken ct = default)
     {
         var keySet = KeySetProvider.Instance.KeySet;
 
         return await RunProcess(req, mode, keySet, progress, log, ct);
     }
 
-    private static async Task<string> RunProcess(BuildRequest req, BuildMode mode, KeySet keySet, IProgress<(int pct, string label)> progress, Action<string, LogLevel> log, CancellationToken ct = default)
+    private static async Task<string> RunProcess(BuildRequest req, BuildMode mode, KeySet keySet, IProgress<ProgressInfo> progress, Action<string, LogLevel> log, CancellationToken ct = default)
     {
         var dirs = new WorkDirs(req.OutputDir);
 
@@ -107,12 +107,12 @@ public static class NspBuildService
         return StepPackage(req, baseSettings, unpackResult, progress, log, ct);
     }
 
-    private static async Task<UnpackResult> StepUnpack(BuildRequest req, KeySet libHacKeySet, WorkDirs dirs, IProgress<(int pct, string label)> progress, Action<string, LogLevel> log, CancellationToken ct)
+    private static async Task<UnpackResult> StepUnpack(BuildRequest req, KeySet libHacKeySet, WorkDirs dirs, IProgress<ProgressInfo> progress, Action<string, LogLevel> log, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
 
         log("━━ 1단계(1/9): 언패킹 ━━", LogLevel.Highlight);
-        progress.Report((0, "언패킹 중..."));
+        progress.ReportStatus("언패킹 중...", 0);
 
         var unpacker = new NspUnpacker(libHacKeySet);
         var result = await unpacker.Unpack(req, dirs.Unpacked, progress, ct);
@@ -193,14 +193,14 @@ public static class NspBuildService
         log($"NPDM 완료 ({sw.Elapsed.TotalSeconds:F2}s)", LogLevel.Ok);
     }
 
-    private static void StepProgramNca(BuildRequest req, NcaGenerationOptions settings, UnpackResult unpackResult, IProgress<(int pct, string label)> progress, Action<string, LogLevel> log, CancellationToken ct)
+    private static void StepProgramNca(BuildRequest req, NcaGenerationOptions settings, UnpackResult unpackResult, IProgress<ProgressInfo> progress, Action<string, LogLevel> log, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
 
         var sw = Stopwatch.StartNew();
 
         log($"━━ 4단계(4/9): Program NCA 생성 (IdOffset={settings.IdOffset}) ━━", LogLevel.Highlight);
-        progress.Report((0, "Program NCA 생성 중..."));
+        progress.ReportStatus("Program NCA 생성 중...", 0);
 
         if (req.HasPatch)
             NspPatchApplier.ApplyPatch(req.PatchDir, unpackResult, settings.SourceIdOffset, progress, log, req.PatchPassword);
@@ -211,7 +211,7 @@ public static class NspBuildService
         log($"Program NCA: {Path.GetFileName(settings.ProgramNcaPath)} ({sw.Elapsed.TotalSeconds}s)", LogLevel.Ok);
     }
 
-    private static void StepManualNcas(List<NcaGenerationOptions> settingsList, UnpackResult unpackResult, IProgress<(int pct, string label)> progress, Action<string, LogLevel> log, CancellationToken ct)
+    private static void StepManualNcas(List<NcaGenerationOptions> settingsList, UnpackResult unpackResult, IProgress<ProgressInfo> progress, Action<string, LogLevel> log, CancellationToken ct)
     {
         log("━━ 5단계(5/9): Manual NCA 생성 ━━", LogLevel.Highlight);
 
@@ -266,14 +266,14 @@ public static class NspBuildService
         }
     }
 
-    private static void StepControlNca(NcaGenerationOptions settings, UnpackResult unpackResult, IProgress<(int pct, string label)> progress, Action<string, LogLevel> log, CancellationToken ct)
+    private static void StepControlNca(NcaGenerationOptions settings, UnpackResult unpackResult, IProgress<ProgressInfo> progress, Action<string, LogLevel> log, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
 
         var sw = Stopwatch.StartNew();
 
         log($"━━ 6단계(6/9): Control NCA 생성 (IdOffset={settings.IdOffset}) ━━", LogLevel.Highlight);
-        progress.Report((0, "Control NCA 생성 중..."));
+        progress.ReportStatus("Control NCA 생성 중...", 0);
 
         if (!unpackResult.ControlDirs.TryGetValue(settings.SourceIdOffset, out var controlDir))
             return;
@@ -287,14 +287,14 @@ public static class NspBuildService
         log($"Control NCA: {Path.GetFileName(settings.ControlNcaPath)} ({sw.Elapsed.TotalSeconds:F2}s)", LogLevel.Ok);
     }
 
-    private static void StepMetaNca(List<NcaGenerationOptions> settingsList, IProgress<(int pct, string label)> progress, Action<string, LogLevel> log, CancellationToken ct)
+    private static void StepMetaNca(List<NcaGenerationOptions> settingsList, IProgress<ProgressInfo> progress, Action<string, LogLevel> log, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
 
         var sw = Stopwatch.StartNew();
 
         log("━━ 8단계(8/9): Meta NCA 생성 ━━", LogLevel.Highlight);
-        progress.Report((-1, "Meta NCA 생성 중..."));
+        progress.ReportStatus("Meta NCA 생성 중...", -1);
 
         var baseSettings = settingsList.First(s => s.IdOffset == 0);
 
@@ -328,14 +328,14 @@ public static class NspBuildService
             log($"Meta NCA: {Path.GetFileName(baseSettings.MetaNcaPath)} ({sw.Elapsed.TotalSeconds:F2}s)", LogLevel.Ok);
     }
 
-    private static string StepPackage(BuildRequest req, NcaGenerationOptions settings, UnpackResult unpackResult, IProgress<(int pct, string label)> progress, Action<string, LogLevel> log, CancellationToken ct)
+    private static string StepPackage(BuildRequest req, NcaGenerationOptions settings, UnpackResult unpackResult, IProgress<ProgressInfo> progress, Action<string, LogLevel> log, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
 
         var sw = Stopwatch.StartNew();
 
         log("━━ 9단계(9/9): NSP 패키징 ━━", LogLevel.Highlight);
-        progress.Report((0, "NSP 패키징 중..."));
+        progress.ReportStatus("NSP 패키징 중...", 0);
 
         Directory.CreateDirectory(req.OutputDir);
 
@@ -371,7 +371,7 @@ public static class NspBuildService
                 Directory.Delete(dirs.Temp, true);
         }
 
-        progress.Report((100, "완료"));
+        progress.ReportStatus("완료", 100);
         log($"출력: {finalNsp} ({sw.Elapsed.TotalSeconds:F2}s)", LogLevel.Ok);
 
         return finalNsp;

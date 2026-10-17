@@ -9,7 +9,7 @@ namespace NSW.M1.Core.Services;
 
 public static class DlcNspBuilder
 {
-    public static void BuildDlcNsps(BuildRequest req, WorkDirs dirs, NcaGenerationOptions baseSettings, IProgress<(int pct, string label)> progress, Action<string, LogLevel> log, CancellationToken ct)
+    public static void BuildDlcNsps(BuildRequest req, WorkDirs dirs, NcaGenerationOptions baseSettings, IProgress<ProgressInfo> progress, Action<string, LogLevel> log, CancellationToken ct)
     {
         string dlcBaseDir = Path.Combine(dirs.Unpacked, "DLCs");
 

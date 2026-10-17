@@ -1,4 +1,5 @@
-﻿using NSW.HacPack.Cryptography.Core;
+﻿using Common;
+using NSW.HacPack.Cryptography.Core;
 using NSW.HacPack.Cryptography.Keys;
 using NSW.HacPack.Enums;
 using NSW.HacPack.Models;
@@ -7,7 +8,7 @@ namespace NSW.HacPack.Services;
 
 public static class NcaGenerator
 {
-    public static string GenerateRomfsNca(NcaGenerationOptions settings, string ncaType, IProgress<(int pct, string label)>? progress = null, CancellationToken ct = default)
+    public static string GenerateRomfsNca(NcaGenerationOptions settings, string ncaType, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         var ncaHeader = new NcaHeader();
         NcaHeaderService.InitHeader(ref ncaHeader);
@@ -44,7 +45,7 @@ public static class NcaGenerator
         return WriteAndRename(ncaFile, settings, ncaPath, ".nca");
     }
 
-    public static string GenerateProgramNca(NcaGenerationOptions settings, IProgress<(int pct, string label)>? progress = null, CancellationToken ct = default)
+    public static string GenerateProgramNca(NcaGenerationOptions settings, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         var ncaHeader = new NcaHeader();
         NcaHeaderService.InitHeader(ref ncaHeader);
@@ -54,7 +55,7 @@ public static class NcaGenerator
         NcaStructHelper.WriteStruct(ncaFile, ncaHeader);
 
         ct.ThrowIfCancellationRequested();
-        progress?.Report((0, "ExeFS 빌드 중..."));
+        progress.ReportStatus("ExeFS 빌드 중...", 0);
 
         using var exefsStream = new MemoryStream(10 * 1024 * 1024);
         using var exefsHashStream = new MemoryStream();
@@ -142,12 +143,12 @@ public static class NcaGenerator
         ct.ThrowIfCancellationRequested();
         if (settings.Plaintext == 0)
         {
-            progress?.Report((0, "ExeFS 암호화 중..."));
+            progress.ReportStatus("ExeFS 암호화 중...", 0);
             NcaCryptoService.EncryptSection(ncaFile, ref ncaHeader, 0, settings, progress, ct);
             if (!string.IsNullOrEmpty(settings.RomfsDirectory) && Directory.Exists(settings.RomfsDirectory))
             {
                 ct.ThrowIfCancellationRequested();
-                progress?.Report((0, "RomFS 암호화 중..."));
+                progress.ReportStatus("RomFS 암호화 중...", 0);
                 NcaCryptoService.EncryptSection(ncaFile, ref ncaHeader, 1, settings, progress, ct);
             }
         }
@@ -167,7 +168,7 @@ public static class NcaGenerator
         return WriteAndRename(ncaFile, settings, ncaPath, ".nca");
     }
 
-    public static string GenerateMetaNca(IEnumerable<NcaGenerationOptions> settingsList, IProgress<(int pct, string label)>? progress = null, CancellationToken ct = default)
+    public static string GenerateMetaNca(IEnumerable<NcaGenerationOptions> settingsList, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         var baseSettings = settingsList.First(s => s.IdOffset == 0);
 
@@ -182,7 +183,7 @@ public static class NcaGenerator
         Directory.CreateDirectory(cnmtDirPath);
 
         ct.ThrowIfCancellationRequested();
-        progress?.Report((0, "Meta NCA 생성 중..."));
+        progress.ReportStatus("Meta NCA 생성 중...", 0);
         BuildMetadataFile(cnmtDirPath, settingsList);
 
         const uint metaBlockSize = Pfs0Builder.MetaHashBlockSize;
@@ -241,7 +242,7 @@ public static class NcaGenerator
         return finalPath;
     }
 
-    private static MemoryStream[] BuildAndWriteRomfsSection(FileStream ncaFile, ref NcaHeader ncaHeader, int sectionIndex, NcaGenerationOptions settings, string tempFileName, IProgress<(int pct, string label)>? progress, CancellationToken ct)
+    private static MemoryStream[] BuildAndWriteRomfsSection(FileStream ncaFile, ref NcaHeader ncaHeader, int sectionIndex, NcaGenerationOptions settings, string tempFileName, IProgress<ProgressInfo>? progress, CancellationToken ct)
     {
         var ivfcStreams = new MemoryStream[5];
         for (int i = 0; i < 5; i++) ivfcStreams[i] = new MemoryStream();
@@ -279,7 +280,7 @@ public static class NcaGenerator
                 ct.ThrowIfCancellationRequested();
                 IvfcGenerator.GenerateHashLevel(ivfcStreams[b], ivfcStreams[b + 1], out ulong lvlSize);
                 NcaHeaderService.SetIvfcLevel(ref ncaHeader, sectionIndex, b, lvlSize);
-                progress?.Report((-1, $"IVFC 생성 중... {4 - b}/5"));
+                progress.ReportStatus($"IVFC 생성 중... {4 - b}/5", -1);
             }
             NcaHeaderService.SetIvfcLogicalOffsets(ref ncaHeader, sectionIndex);
 
@@ -288,13 +289,13 @@ public static class NcaGenerator
                 ct.ThrowIfCancellationRequested();
                 ivfcStreams[c].Position = 0;
                 ivfcStreams[c].CopyTo(ncaFile);
-                progress?.Report((-1, $"NCA 기록 중... {c + 1}/6"));
+                progress.ReportStatus($"NCA 기록 중... {c + 1}/6", -1);
             }
 
             ct.ThrowIfCancellationRequested();
             dataFile.Position = 0;
             dataFile.CopyTo(ncaFile);
-            progress?.Report((-1, "NCA 기록 중... 6/6"));
+            progress.ReportStatus("NCA 기록 중... 6/6", -1);
 
             WritePadding(ncaFile);
 

@@ -28,7 +28,9 @@ namespace RomForge.ViewModels.Switch
 
         private int _progressPct;
         private string _progressLabel = "대기 중...";
+        private string _progressPercent = string.Empty;
         private string _progressTime = "00:00 경과";
+        private string _progressSpeed = string.Empty;
         private string _outputPath = string.Empty;
         private BuildMode? _currentMode;
 
@@ -51,10 +53,22 @@ namespace RomForge.ViewModels.Switch
             set { _progressLabel = value; OnPropertyChanged(); }
         }
 
+        public string ProgressPercent
+        {
+            get => _progressPercent;
+            set { _progressPercent = value; OnPropertyChanged(); }
+        }
+
         public string ProgressTime
         {
             get => _progressTime;
             set { _progressTime = value; OnPropertyChanged(); }
+        }
+
+        public string ProgressSpeed
+        {
+            get => _progressSpeed;
+            set { _progressSpeed = value; OnPropertyChanged(); }
         }
 
         public string OutputPath
@@ -161,11 +175,13 @@ namespace RomForge.ViewModels.Switch
             _cts = new CancellationTokenSource();
 
             var token = _cts.Token;
-            var progress = new Progress<(int pct, string label)>(p =>
+            var progress = new Progress<ProgressInfo>(p =>
             {
-                ProgressPct = p.pct >= 0 ? p.pct : 0;
-                ProgressLabel = p.pct >= 0 ? $"{p.label} ({p.pct}%)" : p.label;
-                ProgressTime = $"{_totalSw.Elapsed:mm\\:ss} 경과";
+                ProgressPct = p.Percent >= 0 ? p.Percent : 0;
+                ProgressLabel = p.Label;
+                ProgressPercent = p.Percent >= 0 ? $"{p.Percent}%" : string.Empty;
+                ProgressSpeed = p.Speed;
+                ProgressTime = string.IsNullOrEmpty(p.TimeInfo) ? $"{_totalSw.Elapsed:mm\\:ss} 경과" : p.TimeInfo;
             });
 
             await Task.Run(async () =>

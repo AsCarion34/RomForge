@@ -1,4 +1,5 @@
-﻿using NSW.HacPack.Models;
+﻿using Common;
+using NSW.HacPack.Models;
 using NSW.Utils;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -12,7 +13,7 @@ public static class RomfsBuilder
     private const ulong FilePartitionOfs = 0x200;
     private const int HashBlockSize = IvfcConstants.HashBlockSize;
 
-    public static void BuildRomfsImage(string inDirPath, Stream outStream, out ulong outSize, IProgress<(int pct, string label)>? progress = null, CancellationToken ct = default)
+    public static void BuildRomfsImage(string inDirPath, Stream outStream, out ulong outSize, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         ConstructRomfsStructure(inDirPath, outStream, 0, progress, ct);
 
@@ -22,7 +23,7 @@ public static class RomfsBuilder
             outStream.Write(new byte[paddingSize]);
     }
 
-    private static void ConstructRomfsStructure(string inDirPath, Stream fout, long baseOffset, IProgress<(int pct, string label)>? progress = null, CancellationToken ct = default)
+    private static void ConstructRomfsStructure(string inDirPath, Stream fout, long baseOffset, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         var rootCtx = new RomfsDirentCtx { SumPath = inDirPath, CurPath = string.Empty };
         rootCtx.Parent = rootCtx;
@@ -106,14 +107,13 @@ public static class RomfsBuilder
         ulong totalSize = 0;
         var tmp = romfsCtx.Files;
         while (tmp != null) { totalSize += tmp.Size; tmp = tmp.Next; }
-        ulong written = 0;
+        var reporter = new ProgressReporter("RomFS 빌드 중", string.Empty, (long)totalSize, progress);
 
         const int bufSize = 0x800000;
         var buf = System.Buffers.ArrayPool<byte>.Shared.Rent(bufSize);
 
         try
         {
-            var reportSw = Stopwatch.StartNew();
             curFile = romfsCtx.Files;
             while (curFile != null)
             {
@@ -130,16 +130,12 @@ public static class RomfsBuilder
                     if (read <= 0) break;
                     fout.Write(buf.AsSpan(0, read));
                     remaining -= (ulong)read;
-                    written += (ulong)read;
-                    if (totalSize > 0 && reportSw.ElapsedMilliseconds >= 200)
-                    {
-                        var (pct, label, _, _) = Common.Utils.CalculateProgress((long)written, (long)totalSize, "RomFS 빌드 중");
-                        progress?.Report((pct, label));
-                        reportSw.Restart();
-                    }
+                    reporter.AddProgress(read);
                 }
                 curFile = curFile.Next;
             }
+
+            reporter.ForceReport();
         }
         finally
         {

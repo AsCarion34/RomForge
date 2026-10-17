@@ -1,4 +1,4 @@
-﻿using LibHac;
+﻿using Common;
 using LibHac.Common;
 using LibHac.Common.Keys;
 using LibHac.Fs;
@@ -20,7 +20,7 @@ public sealed class NcaExtractor(KeySet keySet, Func<string, bool> shouldExtract
 
     private readonly byte[] _copyBuffer = new byte[0x1000000];
 
-    public string ExtractExeFs(Nca baseProg, Nca? updateProg, string dirName, string outDir, ProgressContext ctx, IProgress<(int pct, string label)>? progress = null, CancellationToken ct = default)
+    public string ExtractExeFs(Nca baseProg, Nca? updateProg, string dirName, string outDir, ProgressContext ctx, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         string dir = Path.Combine(outDir, dirName);
         using var fs = updateProg != null
@@ -32,7 +32,7 @@ public sealed class NcaExtractor(KeySet keySet, Func<string, bool> shouldExtract
         return dir;
     }
 
-    public string ExtractRomFs(Nca baseProg, Nca? updateProg, string dirName, string outDir, ProgressContext ctx, bool isCreateOnly = false, IProgress<(int pct, string label)>? progress = null, CancellationToken ct = default)
+    public string ExtractRomFs(Nca baseProg, Nca? updateProg, string dirName, string outDir, ProgressContext ctx, bool isCreateOnly = false, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         string dir = Path.Combine(outDir, dirName);
 
@@ -66,7 +66,7 @@ public sealed class NcaExtractor(KeySet keySet, Func<string, bool> shouldExtract
         return dir;
     }
 
-    public string? ExtractLogo(Nca baseProg, string dirName, string outDir, ProgressContext ctx, IProgress<(int pct, string label)>? progress = null, CancellationToken ct = default)
+    public string? ExtractLogo(Nca baseProg, string dirName, string outDir, ProgressContext ctx, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         if (!baseProg.CanOpenSection(NcaSectionType.Logo))
             return null;
@@ -79,7 +79,7 @@ public sealed class NcaExtractor(KeySet keySet, Func<string, bool> shouldExtract
         return dir;
     }
 
-    public string? ExtractControl(Nca? controlNca, Nca? updateControlNca, BuildRequest req, UnpackResult result, string dirName, string outDir, string baseNspPath, ProgressContext ctx, IProgress<(int pct, string label)>? progress = null, CancellationToken ct = default)
+    public string? ExtractControl(Nca? controlNca, Nca? updateControlNca, BuildRequest req, UnpackResult result, string dirName, string outDir, string baseNspPath, ProgressContext ctx, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         if (controlNca == null)
             return null;
@@ -111,7 +111,7 @@ public sealed class NcaExtractor(KeySet keySet, Func<string, bool> shouldExtract
         return dir;
     }
 
-    public string? ExtractHtmlDoc(Nca? baseHtml, Nca? updateHtml, string dirName, string outDir, ProgressContext ctx, IProgress<(int pct, string label)>? progress = null, CancellationToken ct = default)
+    public string? ExtractHtmlDoc(Nca? baseHtml, Nca? updateHtml, string dirName, string outDir, ProgressContext ctx, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         if (baseHtml == null && updateHtml == null)
             return null;
@@ -135,7 +135,7 @@ public sealed class NcaExtractor(KeySet keySet, Func<string, bool> shouldExtract
         return dir;
     }
 
-    public string? ExtractLegal(Nca? baseLegal, Nca? updateLegal, string dirName, string outDir, ProgressContext ctx, IProgress<(int pct, string label)>? progress = null, CancellationToken ct = default)
+    public string? ExtractLegal(Nca? baseLegal, Nca? updateLegal, string dirName, string outDir, ProgressContext ctx, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         if (baseLegal == null && updateLegal == null)
             return null;
@@ -150,7 +150,7 @@ public sealed class NcaExtractor(KeySet keySet, Func<string, bool> shouldExtract
         return dir;
     }
 
-    public void ExtractDlcs(List<Nca> dlcNcas, string outDir, UnpackResult result, ProgressContext ctx, IProgress<(int pct, string label)>? progress = null, CancellationToken ct = default)
+    public void ExtractDlcs(List<Nca> dlcNcas, string outDir, UnpackResult result, ProgressContext ctx, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         if (dlcNcas.Count == 0)
             return;
@@ -199,7 +199,7 @@ public sealed class NcaExtractor(KeySet keySet, Func<string, bool> shouldExtract
         }
     }
 
-    public void ExtractFileSystem(IFileSystem fs, string outDir, string label, ProgressContext ctx, IProgress<(int pct, string label)>? progress = null, CancellationToken ct = default)
+    public void ExtractFileSystem(IFileSystem fs, string outDir, string label, ProgressContext ctx, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         var buf = _copyBuffer;
 
@@ -229,25 +229,13 @@ public sealed class NcaExtractor(KeySet keySet, Func<string, bool> shouldExtract
             var srcStream = src.Get.AsStream();
             int read;
 
+            ctx.Reporter.Label = $"{label} 언팩 중 - {entry.Name}";
+
             while ((read = srcStream.Read(buf, 0, buf.Length)) > 0)
             {
                 ct.ThrowIfCancellationRequested();
                 dest.Write(buf, 0, read);
-                ctx.CurrentRead += read;                
-
-                if (progress != null)
-                {
-                    var now = DateTime.UtcNow;
-
-                    if ((now - ctx.LastReport).TotalSeconds >= 0.2)
-                    {
-                        ctx.LastReport = now;
-
-                        var (pct, label2, _, _) = Common.Utils.CalculateProgress(ctx.CurrentRead, ctx.TotalSize, $"{label} 언팩 중 - {entry.Name}");
-
-                        progress.Report((pct, label2));
-                    }
-                }
+                ctx.Reporter.AddProgress(read);
             }
         }
     }

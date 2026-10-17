@@ -8,14 +8,14 @@ public static class NspPatchMergeHelper
 {
     public static readonly string[] PatchMarkerExtensions = [".xdelta", ".xdelta3", ".ips"];
 
-    public static int ApplyArchiveSubDir(IArchivePatchSource archive, string folderName, string targetDir, IProgress<(int pct, string label)> progress, Action<string, LogLevel> log, string label)
+    public static int ApplyArchiveSubDir(IArchivePatchSource archive, string folderName, string targetDir, IProgress<ProgressInfo> progress, Action<string, LogLevel> log, string label)
     {
         string? prefix = ArchivePatchFolderResolver.FindSubDir(archive.EntryPaths, folderName);
 
         if (prefix == null)
             return 0;
 
-        progress.Report((-1, $"{label} 병합 중..."));
+        progress.ReportStatus($"{label} 병합 중...", -1);
         log($"{label} 병합(압축파일): {prefix}", LogLevel.Info);
 
         int count = 0;

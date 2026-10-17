@@ -1,4 +1,5 @@
-﻿using LibHac.Common.Keys;
+﻿using Common;
+using LibHac.Common.Keys;
 using NSW.M1.Core.Models;
 
 namespace NSW.M1.Core.Services;
@@ -7,7 +8,7 @@ public class NspFilteredUnpacker(KeySet keySet, List<string> targetFiles) : NspU
 {
     private readonly List<string> _targetFiles = targetFiles;
 
-    public async Task<UnpackResult> Unpack(BuildRequest req, string outDir, bool withControlNca, IProgress<(int pct, string label)>? progress = null, CancellationToken ct = default)
+    public async Task<UnpackResult> Unpack(BuildRequest req, string outDir, bool withControlNca, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
         => await UnpackCore(req, outDir, withControlNca, progress, ct);
 
     protected override ProgressContext CreateProgressContext(List<string> inputPaths, CollectedNcas ncas)

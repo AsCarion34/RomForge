@@ -12,7 +12,6 @@ using RomForge.Core.UI.Command;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
-using System.Media;
 using System.Text;
 using System.Windows;
 using System.Windows.Input;
@@ -329,12 +328,13 @@ namespace RomForge.ViewModels.Switch
 
             try
             {
-                var progress = new Progress<(int pct, string label)>(p =>
+                var progress = new Progress<ProgressInfo>(p =>
                 {
-                    ProgressPct = p.pct >= 0 ? p.pct : 0;
+                    ProgressPct = p.Percent >= 0 ? p.Percent : 0;
                     ProgressPercent = ProgressPct.ToString("0.00") + "%";
-                    ProgressLabel = p.pct >= 0 ? $"{p.label} ({p.pct}%)" : p.label;
-                    ProgressTime = $"{_totalSw.Elapsed:mm\\:ss} 경과";
+                    ProgressLabel = p.Percent >= 0 ? $"{p.Label} ({p.Percent}%)" : p.Label;
+                    ProgressSpeed = p.Speed;
+                    ProgressTime = string.IsNullOrEmpty(p.TimeInfo) ? $"{_totalSw.Elapsed:mm\\:ss} 경과" : p.TimeInfo;
                 });
 
                 var progressHandler = new Progress<ProgressInfo>(p =>

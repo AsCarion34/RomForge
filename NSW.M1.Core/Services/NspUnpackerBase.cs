@@ -1,4 +1,5 @@
-﻿using LibHac.Common.Keys;
+﻿using Common;
+using LibHac.Common.Keys;
 using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.FsSystem;
@@ -17,7 +18,7 @@ public abstract class NspUnpackerBase(KeySet keySet)
 
     public string BaseNspPath { get; private set; } = string.Empty;
 
-    protected async Task<UnpackResult> UnpackCore(BuildRequest req, string outDir, bool withControlNca, IProgress<(int pct, string label)>? progress, CancellationToken ct)
+    protected async Task<UnpackResult> UnpackCore(BuildRequest req, string outDir, bool withControlNca, IProgress<ProgressInfo>? progress, CancellationToken ct)
     {
         BaseNspPath = req.BaseFilePath;
 
@@ -57,6 +58,8 @@ public abstract class NspUnpackerBase(KeySet keySet)
 
             var extractor = new NcaExtractor(_keySet, ShouldExtract);
             var progCtx = CreateProgressContext(uniquePaths, ncas);
+
+            progCtx.Reporter = new ProgressReporter(string.Empty, string.Empty, progCtx.TotalSize, progress);
             var result = BuildBaseResult(ncas);
             var allOffsets = ncas.BaseProgs.Keys
                 .Union(ncas.UpdateProgs.Keys)
@@ -135,7 +138,7 @@ public abstract class NspUnpackerBase(KeySet keySet)
                 }
             }
 
-            progress?.Report((100, "완료"));
+            progress.ReportStatus("완료", 100);
 
             return result;
         }

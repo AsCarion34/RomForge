@@ -1,4 +1,5 @@
-﻿using NSW.HacPack.Models;
+﻿using Common;
+using NSW.HacPack.Models;
 using NSW.Utils;
 using System.Buffers;
 using System.Diagnostics;
@@ -16,7 +17,7 @@ public static class Pfs0Builder
     public const int MetaHashBlockSize = 0x1000;
     public const int PaddingSize = 0x200;
 
-    public static void BuildFromMemoryStreams(IEnumerable<(string Name, Stream Stream)> fileStreams, Stream outputStream, IProgress<(int pct, string label)>? progress = null, CancellationToken ct = default)
+    public static void BuildFromMemoryStreams(IEnumerable<(string Name, Stream Stream)> fileStreams, Stream outputStream, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         var files = fileStreams.Select(f => (f.Name, f.Stream, Size: f.Stream.Length)).ToList();
         files.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
@@ -71,10 +72,9 @@ public static class Pfs0Builder
         }
 
         long totalSize = (long)fileDataRelOffset;
-        long written = 0;
         const int bufSize = 0x800000;
         byte[] buf = ArrayPool<byte>.Shared.Rent(bufSize);
-        var reportSw = Stopwatch.StartNew();
+        var reporter = new ProgressReporter("PFS0 빌드 중", string.Empty, totalSize, progress);
 
         try
         {
@@ -92,16 +92,11 @@ public static class Pfs0Builder
 
                     outputStream.Write(buf, 0, read);
                     remaining -= read;
-                    written += read;
-
-                    if (reportSw.ElapsedMilliseconds >= 100)
-                    {
-                        var (pct, label, _, _) = Common.Utils.CalculateProgress(written, totalSize, "PFS0 빌드 중");
-                        progress?.Report((pct, label));
-                        reportSw.Restart();
-                    }
+                    reporter.AddProgress(read);
                 }
             }
+
+            reporter.ForceReport();
         }
         finally
         {

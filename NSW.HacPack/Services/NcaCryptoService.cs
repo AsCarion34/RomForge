@@ -1,4 +1,5 @@
-﻿using NSW.HacPack.Cryptography.Core;
+﻿using Common;
+using NSW.HacPack.Cryptography.Core;
 using NSW.HacPack.Enums;
 using NSW.HacPack.Models;
 using NSW.Utils;
@@ -8,7 +9,7 @@ namespace NSW.HacPack.Services;
 
 public static class NcaCryptoService
 {
-    public static void EncryptSection(FileStream ncaFile, ref NcaHeader hdr, int sectionIndex, NcaGenerationOptions settings, IProgress<(int pct, string label)>? progress = null, CancellationToken ct = default)
+    public static void EncryptSection(FileStream ncaFile, ref NcaHeader hdr, int sectionIndex, NcaGenerationOptions settings, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         ulong startOffset = hdr.SectionEntries[sectionIndex].MediaStartOffset * 0x200UL;
         ulong endOffset = hdr.SectionEntries[sectionIndex].MediaEndOffset * 0x200UL;
@@ -33,6 +34,7 @@ public static class NcaCryptoService
         const int chunkSize = 0x1000000;
 
         byte[] batch = new byte[batchSize];
+        var reporter = new ProgressReporter("암호화 중", string.Empty, (long)fileSize, progress);
 
         using var mmf = MemoryMappedFile.CreateFromFile(
             ncaFile, null, 0, MemoryMappedFileAccess.ReadWrite,
@@ -70,12 +72,10 @@ public static class NcaCryptoService
 
             ofs += (ulong)batchLen;
 
-            if (fileSize > 0)
-            {
-                var (pct, label, _, _) = Common.Utils.CalculateProgress((long)ofs, (long)fileSize, "암호화 중");
-                progress?.Report((pct, label));
-            }
+            reporter.AddProgress(batchLen);
         }
+
+        reporter.ForceReport();
     }
 
     public static void EncryptKeyArea(ref NcaHeader hdr, NcaGenerationOptions settings)

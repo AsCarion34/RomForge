@@ -19,9 +19,10 @@ public class PackingMainViewModel : ToolTabViewModel
 
     private string _gameTitle = string.Empty;
     private int _progressPct;
-    private string _progressLabel = string.Empty;
+    private string _progressLabel = "대기 중...";
     private string _progressPercent = "0%";
-    private string _progressTime = string.Empty;
+    private string _progressTime = "00:00 경과";
+
     private string _progressSpeed = string.Empty;
 
     public PackingMainViewModel()
