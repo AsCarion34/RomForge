@@ -192,6 +192,9 @@ public class OutputFoldersConfig : ViewModelBase
     private string? _switchMergeOutputPath;
     public string? SwitchMergeOutputPath { get => _switchMergeOutputPath; set => SetProperty(ref _switchMergeOutputPath, value); }
 
+    private string? _switchSplitOutputPath;
+    public string? SwitchSplitOutputPath { get => _switchSplitOutputPath; set => SetProperty(ref _switchSplitOutputPath, value); }    
+
     private string? _wiiURepackOutputPath;
     public string? WiiURepackOutputPath { get => _wiiURepackOutputPath; set => SetProperty(ref _wiiURepackOutputPath, value); }
 

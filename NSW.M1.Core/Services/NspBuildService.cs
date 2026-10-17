@@ -117,7 +117,7 @@ public static class NspBuildService
         var unpacker = new NspUnpacker(libHacKeySet);
         var result = await unpacker.Unpack(req, dirs.Unpacked, progress, ct);
 
-        log($"언패킹 완료 ({sw.Elapsed.TotalSeconds:F2}s)", LogLevel.Ok);
+        log($"언패킹 완료 ({sw.Elapsed:mm\\:ss})", LogLevel.Ok);
 
         return result;
     }
@@ -176,7 +176,7 @@ public static class NspBuildService
         var first = settingsList[0];
 
         log($"TitleId: {first.TitleId:x16}  KeyGen: {first.KeyGeneration}  SDK: {first.SdkVersionString}", LogLevel.Ok);
-        log($"설정 완료 ({sw.Elapsed.TotalSeconds:F2}s)", LogLevel.Ok);
+        log($"설정 완료 ({sw.Elapsed:mm\\:ss})", LogLevel.Ok);
 
         return settingsList;
     }
@@ -190,7 +190,7 @@ public static class NspBuildService
         log($"━━ 3단계(3/9): NPDM 처리 (IdOffset={settings.IdOffset}) ━━", LogLevel.Highlight);
 
         NpdmProcessor.PatchNpdmMetadata(settings);
-        log($"NPDM 완료 ({sw.Elapsed.TotalSeconds:F2}s)", LogLevel.Ok);
+        log($"NPDM 완료 ({sw.Elapsed:mm\\:ss})", LogLevel.Ok);
     }
 
     private static void StepProgramNca(BuildRequest req, NcaGenerationOptions settings, UnpackResult unpackResult, IProgress<ProgressInfo> progress, Action<string, LogLevel> log, CancellationToken ct)
@@ -208,7 +208,7 @@ public static class NspBuildService
         settings.NcaType = LibHac.FsSystem.NcaHeader.ContentType.Program;
         settings.ProgramNcaPath = NcaGenerator.GenerateProgramNca(settings, progress, ct) ?? string.Empty;
 
-        log($"Program NCA: {Path.GetFileName(settings.ProgramNcaPath)} ({sw.Elapsed.TotalSeconds}s)", LogLevel.Ok);
+        log($"Program NCA: {Path.GetFileName(settings.ProgramNcaPath)} ({sw.Elapsed:mm\\:ss})", LogLevel.Ok);
     }
 
     private static void StepManualNcas(List<NcaGenerationOptions> settingsList, UnpackResult unpackResult, IProgress<ProgressInfo> progress, Action<string, LogLevel> log, CancellationToken ct)
@@ -226,9 +226,6 @@ public static class NspBuildService
                 continue;
 
             string type = idOffset == 0 ? "htmldoc" : $"htmldoc{idOffset}";
-
-            log($"[{type}] 매뉴얼 빌드 시작...", LogLevel.Info);
-
             var manualSettings = settings.WithRomfs(htmlDir, LibHac.FsSystem.NcaHeader.ContentType.Manual);
             var currentNca = NcaGenerator.GenerateRomfsNca(manualSettings, "Manual", progress, ct);
 
@@ -251,9 +248,6 @@ public static class NspBuildService
                 continue;
 
             string type = idOffset == 0 ? "legal" : $"legal{idOffset}";
-
-            log($"[{type}] 매뉴얼 빌드 시작...", LogLevel.Info);
-
             var manualSettings = settings.WithRomfs(legalDir, LibHac.FsSystem.NcaHeader.ContentType.Manual);
             var currentNca = NcaGenerator.GenerateRomfsNca(manualSettings, "Manual", progress, ct);
 
@@ -284,7 +278,7 @@ public static class NspBuildService
 
         settings.ControlNcaPath = NcaGenerator.GenerateRomfsNca(controlSettings, "Control", progress, ct) ?? string.Empty;
 
-        log($"Control NCA: {Path.GetFileName(settings.ControlNcaPath)} ({sw.Elapsed.TotalSeconds:F2}s)", LogLevel.Ok);
+        log($"Control NCA: {Path.GetFileName(settings.ControlNcaPath)} ({sw.Elapsed:mm\\:ss})", LogLevel.Ok);
     }
 
     private static void StepMetaNca(List<NcaGenerationOptions> settingsList, IProgress<ProgressInfo> progress, Action<string, LogLevel> log, CancellationToken ct)
@@ -325,7 +319,7 @@ public static class NspBuildService
         if (string.IsNullOrEmpty(baseSettings.MetaNcaPath))
             log("Meta NCA를 찾을 수 없습니다!", LogLevel.Error);
         else
-            log($"Meta NCA: {Path.GetFileName(baseSettings.MetaNcaPath)} ({sw.Elapsed.TotalSeconds:F2}s)", LogLevel.Ok);
+            log($"Meta NCA: {Path.GetFileName(baseSettings.MetaNcaPath)} ({sw.Elapsed:mm\\:ss})", LogLevel.Ok);
     }
 
     private static string StepPackage(BuildRequest req, NcaGenerationOptions settings, UnpackResult unpackResult, IProgress<ProgressInfo> progress, Action<string, LogLevel> log, CancellationToken ct)
@@ -372,7 +366,7 @@ public static class NspBuildService
         }
 
         progress.ReportStatus("완료", 100);
-        log($"출력: {finalNsp} ({sw.Elapsed.TotalSeconds:F2}s)", LogLevel.Ok);
+        log($"출력: {finalNsp} ({sw.Elapsed:mm\\:ss})", LogLevel.Ok);
 
         return finalNsp;
     }

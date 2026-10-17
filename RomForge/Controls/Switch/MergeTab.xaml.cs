@@ -53,7 +53,7 @@ public partial class MergeTab : UserControl
 
     private async void BtnMergeStart_Click(object sender, RoutedEventArgs e)
     {
-        if (ViewModel.IsMergeRunning)
+        if (ViewModel.IsLocked)
         {
             ViewModel.Cancel();
             return;
@@ -75,32 +75,6 @@ public partial class MergeTab : UserControl
             await RecalcKeyMissingAsync();
 
         await ViewModel.MergeAsync(fileMgr.GameFiles);
-    }
-
-    private async void BtnSplitStart_Click(object sender, RoutedEventArgs e)
-    {
-        if (ViewModel.IsSplitRunning)
-        {
-            ViewModel.Cancel();
-            return;
-        }
-
-        if (!fileMgr.GameFiles.Any())
-        {
-            ViewModel.Log(Res.Main_Err_NoFiles, Common.LogLevel.Error);
-            return;
-        }
-
-        if (!FileManagerControl.KeyExists())
-        {
-            ViewModel.Log(Res.Main_Err_NoKeys, Common.LogLevel.Error);
-            return;
-        }
-
-        if (fileMgr.GameFiles.Any(f => f.IsKeyMissing))
-            await RecalcKeyMissingAsync();
-
-        await ViewModel.SplitAsync(fileMgr.GameFiles);
     }
 
     private Task RecalcKeyMissingAsync()

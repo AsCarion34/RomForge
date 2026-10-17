@@ -9,6 +9,8 @@ public class SwitchMainViewModel : MultiToolTabViewModel
 
     public MergeMainViewModel MergeVM { get; } = new();
 
+    public SplitMainViewModel SplitVM { get; } = new();
+
     public ConverterMainViewModel ConverterVM { get; } = new();
 
     public ConvertSaturnMainViewModel ConvertSaturnVM { get; } = new();
@@ -25,6 +27,7 @@ public class SwitchMainViewModel : MultiToolTabViewModel
     {
         Tools.Add(RepackVM);
         Tools.Add(MergeVM);
+        Tools.Add(SplitVM);
         Tools.Add(ConverterVM);
         Tools.Add(ConvertSaturnVM);
         Tools.Add(KeygenVM);

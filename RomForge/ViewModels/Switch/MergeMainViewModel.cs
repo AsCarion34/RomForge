@@ -26,7 +26,6 @@ public class MergeMainViewModel : ToolTabViewModel
     private CancellationTokenSource? _cts;
 
     private string _outputPath = string.Empty;
-    private MergeMode? _currentMode;
 
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
@@ -89,14 +88,6 @@ public class MergeMainViewModel : ToolTabViewModel
         set { _outputFormat = value; OnPropertyChanged(); }
     }
 
-    public bool IsMergeRunning => IsLocked && _currentMode == MergeMode.Merge;
-
-    public bool IsSplitRunning => IsLocked && _currentMode == MergeMode.Split;
-
-    public bool MergeEnabled => !IsLocked || _currentMode == MergeMode.Merge;
-
-    public bool SplitEnabled => !IsLocked || _currentMode == MergeMode.Split;
-
     public bool IsCompressionOptionVisible => CompressLevel > 2;
 
     public int CompressLevel
@@ -156,12 +147,6 @@ public class MergeMainViewModel : ToolTabViewModel
     {
         OutputPath = string.IsNullOrWhiteSpace(AppConfig.Instance.OutputFolders.SwitchMergeOutputPath) ? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "output") : AppConfig.Instance.OutputFolders.SwitchMergeOutputPath;
         OpenWorkSpaceCommand = new RelayCommand(_ => ExecuteOpenWorkSpace());
-
-        PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(IsLocked))
-                NotifyButtonStates();
-        };
     }
 
     #endregion
@@ -178,9 +163,6 @@ public class MergeMainViewModel : ToolTabViewModel
 
         if (!Directory.Exists(outputDir))
             Directory.CreateDirectory(outputDir);
-
-        _currentMode = MergeMode.Merge;
-        NotifyButtonStates();
 
         _totalSw.Restart();
         using (BeginWork())
@@ -231,73 +213,6 @@ public class MergeMainViewModel : ToolTabViewModel
             }
         }
 
-        _currentMode = null;
-        NotifyButtonStates();
-    }
-
-    public async Task SplitAsync(IList<GameFile> gameFiles)
-    {
-        string outputDir = OutputPath?.Trim() ?? string.Empty;
-
-        if (string.IsNullOrEmpty(outputDir))
-        {
-            Log(Res.Main_Err_NoOutput, LogLevel.Error);
-            return;
-        }
-
-        if (!Directory.Exists(outputDir))
-            Directory.CreateDirectory(outputDir);
-
-        _currentMode = MergeMode.Split;
-        NotifyButtonStates();
-
-        _totalSw.Restart();
-        using (BeginWork())
-        {
-            try
-            {
-                _cts = new CancellationTokenSource();
-                var progress = BuildProgressReporter();
-
-                int compressLevel = GetCompressLevel();
-                int resultCount = 0;
-
-                for (int i = 0; i < gameFiles.Count; i++)
-                {
-                    _cts.Token.ThrowIfCancellationRequested();
-                    resultCount += await SwitchSplitService.Split(gameFiles[i].FilePath, outputDir, compressLevel, UseBlockMode, VerifyCompress, ForceKeyGen0, OutputFormat == SwitchOutputFormat.XCI, i + 1, gameFiles.Count, progress, Log, _cts.Token);
-                }
-
-                Log(string.Format(Res.Main_Log_AllComplete, _totalSw.Elapsed.ToString(@"mm\:ss")), LogLevel.Ok);
-
-                if (resultCount > 0)
-                {
-                    Log(Res.Main_Msg_SplitDone);
-                    await SoundPlayer.PlayCompleteAsync();
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                Log($"분리가 취소되었습니다.", LogLevel.Error);
-                await SoundPlayer.PlayCancelAsync();
-            }
-            catch (Exception ex)
-            {
-                Log($"{Res.Log_Error}: {ex.Message}", LogLevel.Error);
-                await SoundPlayer.PlayErrorAsync();
-            }
-            finally
-            {
-                _cts?.Dispose();
-
-                _cts = null;
-                ProgressPct = 0;
-            }
-        }
-
-        _currentMode = null;
-
-        NotifyButtonStates();
     }
 
     public void Cancel() => _cts?.Cancel();
@@ -321,17 +236,6 @@ public class MergeMainViewModel : ToolTabViewModel
         int level = CompressLevel;
 
         return level < 3 ? 0 : level;
-    }
-
-    private void NotifyButtonStates()
-    {
-        Application.Current.Dispatcher.Invoke(() =>
-        {
-            OnPropertyChanged(nameof(IsMergeRunning));
-            OnPropertyChanged(nameof(IsSplitRunning));
-            OnPropertyChanged(nameof(MergeEnabled));
-            OnPropertyChanged(nameof(SplitEnabled));
-        });
     }
 
     private bool ValidateMergeInputs(IList<GameFile> gameFiles, out List<string> inputPaths, out string outputDir, out string errorMsg)
@@ -374,6 +278,4 @@ public class MergeMainViewModel : ToolTabViewModel
     public void NavigateSettings() => SettingsClicked?.Invoke(this, EventArgs.Empty);
 
     #endregion
-
-    private enum MergeMode { Merge, Split }
 }

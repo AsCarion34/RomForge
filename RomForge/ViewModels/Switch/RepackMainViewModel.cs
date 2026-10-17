@@ -31,6 +31,7 @@ namespace RomForge.ViewModels.Switch
         private string _progressPercent = string.Empty;
         private string _progressTime = "00:00 경과";
         private string _progressSpeed = string.Empty;
+        private bool _isIndeterminate = false;
         private string _outputPath = string.Empty;
         private BuildMode? _currentMode;
 
@@ -70,6 +71,13 @@ namespace RomForge.ViewModels.Switch
             get => _progressSpeed;
             set { _progressSpeed = value; OnPropertyChanged(); }
         }
+
+        public bool IsIndeterminate 
+        { 
+            get => _isIndeterminate; 
+            set { _isIndeterminate = value; OnPropertyChanged(); }
+        }
+
 
         public string OutputPath
         {
@@ -177,11 +185,14 @@ namespace RomForge.ViewModels.Switch
             var token = _cts.Token;
             var progress = new Progress<ProgressInfo>(p =>
             {
-                ProgressPct = p.Percent >= 0 ? p.Percent : 0;
+                bool isIndeterminate = p.Percent < 0;
+
+                ProgressPct = isIndeterminate ? 0 : p.Percent;
+                IsIndeterminate = isIndeterminate;
                 ProgressLabel = p.Label;
-                ProgressPercent = p.Percent >= 0 ? $"{p.Percent}%" : string.Empty;
+                ProgressPercent = isIndeterminate ? string.Empty : $"{p.Percent}%";
                 ProgressSpeed = p.Speed;
-                ProgressTime = string.IsNullOrEmpty(p.TimeInfo) ? $"{_totalSw.Elapsed:mm\\:ss} 경과" : p.TimeInfo;
+                ProgressTime = isIndeterminate ? string.Empty : (string.IsNullOrEmpty(p.TimeInfo) ? $"{_totalSw.Elapsed:mm\\:ss} 경과" : p.TimeInfo);
             });
 
             await Task.Run(async () =>
@@ -208,6 +219,12 @@ namespace RomForge.ViewModels.Switch
                 catch (OperationCanceledException)
                 {
                     Log($"작업이 취소되었습니다.", LogLevel.Error);
+                    IsIndeterminate = false;
+                    ProgressPct = 0;
+                    ProgressLabel = string.Empty;
+                    ProgressPercent = string.Empty;
+                    ProgressTime = string.Empty;
+                    ProgressSpeed = string.Empty;
                     await SoundPlayer.PlayCancelAsync();
                     MainViewModel.SetTaskbarProgress(0);
 
