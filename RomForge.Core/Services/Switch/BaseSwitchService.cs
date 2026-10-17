@@ -47,7 +47,7 @@ public abstract class BaseSwitchService
         0x5B, 0x40, 0x8B, 0x14, 0x5E, 0x27, 0x7E, 0x81, 0xE5, 0xBF, 0x67, 0x7C, 0x94, 0x88, 0x8D, 0x7B,
     ];
 
-    protected static (string FinalName, Func<Stream, Action<long>, Task> Writer, long Size, string Label)? 
+    protected static (string FinalName, Func<Stream, Action<long>, Task> Writer, long Size, string Label)?
         BuildFileEntry(string entryName, string originalExt, IStorage currentStorage, long size, Nca nca, string label, bool useCompression, bool useBlockMode, int compressionLevel, bool forceKeyGen0, KeySet keySet, Dictionary<string, NcaToNczConverter> converters, CancellationToken ct = default)
     {
         int keyGen = forceKeyGen0 ? 0 : (int)nca.Header.KeyGeneration;
@@ -177,6 +177,64 @@ public abstract class BaseSwitchService
         return groups;
     }
 
+    protected static (BuildRequest Request, bool HasBase, bool HasUpdate) BuildSingleRequest(List<MetadataResult> allMeta, IReadOnlyList<string> inputPaths, string outputDir, bool useCompression, int compressionLevel, bool useBlockMode)
+    {
+        var bases = allMeta.Where(m => m.Type == ContentMetaType.Application).ToList();
+        var patches = allMeta.Where(m => m.Type == ContentMetaType.Patch).ToList();
+        var dlcs = allMeta.Where(m => m.Type == ContentMetaType.AddOnContent).ToList();
+
+        var baseMeta = bases.FirstOrDefault()
+            ?? patches.OrderByDescending(m => m.TitleVersion).FirstOrDefault()
+            ?? dlcs.FirstOrDefault()
+            ?? allMeta[0];
+
+        string baseTitleId = LibHacHelper.GetBaseTitleId(baseMeta.TitleId);
+
+        var latestPatch = patches
+            .Where(m => string.Equals(LibHacHelper.GetBaseTitleId(m.TitleId), baseTitleId, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(m => m.TitleVersion)
+            .FirstOrDefault();
+
+        var versionMeta = latestPatch ?? baseMeta;
+
+        var latestPatches = patches
+            .GroupBy(m => LibHacHelper.GetBaseTitleId(m.TitleId), StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.OrderByDescending(m => m.TitleVersion).First())
+            .ToList();
+
+        var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var meta in bases.GroupBy(m => m.TitleId, StringComparer.OrdinalIgnoreCase).Select(g => g.First()))
+            AddNcaIds(allowed, meta);
+
+        foreach (var meta in latestPatches)
+            AddNcaIds(allowed, meta);
+
+        foreach (var meta in dlcs.GroupBy(m => m.TitleId, StringComparer.OrdinalIgnoreCase).Select(g => g.First()))
+            AddNcaIds(allowed, meta);
+
+        var sources = inputPaths
+            .Where(p => !string.IsNullOrEmpty(p) && File.Exists(p))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var req = new BuildRequest(string.Empty, string.Empty, [], outputDir)
+        {
+            UseCompression = useCompression,
+            CompressionLevel = compressionLevel,
+            UseBlockMode = useBlockMode,
+            AllSourcePaths = sources,
+            TargetBaseTitleId = baseTitleId,
+            TargetBaseTitleName = baseMeta.KrTitle,
+            AllowedNcaIds = allowed.Count > 0 ? allowed : null,
+            ResolvedMeta = new MetadataResult(
+                baseMeta.TitleId, versionMeta.TitleVersion, versionMeta.DisplayVersion, baseMeta.KrTitle, baseMeta.EnTitle,
+                dlcs.GroupBy(m => m.TitleId, StringComparer.OrdinalIgnoreCase).Count(), Type: bases.Count > 0 ? ContentMetaType.Application : baseMeta.Type),
+        };
+
+        return (req, bases.Count > 0, patches.Count > 0);
+    }
+
     protected static HashSet<string>? BuildAllowedNcaIds(TitleGroup group, MetadataResult? latestPatch)
     {
         var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -195,7 +253,7 @@ public abstract class BaseSwitchService
 
     private static void AddNcaIds(HashSet<string> set, MetadataResult meta)
     {
-        if (meta.ContentNcaIds == null) 
+        if (meta.ContentNcaIds == null)
             return;
 
         foreach (var id in meta.ContentNcaIds) set.Add(id);
@@ -235,7 +293,7 @@ public abstract class BaseSwitchService
         {
             string baseTid = LibHacHelper.GetBaseTitleId(m.TitleId);
 
-            if (string.IsNullOrEmpty(baseTid)) 
+            if (string.IsNullOrEmpty(baseTid))
                 return false;
 
             return baseTid.Equals(targetBaseTitleId, StringComparison.OrdinalIgnoreCase);
@@ -277,7 +335,7 @@ public abstract class BaseSwitchService
 
         foreach (var re in rootEntriesTemplate)
         {
-            if (re.Name == "secure") 
+            if (re.Name == "secure")
                 continue;
 
             rootEntryRelOffsets[re.Name] = (ulong)(fout.Position - rootDataStart);

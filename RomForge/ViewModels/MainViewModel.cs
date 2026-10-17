@@ -115,8 +115,6 @@ public class MainViewModel : ToolTabViewModel
         Current = this;
 
         PatchVM = new PatchMainViewModel(async (file) => await MapsToHashAndProcess(file));
-        SwitchMainVM.MergeVM.SettingsClicked += async (s, e) => await NavigateSwitchCompressSettings();
-        SwitchMainVM.SplitVM.SettingsClicked += async (s, e) => await NavigateSwitchCompressSettings();
         Main3DsVM.RunNavigateCerts += MainVM_RunNavigateCerts;
         UnifiedConvertVM.RunNavigateCerts += MainVM_RunNavigateCerts;
         PSMainVM.RunNavigatePackingSettings += PS1MainVM_RunNavigatePackingSettings;

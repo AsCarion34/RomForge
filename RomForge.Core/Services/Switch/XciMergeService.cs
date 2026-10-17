@@ -56,12 +56,12 @@ public class XciMergeService : BaseSwitchService
 
             bool hasAnyContent = group.BaseMetas.Count > 0 || group.PatchMetas.Count > 0 || group.DlcMetas.Count > 0;
 
-            if (!hasAnyContent) 
+            if (!hasAnyContent)
                 continue;
 
             var baseMeta = group.BaseMetas.FirstOrDefault() ?? group.PatchMetas.OrderByDescending(m => m.TitleVersion).FirstOrDefault() ?? group.DlcMetas.FirstOrDefault();
 
-            if (baseMeta == null) 
+            if (baseMeta == null)
                 continue;
 
             var allSources = group.BaseMetas
@@ -88,7 +88,7 @@ public class XciMergeService : BaseSwitchService
                 TargetBaseTitleName = group.BaseTitleName,
                 AllowedNcaIds = allowedNcaIds,
                 ResolvedMeta = new MetadataResult(
-                    baseMeta.TitleId, (latestPatch ?? baseMeta).TitleVersion, (latestPatch ?? baseMeta).DisplayVersion, baseMeta.KrTitle, baseMeta.EnTitle, 
+                    baseMeta.TitleId, (latestPatch ?? baseMeta).TitleVersion, (latestPatch ?? baseMeta).DisplayVersion, baseMeta.KrTitle, baseMeta.EnTitle,
                     group.DlcMetas.GroupBy(m => m.TitleId, StringComparer.OrdinalIgnoreCase).Count(), Type: group.BaseMetas.Count > 0 ? ContentMetaType.Application : baseMeta.Type),
             };
 
@@ -100,7 +100,7 @@ public class XciMergeService : BaseSwitchService
                 {
                     string baseTid = LibHacHelper.GetBaseTitleId(m.TitleId);
 
-                    if (string.IsNullOrEmpty(baseTid)) 
+                    if (string.IsNullOrEmpty(baseTid))
                         return false;
 
                     return baseTid.Equals(group.BaseTitleId, StringComparison.OrdinalIgnoreCase);
@@ -114,6 +114,41 @@ public class XciMergeService : BaseSwitchService
             {
                 log?.Invoke(string.Format(Res.Log_MergeFailed, group.BaseTitleId, ex.Message), LogLevel.Error, group.BaseTitleId);
             }
+        }
+
+        return results;
+    }
+
+    public static async Task<List<string>> RunMergeSingle(IReadOnlyList<string> inputPaths, string outputDir, bool useCompression, int compressionLevel, bool useBlockMode, bool isValidationEnabled, bool forceKeyGen0, KeySet keySet, IProgress<ProgressInfo> progress, Action<string, LogLevel, string> log, CancellationToken ct = default)
+    {
+        log?.Invoke(Res.Log_AnalyzeMetadata, LogLevel.Info, string.Empty);
+
+        var allMeta = new List<MetadataResult>();
+
+        foreach (var path in inputPaths)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            allMeta.AddRange(MetadataReader.GetMetadataFromContainer(keySet, path));
+        }
+
+        if (allMeta.Count == 0)
+            throw new InvalidOperationException(Res.Error_NoMetadata);
+
+        var (req, hasBase, hasUpdate) = BuildSingleRequest(allMeta, inputPaths, outputDir, useCompression, compressionLevel, useBlockMode);
+
+        log?.Invoke($"{req.TargetBaseTitleName} {Res.Button_MergeStart} (1/1)", LogLevel.Highlight, req.TargetBaseTitleId);
+
+        var results = new List<string>();
+
+        try
+        {
+            results.Add(await RunMergeProcess(req, keySet, allMeta, isValidationEnabled, forceKeyGen0, 1, 1, hasBase, hasUpdate, progress, log, ct));
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            log?.Invoke(string.Format(Res.Log_MergeFailed, req.TargetBaseTitleId, ex.Message), LogLevel.Error, req.TargetBaseTitleId);
         }
 
         return results;
@@ -232,10 +267,10 @@ public class XciMergeService : BaseSwitchService
 
                 fileRef.Get.GetSize(out long size).ThrowIfFailure();
 
-                if (size == 0) 
-                { 
+                if (size == 0)
+                {
                     fileRef.Destroy();
-                    continue; 
+                    continue;
                 }
 
                 IFile rawFile = fileRef.Release();
@@ -248,7 +283,7 @@ public class XciMergeService : BaseSwitchService
 
                 if (originalExt is not (".nca" or ".ncz"))
                 {
-                    if (!addedFileNames.Add(kvp.Key)) 
+                    if (!addedFileNames.Add(kvp.Key))
                         continue;
 
                     var cap = currentStorage;
@@ -271,7 +306,7 @@ public class XciMergeService : BaseSwitchService
                 if (result == null)
                     continue;
 
-                if (!addedFileNames.Add(result.Value.FinalName)) 
+                if (!addedFileNames.Add(result.Value.FinalName))
                     continue;
 
                 log?.Invoke($"- {label}", LogLevel.Info, req.TargetBaseTitleId);
@@ -282,7 +317,7 @@ public class XciMergeService : BaseSwitchService
 
             log?.Invoke(string.Format(Res.Log_FinalId, meta.TitleId, meta.DisplayVersion), LogLevel.Ok, req.TargetBaseTitleId);
 
-            string finalFileName = NspNameBuilder.FileNameBuild("Merged", meta.KrTitle, meta.EnTitle, meta.TitleId, meta.DisplayVersion, meta.TitleVersion, meta.DlcCount, hasBase, hasUpdate, req.UseCompression ? NswContainerFormat.Xcz: NswContainerFormat.Xci);
+            string finalFileName = NspNameBuilder.FileNameBuild("Merged", meta.KrTitle, meta.EnTitle, meta.TitleId, meta.DisplayVersion, meta.TitleVersion, meta.DlcCount, hasBase, hasUpdate, req.UseCompression ? NswContainerFormat.Xcz : NswContainerFormat.Xci);
 
             finalPath = Utils.GetUniqueFilePath(Path.Combine(req.OutputDir, finalFileName));
 
@@ -290,7 +325,7 @@ public class XciMergeService : BaseSwitchService
 
             LocalStorage? baseStorage = xciBasePath != null ? new LocalStorage(xciBasePath, FileAccess.Read) : null;
 
-            if (baseStorage != null) 
+            if (baseStorage != null)
                 disposables.Add(baseStorage);
 
             using var fout = File.Open(finalPath, FileMode.Create, FileAccess.ReadWrite);
@@ -317,7 +352,7 @@ public class XciMergeService : BaseSwitchService
 
                     string origName = Path.ChangeExtension(entry.Name, ".nca");
 
-                    if (!converters.TryGetValue(origName, out var converter)) 
+                    if (!converters.TryGetValue(origName, out var converter))
                         continue;
 
                     using var nczFile = new UniqueRef<IFile>();
@@ -352,10 +387,10 @@ public class XciMergeService : BaseSwitchService
         }
         finally
         {
-            for (int i = disposables.Count - 1; i >= 0; i--) 
+            for (int i = disposables.Count - 1; i >= 0; i--)
                 disposables[i]?.Dispose();
 
-            if (!isCompleted) 
+            if (!isCompleted)
                 CleanupOnFailure(finalPath, log, req.TargetBaseTitleId);
         }
     }

@@ -4,5 +4,9 @@ public enum SwitchOutputFormat
 {
     NSP,
 
-    XCI
+    NSZ,
+
+    XCI,
+
+    XCZ
 }

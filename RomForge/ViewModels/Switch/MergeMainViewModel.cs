@@ -35,6 +35,7 @@ public class MergeMainViewModel : ToolTabViewModel
     private string _progressTime = "00:00 경과";
     private string _progressSpeed = string.Empty;
     private SwitchOutputFormat _outputFormat = SwitchOutputFormat.NSP;
+    private SwitchMergeMode _mergeMode = SwitchMergeMode.ByTitleId;
 
     public int ProgressPct
     {
@@ -86,6 +87,12 @@ public class MergeMainViewModel : ToolTabViewModel
     {
         get => _outputFormat;
         set { _outputFormat = value; OnPropertyChanged(); }
+    }
+
+    public SwitchMergeMode MergeMode
+    {
+        get => _mergeMode;
+        set { _mergeMode = value; OnPropertyChanged(); }
     }
 
     public bool IsCompressionOptionVisible => CompressLevel > 2;
@@ -172,16 +179,23 @@ public class MergeMainViewModel : ToolTabViewModel
                 _cts = new CancellationTokenSource();
 
                 var progress = BuildProgressReporter();
-                int compressLevel = GetCompressLevel();
+                bool useCompression = OutputFormat is SwitchOutputFormat.NSZ or SwitchOutputFormat.XCZ;
+                bool asXci = OutputFormat is SwitchOutputFormat.XCI or SwitchOutputFormat.XCZ;
+                int compressLevel = useCompression ? 18 : 0;
 
                 var keySet = KeySetProvider.Instance.KeySet.Clone();
                 var results = new List<string>();
-                bool useCompression = compressLevel > 0;
+
+                bool mergeAll = MergeMode == SwitchMergeMode.AllInOne;
 
                 List<string> output =
-                    OutputFormat == SwitchOutputFormat.XCI
-                    ? await XciMergeService.RunMergeAll(inputPaths, outputDir, useCompression, compressLevel, UseBlockMode, VerifyCompress, ForceKeyGen0, keySet.Clone(), progress, Log, _cts.Token)
-                    : await NspMergeService.RunMergeAll(inputPaths, outputDir, useCompression, compressLevel, UseBlockMode, VerifyCompress, ForceKeyGen0, keySet.Clone(), progress, Log, _cts.Token);
+                    asXci
+                    ? (mergeAll
+                        ? await XciMergeService.RunMergeSingle(inputPaths, outputDir, useCompression, compressLevel, true, VerifyCompress, ForceKeyGen0, keySet.Clone(), progress, Log, _cts.Token)
+                        : await XciMergeService.RunMergeAll(inputPaths, outputDir, useCompression, compressLevel, true, VerifyCompress, ForceKeyGen0, keySet.Clone(), progress, Log, _cts.Token))
+                    : (mergeAll
+                        ? await NspMergeService.RunMergeSingle(inputPaths, outputDir, useCompression, compressLevel, true, VerifyCompress, ForceKeyGen0, keySet.Clone(), progress, Log, _cts.Token)
+                        : await NspMergeService.RunMergeAll(inputPaths, outputDir, useCompression, compressLevel, true, VerifyCompress, ForceKeyGen0, keySet.Clone(), progress, Log, _cts.Token));
 
                 results.AddRange(output);
 
@@ -209,7 +223,7 @@ public class MergeMainViewModel : ToolTabViewModel
             {
                 _cts?.Dispose();
                 _cts = null;
-                
+
             }
         }
 
@@ -230,13 +244,6 @@ public class MergeMainViewModel : ToolTabViewModel
             ProgressTime = info.TimeInfo;
             ProgressSpeed = info.Speed;
         }));
-
-    private int GetCompressLevel()
-    {
-        int level = CompressLevel;
-
-        return level < 3 ? 0 : level;
-    }
 
     private bool ValidateMergeInputs(IList<GameFile> gameFiles, out List<string> inputPaths, out string outputDir, out string errorMsg)
     {

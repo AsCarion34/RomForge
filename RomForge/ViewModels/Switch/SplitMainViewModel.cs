@@ -40,7 +40,7 @@ public class SplitMainViewModel : ToolTabViewModel
     private string _progressPercent = string.Empty;
     private string _progressTime = "00:00 경과";
     private string _progressSpeed = string.Empty;
-    private SplitOutputFormat _outputFormat = SplitOutputFormat.NSP;
+    private SwitchOutputFormat _outputFormat = SwitchOutputFormat.NSP;
     private bool? _allSelected = false;
 
     public int ProgressPct
@@ -89,7 +89,7 @@ public class SplitMainViewModel : ToolTabViewModel
         }
     }
 
-    public SplitOutputFormat OutputFormat
+    public SwitchOutputFormat OutputFormat
     {
         get => _outputFormat;
         set { _outputFormat = value; OnPropertyChanged(); }
@@ -109,8 +109,6 @@ public class SplitMainViewModel : ToolTabViewModel
     }
 
     public ICommand OpenWorkSpaceCommand { get; }
-
-    public event EventHandler SettingsClicked;
 
     public SplitMainViewModel()
     {
@@ -358,8 +356,8 @@ public class SplitMainViewModel : ToolTabViewModel
                 int resultCount = 0;
                 var progress = BuildProgressReporter();                
                 var config = AppConfig.Instance.Switch;                
-                bool compress = OutputFormat is SplitOutputFormat.NSZ or SplitOutputFormat.XCZ;
-                bool asXci = OutputFormat is SplitOutputFormat.XCI or SplitOutputFormat.XCZ;
+                bool compress = OutputFormat is SwitchOutputFormat.NSZ or SwitchOutputFormat.XCZ;
+                bool asXci = OutputFormat is SwitchOutputFormat.XCI or SwitchOutputFormat.XCZ;
                 int compressLevel = compress ? 18 : 0;
 
                 for (int i = 0; i < jobs.Count; i++)

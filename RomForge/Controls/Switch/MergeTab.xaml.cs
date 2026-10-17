@@ -10,15 +10,7 @@ public partial class MergeTab : UserControl
 {
     private MergeMainViewModel ViewModel => (MergeMainViewModel)DataContext;
 
-    public MergeTab()
-    {
-        InitializeComponent();
-    }
-
-    private void BtnSettings_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel.NavigateSettings();
-    }
+    public MergeTab() => InitializeComponent();
 
     private void BtnHelp_Click(object sender, RoutedEventArgs e)
     {
