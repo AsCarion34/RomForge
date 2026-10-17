@@ -120,13 +120,20 @@ public static class PatchVersionInfoExtractor
         string rawNameOnly = Path.GetFileNameWithoutExtension(fileName);
 
         string? originalLanguage = null;
-        var origLangMatch = LanguageRegex.Match(rawNameOnly);
+        var bracketLangRegex = new Regex(@"[\(\[]\s*(?<Language>Japan|USA|Europe|Asia|Korea|Korean|World|En|Ja|Ko|Zh|Fr|De|Es|It|J|K|U|E|C|A|W|F|D|S|I)\s*[\)\]]", RegexOptions.IgnoreCase);
+        var origLangMatch = bracketLangRegex.Match(rawNameOnly);
 
         if (origLangMatch.Success)
             originalLanguage = origLangMatch.Groups["Language"].Value;
+        else
+        {
+            var fallbackMatch = LanguageRegex.Match(rawNameOnly);
+            if (fallbackMatch.Success)
+                originalLanguage = fallbackMatch.Groups["Language"].Value;
+        }
 
         string patchLanguage = !string.IsNullOrEmpty(language) ? language : appLanguage;
-        string nameOnly = Regex.Replace(rawNameOnly, @"[\(\[]\s*(?:Japan|USA|Europe|Asia|Korea|Korean|World|En|Ja|Ko|Zh|Fr|De|Es|It|J|K|U|E|C|A|W|F|D|S|I)\s*[\)\]]", string.Empty, RegexOptions.IgnoreCase).Trim();
+        string nameOnly = bracketLangRegex.Replace(rawNameOnly, string.Empty).Trim();
 
         nameOnly = Regex.Replace(nameOnly, @"\s+", " ");
 
@@ -222,7 +229,8 @@ public static class PatchVersionInfoExtractor
 
         return true;
     }
-        public static (string? Version, string Date, string? Language) GetPatchMetadata(string? patchFilePath)
+
+    public static (string? Version, string Date, string? Language) GetPatchMetadata(string? patchFilePath)
     {
         string? version = null;
         string? date = null;
