@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Text;
+﻿using System.Text;
 using Common;
 
 namespace Patch.Core.Formats;
@@ -170,7 +169,7 @@ public static class Ppf
 
             pat.ReadExactly(buffer, 0, length);
 
-            if (offset >= 0 && offset + length <= srcSize)
+            if (offset >= 0)
             {
                 outStream.Position = offset;
                 outStream.Write(buffer, 0, length);
@@ -290,7 +289,7 @@ public static class Ppf
 
                     pat.Write(offsetBytes, 0, offsetBytes.Length);
                     pat.WriteByte((byte)diffBytes.Count);
-                    pat.WriteAsync([.. diffBytes], 0, diffBytes.Count, ct).ConfigureAwait(false);
+                    pat.Write([.. diffBytes], 0, diffBytes.Count);
                     i--;
                 }
             }
