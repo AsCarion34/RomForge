@@ -87,7 +87,6 @@ public class MdfMdsReader : IDiscImageReader
     {
         var mdfLength = new FileInfo(mdfPath).Length;
         var rawTracks = new List<(int Point, byte Mode, byte SubchannelFlag, uint IndexBlockOffset, ushort SectorSize, long StartOffset)>();
-
         var blockAreaEnd = (int)trackBlocksOffset + totalDataBlocks * TrackBlockSize;
 
         if (blockAreaEnd > mds.Length)
@@ -123,10 +122,7 @@ public class MdfMdsReader : IDiscImageReader
             var trackByteLength = (long)totalSectors * SectorSize;
 
             if (StartOffset < 0 || StartOffset + trackByteLength > mdfLength)
-                throw new InvalidDataException(
-                    $"트랙 {Point}의 데이터 범위가 MDF 파일 크기를 벗어납니다 " +
-                    $"(offset=0x{StartOffset:X}, length={trackByteLength}, mdfSize={mdfLength}). " +
-                    $"MDS 오프셋 해석이 이 파일 버전과 맞지 않을 수 있습니다: {mdsFilePath}");
+                throw new InvalidDataException($"트랙 {Point}의 데이터 범위가 MDF 파일 크기를 벗어납니다 (offset=0x{StartOffset:X}, length={trackByteLength}, mdfSize={mdfLength}). MDS 오프셋 해석이 이 파일 버전과 맞지 않을 수 있습니다: {mdsFilePath}");
 
             var startOffset = StartOffset;
             var sourceSectorSize = SectorSize;
@@ -149,6 +145,7 @@ public class MdfMdsReader : IDiscImageReader
     private static SubStream OpenTrackStream(string mdfPath, long startOffset, long length)
     {
         var fs = new FileStream(mdfPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+
         fs.Seek(startOffset, SeekOrigin.Begin);
 
         return new SubStream(fs, length);
@@ -178,15 +175,13 @@ public class MdfMdsReader : IDiscImageReader
             var numFilenames = BitConverter.ToUInt32(mds, pos + 0x30);
             var filenameBlockOffset = BitConverter.ToUInt32(mds, pos + 0x34);
 
-            names.Add(numFilenames > 0 && filenameBlockOffset > 0 && filenameBlockOffset < mds.Length
-                ? ReadFilenameBlock(mds, filenameBlockOffset)
-                : "*.mdf");
+            names.Add(numFilenames > 0 && filenameBlockOffset > 0 && filenameBlockOffset < mds.Length ? ReadFilenameBlock(mds, filenameBlockOffset) : "*.mdf");
         }
 
         if (names.Count == 0)
             names.Add("*.mdf");
 
-        return names.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        return [.. names.Distinct(StringComparer.OrdinalIgnoreCase)];
     }
 
     private static string ReadFilenameBlock(byte[] mds, uint filenameBlockOffset)

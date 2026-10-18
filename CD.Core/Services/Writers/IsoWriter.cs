@@ -22,22 +22,12 @@ public static class IsoWriter
         await using (var outStream = new FileStream(isoPath, FileMode.Create, FileAccess.Write, FileShare.None, 1 << 20))
         await using (var src = track.OpenSectorStream())
         {
-            await SectorStreamCopier.CopySectorsAsync(
-                src,
-                outStream,
-                track.TotalSectors,
-                track.SourceSectorSize,
-                OutputSectorSize,
+            await SectorStreamCopier.CopySectorsAsync(src, outStream, track.TotalSectors, track.SourceSectorSize, OutputSectorSize,
                 count =>
                 {
                     sectorsDone += count;
 
-                    progress?.Report(new ProgressInfo(
-                        (int)(totalSectors > 0 ? sectorsDone * 100 / totalSectors : 100),
-                        "ISO 변환 중",
-                        outputBaseName,
-                        string.Empty,
-                        string.Empty));
+                    progress?.Report(new ProgressInfo((int)(totalSectors > 0 ? sectorsDone * 100 / totalSectors : 100), "ISO 변환 중", outputBaseName, string.Empty, string.Empty));
                 },
                 ct);
         }

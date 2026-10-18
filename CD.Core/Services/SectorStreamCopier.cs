@@ -32,6 +32,7 @@ internal static class SectorStreamCopier
             await destination.WriteAsync(dstBuffer.AsMemory(0, chunkSectors * outputSectorSize), ct);
 
             remaining -= chunkSectors;
+
             onSectorsWritten?.Invoke(chunkSectors);
         }
     }
@@ -54,6 +55,7 @@ internal static class SectorStreamCopier
             await destination.WriteAsync(buffer.AsMemory(0, read), ct);
 
             remaining -= read;
+
             onSectorsWritten?.Invoke(read / sectorSize);
         }
     }
