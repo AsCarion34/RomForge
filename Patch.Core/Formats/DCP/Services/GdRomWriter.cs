@@ -46,38 +46,39 @@ public static class GdRomWriter
                     byte[] rawSector = BuildRawSector(currentLba, userData);
 
                     Buffer.BlockCopy(rawSector, 0, writeBuffer, bufferedCount * sectorSize, sectorSize);
+
                     bufferedCount++;
 
                     if (bufferedCount >= writeBufferSize)
                     {
                         fs.Write(writeBuffer, 0, bufferedCount * sectorSize);
+
                         bufferedCount = 0;
                     }
 
                     if (i % 500 == 0)
-                    {
                         onProgress?.Invoke((double)i / totalRequiredSectors, "데이터 트랙 원시 섹터 생성 및 쓰기 중...");
-                    }
                 }
 
                 if (bufferedCount > 0)
-                {
                     fs.Write(writeBuffer, 0, bufferedCount * sectorSize);
-                }
             }
 
             if (File.Exists(outputPath))
                 File.Delete(outputPath);
 
             File.Move(tempPath, outputPath);
-
             onProgress?.Invoke(1.0, "데이터 트랙 작성 완료.");
         }
         finally
         {
             if (File.Exists(tempPath))
             {
-                try { File.Delete(tempPath); } catch { }
+                try 
+                {
+                    File.Delete(tempPath); 
+                }
+                catch { }
             }
         }
     }

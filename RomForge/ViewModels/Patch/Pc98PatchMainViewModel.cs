@@ -1,7 +1,7 @@
 using Common;
 using Common.WPF.ViewModels;
 using NSW.WPF.Services;
-using Patch.Core.Services.PC98;
+using Patch.Core.Formats.PC98;
 using RomForge.Core.Models;
 using RomForge.Core.Services;
 using RomForge.Core.Services.Patch;

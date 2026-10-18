@@ -1,4 +1,5 @@
-﻿using Patch.Core.Services;
+﻿using Patch.Core.Interfaces;
+using Patch.Core.Services;
 using RomForge.Core.UI.Helpers;
 using System.IO;
 using System.Windows;

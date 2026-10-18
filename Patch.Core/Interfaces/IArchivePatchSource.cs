@@ -1,4 +1,4 @@
-﻿namespace Patch.Core.Services;
+﻿namespace Patch.Core.Interfaces;
 
 public interface IArchivePatchSource : IDisposable
 {
@@ -7,13 +7,4 @@ public interface IArchivePatchSource : IDisposable
     IArchivePatchEntry? FindEntry(string path);
 
     bool SupportsCheapRepeatedOpen { get; }
-}
-
-public interface IArchivePatchEntry
-{
-    string FullPath { get; }
-
-    long Length { get; }
-
-    Stream Open();
 }

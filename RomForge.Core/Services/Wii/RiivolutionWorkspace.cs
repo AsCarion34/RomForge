@@ -1,4 +1,4 @@
-﻿using Patch.Core.Services;
+﻿using Patch.Core.Interfaces;
 using RomForge.Core.Models.Wii;
 using System.IO;
 

@@ -27,13 +27,13 @@ public class Iso9660Builder(byte[] originalPvd, Iso9660Entry root)
     public (uint RootLba, uint RootSize, uint TotalSectors) Relayout(uint startLba)
     {
         _nextLba = startLba;
-
         Root.ParentLba = 0;
 
         var pathOrder = BuildPathTableOrder(Root);
         var (lRawPlaceholder, _) = BuildPathTables(pathOrder, placeholderExtents: true);
 
         PathTableSize = (uint)lRawPlaceholder.Length;
+
         int pathTableSectors = SectorsFor(PathTableSize);
 
         LPathTableLba = _nextLba;
@@ -83,6 +83,7 @@ public class Iso9660Builder(byte[] originalPvd, Iso9660Entry root)
                     int childNumber = nextNumber++;
 
                     numberOf[child] = childNumber;
+
                     result.Add(new PathTableOrderEntry(child, childNumber, numberOf[dir]));
                     nextLevel.Add(child);
                 }
@@ -172,6 +173,7 @@ public class Iso9660Builder(byte[] originalPvd, Iso9660Entry root)
                 totalSectors++;
                 offsetInSector = 0;
             }
+
             offsetInSector += len;
         }
 
@@ -198,6 +200,7 @@ public class Iso9660Builder(byte[] originalPvd, Iso9660Entry root)
         foreach (var child in dir.Children.Where(c => !c.IsDirectory))
         {
             var data = _fileData.TryGetValue(child, out var d) ? d : throw new InvalidOperationException($"파일 데이터 미등록: {child.FullPath}");
+
             child.LayoutLba = _nextLba;
             child.LayoutSize = (uint)data.Length;
             _nextLba += (uint)SectorsFor(data.Length);
@@ -207,6 +210,7 @@ public class Iso9660Builder(byte[] originalPvd, Iso9660Entry root)
         {
             child.ParentLba = dir.LayoutLba;
             child.ParentSize = dir.LayoutSize;
+
             LayoutContent(child);
         }
     }
@@ -305,10 +309,12 @@ public class Iso9660Builder(byte[] originalPvd, Iso9660Entry root)
         WriteBothEndian32(pvd, 132, PathTableSize);
 
         var lLba = BitConverter.GetBytes(LPathTableLba);
+
         Buffer.BlockCopy(lLba, 0, pvd, 140, 4);
         Array.Clear(pvd, 144, 4);
 
         var mLba = BitConverter.GetBytes(MPathTableLba);
+
         Array.Reverse(mLba);
         Buffer.BlockCopy(mLba, 0, pvd, 148, 4);
         Array.Clear(pvd, 152, 4);

@@ -19,8 +19,11 @@ public static class Xdelta3
     private enum Xd3StreamStatus
     {
         Ok = 0,
+
         NeedInput = 1,
+
         Finished = 2,
+
         Error = -1
     }
 
@@ -142,6 +145,7 @@ public static class Xdelta3
                         totalWritten += (int)written;
 
                         long reportValue = Math.Min(totalWritten, estimatedTotal - 1);
+
                         report?.Invoke(reportValue, estimatedTotal);
                     }
 
@@ -203,6 +207,7 @@ public static class Xdelta3
                 int n = (int)Math.Min(StreamChunkSize, patchTotal - patchConsumed);
 
                 Array.Copy(patchData, patchConsumed, readBuf, 0, n);
+
                 patchConsumed += n;
 
                 bool isLastChunk = patchConsumed >= patchTotal;
@@ -223,6 +228,7 @@ public static class Xdelta3
                     if ((int)written > 0)
                     {
                         outStream.Write(outBuf, 0, (int)written);
+
                         totalWritten += (int)written;
 
                         long reportValue = Math.Min(totalWritten, estimatedTotal - 1);
@@ -239,7 +245,6 @@ public static class Xdelta3
             }
 
             FinishStream(handle);
-
             report?.Invoke(estimatedTotal, estimatedTotal);
 
             return outStream.ToArray();
@@ -251,10 +256,7 @@ public static class Xdelta3
         }
     }
 
-    public static void CreatePatch(string sourcePath, string newPath, string patchPath, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
-    {
-
-    }
+    public static void CreatePatch(string sourcePath, string newPath, string patchPath, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default) { }
 
     private static void ValidateInputFiles(params string[] paths)
     {
@@ -269,10 +271,7 @@ public static class Xdelta3
             ThrowLastError();
     }
 
-    private static void ThrowLastError()
-    {
-        throw new InvalidOperationException($"패치 적용 중 오류: {DescribeError(xd3_get_last_error_code())}");
-    }
+    private static void ThrowLastError() => throw new InvalidOperationException($"패치 적용 중 오류: {DescribeError(xd3_get_last_error_code())}");
 
     private static string DescribeError(int code)
     {

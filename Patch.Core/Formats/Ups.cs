@@ -17,8 +17,7 @@ public static class Ups
         await File.WriteAllBytesAsync(outputPath, result, ct);
     }
 
-    public static Task<byte[]> ApplyPatchAsync(byte[] sourceData, byte[] patchData, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
-        => Task.Run(() => Decode(sourceData, patchData, progress, ct), ct);
+    public static Task<byte[]> ApplyPatchAsync(byte[] sourceData, byte[] patchData, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default) => Task.Run(() => Decode(sourceData, patchData, progress, ct), ct);
 
     public static async Task CreatePatchAsync(string sourcePath, string newPath, string patchPath, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
@@ -48,6 +47,7 @@ public static class Ups
                 throw new InvalidDataException($"원본 파일 크기와 패치 파일 크기가 일치하지 않습니다. (패치가 기대하는 크기: {inputSize:N0} bytes, 실제 파일 크기: {input.LongLength:N0} bytes) ");
 
             byte[] output = new byte[outputSize];
+
             Buffer.BlockCopy(input, 0, output, 0, (int)Math.Min(input.Length, outputSize));
 
             fixed (byte* pOut = output)

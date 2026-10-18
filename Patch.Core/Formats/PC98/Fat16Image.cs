@@ -1,17 +1,7 @@
+using Patch.Core.Formats.PC98.Models;
 using System.Text;
 
-namespace Patch.Core.Services.PC98;
-
-public sealed class Fat16DirEntry
-{
-    public required string Name { get; init; }
-    public required byte Attr { get; init; }
-    public ushort Cluster { get; set; }
-    public uint Size { get; set; }
-    public required int EntryOffset { get; init; }
-
-    public bool IsDirectory => (Attr & 0x10) != 0;
-}
+namespace Patch.Core.Formats.PC98;
 
 public sealed class Fat16Image
 {
@@ -58,6 +48,7 @@ public sealed class Fat16Image
                 continue;
 
             ParseBpb(off);
+
             return;
         }
 
@@ -142,6 +133,7 @@ public sealed class Fat16Image
         while (c is < 0xFFF8 and not 0 && seen.Add(c))
         {
             result.Add(c);
+
             c = ReadFat(c);
         }
 
@@ -241,6 +233,7 @@ public sealed class Fat16Image
                 if (e.IsDirectory)
                 {
                     result[path + "/"] = e;
+
                     Recurse(ListSubdir(e.Cluster), path + "/");
                 }
                 else
@@ -269,22 +262,26 @@ public sealed class Fat16Image
         else
         {
             var extra = FreeClusters(need - oldChain.Count, [.. oldChain]);
+
             chain = [.. oldChain, .. extra];
         }
 
         for (int i = 0; i < chain.Count; i++)
         {
             ushort next = (ushort)(i + 1 < chain.Count ? chain[i + 1] : 0xFFFF);
+
             WriteFat(chain[i], next);
         }
 
         var padded = new byte[chain.Count * _clSize];
+
         Buffer.BlockCopy(newData, 0, padded, 0, newData.Length);
 
         for (int i = 0; i < chain.Count; i++)
             Buffer.BlockCopy(padded, i * _clSize, _raw, ClusterOffset(chain[i]), _clSize);
 
         BitConverter.GetBytes((uint)newData.Length).CopyTo(_raw, entry.EntryOffset + 28);
+
         entry.Cluster = (ushort)chain[0];
         entry.Size = (uint)newData.Length;
     }

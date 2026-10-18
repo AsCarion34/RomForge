@@ -21,8 +21,11 @@ public static class FolderPatchApplier
             if (entry.Kind == PatchFileKind.Overwrite)
             {
                 await onOverwrite(entry, targetDir, ct);
+
                 matched = true;
+
                 log?.Invoke($"덮어쓰기: {entry.BaseName}", LogLevel.Info);
+
                 continue;
             }
 
@@ -35,7 +38,9 @@ public static class FolderPatchApplier
             }
 
             await onBinaryPatch(entry, targetFile, ct);
+
             matched = true;
+
             log?.Invoke($"패치 완료: {entry.File.DisplayName}", LogLevel.Info);
         }
 
@@ -57,8 +62,6 @@ public static class FolderPatchApplier
                 return hit;
         }
 
-        return Directory.Exists(targetDir)
-            ? Directory.EnumerateFiles(targetDir, entry.BaseName + ".*", SearchOption.AllDirectories).FirstOrDefault()
-            : null;
+        return Directory.Exists(targetDir) ? Directory.EnumerateFiles(targetDir, entry.BaseName + ".*", SearchOption.AllDirectories).FirstOrDefault() : null;
     }
 }

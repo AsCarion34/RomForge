@@ -1,4 +1,6 @@
-﻿namespace Patch.Core.Services;
+﻿using Patch.Core.Interfaces;
+
+namespace Patch.Core.Services;
 
 public sealed class NestedArchivePatchSource : IArchivePatchSource
 {

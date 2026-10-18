@@ -54,6 +54,7 @@ public static class Aps
                     ct.ThrowIfCancellationRequested();
 
                     uint offset = *(uint*)(pPat + pos);
+
                     pos += 4;
 
                     byte length = pPat[pos++];

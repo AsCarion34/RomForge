@@ -1,5 +1,5 @@
 ﻿using NSW.WPF.ViewModels;
-using Patch.Core.Services;
+using Patch.Core.Interfaces;
 using System.IO;
 using System.Text;
 

@@ -1,5 +1,6 @@
 ﻿using Common;
 using Patch.Core.Formats;
+using Patch.Core.Interfaces;
 using Patch.Core.Services;
 using Path = System.IO.Path;
 

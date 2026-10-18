@@ -1,4 +1,5 @@
 ﻿using NSW.Core.Services;
+using Patch.Core.Interfaces;
 using Patch.Core.Services;
 using System.IO;
 using Path = System.IO.Path;

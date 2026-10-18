@@ -1,7 +1,8 @@
 using Common;
+using Patch.Core.Formats.PC98.Models;
 using System.IO.Compression;
 
-namespace Patch.Core.Services.PC98;
+namespace Patch.Core.Formats.PC98;
 
 public sealed record Pc98PatchResult(int AppliedCount, IReadOnlyList<string> MissingFiles, string MountPoint, string PatchSourceName);
 
@@ -47,7 +48,6 @@ public static class Pc98PatchService
                 var missing = new List<string>();
                 int total = Math.Max(patchFiles.Count, 1);
                 int done = 0;
-
                 var reporter = new ProgressReporter("패치중", string.Empty, total, progress);
                 var report = reporter.CreateAction();
 
@@ -60,7 +60,9 @@ public static class Pc98PatchService
                         byte[] newData = File.ReadAllBytes(Path.Combine(patchDir, rel));
 
                         image.ReplaceFile(entry, newData);
+
                         applied++;
+
                         log?.Invoke($"패치 완료: {rel}", LogLevel.Info);
                     }
                     else
@@ -95,6 +97,7 @@ public static class Pc98PatchService
         if (File.Exists(patchPath) && patchPath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
         {
             tempDir = Path.Combine(Path.GetDirectoryName(patchPath)!, "pc98patch_" + Guid.NewGuid().ToString("N"));
+
             Directory.CreateDirectory(tempDir);
             ZipFile.ExtractToDirectory(patchPath, tempDir);
 
@@ -107,6 +110,7 @@ public static class Pc98PatchService
     private static (string PatchDir, string MountPoint, List<string> RelativeFiles, int Score) ResolveBestSource(string searchRoot, Dictionary<string, Fat16DirEntry> tree)
     {
         var candidateDirs = new List<string> { searchRoot };
+
         candidateDirs.AddRange(Directory.GetDirectories(searchRoot, "*", SearchOption.AllDirectories));
 
         string bestDir = searchRoot;
