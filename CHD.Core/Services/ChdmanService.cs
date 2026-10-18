@@ -110,9 +110,11 @@ public sealed class ChdmanService : IDisposable
             case ".cue":
                 {
                     var referencedBins = ConversionSource.ParseBinsFromCue(Path.Combine(workingDir, input));
+
                     foreach (var binName in referencedBins)
                     {
                         string binPath = Path.Combine(workingDir, Path.GetFileName(binName));
+
                         if (File.Exists(binPath))
                             totallSize += new FileInfo(binPath).Length;
                     }
@@ -121,9 +123,11 @@ public sealed class ChdmanService : IDisposable
             case ".gdi":
                 {
                     var referencedBins = ConversionSource.ParseFilesFromGdi(Path.Combine(workingDir, input));
+
                     foreach (var binName in referencedBins)
                     {
                         string binPath = Path.Combine(workingDir, Path.GetFileName(binName));
+
                         if (File.Exists(binPath))
                             totallSize += new FileInfo(binPath).Length;
                     }
@@ -133,6 +137,7 @@ public sealed class ChdmanService : IDisposable
             case ".iso":
                 {
                     string path = Path.Combine(workingDir, input);
+
                     if (File.Exists(path))
                         totallSize = new FileInfo(path).Length;
                 }
@@ -144,6 +149,7 @@ public sealed class ChdmanService : IDisposable
                     try
                     {
                         var info = ChdInfoReader.ReadChdInfo(path);
+
                         totallSize = CalculateOriginalSize(info);
                     }
                     catch
@@ -171,6 +177,7 @@ public sealed class ChdmanService : IDisposable
         try
         {
             Directory.SetCurrentDirectory(workingDir);
+
             int result = invoke(ToLongPath(Path.Combine(workingDir, input)), ToLongPath(output), progressCallback, _logCallback);
 
             cancelReg.Dispose();
@@ -242,8 +249,7 @@ public sealed class ChdmanService : IDisposable
         if (result != 0)
             throw new InvalidOperationException($"chdman info 실패 (code={result})");
 
-        return ParseChdInfo(sb.ToString())
-            ?? throw new InvalidOperationException("CHD 정보 파싱 실패");
+        return ParseChdInfo(sb.ToString()) ?? throw new InvalidOperationException("CHD 정보 파싱 실패");
     }
 
     public static long CalculateOriginalSize(ChdInfo info)

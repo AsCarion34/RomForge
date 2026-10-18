@@ -3,8 +3,12 @@
 public enum InputFormat
 {
     Unknown,
+
     Chd,
+
     Iso,
+
     BinCue,
+
     Gdi
 }
