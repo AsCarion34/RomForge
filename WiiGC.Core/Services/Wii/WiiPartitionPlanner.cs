@@ -7,7 +7,7 @@ internal static class WiiPartitionPlanner
     private const int MinimumHeaderSize = 0x2440;
     private const int MaximumFstSize = 0x4000000;
 
-    public static WiiRepackPlan Plan(WiiPartitionReader original, IReadOnlyDictionary<string, string> replacements)
+    public static WiiRepackPlan Plan(WiiPartitionReader original, IReadOnlyDictionary<string, string> replacements, bool requireAnyApplied = true)
     {
         byte[] boot = new byte[WiiFolderLayout.BootSize];
 
@@ -60,7 +60,8 @@ internal static class WiiPartitionPlanner
             resolved.Add((discPath, found ? node : null));
         }
 
-        WiiLayoutBuilder.EnsureAnyApplied(resolved.Select(r => (r.Path, r.Node != null)).ToList());
+        if (requireAnyApplied)
+            WiiLayoutBuilder.EnsureAnyApplied(resolved.Select(r => (r.Path, r.Node != null)).ToList());
 
         byte[] head = new byte[dolOffset];
 

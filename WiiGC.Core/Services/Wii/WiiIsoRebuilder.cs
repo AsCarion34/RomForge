@@ -22,7 +22,7 @@ public static class WiiIsoRebuilder
 
             PlanTargets(input, replacements, readers, targets);
 
-            result = new WiiPatchResult(targets[0].Plan.Entries);
+            result = CreateResult(targets);
 
             using var handle = SparseFile.Create(outputPath, length);
             var sink = new FileIsoSink(handle);
@@ -78,7 +78,7 @@ public static class WiiIsoRebuilder
 
             readers.Add(reader);
 
-            var plan = WiiPartitionPlanner.Plan(reader, replacements);
+            var plan = WiiPartitionPlanner.Plan(reader, replacements, false);
 
             if (plan.DataSize > spec.DataSize)
             {
@@ -94,6 +94,32 @@ public static class WiiIsoRebuilder
 
         if (targets.Count == 0)
             throw new InvalidDataException("게임 파티션을 찾을 수 없습니다.");
+
+        ShareEntries(targets);
+    }
+
+    internal static WiiPatchResult CreateResult(IReadOnlyList<WiiRebuildTarget> targets) => new([.. targets.SelectMany(t => t.Plan.Entries)]);
+
+    private static void ShareEntries(List<WiiRebuildTarget> targets)
+    {
+        var appliedAnywhere = targets.SelectMany(t => t.Plan.Entries).Where(e => e.Applied).Select(e => e.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        WiiLayoutBuilder.EnsureAnyApplied([.. targets[0].Plan.Entries.Select(e => (e.Path, appliedAnywhere.Contains(e.Path)))]);
+
+        var owned = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        for (int i = 0; i < targets.Count; i++)
+        {
+            var plan = targets[i].Plan;
+            var entries = i == 0
+                ? [.. plan.Entries.Where(e => e.Applied || !appliedAnywhere.Contains(e.Path))]
+                : plan.Entries.Where(e => e.Applied && !owned.Contains(e.Path)).ToList();
+
+            foreach (var entry in entries.Where(e => e.Applied))
+                owned.Add(entry.Path);
+
+            targets[i] = targets[i] with { Plan = plan with { Entries = entries } };
+        }
     }
 
     internal static byte[] EncodePartition(WiiPartitionEncoder encoder, WiiRebuildTarget target, IIsoSink? sink, Action<WiiPatchEntry>? entryLog, Action<long>? onGroup, CancellationToken ct)
@@ -105,12 +131,12 @@ public static class WiiIsoRebuilder
             throw new InvalidDataException("파티션이 H3 테이블 용량을 초과합니다.");
 
         byte[] h3 = new byte[WiiPartitionHeader.H3TableSize];
-        var logger = target.Index == 0 ? new WiiPatchLogger(target.Plan.Entries, entryLog) : null;
+        var logger = new WiiPatchLogger(target.Plan.Entries, entryLog);
 
         for (long group = 0; group < groups; group++)
         {
             ct.ThrowIfCancellationRequested();
-            logger?.Advance((group + 1) * WiiLayout.GroupDataSize);
+            logger.Advance((group + 1) * WiiLayout.GroupDataSize);
 
             int length = encoder.EncodeGroup(target.Spec.Key, data, group, h3.AsSpan((int)(group * WiiLayout.HashSize), WiiLayout.HashSize));
 
@@ -118,7 +144,7 @@ public static class WiiIsoRebuilder
             onGroup?.Invoke(length);
         }
 
-        logger?.Complete();
+        logger.Complete();
 
         return h3;
     }
