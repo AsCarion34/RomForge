@@ -425,33 +425,33 @@ public class ConvertMainViewModel : ToolTabViewModel
             ((IProgressTrackable)item).Progress = p.Percent;
             MainViewModel.SetTaskbarProgress(p.Percent);
         });
+
         void Log(string msg, LogLevel level, string id = "") => AppendLog(msg, level);
+        var switchConfig = AppConfig.Instance.Switch;
 
         switch (item)
         {
             case ConverterFileItem sw:
                 {
-                    int compressLevel = GetSwitchCompressLevel();
-
                     switch (sw.Extension.ToLowerInvariant(), sw.SelectedTargetFormat.ToUpperInvariant())
                     {
                         case ("nsp", "XCI"):
                             await NspXciConvertService.NspToXciAsync(sw.FilePath, progress, Log, _outputDir, _cts.Token);
                             break;
                         case ("nsp", "NSZ"):
-                            await NspCompressService.CompressAsync(sw.FilePath, compressLevel, AppConfig.Instance.Switch.VerifyCompress, AppConfig.Instance.Switch.UseBlockMode, progress, Log, _outputDir, _cts.Token);
+                            await NspCompressService.CompressAsync(sw.FilePath, switchConfig.CompressLevel, switchConfig.VerifyCompress, switchConfig.UseBlockMode, progress, Log, _outputDir, _cts.Token);
                             break;
                         case ("nsp", "XCZ"):
-                            await NspXciConvertService.NspToXczAsync(sw.FilePath, compressLevel, AppConfig.Instance.Switch.VerifyCompress, AppConfig.Instance.Switch.UseBlockMode, progress, Log, _outputDir, _cts.Token);
+                            await NspXciConvertService.NspToXczAsync(sw.FilePath, switchConfig.CompressLevel, switchConfig.VerifyCompress, switchConfig.UseBlockMode, progress, Log, _outputDir, _cts.Token);
                             break;
                         case ("xci", "NSP"):
                             await NspXciConvertService.XciToNspAsync(sw.FilePath, progress, Log, _outputDir, _cts.Token);
                             break;
                         case ("xci", "XCZ"):
-                            await XciCompressService.CompressAsync(sw.FilePath, compressLevel, AppConfig.Instance.Switch.VerifyCompress, AppConfig.Instance.Switch.UseBlockMode, progress, Log, _outputDir, _cts.Token);
+                            await XciCompressService.CompressAsync(sw.FilePath, switchConfig.CompressLevel, switchConfig.VerifyCompress, switchConfig.UseBlockMode, progress, Log, _outputDir, _cts.Token);
                             break;
                         case ("xci", "NSZ"):
-                            await NspXciConvertService.XciToNszAsync(sw.FilePath, compressLevel, AppConfig.Instance.Switch.VerifyCompress, AppConfig.Instance.Switch.UseBlockMode, progress, Log, _outputDir, _cts.Token);
+                            await NspXciConvertService.XciToNszAsync(sw.FilePath, switchConfig.CompressLevel, switchConfig.VerifyCompress, switchConfig.UseBlockMode, progress, Log, _outputDir, _cts.Token);
                             break;
                         case ("nsz", "NSP"):
                             await NspCompressService.DecompressAsync(sw.FilePath, progress, Log, _outputDir, _cts.Token);
@@ -460,7 +460,7 @@ public class ConvertMainViewModel : ToolTabViewModel
                             await NspXciConvertService.NszToXciAsync(sw.FilePath, progress, Log, _outputDir, _cts.Token);
                             break;
                         case ("nsz", "XCZ"):
-                            await NspXciConvertService.NszToXczAsync(sw.FilePath, compressLevel, AppConfig.Instance.Switch.VerifyCompress, AppConfig.Instance.Switch.UseBlockMode, progress, Log, _outputDir, _cts.Token);
+                            await NspXciConvertService.NszToXczAsync(sw.FilePath, switchConfig.CompressLevel, switchConfig.VerifyCompress, switchConfig.UseBlockMode, progress, Log, _outputDir, _cts.Token);
                             break;
                         case ("xcz", "XCI"):
                             await XciCompressService.DecompressAsync(sw.FilePath, progress, Log, _outputDir, _cts.Token);
@@ -469,7 +469,7 @@ public class ConvertMainViewModel : ToolTabViewModel
                             await NspXciConvertService.XczToNspAsync(sw.FilePath, progress, Log, _outputDir, _cts.Token);
                             break;
                         case ("xcz", "NSZ"):
-                            await NspXciConvertService.XczToNszAsync(sw.FilePath, compressLevel, AppConfig.Instance.Switch.VerifyCompress, AppConfig.Instance.Switch.UseBlockMode, progress, Log, _outputDir, _cts.Token);
+                            await NspXciConvertService.XczToNszAsync(sw.FilePath, switchConfig.CompressLevel, switchConfig.VerifyCompress, switchConfig.UseBlockMode, progress, Log, _outputDir, _cts.Token);
                             break;
                         default:
                             throw new NotSupportedException($"{sw.Extension} → {sw.SelectedTargetFormat}: 지원하지 않는 변환입니다.");
@@ -531,12 +531,6 @@ public class ConvertMainViewModel : ToolTabViewModel
                 }
                 break;
         }
-    }
-
-    private static int GetSwitchCompressLevel()
-    {
-        int level = AppConfig.Instance.Switch.CompressLevel;
-        return level < 3 ? 3 : level;
     }
 
     private async Task ConvertCdOneAsync(CdConvertFileItem cd, IProgress<ProgressInfo> progress, CancellationToken ct)

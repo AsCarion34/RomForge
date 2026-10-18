@@ -42,8 +42,6 @@
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                             <TextBlock Text="압축 레벨" Foreground="#A0A0A0" FontSize="11" Margin="0,0,20,0"/>
-                            <TextBlock FontSize="11" Foreground="White">무압축(NSP)</TextBlock>
-                            <TextBlock FontSize="11" Foreground="Gray" Margin="20,0,20,0">|</TextBlock>
                             <TextBlock FontSize="11" Foreground="#00FFFF">3: 최대 속도</TextBlock>
                             <TextBlock FontSize="11" Foreground="Gray" Margin="20,0,20,0">|</TextBlock>
                             <TextBlock FontSize="11" Foreground="#66FFAD">9: 균형</TextBlock>
@@ -57,8 +55,8 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <Image Grid.Column="0" Source="/Assets/Images/Level.png" Width="24" Margin="0,0,5,0"/>
-                            <Slider Grid.Column="1" x:Name="sliderSwitch" Style="{StaticResource SliderStyle}" Minimum="2" Maximum="18" Value="{Binding SwitchCompressLevel}" SmallChange="1" LargeChange="1" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" Cursor="Hand"/>
-                            <TextBlock Grid.Column="2" Text="{Binding ElementName=sliderSwitch, Path=Value, Converter={StaticResource CompressLevelTextConverter}}" Foreground="{Binding ElementName=sliderSwitch, Path=Value, Converter={StaticResource LevelToColorConverter}}" 
+                            <Slider Grid.Column="1" x:Name="sliderSwitch" Style="{StaticResource SliderStyle}" Minimum="3" Maximum="18" Value="{Binding SwitchCompressLevel}" SmallChange="1" LargeChange="1" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" Cursor="Hand"/>
+                            <TextBlock Grid.Column="2" Text="{Binding ElementName=sliderSwitch, Path=Value}" Foreground="{Binding ElementName=sliderSwitch, Path=Value, Converter={StaticResource LevelToColorConverter}}" 
                                        FontWeight="Bold" VerticalAlignment="Center" Width="30" TextAlignment="Center" Margin="5,0,0,0" MinWidth="45"/>
                         </Grid>
                     </StackPanel>
@@ -80,13 +78,6 @@
                         </StackPanel>
                     </Grid>
                 </Border>
-
-                <ToggleButton Margin="5,0,5,5" Grid.Row="4" Style="{StaticResource SlideToggleStyle}" IsChecked="{Binding SwitchIsValidationEnabled}">
-                    <StackPanel Orientation="Horizontal">
-                        <Image Width="18" Margin="0,0,5,0" Source="/Assets/Images/Shield.png"/>
-                        <TextBlock Text="압축 무결성 검증 : 압축 후 원본과 해시 비교 검증" Style="{StaticResource SettingTextStyle}" VerticalAlignment="Center" FontSize="12"/>
-                    </StackPanel>
-                </ToggleButton>
             </Grid>
         </TabItem>
         <TabItem>

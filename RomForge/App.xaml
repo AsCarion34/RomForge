@@ -20,7 +20,6 @@
             <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
             <converters:LogLevelToColorConverter x:Key="LogColor"/>
             <converters:LevelToColorConverter x:Key="LevelToColorConverter"/>
-            <converters:CompressLevelTextConverter x:Key="CompressLevelTextConverter"/>
             <converters:BoolToImageConverter x:Key="BoolToImageConverter"/>
             <converters:ProgressToStarConverter x:Key="ProgressToStarConverter"/>
             <converters:ProgressToWidthConverter x:Key="ProgressToWidthConverter"/>

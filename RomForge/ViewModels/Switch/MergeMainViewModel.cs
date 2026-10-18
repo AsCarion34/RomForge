@@ -95,53 +95,6 @@ public class MergeMainViewModel : ToolTabViewModel
         set { _mergeMode = value; OnPropertyChanged(); }
     }
 
-    public bool IsCompressionOptionVisible => CompressLevel > 2;
-
-    public int CompressLevel
-    {
-        get => AppConfig.Instance.Switch.CompressLevel;
-        set
-        {
-            AppConfig.Instance.Switch.CompressLevel = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(IsCompressionOptionVisible));
-        }
-    }
-
-    public bool VerifyCompress
-    {
-        get => AppConfig.Instance.Switch.VerifyCompress;
-        set { AppConfig.Instance.Switch.VerifyCompress = value; OnPropertyChanged(); }
-    }
-
-    public bool UseBlockMode
-    {
-        get => AppConfig.Instance.Switch.UseBlockMode;
-        set
-        {
-            AppConfig.Instance.Switch.UseBlockMode = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(UseBlocklessMode));
-        }
-    }
-
-    public bool UseBlocklessMode
-    {
-        get => AppConfig.Instance.Switch.UseBlocklessMode;
-        set
-        {
-            AppConfig.Instance.Switch.UseBlocklessMode = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(UseBlockMode));
-        }
-    }
-
-    public static bool ForceKeyGen0
-    {
-        get => AppConfig.Instance.Switch.ForceKeyGen0;
-        set => AppConfig.Instance.Switch.ForceKeyGen0 = value;
-    }
-
     public ICommand OpenWorkSpaceCommand { get; }
 
     #endregion
@@ -179,8 +132,7 @@ public class MergeMainViewModel : ToolTabViewModel
                 var progress = BuildProgressReporter();
                 bool useCompression = OutputFormat is SwitchOutputFormat.NSZ or SwitchOutputFormat.XCZ;
                 bool asXci = OutputFormat is SwitchOutputFormat.XCI or SwitchOutputFormat.XCZ;
-                int compressLevel = useCompression ? 18 : 0;
-
+                var config = AppConfig.Instance.Switch;
                 var keySet = KeySetProvider.Instance.KeySet.Clone();
                 var results = new List<string>();
 
@@ -189,11 +141,11 @@ public class MergeMainViewModel : ToolTabViewModel
                 List<string> output =
                     asXci
                     ? (mergeAll
-                        ? await XciMergeService.RunMergeSingle(inputPaths, outputDir, useCompression, compressLevel, true, VerifyCompress, ForceKeyGen0, keySet.Clone(), progress, Log, _cts.Token)
-                        : await XciMergeService.RunMergeAll(inputPaths, outputDir, useCompression, compressLevel, true, VerifyCompress, ForceKeyGen0, keySet.Clone(), progress, Log, _cts.Token))
+                        ? await XciMergeService.RunMergeSingle(inputPaths, outputDir, useCompression, config.CompressLevel, config.UseBlockMode, config.VerifyCompress, config.ForceKeyGen0, keySet.Clone(), progress, Log, _cts.Token)
+                        : await XciMergeService.RunMergeAll(inputPaths, outputDir, useCompression, config.CompressLevel, config.UseBlockMode, config.VerifyCompress, config.ForceKeyGen0, keySet.Clone(), progress, Log, _cts.Token))
                     : (mergeAll
-                        ? await NspMergeService.RunMergeSingle(inputPaths, outputDir, useCompression, compressLevel, true, VerifyCompress, ForceKeyGen0, keySet.Clone(), progress, Log, _cts.Token)
-                        : await NspMergeService.RunMergeAll(inputPaths, outputDir, useCompression, compressLevel, true, VerifyCompress, ForceKeyGen0, keySet.Clone(), progress, Log, _cts.Token));
+                        ? await NspMergeService.RunMergeSingle(inputPaths, outputDir, useCompression, config.CompressLevel, config.UseBlockMode, config.VerifyCompress, config.ForceKeyGen0, keySet.Clone(), progress, Log, _cts.Token)
+                        : await NspMergeService.RunMergeAll(inputPaths, outputDir, useCompression, config.CompressLevel, config.UseBlockMode, config.VerifyCompress, config.ForceKeyGen0, keySet.Clone(), progress, Log, _cts.Token));
 
                 results.AddRange(output);
 

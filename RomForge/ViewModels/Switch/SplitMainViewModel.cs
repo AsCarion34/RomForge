@@ -355,15 +355,14 @@ public class SplitMainViewModel : ToolTabViewModel
 
                 int resultCount = 0;
                 var progress = BuildProgressReporter();                
-                var config = AppConfig.Instance.Switch;                
+                var config = AppConfig.Instance.Switch;
                 bool compress = OutputFormat is SwitchOutputFormat.NSZ or SwitchOutputFormat.XCZ;
                 bool asXci = OutputFormat is SwitchOutputFormat.XCI or SwitchOutputFormat.XCZ;
-                int compressLevel = compress ? 18 : 0;
 
                 for (int i = 0; i < jobs.Count; i++)
                 {
                     _cts.Token.ThrowIfCancellationRequested();
-                    resultCount += await SwitchSplitService.Split(jobs[i].FilePath, outputDir, compressLevel, true, config.VerifyCompress, config.ForceKeyGen0, asXci, i + 1, jobs.Count, progress, Log, jobs[i].TitleIds, _cts.Token);
+                    resultCount += await SwitchSplitService.Split(jobs[i].FilePath, outputDir, compress, config.CompressLevel, config.UseBlockMode, config.VerifyCompress, config.ForceKeyGen0, asXci, i + 1, jobs.Count, progress, Log, jobs[i].TitleIds, _cts.Token);
                 }
 
                 Log(string.Format(Res.Main_Log_AllComplete, _totalSw.Elapsed.ToString(@"mm\:ss")), LogLevel.Ok);

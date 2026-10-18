@@ -193,17 +193,15 @@ public class CompressMainViewModel : ToolTabViewModel
 
                     void logWrapper(string msg, LogLevel level) => AppendLog(msg, level);
 
-                    int switchCompressLevel = AppConfig.Instance.Switch.CompressLevel;
-                    if (switchCompressLevel < 3)
-                        switchCompressLevel = 3;
+                    var switchConfig = AppConfig.Instance.Switch;
 
                     switch (detected.Format)
                     {
                         case RomFormat.Nsp:
-                            await NspCompressService.CompressAsync(item.FilePath, AppConfig.Instance.Switch.CompressLevel, AppConfig.Instance.Switch.VerifyCompress, AppConfig.Instance.Switch.UseBlockMode, progressHandler, AppendLog, outputDir, _cts.Token);
+                            await NspCompressService.CompressAsync(item.FilePath, switchConfig.CompressLevel, switchConfig.VerifyCompress, switchConfig.UseBlockMode, progressHandler, AppendLog, outputDir, _cts.Token);
                             break;
                         case RomFormat.Xci:
-                            await XciCompressService.CompressAsync(item.FilePath, AppConfig.Instance.Switch.CompressLevel, AppConfig.Instance.Switch.VerifyCompress, AppConfig.Instance.Switch.UseBlockMode, progressHandler, AppendLog, outputDir, _cts.Token);
+                            await XciCompressService.CompressAsync(item.FilePath, switchConfig.CompressLevel, switchConfig.VerifyCompress, switchConfig.UseBlockMode, progressHandler, AppendLog, outputDir, _cts.Token);
                             break;
                         case RomFormat.Nsz:
                             await NspCompressService.DecompressAsync(item.FilePath, progressHandler, AppendLog, outputDir, _cts.Token);
