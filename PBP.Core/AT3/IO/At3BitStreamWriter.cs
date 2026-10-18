@@ -1,3 +1,4 @@
+using PBP.Core.AT3.Enums;
 using PBP.Core.AT3.Helpers;
 using PBP.Core.AT3.Models;
 using PBP.Core.AT3.Services;
@@ -31,12 +32,10 @@ public sealed class At3BitStreamWriter
         _container = container;
         _params = parameters;
         _bfuIdxConst = bfuIdxConst;
+
         EnsureAth();
-        _encoder = new BitStreamEncoder(
-        [
-            new ConfigurePart(),
-            new AllocPart()
-        ]);
+
+        _encoder = new BitStreamEncoder( [ new ConfigurePart(), new AllocPart() ]);
     }
 
     private static float[] Ath
@@ -44,7 +43,6 @@ public sealed class At3BitStreamWriter
         get
         {
             EnsureAth();
-
             return s_ath!;
         }
     }
@@ -148,8 +146,11 @@ public sealed class At3BitStreamWriter
     private sealed class SpecUnit
     {
         public int[] Mantisas = [];
+
         public float EnergyErr;
+
         public uint ClcBits;
+
         public uint VlcBits;
     }
 
@@ -624,6 +625,7 @@ public sealed class At3BitStreamWriter
                         return PartStatus.Repeat;
                     }
                 }
+
                 ctx.PrecisionPerBlock = tmpAlloc;
                 ctx.CodingMode = consumption.Mode;
                 _ctx = ctx;

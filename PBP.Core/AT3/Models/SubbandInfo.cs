@@ -6,10 +6,7 @@ public sealed class SubbandInfo
 
     public List<GainPoint>[] Info;
 
-    public SubbandInfo()
-    {
-        Info = NewInfo(4);
-    }
+    public SubbandInfo() => Info = NewInfo(4);
 
     private static List<GainPoint>[] NewInfo(int n)
     {

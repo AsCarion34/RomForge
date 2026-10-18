@@ -1,4 +1,6 @@
-﻿namespace PBP.Core.AT3.Models;
+﻿using PBP.Core.AT3.Enums;
+
+namespace PBP.Core.AT3.Models;
 
 public class ConverterOptions
 {

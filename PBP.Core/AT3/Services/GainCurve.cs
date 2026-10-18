@@ -4,11 +4,7 @@ namespace PBP.Core.AT3.Services;
 
 public static class GainCurve
 {
-    private static readonly ushort[] DeBruijn =
-    [
-        0, 9, 1, 10, 13, 21, 2, 29, 11, 14, 16, 18, 22, 25, 3, 30,
-        8, 12, 20, 28, 15, 17, 24, 7, 19, 27, 23, 6, 26, 5, 4, 31
-    ];
+    private static readonly ushort[] DeBruijn = [ 0, 9, 1, 10, 13, 21, 2, 29, 11, 14, 16, 18, 22, 25, 3, 30, 8, 12, 20, 28, 15, 17, 24, 7, 19, 27, 23, 6, 26, 5, 4, 31 ];
 
     public static ushort GetFirstSetBit(uint x)
     {
@@ -26,7 +22,6 @@ public static class GainCurve
         if (x <= 0.5f)
         {
             x = 1.0f / MathF.Max(x, 0.00048828125f);
-
             return (ushort)(4u + GetFirstSetBit((uint)x));
         }
 
@@ -377,6 +372,7 @@ public static class GainCurve
         {
             float left = logEnv[i] - logEnv[i - 1];
             float right = logEnv[i + 1] - logEnv[i];
+
             if (left * right < 0.0f)
                 ++turns;
         }
@@ -417,7 +413,6 @@ public static class GainCurve
         const int minPlateauLen = 3;
 
         PlateauResult plateau = FindPlateau(input, minPlateauLen);
-
         const float minPlateauFraction = 0.4f;
         bool usePlateau = plateau.Level > 1e-6f && !plateau.ReleaseAtEnd && plateau.Level >= plateau.MaxRaw * minPlateauFraction;
         float target = usePlateau ? plateau.Level : input[^1];

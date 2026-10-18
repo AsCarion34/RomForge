@@ -77,6 +77,7 @@ public static class PsarPackager
         uint finalOffset = (uint)outputStream.Position;
 
         endOffset -= psarOffset;
+
         outputStream.Seek(p1Offset, SeekOrigin.Begin);
         outputStream.WriteUInt32(endOffset, 1);
         outputStream.Seek(p2Offset, SeekOrigin.Begin);

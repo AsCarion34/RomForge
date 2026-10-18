@@ -21,11 +21,9 @@ public class SfoBuilder
             Version = 0x00000101,
             Entries = []
         };
-
         var validEntries = _entries
             .Where(entry => entry.Value != null && (entry.Value is string s && s.Trim().Length > 0) || (entry.Value is int))
             .ToList();
-
         var headerSize = 20;
         var indexTableSize = validEntries.Count * 16;
         var keyTableSize = validEntries.Sum(x => x.Key.Length + 1);

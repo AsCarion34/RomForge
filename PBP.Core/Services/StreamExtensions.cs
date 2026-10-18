@@ -11,6 +11,7 @@ public static class StreamExtensions
         for (var i = 0; i < count; i++)
         {
             stream.Read(uintBuffer, 0, 4);
+
             buffer[i] = BitConverter.ToUInt32(uintBuffer, 0);
         }
     }
@@ -18,9 +19,11 @@ public static class StreamExtensions
     public static void Read(this Stream stream, int[] buffer, int count)
     {
         var intBuffer = new byte[sizeof(int)];
+
         for (var i = 0; i < count; i++)
         {
             stream.Read(intBuffer, 0, 4);
+
             buffer[i] = BitConverter.ToInt32(intBuffer, 0);
         }
     }
@@ -28,6 +31,7 @@ public static class StreamExtensions
     public static ushort ReadUInt16(this Stream stream)
     {
         var buf = new byte[2];
+
         stream.Read(buf, 0, 2);
 
         return BitConverter.ToUInt16(buf, 0);
@@ -36,6 +40,7 @@ public static class StreamExtensions
     public static int ReadInteger(this Stream stream)
     {
         var buf = new byte[4];
+
         stream.Read(buf, 0, 4);
 
         return BitConverter.ToInt32(buf, 0);
@@ -44,6 +49,7 @@ public static class StreamExtensions
     public static uint ReadUInteger(this Stream stream)
     {
         var buf = new byte[4];
+
         stream.Read(buf, 0, 4);
 
         return BitConverter.ToUInt32(buf, 0);    
@@ -86,6 +92,7 @@ public static class StreamExtensions
         foreach (var entry in sfo.Entries)
         {
             stream.Seek(dataBase + entry.DataOffset, SeekOrigin.Begin);
+
             entry.Value = entry.Format switch
             {
                 0x0204 => stream.ReadNullTerminatedString(),
@@ -116,6 +123,7 @@ public static class StreamExtensions
         while (p < size)
         {
             stream.Write(BitConverter.GetBytes(buffer[i]), 0, sizeof(uint));
+
             p += sizeof(uint);
             i++;
         }
@@ -217,10 +225,13 @@ public static class StreamExtensions
             {
                 case 0x0204:
                     var s = (string)entry.Value!;
+
                     stream.Write(s, 0, s.Length);
                     stream.WriteByte(0);
+
                     for (var j = 0; j < entry.MaxLength - entry.Length; j++) 
                         stream.WriteByte(0);
+
                     break;
                 case 0x0404:
                     stream.WriteInt32(Convert.ToInt32(entry.Value), 1);

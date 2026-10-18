@@ -29,78 +29,31 @@ public static class At3CodecInfo
     public const int MaxSpecsPerBlock = 128;
 
     public static readonly float[] ScaleTable = BuildScaleTable();
+
     public static readonly float[] EncodeWindow = BuildEncodeWindow();
+
     public static readonly float[] DecodeWindow = BuildDecodeWindow();
+
     public static readonly float[] GainLevel = BuildGainLevel();
+
     public static readonly float[] GainInterpolation = BuildGainInterpolation();
 
     public static readonly float[] MaxQuant = [ 0.0f, 1.5f, 2.5f, 3.5f, 4.5f, 7.5f, 15.5f, 31.5f ];
 
-    public static readonly int[] BlockSizeTab =
-    [
-        0, 8, 16, 24, 32, 40, 48, 56,
-        64, 80, 96, 112, 128, 144, 160, 176,
-        192, 224, 256, 288, 320, 352, 384, 416,
-        448, 480, 512, 576, 640, 704, 768, 896,
-        1024
-    ];
+    public static readonly int[] BlockSizeTab = [ 0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256, 288, 320, 352, 384, 416, 448, 480, 512, 576, 640, 704, 768, 896, 1024 ];
 
     public static readonly int[] ClcLengthTab = [ 0, 4, 3, 3, 4, 4, 5, 6 ];
 
     public static readonly int[] BlocksPerBand = [ 0, 18, 26, 30, 32 ];
 
-    public static readonly int[] SpecsPerBlock =
-    [
-        8, 8, 8, 8, 8, 8, 8, 8,
-        16, 16, 16, 16, 16, 16, 16, 16,
-        32, 32, 32, 32, 32, 32, 32, 32,
-        32, 32, 64, 64, 64, 64, 128, 128,
-        128
-    ];
+    public static readonly int[] SpecsPerBlock = [ 8, 8, 8, 8, 8, 8, 8, 8, 16, 16, 16, 16, 16, 16, 16, 16, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 64, 64, 64, 64, 128, 128, 128 ];
 
-    public static readonly ContainerParams[] ContainerParamsTable =
-    [
-        new(66150, 192, true),
-        new(93713, 272, true),
-        new(104738, 304, false),
-        new(132300, 384, false),
-        new(146081, 424, false),
-        new(176400, 512, false),
-        new(264600, 768, false),
-        new(352800, 1024, false)
-    ];
+    public static readonly ContainerParams[] ContainerParamsTable = [ new(66150, 192, true), new(93713, 272, true), new(104738, 304, false), new(132300, 384, false), new(146081, 424, false), new(176400, 512, false), new(264600, 768, false), new(352800, 1024, false) ];
 
-    private static readonly HuffEntry[] HuffTable1 =
-    [
-        new(0x0, 1),
-        new(0x4, 3), new(0x5, 3),
-        new(0xC, 4), new(0xD, 4),
-        new(0x1C, 5), new(0x1D, 5), new(0x1E, 5), new(0x1F, 5)
-    ];
-
-    private static readonly HuffEntry[] HuffTable2 =
-    [
-        new(0x0, 1),
-        new(0x4, 3), new(0x5, 3), new(0x6, 3), new(0x7, 3)
-    ];
-
-    private static readonly HuffEntry[] HuffTable3 =
-    [
-        new(0x0, 1),
-        new(0x4, 3), new(0x5, 3),
-        new(0xC, 4), new(0xD, 4), new(0xE, 4), new(0xF, 4)
-    ];
-
-    private static readonly HuffEntry[] HuffTable5 =
-    [
-        new(0x0, 2),
-        new(0x2, 3), new(0x3, 3),
-        new(0x8, 4), new(0x9, 4), new(0xA, 4), new(0xB, 4),
-        new(0x1C, 5), new(0x1D, 5),
-        new(0x3C, 6), new(0x3D, 6), new(0x3E, 6), new(0x3F, 6),
-        new(0xC, 4), new(0xD, 4)
-    ];
-
+    private static readonly HuffEntry[] HuffTable1 = [ new(0x0, 1), new(0x4, 3), new(0x5, 3), new(0xC, 4), new(0xD, 4), new(0x1C, 5), new(0x1D, 5), new(0x1E, 5), new(0x1F, 5) ];
+    private static readonly HuffEntry[] HuffTable2 = [ new(0x0, 1), new(0x4, 3), new(0x5, 3), new(0x6, 3), new(0x7, 3) ];
+    private static readonly HuffEntry[] HuffTable3 = [ new(0x0, 1), new(0x4, 3), new(0x5, 3), new(0xC, 4), new(0xD, 4), new(0xE, 4), new(0xF, 4) ];
+    private static readonly HuffEntry[] HuffTable5 = [ new(0x0, 2), new(0x2, 3), new(0x3, 3), new(0x8, 4), new(0x9, 4), new(0xA, 4), new(0xB, 4), new(0x1C, 5), new(0x1D, 5), new(0x3C, 6), new(0x3D, 6), new(0x3E, 6), new(0x3F, 6), new(0xC, 4), new(0xD, 4) ];
     private static readonly HuffEntry[] HuffTable6 = BuildHuffTable6();
     private static readonly HuffEntry[] HuffTable7 = BuildHuffTable7();
 

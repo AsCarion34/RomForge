@@ -1,3 +1,4 @@
+using PBP.Core.AT3.Enums;
 using PBP.Core.AT3.Models;
 
 namespace PBP.Core.AT3.Services;
@@ -371,6 +372,7 @@ public sealed class SpectralUpsampler
         var invIn = _invIn;
 
         Array.Clear(invIn);
+
         float scale = (float)Upsample;
         int passbandStart = (_lowCutBin == 0) ? 0 : _lowCutBin + 2;
 

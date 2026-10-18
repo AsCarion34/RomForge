@@ -18,15 +18,14 @@ public class ChdReadStream(LibChdrWrapper wrapper, long totalLength, ChdInfo inf
             if (physlba < _tracks[i + 1].PhysFrameOfs)
             {
                 long chdsector = physlba - _tracks[i].PhysFrameOfs + _tracks[i].ChdFrameOfs;
-
                 return (chdsector, i);
             }
         }
+
         return (physlba, 0);
     }
 
-    private bool IsAudio(int tracknum) =>
-        _tracks[tracknum].TrackType?.ToUpperInvariant().Contains("AUDIO", StringComparison.InvariantCultureIgnoreCase) == true;
+    private bool IsAudio(int tracknum) => _tracks[tracknum].TrackType?.ToUpperInvariant().Contains("AUDIO", StringComparison.InvariantCultureIgnoreCase) == true;
 
     public override int Read(byte[] buffer, int offset, int count)
     {
@@ -77,7 +76,9 @@ public class ChdReadStream(LibChdrWrapper wrapper, long totalLength, ChdInfo inf
             SeekOrigin.End => totalLength + offset,
             _ => _position
         };
+
         _position = Math.Clamp(_position, 0, totalLength);
+
         return _position;
     }
 

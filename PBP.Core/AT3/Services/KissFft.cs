@@ -37,14 +37,16 @@ internal sealed class KissFft
 
     private static int[] Factor(int n)
     {
-        var list = new System.Collections.Generic.List<int>();
+        var list = new List<int>();
         int p = 4;
 
         do
         {
             while (n % p != 0)
                 p = p == 4 ? 2 : throw new InvalidOperationException();
+
             n /= p;
+
             list.Add(p);
             list.Add(n);
         } while (n > 1);
@@ -81,6 +83,7 @@ internal sealed class KissFft
             {
                 Unsafe.Add(ref o, 2 * foutIdx) = Unsafe.Add(ref i, 2 * finIdx);
                 Unsafe.Add(ref o, 2 * foutIdx + 1) = Unsafe.Add(ref i, 2 * finIdx + 1);
+
                 finIdx += step;
             } while (++foutIdx != end);
         }
@@ -89,6 +92,7 @@ internal sealed class KissFft
             do
             {
                 Work(fout, foutIdx, fin, finIdx, fstride * p, inStride, fi);
+
                 finIdx += fstride * inStride;
             } while ((foutIdx += m) != end);
         }
@@ -116,11 +120,14 @@ internal sealed class KissFft
             float wi = Unsafe.Add(ref twi, tw);
             float tr = f2r * wr - f2i * wi;
             float ti = f2r * wi + f2i * wr;
+
             tw += fstride;
+
             Unsafe.Add(ref f, 2 * f2) = Unsafe.Add(ref f, 2 * idx) - tr;
             Unsafe.Add(ref f, 2 * f2 + 1) = Unsafe.Add(ref f, 2 * idx + 1) - ti;
             Unsafe.Add(ref f, 2 * idx) += tr;
             Unsafe.Add(ref f, 2 * idx + 1) += ti;
+
             f2++;
             idx++;
         } while (--m != 0);
@@ -177,9 +184,11 @@ internal sealed class KissFft
 
             Unsafe.Add(ref f, b) = nor - s3r;
             Unsafe.Add(ref f, b + 1) = noi - s3i;
+
             tw1 += fstride;
             tw2 += s2;
             tw3 += s3;
+
             Unsafe.Add(ref f, o) = nor + s3r;
             Unsafe.Add(ref f, o + 1) = noi + s3i;
 

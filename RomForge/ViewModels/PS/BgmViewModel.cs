@@ -1,5 +1,6 @@
 ﻿using Common;
 using Common.WPF.ViewModels;
+using PBP.Core.AT3.Enums;
 using PBP.Core.AT3.Models;
 using RomForge.Core;
 using RomForge.Core.Services.PS;

@@ -24,7 +24,6 @@ public static class Compression
         using var ms = new MemoryStream(input);
         var inflater = new Inflater(true);
         using var inflaterStream = new InflaterInputStream(ms, inflater);
-
         int bytesRead = 0;
 
         while (bytesRead < outputSize)

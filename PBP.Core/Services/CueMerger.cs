@@ -21,6 +21,7 @@ public static class CueMerger
 
             var srcStream = new FileStream(binPath, FileMode.Open, FileAccess.Read);
             long frameCount = srcStream.Length / 2352;
+
             streams.Add(srcStream);
 
             foreach (var track in entry.Tracks)
@@ -28,6 +29,7 @@ public static class CueMerger
                 var newIndexes = track.Indexes
                     .Select(idx => new CueIndex { Number = idx.Number, Position = idx.Position + TocBuilder.PositionFromFrames(currentFrame) })
                     .ToList();
+
                 mergedEntry.Tracks.Add(new CueTrack { DataType = track.DataType, Number = track.Number, Indexes = newIndexes });
             }
 

@@ -30,7 +30,6 @@ public static class CueFileResolver
                 continue;
 
             string? fileName = null;
-
             var match = FileRegex.Match(trimmed);
 
             if (match.Success)

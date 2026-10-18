@@ -8,7 +8,6 @@ public static class Mp3Reader
     public static PcmData Read(string path)
     {
         using var fs = File.OpenRead(path);
-
         return Read(fs);
     }
 
@@ -38,6 +37,7 @@ public static class Mp3Reader
                 Array.Resize(ref buf, read);
 
             chunks.Add(buf);
+
             total += read;
         }
 

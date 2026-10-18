@@ -18,9 +18,7 @@ public static class MantissaQuantizer
                 float t = input[j] * mul;
 
                 e1 += input[j] * input[j];
-
                 mantisas[f] = ToInt(t);
-
                 e2 += mantisas[f] * mantisas[f] * inv2;
             }
             return e1 / e2;
@@ -33,9 +31,7 @@ public static class MantissaQuantizer
             float t = input[j] * mul;
 
             e1 += input[j] * input[j];
-
             mantisas[f] = ToInt(t);
-
             e2 += mantisas[f] * mantisas[f] * inv2;
 
             float delta = t - (MathF.Truncate(t) + 0.5f);

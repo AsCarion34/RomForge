@@ -86,6 +86,7 @@ public static class Resampler
                 for (int j = 0; j < taps; j++)
                 {
                     long k = first + j;
+
                     if (k >= 0 && k < inFrames)
                         acc += table[row + j] * x[k];
                 }

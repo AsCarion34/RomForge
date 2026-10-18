@@ -1,4 +1,4 @@
-﻿namespace PBP.Core.AT3.Models;
+﻿namespace PBP.Core.AT3.Enums;
 
 public enum ProcessResult
 {

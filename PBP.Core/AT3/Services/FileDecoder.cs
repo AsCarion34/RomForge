@@ -60,7 +60,6 @@ public static class FileDecoder
             {
                 dataStart = body;
                 dataSize = Math.Min(size, file.Length - body);
-
                 break;
             }
 

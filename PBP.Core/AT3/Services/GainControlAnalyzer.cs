@@ -1,3 +1,4 @@
+using PBP.Core.AT3.Enums;
 using PBP.Core.AT3.Helpers;
 using PBP.Core.AT3.Models;
 
@@ -112,6 +113,7 @@ public sealed class GainControlAnalyzer
     private static void BuildSubframeDivisors(List<GainCurvePoint> pts, Span<float> outDiv)
     {
         Span<float> sampleDiv = stackalloc float[256];
+
         sampleDiv.Fill(1.0f);
 
         uint pos = 0;
@@ -165,6 +167,7 @@ public sealed class GainControlAnalyzer
         {
             float mod = gain[sf] / MathF.Max(div[sf], eps);
             float e = MathF.Log2(MathF.Max(mod, eps) / MathF.Max(target, eps));
+
             fit += e * e;
         }
 
@@ -248,7 +251,6 @@ public sealed class GainControlAnalyzer
         if (total > 1 && Environment.ProcessorCount > 1)
         {
             Parallel.For(0, total, i => _pending[i >> 2][i & 3] = AnalyzeBand(i >> 2, i & 3, upInput[i >> 2][i & 3]));
-
             return;
         }
 
@@ -323,7 +325,6 @@ public sealed class GainControlAnalyzer
                 resetCtx.LastHighFreqRatio = 0.0f;
                 resetCtx.PreviousHighFreqRatio = 0.0f;
                 resetCtx.PitchHistorySize = 0;
-
                 continue;
             }
 
@@ -350,7 +351,7 @@ public sealed class GainControlAnalyzer
             if (result.PitchPeriod > 0.0f && harmonicCtx.PreviousPitchPeriod > 0.0f)
                 confirmedPitchDeltaCents = OctaveFoldedCents(result.PitchPeriod, harmonicCtx.PreviousPitchPeriod);
 
-            bool hasContinuousPitch = band < 3 && result.HighFreqRatio >= MinHfrForPitchRms && previousFrameHighFreqRatio >= MinHfrForPitchRms && result.CepstralProminenceDb >= MinContinuousCepstralProminenceDb &&
+            bool hasContinuousPitch = band < 3 && result.HighFreqRatio >= MinHfrForPitchRms && previousFrameHighFreqRatio >= MinHfrForPitchRms && result.CepstralProminenceDb >= MinContinuousCepstralProminenceDb && 
                 previousFrameCepstralProminenceDb >= MinContinuousCepstralProminenceDb && boundaryPitchDeltaCents <= MaxBoundaryPitchDeltaCents;
             bool hasConfirmedPitch = hasContinuousPitch && harmonicCtx.PitchHistorySize >= 2 && harmonicCtx.PreviousHighFreqRatio >= MinHfrForPitchRms && harmonicCtx.PreviousCepstralProminenceDb >= MinContinuousCepstralProminenceDb && confirmedPitchDeltaCents <= MaxBoundaryPitchDeltaCents;
             bool usePitchRms = useStationaryPitchRms || hasContinuousPitch;

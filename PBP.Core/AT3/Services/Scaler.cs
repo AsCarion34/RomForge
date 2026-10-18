@@ -58,6 +58,7 @@ public static class Scaler
             {
                 int start = At3CodecInfo.BlockSizeTab[block];
                 int len = At3CodecInfo.SpecsPerBlock[block];
+
                 blocks.Add(Scale(specs.Slice(start, len)));
             }
         }
@@ -73,6 +74,7 @@ public static class Scaler
         while (lo < hi)
         {
             int mid = (lo + hi) >> 1;
+
             if (table[mid] < value)
                 lo = mid + 1;
             else

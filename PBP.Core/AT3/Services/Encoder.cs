@@ -1,3 +1,4 @@
+using PBP.Core.AT3.Enums;
 using PBP.Core.AT3.Helpers;
 using PBP.Core.AT3.IO;
 using PBP.Core.AT3.Models;
@@ -103,6 +104,7 @@ public sealed class Encoder
                 level *= gainInc;
             }
         }
+
         for (; pos < At3CodecInfo.MdctSize / 2; pos++)
             bufCur[(int)pos] /= scale;
     }
@@ -380,6 +382,7 @@ public sealed class Encoder
                     }
                 }
             }
+
             Matrixing();
         }
 

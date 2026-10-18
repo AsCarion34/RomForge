@@ -55,6 +55,7 @@ public static class PsarDiscWriter
 
         Array.Clear(data2, 8, 128);
         Array.Copy(titleBytes, 0, data2, 8, gameTitle.Length);
+
         data2[8 + titleBytes.Length] = 0;
 
         outputStream.Write(data2, 0, data2.Length);
@@ -67,7 +68,6 @@ public static class PsarDiscWriter
         for (var i = 0; i < isoSize / BlockSize; i++)
         {
             ct.ThrowIfCancellationRequested();
-
             outputStream.WriteUInt32(offset, 1);
             outputStream.WriteUInt32(x, 1);
             outputStream.Write(dummy, 0, sizeof(uint) * dummy.Length);
@@ -91,8 +91,8 @@ public static class PsarDiscWriter
             while ((bytesRead = isoStream.Read(buffer, 0, BufferSize)) > 0)
             {
                 ct.ThrowIfCancellationRequested();
-
                 outputStream.Write(buffer, 0, bytesRead);
+
                 totSize += (uint)bytesRead;
                 curSize += (uint)bytesRead;
 
@@ -131,13 +131,17 @@ public static class PsarDiscWriter
                 if (compressedSize >= BlockSize)
                 {
                     indexes[idx].Length = BlockSize;
+
                     outputStream.Write(readBuffer, 0, BlockSize);
+
                     offset += BlockSize;
                 }
                 else
                 {
                     indexes[idx].Length = compressedSize;
+
                     outputStream.Write(compressedBuffer, 0, (int)compressedSize);
+
                     offset += compressedSize;
                 }
 
@@ -173,13 +177,13 @@ public static class PsarDiscWriter
                 outputStream.WriteUInt32(endOffset, 1);
 
                 endOffset += 0x2d31;
+
                 outputStream.Seek(p2Offset, SeekOrigin.Begin);
                 outputStream.WriteUInt32(endOffset, 1);
             }
 
             outputStream.Seek(indexOffset, SeekOrigin.Begin);
             outputStream.Write(indexes, 0, (int)(4 + 4 + (6 * 4) * (isoSize / BlockSize)));
-
             outputStream.Seek(offset, SeekOrigin.Begin);
         }
     }

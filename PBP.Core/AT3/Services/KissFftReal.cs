@@ -57,12 +57,10 @@ internal sealed class KissFftReal
             float fpkI = tmp[2 * k + 1];
             float fpnkR = tmp[2 * (ncfft - k)];
             float fpnkI = -tmp[2 * (ncfft - k) + 1];
-
             float f1kR = fpkR + fpnkR;
             float f1kI = fpkI + fpnkI;
             float f2kR = fpkR - fpnkR;
             float f2kI = fpkI - fpnkI;
-
             float sr = _superR[k - 1];
             float si = _superI[k - 1];
             float twR = f2kR * sr - f2kI * si;
@@ -92,12 +90,10 @@ internal sealed class KissFftReal
             float fkI = freqData[2 * k + 1];
             float fnkcR = freqData[2 * (ncfft - k)];
             float fnkcI = -freqData[2 * (ncfft - k) + 1];
-
             float fekR = fkR + fnkcR;
             float fekI = fkI + fnkcI;
             float tR = fkR - fnkcR;
             float tI = fkI - fnkcI;
-
             float sr = _superR[k - 1];
             float si = _superI[k - 1];
             float fokR = tR * sr - tI * si;

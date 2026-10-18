@@ -114,26 +114,32 @@ internal static class AdpcmDecoder
         {
             int start = blk * blockAlign;
             int len = Math.Min(blockAlign, data.Length - start);
+
             if (len < 7 * channels)
                 break;
 
             int p = start;
+
             for (int ch = 0; ch < channels; ch++)
             {
                 int idx = Math.Min((int)data[p++], numCoef - 1);
+
                 coef1[ch] = coefs[idx * 2];
                 coef2[ch] = coefs[idx * 2 + 1];
             }
+
             for (int ch = 0; ch < channels; ch++)
             {
                 delta[ch] = (short)(data[p] | (data[p + 1] << 8));
                 p += 2;
             }
+
             for (int ch = 0; ch < channels; ch++)
             {
                 s1[ch] = (short)(data[p] | (data[p + 1] << 8));
                 p += 2;
             }
+
             for (int ch = 0; ch < channels; ch++)
             {
                 s2[ch] = (short)(data[p] | (data[p + 1] << 8));
@@ -142,6 +148,7 @@ internal static class AdpcmDecoder
 
             for (int ch = 0; ch < channels; ch++)
                 output[outPos + ch] = s2[ch] / 32768.0f;
+
             for (int ch = 0; ch < channels; ch++)
                 output[outPos + channels + ch] = s1[ch] / 32768.0f;
 
@@ -149,21 +156,24 @@ internal static class AdpcmDecoder
             int totalNibbles = nibbleBytes * 2;
             int framesFromNibbles = totalNibbles / channels;
             long baseOut = outPos + 2L * channels;
-
             int nibbleIdx = 0;
+
             for (int n = 0; n < totalNibbles; n++)
             {
                 byte b = data[p + n / 2];
                 int nib = (n & 1) == 0 ? (b >> 4) : (b & 0x0F);
                 int ch = n % channels;
                 int frame = n / channels;
-
                 int predictor = (s1[ch] * coef1[ch] + s2[ch] * coef2[ch]) / 256;
+
                 predictor += ((nib & 8) != 0 ? nib - 16 : nib) * delta[ch];
+
                 int sample = Clip16(predictor);
+
                 s2[ch] = s1[ch];
                 s1[ch] = sample;
                 delta[ch] = (MsAdaptTable[nib] * delta[ch]) >> 8;
+
                 if (delta[ch] < 16)
                     delta[ch] = 16;
 
@@ -176,6 +186,7 @@ internal static class AdpcmDecoder
 
         if (outPos != output.Length)
             Array.Resize(ref output, (int)outPos);
+
         return output;
     }
 }

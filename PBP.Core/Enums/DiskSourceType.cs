@@ -3,6 +3,8 @@
 public enum DiskSourceType
 {
     Iso,
+
     Bin,
+
     Chd
 }

@@ -10,6 +10,7 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
     const uint PSAR_TOC_OFFSET = 0x800;
     const uint PSAR_INDEX_OFFSET = 0x4000;
     const uint PSAR_ISO_OFFSET = 0x100000;
+
     public const int ISO_BLOCK_SIZE = 0x930;
 
     public Action<uint>? ProgressEvent { get; set; }
@@ -19,10 +20,15 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
     private readonly byte[] _compressionInBuffer;
 
     public List<IsoBlock> IsoIndex { get; }
+
     public List<TocEntry> TOC { get; }
+
     public uint IsoSize { get; }
+
     public int Index { get; }
+
     public string DiscID { get; }
+
     public bool IsPvdMismatch { get; }
 
     public PbpDiscEntry(Stream stream, int psarOffset, int index)
@@ -30,11 +36,15 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
         _stream = stream;
         Index = index;
         _psarOffset = psarOffset;
+
         DiscID = GetDiscID();
         TOC = ReadTOC();
         IsoIndex = ReadIsoIndexes();
+
         _compressionInBuffer = new byte[16 * ISO_BLOCK_SIZE * 2];
+
         IsoSize = GetIsoSize(out bool mismatch);
+
         IsPvdMismatch = mismatch;
     }
 
@@ -114,6 +124,7 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
             var length = _stream.ReadInteger();
 
             _stream.Read(dummy, 6);
+
             thisOffset = (uint)_stream.Position;
 
             if (offset != 0 || length != 0)
@@ -166,7 +177,6 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
         var pvdSize = pvdSectors * ISO_BLOCK_SIZE;
         var maxSize = (uint)(IsoIndex.Count * 16 * ISO_BLOCK_SIZE);
         const uint blockTolerance = 16 * ISO_BLOCK_SIZE;
-
         var diff = pvdSize > maxSize ? pvdSize - maxSize : maxSize - pvdSize;
 
         mismatch = pvdSize == 0 || diff > blockTolerance;
@@ -179,7 +189,6 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
         get
         {
             var lastBlock = IsoIndex[^1];
-
             return _psarOffset + PSAR_ISO_OFFSET + lastBlock.Offset + lastBlock.Length;
         }
     }
@@ -196,6 +205,7 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
             ct.ThrowIfCancellationRequested();
 
             var bufferSize = ReadBlock(i, outBuffer);
+
             totSize += bufferSize;
 
             if (totSize > IsoSize)

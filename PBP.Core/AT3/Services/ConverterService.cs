@@ -1,4 +1,5 @@
-﻿using PBP.Core.AT3.Models;
+﻿using PBP.Core.AT3.Enums;
+using PBP.Core.AT3.Models;
 
 namespace PBP.Core.AT3.Services
 {
@@ -24,6 +25,7 @@ namespace PBP.Core.AT3.Services
             if (options.MaxSeconds > 0 && pcm.SampleRate > 0)
             {
                 long maxFrames = (long)options.MaxSeconds * pcm.SampleRate;
+
                 if (pcm.FrameCount > maxFrames)
                     pcm.Samples = pcm.Samples[..(int)(maxFrames * pcm.Channels)];
             }
