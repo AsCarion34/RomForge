@@ -59,7 +59,7 @@ public static class MetadataReader
 
     public static string DetectFileType(KeySet keySet, string path)
     {
-        if (keySet == null) 
+        if (keySet == null)
             return "Not Key";
 
         try
@@ -76,7 +76,7 @@ public static class MetadataReader
             {
                 using var file = new UniqueRef<IFile>();
 
-                if (fs.OpenFile(ref file.Ref, entry.FullPath.ToU8Span(), OpenMode.Read).IsFailure()) 
+                if (fs.OpenFile(ref file.Ref, entry.FullPath.ToU8Span(), OpenMode.Read).IsFailure())
                     continue;
 
                 var cnmt = file.Get.GetCnmtFromNca(keySet);
@@ -99,7 +99,7 @@ public static class MetadataReader
     {
         var info = new GameFileInfo { Path = path };
 
-        if (string.IsNullOrEmpty(path) || !File.Exists(path)) 
+        if (string.IsNullOrEmpty(path) || !File.Exists(path))
             return info;
 
         try
@@ -116,7 +116,7 @@ public static class MetadataReader
             {
                 using var file = new UniqueRef<IFile>();
 
-                if (fs.OpenFile(ref file.Ref, entry.FullPath.ToU8Span(), OpenMode.Read).IsFailure()) 
+                if (fs.OpenFile(ref file.Ref, entry.FullPath.ToU8Span(), OpenMode.Read).IsFailure())
                     continue;
 
                 var nca = new Nca(keySet, file.Release().AsStorage());
@@ -248,6 +248,8 @@ public static class MetadataReader
 
                 string krTitle = string.Empty;
                 string enTitle = string.Empty;
+                string koreanTitle = string.Empty;
+                string defaultTitle = string.Empty;
                 string displayVer = "1.0.0";
                 byte[]? iconData = null;
                 var ctrlRecord = cnmt.ContentEntries
@@ -281,6 +283,7 @@ public static class MetadataReader
 
                             krTitle = current.Title[(int)Current].NameString.ToString().Trim('\0', ' ');
                             enTitle = current.Title[(int)Language.AmericanEnglish].NameString.ToString().Trim('\0', ' ');
+                            koreanTitle = current.Title[(int)Language.Korean].NameString.ToString().Trim('\0', ' ');
 
                             if (string.IsNullOrWhiteSpace(krTitle))
                             {
@@ -296,6 +299,22 @@ public static class MetadataReader
                                 }
                             }
                             if (string.IsNullOrWhiteSpace(enTitle)) enTitle = krTitle;
+
+                            defaultTitle = koreanTitle;
+
+                            if (string.IsNullOrWhiteSpace(defaultTitle))
+                            {
+                                foreach (ApplicationTitle t in current.Title)
+                                {
+                                    var name = t.NameString.ToString().Trim('\0', ' ');
+
+                                    if (!string.IsNullOrWhiteSpace(name))
+                                    {
+                                        defaultTitle = name;
+                                        break;
+                                    }
+                                }
+                            }
 
                             displayVer = current.DisplayVersionString.ToString().Trim('\0', ' ');
 
@@ -315,7 +334,9 @@ public static class MetadataReader
                 results.Add(new MetadataResult(titleId, version, displayVer, krTitle, enTitle, 0, type, cnmtNcaName, path, contentNcaIds, programIdOffsets)
                 {
                     IconData = iconData,
-                    Size = calculatedSize
+                    Size = calculatedSize,
+                    KoreanTitle = koreanTitle,
+                    DefaultTitle = defaultTitle
                 });
             }
             catch
@@ -371,15 +392,14 @@ public static class MetadataReader
         if (metas.Any(m => m.Type is ContentMetaType.AddOnContent or ContentMetaType.Delta))
             types.Add("D");
 
-        var main = metas.FirstOrDefault(m => m.Type == ContentMetaType.Application)
-            ?? metas.FirstOrDefault(m => m.Type == ContentMetaType.Patch)
-            ?? metas[0];
+        var main = metas.FirstOrDefault(m => m.Type == ContentMetaType.Application) ?? metas.FirstOrDefault(m => m.Type == ContentMetaType.Patch) ?? metas[0];
 
         info.Type = types.Count > 0 ? string.Join("+", types) : "?";
         info.TitleId = main.TitleId;
         info.DisplayVersion = main.GetEffectiveDisplayVersion();
         info.TitleName = !string.IsNullOrEmpty(main.KrTitle) ? main.KrTitle : main.EnTitle;
         info.IconData = main.IconData;
+        info.Naming = GameNamingInfo.From(metas);
 
         return info;
     }
@@ -388,7 +408,7 @@ public static class MetadataReader
     {
         var results = new List<Cnmt>();
 
-        if (string.IsNullOrEmpty(path) || !File.Exists(path)) 
+        if (string.IsNullOrEmpty(path) || !File.Exists(path))
             return results;
 
         using var storage = new LocalStorage(path, FileAccess.Read);
@@ -403,7 +423,7 @@ public static class MetadataReader
             {
                 using var file = new UniqueRef<IFile>();
 
-                if (fs.OpenFile(ref file.Ref, entry.FullPath.ToU8Span(), OpenMode.Read).IsFailure()) 
+                if (fs.OpenFile(ref file.Ref, entry.FullPath.ToU8Span(), OpenMode.Read).IsFailure())
                     continue;
 
                 var nca = new Nca(keySet, file.Release().AsStorage());
@@ -443,12 +463,8 @@ public static class MetadataReader
 
     private static (string Name, string Publisher, Language Language) GetTitleByLanguage(this ApplicationControlProperty control, Language preferred)
     {
-        int langCount = control.TitleCompression == TitleCompressionValue.Enable
-            ? Constants.ExtendedLanguageCount
-            : Constants.LegacyLanguageCount;
-
+        int langCount = control.TitleCompression == TitleCompressionValue.Enable ? Constants.ExtendedLanguageCount : Constants.LegacyLanguageCount;
         var titles = control.Title;
-
         var title = titles[(int)preferred];
 
         if (!string.IsNullOrWhiteSpace(title.NameString.ToString().Trim('\0')))
