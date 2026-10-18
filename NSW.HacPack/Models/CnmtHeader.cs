@@ -6,12 +6,19 @@ namespace NSW.HacPack.Models;
 public struct CnmtHeader
 {
     public ulong TitleId;
+
     public uint TitleVersion;
+
     public byte Type;
+
     public byte _0xD;
+
     public ushort ExtendedHeaderSize;
+
     public ushort ContentEntryCount;
+
     public ushort MetaEntryCount;
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = 0xC)]
+
     public byte[] _0x14;
 }

@@ -6,7 +6,9 @@ namespace NSW.HacPack.Models;
 public struct NcaSectionEntry
 {
     public uint MediaStartOffset;
+
     public uint MediaEndOffset;
+
     [MarshalAs(UnmanagedType.ByValArray, SizeConst = 0x8)]
     public byte[] _0x8;
 }

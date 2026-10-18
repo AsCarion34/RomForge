@@ -18,6 +18,7 @@ public static class Pfs0Builder
     public static void BuildFromMemoryStreams(IEnumerable<(string Name, Stream Stream)> fileStreams, Stream outputStream, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         var files = fileStreams.Select(f => (f.Name, f.Stream, Size: f.Stream.Length)).ToList();
+
         files.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
 
         if (files.Count == 0)
@@ -25,20 +26,20 @@ public static class Pfs0Builder
 
         using var stringTableMs = new MemoryStream();
         var stringOffsets = new uint[files.Count];
+
         for (int i = 0; i < files.Count; i++)
         {
             stringOffsets[i] = (uint)stringTableMs.Position;
+
             byte[] nameBytes = System.Text.Encoding.UTF8.GetBytes(files[i].Name);
+
             stringTableMs.Write(nameBytes, 0, nameBytes.Length);
             stringTableMs.WriteByte(0);
         }
 
-        ulong fullHeaderSize = (ulong)(Unsafe.SizeOf<Pfs0Header>()
-            + Unsafe.SizeOf<Pfs0FileEntry>() * files.Count
-            + stringTableMs.Length);
+        ulong fullHeaderSize = (ulong)(Unsafe.SizeOf<Pfs0Header>() + Unsafe.SizeOf<Pfs0FileEntry>() * files.Count + stringTableMs.Length);
         ulong alignedHeaderSize = AlignUp(fullHeaderSize + 1, 0x20);
         ulong headerPadding = alignedHeaderSize - fullHeaderSize;
-
         var header = new Pfs0Header
         {
             Magic = MagicPfs0,
@@ -47,7 +48,9 @@ public static class Pfs0Builder
         };
 
         WriteStruct(outputStream, header);
+
         ulong fileDataRelOffset = 0;
+
         for (int i = 0; i < files.Count; i++)
         {
             var entry = new Pfs0FileEntry
@@ -56,15 +59,20 @@ public static class Pfs0Builder
                 Size = (ulong)files[i].Size,
                 StringTableOffset = stringOffsets[i]
             };
+
             WriteStruct(outputStream, entry);
+
             fileDataRelOffset += (ulong)files[i].Size;
         }
 
         stringTableMs.Position = 0;
+
         stringTableMs.CopyTo(outputStream);
+
         if (headerPadding > 0)
         {
             Span<byte> pad = stackalloc byte[(int)headerPadding];
+
             pad.Clear();
             outputStream.Write(pad);
         }
@@ -79,6 +87,7 @@ public static class Pfs0Builder
             foreach (var file in files)
             {
                 ct.ThrowIfCancellationRequested();
+
                 long remaining = file.Size;
                 file.Stream.Position = 0;
 
@@ -86,10 +95,14 @@ public static class Pfs0Builder
                 {
                     int toRead = (int)Math.Min(bufSize, remaining);
                     int read = file.Stream.Read(buf, 0, toRead);
-                    if (read <= 0) break;
+
+                    if (read <= 0)
+                        break;
 
                     outputStream.Write(buf, 0, read);
+
                     remaining -= read;
+
                     reporter.AddProgress(read);
                 }
             }
@@ -112,22 +125,29 @@ public static class Pfs0Builder
         try
         {
             long ofs = 0;
+
             while (ofs < srcFileSize)
             {
                 int toRead = (int)Math.Min((long)hashBlockSize, srcFileSize - ofs);
                 int read = pfs0Stream.Read(buf, 0, toRead);
-                if (read != toRead) throw new IOException("Failed to read pfs0 stream");
+
+                if (read != toRead) 
+                    throw new IOException("Failed to read pfs0 stream");
 
                 SHA256.HashData(buf.AsSpan(0, toRead), hashSpan);
                 hashTableStream.Write(hashSpan);
+
                 ofs += toRead;
             }
 
             outHashTableSize = (ulong)hashTableStream.Position;
+
             long paddingSize = PaddingSize - (long)outHashTableSize % PaddingSize;
+
             if (paddingSize != PaddingSize)
             {
                 Span<byte> pad = stackalloc byte[(int)paddingSize];
+
                 pad.Clear();
                 hashTableStream.Write(pad);
             }
@@ -144,6 +164,7 @@ public static class Pfs0Builder
     private static void WriteStruct<T>(Stream stream, in T value) where T : struct
     {
         Span<byte> buf = stackalloc byte[Unsafe.SizeOf<T>()];
+
         MemoryMarshal.Write(buf, in Unsafe.AsRef(in value));
         stream.Write(buf);
     }
@@ -151,8 +172,8 @@ public static class Pfs0Builder
     public static byte[] GetRootHash(Stream hashTableStream, ulong hashTableSize)
     {
         hashTableStream.Position = 0;
-        using var sha = SHA256.Create();
 
+        using var sha = SHA256.Create();
         const int bufSize = 0x61A8000;
         byte[] buf = new byte[bufSize];
         ulong ofs = 0;
@@ -161,11 +182,14 @@ public static class Pfs0Builder
         {
             ulong toRead = Math.Min(bufSize, hashTableSize - ofs);
             int read = hashTableStream.Read(buf, 0, (int)toRead);
+
             sha.TransformBlock(buf, 0, read, null, 0);
+
             ofs += (ulong)read;
         }
 
         sha.TransformFinalBlock([], 0, 0);
+
         return sha.Hash!;
     }
 }

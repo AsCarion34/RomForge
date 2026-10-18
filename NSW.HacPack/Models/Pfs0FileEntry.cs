@@ -6,7 +6,10 @@ namespace NSW.HacPack.Models;
 public struct Pfs0FileEntry
 {
     public ulong Offset;
+
     public ulong Size;
+
     public uint StringTableOffset;
+
     public uint Reserved;
 }

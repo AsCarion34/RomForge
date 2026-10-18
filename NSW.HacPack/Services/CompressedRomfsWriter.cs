@@ -3,7 +3,6 @@ using K4os.Compression.LZ4;
 using LibHac;
 using LibHac.Fs;
 using LibHac.FsSystem;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -25,25 +24,28 @@ public static class CompressedRomfsWriter
     private struct Entry
     {
         public long VirtualOffset;
+
         public long PhysicalOffset;
+
         public byte CompressionType;
+
         public sbyte CompressionLevel;
+
         public uint PhysicalSize;
     }
 
     public static CompressedRomfsInfo Compress(Stream input, Stream output, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         long totalSize = input.Length;
+
         input.Position = 0;
 
         var entries = new List<Entry>();
-
         int headerLength = (int)Math.Min(RawHeaderSize, totalSize);
         byte[] headerBuffer = new byte[headerLength];
 
         input.ReadExactly(headerBuffer);
         output.Write(headerBuffer);
-
         entries.Add(new Entry
         {
             VirtualOffset = 0,
@@ -56,7 +58,6 @@ public static class CompressedRomfsWriter
         long physical = headerLength;
         long virtualOffset = headerLength;
         bool canMergeNone = false;
-
         int batchSize = Math.Clamp(Environment.ProcessorCount * 4, 8, 64);
         var sources = new byte[batchSize][];
         var targets = new byte[batchSize][];
@@ -84,6 +85,7 @@ public static class CompressedRomfsWriter
                 int length = (int)Math.Min(ChunkSize, totalSize - start);
 
                 input.ReadExactly(sources[count], 0, length);
+
                 lengths[count] = length;
                 count++;
             }
@@ -114,6 +116,7 @@ public static class CompressedRomfsWriter
                     });
 
                     output.Write(targets[i], 0, encoded[i]);
+
                     physical += encoded[i];
                     canMergeNone = false;
                 }
@@ -136,6 +139,7 @@ public static class CompressedRomfsWriter
                     }
 
                     output.Write(sources[i], 0, lengths[i]);
+
                     physical += lengths[i];
                 }
 
@@ -148,20 +152,18 @@ public static class CompressedRomfsWriter
         report(totalSize, totalSize);
 
         long tableOffset = (physical + NodeSize - 1) / NodeSize * NodeSize;
+
         WriteZeros(output, tableOffset - physical);
 
         int entrySize = Unsafe.SizeOf<Entry>();
         long nodeStorageSize = BucketTree.QueryNodeStorageSize(NodeSize, entrySize, entries.Count);
         long entryStorageSize = BucketTree.QueryEntryStorageSize(NodeSize, entrySize, entries.Count);
-
         byte[] headerBytes = new byte[BucketTree.QueryHeaderStorageSize()];
         byte[] nodeBytes = new byte[nodeStorageSize];
         byte[] entryBytes = new byte[entryStorageSize];
-
         using var headerStorage = new ValueSubStorage(new MemoryStorage(headerBytes), 0, headerBytes.Length);
         using var nodeStorage = new ValueSubStorage(new MemoryStorage(nodeBytes), 0, nodeBytes.Length);
         using var entryStorage = new ValueSubStorage(new MemoryStorage(entryBytes), 0, entryBytes.Length);
-
         var builder = new BucketTree.Builder();
 
         builder.Initialize(new ArrayPoolMemoryResource(), in headerStorage, in nodeStorage, in entryStorage, NodeSize, entrySize, entries.Count).ThrowIfFailure();
@@ -170,7 +172,6 @@ public static class CompressedRomfsWriter
             builder.Add(in entry).ThrowIfFailure();
 
         builder.Finalize(totalSize).ThrowIfFailure();
-
         output.Write(nodeBytes);
         output.Write(entryBytes);
 
@@ -196,6 +197,7 @@ public static class CompressedRomfsWriter
             int size = (int)Math.Min(count, zeros.Length);
 
             output.Write(zeros, 0, size);
+
             count -= size;
         }
     }

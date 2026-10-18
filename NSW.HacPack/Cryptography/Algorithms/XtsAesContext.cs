@@ -14,14 +14,12 @@ internal sealed class XtsAesContext : IDisposable
     {
         _aes2 = CreateEcb(key2);
         _tweakEnc = _aes2.CreateEncryptor();
-
         _aes1 = CreateEcb(key1);
         Enc = _aes1.CreateEncryptor();
         Dec = _aes1.CreateDecryptor();
     }
 
-    public byte[] ComputeTweak(byte[] iv) =>
-        _tweakEnc.TransformFinalBlock(iv, 0, 16);
+    public byte[] ComputeTweak(byte[] iv) => _tweakEnc.TransformFinalBlock(iv, 0, 16);
 
     private static Aes CreateEcb(byte[] key)
     {

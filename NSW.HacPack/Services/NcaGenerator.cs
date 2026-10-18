@@ -11,29 +11,39 @@ public static class NcaGenerator
     public static string GenerateRomfsNca(NcaGenerationOptions settings, string ncaType, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         var ncaHeader = new NcaHeader();
+
         NcaHeaderService.InitHeader(ref ncaHeader);
 
         string ncaPath = Path.Combine(settings.OutDirectory, $"{ncaType}.nca");
         using var ncaFile = File.Open(ncaPath, FileMode.Create, FileAccess.ReadWrite);
+
         NcaStructHelper.WriteStruct(ncaFile, ncaHeader);
 
         var ivfcStreams = BuildAndWriteRomfsSection(ncaFile, ref ncaHeader, 0, settings, $"{ncaType}_romfs_tmp", progress, ct);
+
         try
         {
             NcaHeaderService.SetCommonHeader(ref ncaHeader, settings);
+
             ncaHeader.ContentType = (byte)settings.NcaType;
+
             NcaHeaderService.SetSectionEntry(ref ncaHeader, 0, 0x6, (uint)(ncaFile.Position / 0x200));
-            NcaHeaderService.SetFsHeader(ref ncaHeader, 0,
-                (byte)SectionHashType.RomFs, 0, 0x2,
-                settings.Plaintext == 0 ? (byte)SectionCryptType.Ctr : (byte)SectionCryptType.None);
+            NcaHeaderService.SetFsHeader(ref ncaHeader, 0, (byte)SectionHashType.RomFs, 0, 0x2, settings.Plaintext == 0 ? (byte)SectionCryptType.Ctr : (byte)SectionCryptType.None);
             NcaHeaderService.SetIvfcMagic(ref ncaHeader, 0);
 
             byte[] masterHash = IvfcGenerator.CalculateMasterHash(ivfcStreams[0]);
+
             NcaHeaderService.SetIvfcMasterHash(ref ncaHeader, 0, masterHash);
+
             byte[] sectionHash = NcaStructHelper.CalculateSectionHash(ref ncaHeader, 0);
+
             NcaHeaderService.SetSectionHash(ref ncaHeader, 0, sectionHash);
         }
-        finally { foreach (var s in ivfcStreams) s?.Dispose(); }
+        finally 
+        {
+            foreach (var s in ivfcStreams) 
+                s?.Dispose();
+        }
 
         NcaHeaderService.FinalizeKeyArea(ref ncaHeader, settings);
 
@@ -48,12 +58,13 @@ public static class NcaGenerator
     public static string GenerateProgramNca(NcaGenerationOptions settings, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         var ncaHeader = new NcaHeader();
+
         NcaHeaderService.InitHeader(ref ncaHeader);
 
         string ncaPath = Path.Combine(settings.OutDirectory, "Program.nca");
         using var ncaFile = new FileStream(ncaPath, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 1024 * 1024, FileOptions.SequentialScan);
-        NcaStructHelper.WriteStruct(ncaFile, ncaHeader);
 
+        NcaStructHelper.WriteStruct(ncaFile, ncaHeader);
         ct.ThrowIfCancellationRequested();
         progress.ReportStatus("ExeFS 빌드 중...", 0);
 
@@ -62,46 +73,60 @@ public static class NcaGenerator
         const uint exefsBlockSize = Pfs0Builder.ExefsHashBlockSize;
 
         BuildPfs0ToStream(settings.ExefsDirectory, exefsStream, ct);
-        Pfs0Builder.GeneratePfs0HashTable(exefsStream, exefsHashStream, exefsBlockSize,
-            out ulong hashTableSize, out ulong pfs0Offset);
+        Pfs0Builder.GeneratePfs0HashTable(exefsStream, exefsHashStream, exefsBlockSize, out ulong hashTableSize, out ulong pfs0Offset);
+
         ulong pfs0Size = (ulong)exefsStream.Length;
+
         NcaHeaderService.SetPfs0Superblock(ref ncaHeader, 0, pfs0Size, hashTableSize, pfs0Offset, exefsBlockSize);
 
         exefsHashStream.Position = 0;
+
         exefsHashStream.CopyTo(ncaFile);
+
         exefsStream.Position = 0;
+
         exefsStream.CopyTo(ncaFile);
         WritePadding(ncaFile);
-
         NcaHeaderService.SetCommonHeader(ref ncaHeader, settings);
+
         ncaHeader.ContentType = 0x0;
+
         NcaHeaderService.SetSectionEntry(ref ncaHeader, 0, 0x6, (uint)(ncaFile.Position / 0x200));
-        NcaHeaderService.SetFsHeader(ref ncaHeader, 0, (byte)SectionHashType.Pfs0,
-            (byte)SectionFsType.Pfs0, 0x2,
-            settings.Plaintext == 0 ? (byte)SectionCryptType.Ctr : (byte)SectionCryptType.None);
+        NcaHeaderService.SetFsHeader(ref ncaHeader, 0, (byte)SectionHashType.Pfs0, (byte)SectionFsType.Pfs0, 0x2, settings.Plaintext == 0 ? (byte)SectionCryptType.Ctr : (byte)SectionCryptType.None);
 
         byte[] masterHash0 = Pfs0Builder.GetRootHash(exefsHashStream, hashTableSize);
+
         NcaHeaderService.SetPfs0MasterHash(ref ncaHeader, 0, masterHash0);
+
         byte[] sectionHash0 = NcaStructHelper.CalculateSectionHash(ref ncaHeader, 0);
+
         NcaHeaderService.SetSectionHash(ref ncaHeader, 0, sectionHash0);
 
         if (!string.IsNullOrEmpty(settings.RomfsDirectory) && Directory.Exists(settings.RomfsDirectory))
         {
             var ivfcStreams1 = BuildAndWriteRomfsSection(ncaFile, ref ncaHeader, 1, settings, "program_sec1_romfs_tmp", progress, ct);
+
             try
             {
                 uint sec0End = ncaHeader.SectionEntries[0].MediaEndOffset;
+
                 NcaHeaderService.SetSectionEntry(ref ncaHeader, 1, sec0End, (uint)(ncaFile.Position / 0x200));
-                NcaHeaderService.SetFsHeader(ref ncaHeader, 1, (byte)SectionHashType.RomFs, 0, 0x2,
-                    settings.Plaintext == 0 ? (byte)SectionCryptType.Ctr : (byte)SectionCryptType.None);
+                NcaHeaderService.SetFsHeader(ref ncaHeader, 1, (byte)SectionHashType.RomFs, 0, 0x2, settings.Plaintext == 0 ? (byte)SectionCryptType.Ctr : (byte)SectionCryptType.None);
                 NcaHeaderService.SetIvfcMagic(ref ncaHeader, 1);
 
                 byte[] masterHash1 = IvfcGenerator.CalculateMasterHash(ivfcStreams1[0]);
+
                 NcaHeaderService.SetIvfcMasterHash(ref ncaHeader, 1, masterHash1);
+
                 byte[] sectionHash1 = NcaStructHelper.CalculateSectionHash(ref ncaHeader, 1);
+
                 NcaHeaderService.SetSectionHash(ref ncaHeader, 1, sectionHash1);
             }
-            finally { foreach (var s in ivfcStreams1) s?.Dispose(); }
+            finally 
+            { 
+                foreach (var s in ivfcStreams1)
+                    s?.Dispose(); 
+            }
         }
 
         if (!string.IsNullOrEmpty(settings.LogoDirectory) && Directory.Exists(settings.LogoDirectory))
@@ -109,42 +134,50 @@ public static class NcaGenerator
             const uint logoBlockSize = Pfs0Builder.LogoHashBlockSize;
 
             ct.ThrowIfCancellationRequested();
+
             using var logoStream = new MemoryStream();
             using var logoHashStream = new MemoryStream();
 
             BuildPfs0ToStream(settings.LogoDirectory, logoStream, ct);
-            Pfs0Builder.GeneratePfs0HashTable(logoStream, logoHashStream, logoBlockSize,
-                out ulong logoHashSize, out ulong logoPfs0Offset);
+            Pfs0Builder.GeneratePfs0HashTable(logoStream, logoHashStream, logoBlockSize, out ulong logoHashSize, out ulong logoPfs0Offset);
+
             ulong logoSize = (ulong)logoStream.Length;
+
             NcaHeaderService.SetPfs0Superblock(ref ncaHeader, 2, logoSize, logoHashSize, logoPfs0Offset, logoBlockSize);
 
             logoHashStream.Position = 0;
+
             logoHashStream.CopyTo(ncaFile);
+
             logoStream.Position = 0;
+
             logoStream.CopyTo(ncaFile);
+
             WritePadding(ncaFile);
 
             bool hasRomfs = !string.IsNullOrEmpty(settings.RomfsDirectory) && Directory.Exists(settings.RomfsDirectory);
-            uint sec2Start = hasRomfs
-                ? ncaHeader.SectionEntries[1].MediaEndOffset
-                : ncaHeader.SectionEntries[0].MediaEndOffset;
+            uint sec2Start = hasRomfs ? ncaHeader.SectionEntries[1].MediaEndOffset : ncaHeader.SectionEntries[0].MediaEndOffset;
+
             NcaHeaderService.SetSectionEntry(ref ncaHeader, 2, sec2Start, (uint)(ncaFile.Position / 0x200));
-            NcaHeaderService.SetFsHeader(ref ncaHeader, 2, (byte)SectionHashType.Pfs0,
-                (byte)SectionFsType.Pfs0, 0x2, 0x1);
+            NcaHeaderService.SetFsHeader(ref ncaHeader, 2, (byte)SectionHashType.Pfs0, (byte)SectionFsType.Pfs0, 0x2, 0x1);
 
             byte[] masterHash2 = Pfs0Builder.GetRootHash(logoHashStream, logoHashSize);
+
             NcaHeaderService.SetPfs0MasterHash(ref ncaHeader, 2, masterHash2);
+
             byte[] sectionHash2 = NcaStructHelper.CalculateSectionHash(ref ncaHeader, 2);
+
             NcaHeaderService.SetSectionHash(ref ncaHeader, 2, sectionHash2);
         }
 
         NcaHeaderService.FinalizeKeyArea(ref ncaHeader, settings);
-
         ct.ThrowIfCancellationRequested();
+
         if (settings.Plaintext == 0)
         {
             progress.ReportStatus("ExeFS 암호화 중...", 0);
             NcaCryptoService.EncryptSection(ncaFile, ref ncaHeader, 0, settings, progress, ct);
+
             if (!string.IsNullOrEmpty(settings.RomfsDirectory) && Directory.Exists(settings.RomfsDirectory))
             {
                 ct.ThrowIfCancellationRequested();
@@ -153,10 +186,10 @@ public static class NcaGenerator
             }
         }
 
-        if (settings.NoSelfSignNcaSignature2 == 0 ||
-            !string.IsNullOrEmpty(settings.NcaSignature2PrivateKey) && File.Exists(settings.NcaSignature2PrivateKey))
+        if (settings.NoSelfSignNcaSignature2 == 0 || !string.IsNullOrEmpty(settings.NcaSignature2PrivateKey) && File.Exists(settings.NcaSignature2PrivateKey))
         {
             byte[] headerBytes = NcaStructHelper.GetHeaderMagicBytes(ref ncaHeader);
+
             if (!string.IsNullOrEmpty(settings.NcaSignature2PrivateKey) && File.Exists(settings.NcaSignature2PrivateKey))
                 RsaSigner.SignDataWithKeyFile(headerBytes, ncaHeader.NpdmKeySig, settings.NcaSignature2PrivateKey);
             else
@@ -171,15 +204,17 @@ public static class NcaGenerator
     public static string GenerateMetaNca(IEnumerable<NcaGenerationOptions> settingsList, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         var baseSettings = settingsList.First(s => s.IdOffset == 0);
-
         var ncaHeader = new NcaHeader();
+
         NcaHeaderService.InitHeader(ref ncaHeader);
 
         string ncaPath = Path.Combine(baseSettings.OutDirectory, "Meta.nca");
         using var ncaFile = File.Open(ncaPath, FileMode.Create, FileAccess.ReadWrite);
+
         NcaStructHelper.WriteStruct(ncaFile, ncaHeader);
 
         string cnmtDirPath = Path.Combine(baseSettings.TempDirectory, "cnmt");
+
         Directory.CreateDirectory(cnmtDirPath);
 
         ct.ThrowIfCancellationRequested();
@@ -191,27 +226,35 @@ public static class NcaGenerator
         using var metaHashStream = new MemoryStream();
 
         BuildPfs0ToStream(cnmtDirPath, metaPfs0Stream, ct);
-        Pfs0Builder.GeneratePfs0HashTable(metaPfs0Stream, metaHashStream, metaBlockSize,
-            out ulong metaHashSize, out ulong metaPfs0Offset);
+        Pfs0Builder.GeneratePfs0HashTable(metaPfs0Stream, metaHashStream, metaBlockSize, out ulong metaHashSize, out ulong metaPfs0Offset);
+
         ulong metaPfs0Size = (ulong)metaPfs0Stream.Length;
+
         NcaHeaderService.SetPfs0Superblock(ref ncaHeader, 0, metaPfs0Size, metaHashSize, metaPfs0Offset, metaBlockSize);
 
         metaHashStream.Position = 0;
+
         metaHashStream.CopyTo(ncaFile);
+
         metaPfs0Stream.Position = 0;
+
         metaPfs0Stream.CopyTo(ncaFile);
+
         WritePadding(ncaFile);
 
         NcaHeaderService.SetCommonHeader(ref ncaHeader, baseSettings);
+
         ncaHeader.ContentType = 0x1;
+
         NcaHeaderService.SetSectionEntry(ref ncaHeader, 0, 0x6, (uint)(ncaFile.Position / 0x200));
-        NcaHeaderService.SetFsHeader(ref ncaHeader, 0, (byte)SectionHashType.Pfs0,
-            (byte)SectionFsType.Pfs0, 0x2,
-            baseSettings.Plaintext == 0 ? (byte)SectionCryptType.Ctr : (byte)SectionCryptType.None);
+        NcaHeaderService.SetFsHeader(ref ncaHeader, 0, (byte)SectionHashType.Pfs0, (byte)SectionFsType.Pfs0, 0x2, baseSettings.Plaintext == 0 ? (byte)SectionCryptType.Ctr : (byte)SectionCryptType.None);
 
         byte[] masterHash = Pfs0Builder.GetRootHash(metaHashStream, metaHashSize);
+
         NcaHeaderService.SetPfs0MasterHash(ref ncaHeader, 0, masterHash);
+
         byte[] sectionHash = NcaStructHelper.CalculateSectionHash(ref ncaHeader, 0);
+
         NcaHeaderService.SetSectionHash(ref ncaHeader, 0, sectionHash);
 
         if (baseSettings.KeyAreaKey == null)
@@ -220,11 +263,14 @@ public static class NcaGenerator
         Array.Copy(baseSettings.KeyAreaKey, 0, ncaHeader.EncryptedKeys, 2 * 0x10, 0x10);
 
         ct.ThrowIfCancellationRequested();
+
         if (baseSettings.Plaintext == 0)
             NcaCryptoService.EncryptSection(ncaFile, ref ncaHeader, 0, baseSettings, null, ct);
 
         ncaFile.Seek(0, SeekOrigin.End);
+
         ncaHeader.NcaSize = (ulong)ncaFile.Position;
+
         NcaCryptoService.EncryptKeyArea(ref ncaHeader, baseSettings);
         NcaSigningService.SignNca(ref ncaHeader, baseSettings);
         NcaCryptoService.EncryptHeader(ref ncaHeader, baseSettings);
@@ -233,10 +279,12 @@ public static class NcaGenerator
         NcaStructHelper.WriteStruct(ncaFile, ncaHeader);
 
         byte[] ncaHash = NcaStructHelper.CalculateNcaHash(ncaFile);
+
         ncaFile.Close();
 
         string finalName = Convert.ToHexString(ncaHash, 0, 16).ToLowerInvariant() + ".cnmt.nca";
         string finalPath = Path.Combine(baseSettings.OutDirectory, finalName);
+
         File.Move(ncaPath, finalPath, overwrite: true);
 
         return finalPath;
@@ -245,12 +293,15 @@ public static class NcaGenerator
     private static MemoryStream[] BuildAndWriteRomfsSection(FileStream ncaFile, ref NcaHeader ncaHeader, int sectionIndex, NcaGenerationOptions settings, string tempFileName, IProgress<ProgressInfo>? progress, CancellationToken ct)
     {
         var ivfcStreams = new MemoryStream[5];
-        for (int i = 0; i < 5; i++) ivfcStreams[i] = new MemoryStream();
+
+        for (int i = 0; i < 5; i++) 
+            ivfcStreams[i] = new MemoryStream();
 
         string romfsTempPath = Path.Combine(settings.TempDirectory, tempFileName);
         string compressedTempPath = romfsTempPath + "_cmp";
         using var romfsTempFile = new FileStream(romfsTempPath, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 1024 * 1024, FileOptions.SequentialScan);
         FileStream? compressedTempFile = null;
+
         try
         {
             RomfsBuilder.BuildRomfsImage(settings.RomfsDirectory, romfsTempFile, out ulong romfsSize, progress, ct);
@@ -263,6 +314,7 @@ public static class NcaGenerator
                 compressedTempFile = new FileStream(compressedTempPath, FileMode.Create, FileAccess.ReadWrite, FileShare.None, 1024 * 1024, FileOptions.SequentialScan);
 
                 var info = CompressedRomfsWriter.Compress(romfsTempFile, compressedTempFile, progress, ct);
+
                 NcaHeaderService.SetCompressionInfo(ref ncaHeader, sectionIndex, info.TableOffset, info.TableSize, info.TableHeader);
 
                 dataFile = compressedTempFile;
@@ -272,6 +324,7 @@ public static class NcaGenerator
             NcaHeaderService.SetIvfcLevel5(ref ncaHeader, sectionIndex, dataSize);
 
             dataFile.Position = 0;
+
             IvfcGenerator.GenerateHashLevel(ivfcStreams[4], dataFile, out ulong lvlSize4);
             NcaHeaderService.SetIvfcLevel(ref ncaHeader, sectionIndex, 4, lvlSize4);
 
@@ -282,28 +335,34 @@ public static class NcaGenerator
                 NcaHeaderService.SetIvfcLevel(ref ncaHeader, sectionIndex, b, lvlSize);
                 progress.ReportStatus($"IVFC 생성 중... {4 - b}/5", -1);
             }
+
             NcaHeaderService.SetIvfcLogicalOffsets(ref ncaHeader, sectionIndex);
 
             for (int c = 0; c < 5; c++)
             {
                 ct.ThrowIfCancellationRequested();
+
                 ivfcStreams[c].Position = 0;
+
                 ivfcStreams[c].CopyTo(ncaFile);
                 progress.ReportStatus($"NCA 기록 중... {c + 1}/6", -1);
             }
 
             ct.ThrowIfCancellationRequested();
+
             dataFile.Position = 0;
+
             dataFile.CopyTo(ncaFile);
             progress.ReportStatus("NCA 기록 중... 6/6", -1);
-
             WritePadding(ncaFile);
 
             return ivfcStreams;
         }
         catch
         {
-            foreach (var s in ivfcStreams) s?.Dispose();
+            foreach (var s in ivfcStreams)
+                s?.Dispose();
+
             throw;
         }
         finally
@@ -320,6 +379,7 @@ public static class NcaGenerator
     private static void BuildPfs0ToStream(string inDirPath, MemoryStream outStream, CancellationToken ct)
     {
         var fileStreams = new List<(string, Stream)>();
+
         try
         {
             foreach (var f in Directory.GetFiles(inDirPath).OrderBy(f => Path.GetFileName(f), StringComparer.Ordinal))
@@ -337,6 +397,7 @@ public static class NcaGenerator
     public static void WritePadding(FileStream ncaFile)
     {
         ulong currOffset = (ulong)ncaFile.Position;
+
         if (currOffset % 0x200 != 0)
             ncaFile.Write(new byte[0x200 - currOffset % 0x200]);
     }
@@ -346,8 +407,10 @@ public static class NcaGenerator
         byte[] ncaHash = NcaStructHelper.CalculateNcaHash(ncaFile);
         string finalName = Convert.ToHexString(ncaHash, 0, 16).ToLowerInvariant() + ext;
         string finalPath = Path.Combine(settings.OutDirectory, finalName);
+
         ncaFile.Close();
         File.Move(ncaPath, finalPath, overwrite: true);
+
         return finalPath;
     }
 

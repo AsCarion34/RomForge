@@ -10,9 +10,12 @@ public static class Sha256Service
         const int bufSize = 0x61A8000;
         byte[] buf = new byte[bufSize];
         int read;
+
         while ((read = stream.Read(buf, 0, bufSize)) > 0)
             sha.TransformBlock(buf, 0, read, null, 0);
+
         sha.TransformFinalBlock([], 0, 0);
+
         return sha.Hash!;
     }
 }

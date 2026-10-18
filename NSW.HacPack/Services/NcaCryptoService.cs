@@ -1,4 +1,5 @@
 ﻿using Common;
+using LibHac.Crypto;
 using NSW.HacPack.Cryptography.Core;
 using NSW.HacPack.Enums;
 using NSW.HacPack.Models;
@@ -13,8 +14,8 @@ public static class NcaCryptoService
         ulong startOffset = hdr.SectionEntries[sectionIndex].MediaStartOffset * 0x200UL;
         ulong endOffset = hdr.SectionEntries[sectionIndex].MediaEndOffset * 0x200UL;
         ulong fileSize = endOffset - startOffset;
-
         byte[] encKey = new byte[0x10];
+
         if (settings.HasTitleKey == 1)
             Array.Copy(settings.TitleKey, encKey, 0x10);
         else
@@ -22,6 +23,7 @@ public static class NcaCryptoService
 
         ulong ctrOfs = startOffset >> 4;
         byte[] baseCtr = new byte[0x10];
+
         for (int j = 0; j < 8; j++)
         {
             baseCtr[j] = hdr.FsHeaders[sectionIndex].SectionCtr[8 - j - 1];
@@ -34,39 +36,35 @@ public static class NcaCryptoService
 
         byte[] batch = new byte[batchSize];
         var reporter = new ProgressReporter("암호화 중", string.Empty, (long)fileSize, progress);
-
-        using var mmf = MemoryMappedFile.CreateFromFile(
-            ncaFile, null, 0, MemoryMappedFileAccess.ReadWrite,
-            HandleInheritability.None, leaveOpen: true);
-
+        using var mmf = MemoryMappedFile.CreateFromFile(ncaFile, null, 0, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, leaveOpen: true);
         ulong ofs = 0;
+
         while (ofs < fileSize)
         {
             ct.ThrowIfCancellationRequested();
+
             int batchLen = (int)Math.Min(batchSize, fileSize - ofs);
-
-            using (var view = mmf.CreateViewStream(
-                (long)(startOffset + ofs), batchLen, MemoryMappedFileAccess.Read))
+            using (var view = mmf.CreateViewStream((long)(startOffset + ofs), batchLen, MemoryMappedFileAccess.Read))
                 view.Read(batch, 0, batchLen);
-
             int chunkCount = (batchLen + chunkSize - 1) / chunkSize;
+
             Parallel.For(0, chunkCount, new ParallelOptions { CancellationToken = ct }, i =>
             {
                 int chunkOffset = i * chunkSize;
                 int chunkLen = Math.Min(chunkSize, batchLen - chunkOffset);
                 ulong absOffset = startOffset + ofs + (ulong)chunkOffset;
-
                 Span<byte> ctr = stackalloc byte[0x10];
+
                 baseCtr.AsSpan(0, 8).CopyTo(ctr);
                 UpdateCtr(ctr, absOffset);
 
                 using var ctx = new AesContext(encKey, AesMode.CTR);
+
                 ctx.SetIV(ctr.ToArray());
                 ctx.Encrypt(batch.AsSpan(chunkOffset, chunkLen), batch.AsSpan(chunkOffset, chunkLen));
             });
 
-            using (var view = mmf.CreateViewStream(
-                (long)(startOffset + ofs), batchLen, MemoryMappedFileAccess.ReadWrite))
+            using (var view = mmf.CreateViewStream((long)(startOffset + ofs), batchLen, MemoryMappedFileAccess.ReadWrite))
                 view.Write(batch, 0, batchLen);
 
             ofs += (ulong)batchLen;
@@ -81,10 +79,10 @@ public static class NcaCryptoService
     {
         int keygenIdx = settings.KeyGeneration - 1;
         var kaek = settings.KeySet.KeyAreaKeys[keygenIdx][0];
-
         byte[] keys = new byte[0x40];
+
         Array.Copy(hdr.EncryptedKeys, keys, 0x40);
-        LibHac.Crypto.Aes.EncryptEcb128(keys.AsSpan(), keys.AsSpan(), kaek);
+        Aes.EncryptEcb128(keys.AsSpan(), keys.AsSpan(), kaek);
         Array.Copy(keys, hdr.EncryptedKeys, 0x40);
     }
 
@@ -98,6 +96,7 @@ public static class NcaCryptoService
         {
             int offset = (int)(sector * 0x200);
             byte[] block = new byte[0x200];
+
             Array.Copy(rawHdr, offset, block, 0, 0x200);
             XtsCrypto.Encrypt(block, key1, key2, sector);
             Array.Copy(block, 0, rawHdr, offset, 0x200);
@@ -109,6 +108,7 @@ public static class NcaCryptoService
     public static void UpdateCtr(byte[] ctr, ulong ofs)
     {
         ofs >>= 4;
+
         for (int j = 0; j < 8; j++)
         {
             ctr[0x10 - j - 1] = (byte)(ofs & 0xFF);
@@ -119,6 +119,7 @@ public static class NcaCryptoService
     public static void UpdateCtr(Span<byte> ctr, ulong ofs)
     {
         ofs >>= 4;
+
         for (int j = 0; j < 8; j++)
         {
             ctr[0x10 - j - 1] = (byte)(ofs & 0xFF);

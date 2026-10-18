@@ -11,8 +11,17 @@ public static class NcaStructHelper
         int size = Marshal.SizeOf<T>();
         byte[] buf = new byte[size];
         nint ptr = Marshal.AllocHGlobal(size);
-        try { Marshal.StructureToPtr(val, ptr, false); Marshal.Copy(ptr, buf, 0, size); }
-        finally { Marshal.FreeHGlobal(ptr); }
+
+        try 
+        {
+            Marshal.StructureToPtr(val, ptr, false); 
+            Marshal.Copy(ptr, buf, 0, size);
+        }
+        finally 
+        {
+            Marshal.FreeHGlobal(ptr); 
+        }
+
         s.Write(buf);
     }
 
@@ -21,23 +30,42 @@ public static class NcaStructHelper
         int size = Marshal.SizeOf<T>();
         byte[] buf = new byte[size];
         nint ptr = Marshal.AllocHGlobal(size);
-        try { Marshal.StructureToPtr(val, ptr, false); Marshal.Copy(ptr, buf, 0, size); }
-        finally { Marshal.FreeHGlobal(ptr); }
+
+        try 
+        { 
+            Marshal.StructureToPtr(val, ptr, false); 
+            Marshal.Copy(ptr, buf, 0, size);
+        }
+        finally 
+        { 
+            Marshal.FreeHGlobal(ptr);
+        }
+
         return buf;
     }
 
     public static void BytesToStruct<T>(byte[] buf, ref T val) where T : struct
     {
         nint ptr = Marshal.AllocHGlobal(buf.Length);
-        try { Marshal.Copy(buf, 0, ptr, buf.Length); val = Marshal.PtrToStructure<T>(ptr); }
-        finally { Marshal.FreeHGlobal(ptr); }
+
+        try 
+        { 
+            Marshal.Copy(buf, 0, ptr, buf.Length);
+            val = Marshal.PtrToStructure<T>(ptr); 
+        }
+        finally 
+        { 
+            Marshal.FreeHGlobal(ptr); 
+        }
     }
 
     public static byte[] GetHeaderMagicBytes(ref NcaHeader hdr)
     {
         byte[] raw = StructToBytes(ref hdr);
         byte[] result = new byte[0x200];
+
         Array.Copy(raw, 0x200, result, 0, 0x200);
+
         return result;
     }
 

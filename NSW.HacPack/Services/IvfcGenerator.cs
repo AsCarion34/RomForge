@@ -14,13 +14,13 @@ public static class IvfcGenerator
 
         long srcLength = inputStream.Length;
         byte[] buffer = ArrayPool<byte>.Shared.Rent(hashBlockSize);
-
         Span<byte> outputBatch = stackalloc byte[hashSize * batchCount];
         int batchIdx = 0;
 
         try
         {
             inputStream.Position = 0;
+
             long remaining = srcLength;
 
             while (remaining > 0)
@@ -29,11 +29,13 @@ public static class IvfcGenerator
                 int read = inputStream.Read(buffer, 0, toRead);
 
                 SHA256.HashData(buffer.AsSpan(0, read), outputBatch.Slice(batchIdx * hashSize, hashSize));
+
                 batchIdx++;
 
                 if (batchIdx == batchCount)
                 {
                     outputStream.Write(outputBatch);
+
                     batchIdx = 0;
                 }
 
@@ -41,10 +43,11 @@ public static class IvfcGenerator
             }
 
             if (batchIdx > 0)
-                outputStream.Write(outputBatch.Slice(0, batchIdx * hashSize));
+                outputStream.Write(outputBatch[..(batchIdx * hashSize)]);
 
             long currentPos = outputStream.Position;
             int paddingSize = (int)(hashBlockSize - (currentPos % hashBlockSize));
+
             if (paddingSize != hashBlockSize)
             {
                 Array.Clear(buffer, 0, paddingSize);
