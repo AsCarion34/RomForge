@@ -23,9 +23,18 @@ internal sealed class WiaSource : IRvzInputSource, IWiiPartitionSource
     private readonly long _headerLength;
     private readonly RvzGroupReader<Context> _groups;
     private readonly ConcurrentBag<Context> _contextPool = [];
-    private readonly ConcurrentDictionary<long, Lazy<RvzChunk>> _chunkCache = new();
-    private readonly ConcurrentQueue<long> _chunkCacheOrder = new();
+    private readonly ConcurrentDictionary<long, ChunkCacheEntry> _chunkCache = new();
+    private readonly ConcurrentQueue<ChunkCacheEntry> _chunkCacheOrder = new();
     private long _chunkCacheBytes;
+
+    private sealed class ChunkCacheEntry(long key)
+    {
+        public long Key { get; } = key;
+
+        public Lazy<RvzChunk> Chunk { get; set; } = null!;
+
+        public int Bytes { get; set; }
+    }
 
     private WiaSource(SafeFileHandle handle, RvzFile file)
     {
@@ -257,14 +266,19 @@ internal sealed class WiaSource : IRvzInputSource, IWiiPartitionSource
         }
         else
         {
-            if (!_chunkCache.TryGetValue(totalGroupIndex, out var lazy))
-            {
-                var newLazy = new Lazy<RvzChunk>(() => DecodeAndCache(context, totalGroupIndex, group, dataSize, exceptionLists, junkOffset), LazyThreadSafetyMode.ExecutionAndPublication);
+            var isCreator = false;
 
-                lazy = _chunkCache.GetOrAdd(totalGroupIndex, newLazy);
+            if (!_chunkCache.TryGetValue(totalGroupIndex, out var entry))
+            {
+                var created = new ChunkCacheEntry(totalGroupIndex)
+                {
+                    Chunk = new Lazy<RvzChunk>(() => DecodeForCache(context, group, dataSize, exceptionLists, junkOffset), LazyThreadSafetyMode.ExecutionAndPublication)
+                };
+                entry = _chunkCache.GetOrAdd(totalGroupIndex, created);
+                isCreator = ReferenceEquals(entry, created);
             }
 
-            result = lazy.Value;
+            result = isCreator ? ResolveCreatedEntry(entry) : ResolveEntry(entry);
         }
 
         context.LastChunkIndex = totalGroupIndex;
@@ -274,24 +288,45 @@ internal sealed class WiaSource : IRvzInputSource, IWiiPartitionSource
         return result;
     }
 
-    private RvzChunk DecodeAndCache(Context context, long totalGroupIndex, GroupEntry group, int dataSize, int exceptionLists, long junkOffset)
+    private RvzChunk DecodeForCache(Context context, GroupEntry group, int dataSize, int exceptionLists, long junkOffset)
     {
         var decoded = _groups.DecodeChunk(context, group, dataSize, exceptionLists, junkOffset);
-        var cached = new RvzChunk(decoded.Data.AsSpan(0, decoded.Length).ToArray(), decoded.Length, decoded.ExceptionLists);
 
-        _chunkCacheOrder.Enqueue(totalGroupIndex);
-        Interlocked.Add(ref _chunkCacheBytes, cached.Length);
+        return new RvzChunk(decoded.Data.AsSpan(0, decoded.Length).ToArray(), decoded.Length, decoded.ExceptionLists);
+    }
+
+    private RvzChunk ResolveEntry(ChunkCacheEntry entry)
+    {
+        try
+        {
+            return entry.Chunk.Value;
+        }
+        catch
+        {
+            _chunkCache.TryRemove(new KeyValuePair<long, ChunkCacheEntry>(entry.Key, entry));
+
+            throw;
+        }
+    }
+
+    private RvzChunk ResolveCreatedEntry(ChunkCacheEntry entry)
+    {
+        var chunk = ResolveEntry(entry);
+
+        entry.Bytes = chunk.Length;
+        Interlocked.Add(ref _chunkCacheBytes, entry.Bytes);
+        _chunkCacheOrder.Enqueue(entry);
         TrimChunkCache();
 
-        return cached;
+        return chunk;
     }
 
     private void TrimChunkCache()
     {
-        while (Interlocked.Read(ref _chunkCacheBytes) > ChunkCacheByteBudget && _chunkCacheOrder.TryDequeue(out var oldKey))
+        while (Interlocked.Read(ref _chunkCacheBytes) > ChunkCacheByteBudget && _chunkCacheOrder.TryDequeue(out var oldest))
         {
-            if (_chunkCache.TryRemove(oldKey, out var removed) && removed.IsValueCreated)
-                Interlocked.Add(ref _chunkCacheBytes, -removed.Value.Length);
+            _chunkCache.TryRemove(new KeyValuePair<long, ChunkCacheEntry>(oldest.Key, oldest));
+            Interlocked.Add(ref _chunkCacheBytes, -oldest.Bytes);
         }
     }
 

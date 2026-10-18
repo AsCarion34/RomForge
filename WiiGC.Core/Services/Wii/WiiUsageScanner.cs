@@ -134,7 +134,7 @@ internal static class WiiUsageScanner
                 dolSize = end;
         }
 
-        if (dolSize > ((long)fstOffset4 - dolOffset4) << 2)
+        if (fstOffset4 > dolOffset4 && dolSize > ((long)fstOffset4 - dolOffset4) << 2)
             throw new InvalidDataException("MAIN.DOL 크기가 올바르지 않습니다.");
 
         MarkPart(used, spec, dolOffset4, dolSize);

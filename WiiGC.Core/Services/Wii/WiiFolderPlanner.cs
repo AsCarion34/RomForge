@@ -1,5 +1,4 @@
-﻿using System.Text;
-using WiiGC.Core.Models;
+﻿using WiiGC.Core.Models;
 
 namespace WiiGC.Core.Services.Wii;
 
@@ -73,7 +72,7 @@ internal static class WiiFolderPlanner
 
             for (int i = 0; i < parts.Length - 1; i++)
             {
-                byte[] nameBytes = Encoding.UTF8.GetBytes(parts[i]);
+                byte[] nameBytes = WiiFstName.Encode(parts[i]);
                 var directory = parent.Children.FirstOrDefault(c => c.IsDirectory && c.NameBytes.AsSpan().SequenceEqual(nameBytes));
 
                 if (directory == null)
@@ -86,7 +85,7 @@ internal static class WiiFolderPlanner
                 parent = directory;
             }
 
-            var file = new WiiFstNode(Encoding.UTF8.GetBytes(parts[^1]), false);
+            var file = new WiiFstNode(WiiFstName.Encode(parts[^1]), false);
 
             parent.Children.Add(file);
 

@@ -1,6 +1,4 @@
-﻿using System.Text;
-
-namespace WiiGC.Core.Models;
+﻿namespace WiiGC.Core.Models;
 
 internal sealed class WiiFstNode(byte[] nameBytes, bool isDirectory)
 {
@@ -14,5 +12,5 @@ internal sealed class WiiFstNode(byte[] nameBytes, bool isDirectory)
 
     public long Size { get; set; }
 
-    public string Name => Encoding.UTF8.GetString(NameBytes);
+    public string Name => WiiFstName.Decode(NameBytes);
 }
