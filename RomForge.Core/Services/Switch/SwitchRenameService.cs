@@ -1,25 +1,9 @@
 ﻿using NSW.Utils;
-using System;
-using System.Collections.Generic;
+using RomForge.Core.Models.Switch;
 using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading;
 
 namespace RomForge.Core.Services.Switch;
-
-public enum SwitchRenameState
-{
-    Ready,
-    Unchanged,
-    MissingInfo,
-    EmptyName,
-    NameTooLong,
-    Duplicate,
-    TargetExists
-}
-
-public sealed record SwitchRenameSource(string FilePath, string? TitleName, string? TitleId, string? Version, bool HasMetadata);
 
 public sealed record SwitchRenamePlan(string SourcePath, string TargetPath, string OldName, string NewName, SwitchRenameState State);
 
@@ -27,23 +11,31 @@ public sealed record SwitchRenameResult(SwitchRenamePlan Plan, bool Success, str
 
 public static class SwitchRenameService
 {
-    public const string DefaultFormat = "{TitleName} [{TitleID}][v{Version}]";
+    public const string DefaultFormat = "{Name} [{TitleID}] {Tag} [v{DisplayVersion}] [v{Version}]";
 
     private const int MaxFileNameLength = 255;
 
-    private static readonly Regex TokenRegex = new(@"\{(TitleName|TitleID|Version)\}", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex TokenRegex = new(@"\{(Name|KTitleName|TitleName|TitleID|Tag|DisplayVersion|Version)\}", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-    public static string Format(string format, string? titleName, string? titleId, string? version)
+    private static readonly Regex SpacesRegex = new(@"\s{2,}", RegexOptions.Compiled);
+
+    public static string Format(string format, SwitchRenameSource source)
     {
         if (string.IsNullOrWhiteSpace(format))
             return string.Empty;
 
         string result = TokenRegex.Replace(format, m => m.Groups[1].Value.ToLowerInvariant() switch
         {
-            "titlename" => titleName ?? string.Empty,
-            "titleid" => (titleId ?? string.Empty).ToUpperInvariant(),
-            _ => NormalizeVersion(version)
+            "name" => source.Name ?? string.Empty,
+            "ktitlename" => source.KoreanTitleName ?? string.Empty,
+            "titlename" => source.TitleName ?? string.Empty,
+            "titleid" => (source.TitleId ?? string.Empty).ToUpperInvariant(),
+            "tag" => source.Tag ?? string.Empty,
+            "displayversion" => NspNameBuilder.NormalizeVersion(source.DisplayVersion ?? string.Empty),
+            _ => source.Version ?? string.Empty
         });
+
+        result = SpacesRegex.Replace(result, " ");
 
         return NspNameBuilder.SafeFileName(result).TrimEnd('.', ' ');
     }
@@ -66,7 +58,7 @@ public static class SwitchRenameService
                 continue;
             }
 
-            string baseName = Format(format, source.TitleName, source.TitleId, source.Version);
+            string baseName = Format(format, source);
 
             if (baseName.Length == 0)
             {
@@ -145,18 +137,5 @@ public static class SwitchRenameService
             if (!sameFile && fileExists(plan.TargetPath))
                 plans[i] = plan with { State = SwitchRenameState.TargetExists };
         }
-    }
-
-    private static string NormalizeVersion(string? version)
-    {
-        if (string.IsNullOrWhiteSpace(version))
-            return string.Empty;
-
-        version = version.Trim();
-
-        if (version.Length > 1 && (version[0] == 'v' || version[0] == 'V') && char.IsDigit(version[1]))
-            return version[1..];
-
-        return version;
     }
 }

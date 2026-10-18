@@ -1,7 +1,10 @@
 ﻿using Common;
 using Common.WPF.ViewModels;
+using NSW.Utils;
 using NSW.WPF.ViewModels;
 using RomForge.Core.Models;
+using RomForge.Core.Models.Patch;
+using RomForge.Core.Models.Switch;
 using RomForge.Core.Services;
 using RomForge.Core.Services.Switch;
 using System.Collections.ObjectModel;
@@ -15,11 +18,33 @@ public class RenameMainViewModel : ToolTabViewModel
     #region Fields & Properties
 
     private CancellationTokenSource? _cts;
-    private string _formatText = SwitchRenameService.DefaultFormat;
+    private string _formatText = SwitchRenamePresets.Default.Format!;
+    private NamingFormatPreset _selectedNamingPreset = SwitchRenamePresets.Default;
     private string _summary = string.Empty;
     private IReadOnlyList<RenamePreviewItem> _previewItems = [];
 
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
+
+    public static IReadOnlyList<NamingFormatPreset> NamingPresets => SwitchRenamePresets.All;
+
+    public NamingFormatPreset SelectedNamingPreset
+    {
+        get => _selectedNamingPreset;
+        set
+        {
+            if (value is null || value.IsSeparator || ReferenceEquals(_selectedNamingPreset, value))
+                return;
+
+            _selectedNamingPreset = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsFormatReadOnly));
+
+            if (!value.IsCustom)
+                FormatText = value.Format!;
+        }
+    }
+
+    public bool IsFormatReadOnly => !_selectedNamingPreset.IsCustom;
 
     public string FormatText
     {
@@ -150,11 +175,27 @@ public class RenameMainViewModel : ToolTabViewModel
 
     #region Private Methods
 
-    private List<SwitchRenamePlan> BuildPlans(IEnumerable<GameFile> gameFiles)
-    {
-        var sources = gameFiles.Select(f => new SwitchRenameSource(f.FilePath, f.TitleName, f.TitleID, f.Version, HasMetadata(f)));
+    private List<SwitchRenamePlan> BuildPlans(IEnumerable<GameFile> gameFiles) =>
+        SwitchRenameService.BuildPlans(gameFiles.Select(ToSource), FormatText);
 
-        return SwitchRenameService.BuildPlans(sources, FormatText);
+    private static SwitchRenameSource ToSource(GameFile file)
+    {
+        var naming = file.Naming;
+
+        string tag = NspNameBuilder.BuildTagPart(file.FileType.Contains('B'), file.FileType.Contains('U'), naming?.DlcCount ?? 0);
+
+        string name = naming is null ? string.Empty : NspNameBuilder.BuildNamePart(naming.KrTitle, naming.EnTitle);
+
+        return new SwitchRenameSource(
+            file.FilePath,
+            name,
+            naming?.KoreanTitle,
+            naming?.DefaultTitle,
+            file.TitleID,
+            tag,
+            naming?.DisplayVersion ?? file.Version,
+            naming?.TitleVersion.ToString(),
+            HasMetadata(file));
     }
 
     private static bool HasMetadata(GameFile file) =>
@@ -181,6 +222,7 @@ public class RenameMainViewModel : ToolTabViewModel
                 TitleID = old.TitleID,
                 Version = old.Version,
                 Icon = old.Icon,
+                Naming = old.Naming,
                 FileType = old.FileType,
                 ProgramIdOffsets = old.ProgramIdOffsets,
                 PatchPath = old.PatchPath,
@@ -191,8 +233,7 @@ public class RenameMainViewModel : ToolTabViewModel
         }
     }
 
-    public void Log(string msg, LogLevel level = LogLevel.Info, string titleId = "") =>
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
+    public void Log(string msg, LogLevel level = LogLevel.Info) => Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
 
     #endregion
 }

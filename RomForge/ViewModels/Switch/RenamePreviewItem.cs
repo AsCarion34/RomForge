@@ -1,4 +1,5 @@
-﻿using RomForge.Core.Services.Switch;
+﻿using RomForge.Core.Models.Switch;
+using RomForge.Core.Services.Switch;
 
 namespace RomForge.ViewModels.Switch;
 

@@ -206,6 +206,7 @@ public partial class FileManagerControl : UserControl
         if (info.IconData != null)
             vm.Icon = info.IconData.ToBitmapImage();
 
+        vm.Naming = info.Naming;
         vm.TitleID = info.TitleId;
         vm.Version = info.DisplayVersion;
         vm.FileType = info.Type;

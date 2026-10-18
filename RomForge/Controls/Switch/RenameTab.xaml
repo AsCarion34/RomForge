@@ -23,14 +23,48 @@
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="300"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="파일명 포맷:" Foreground="White" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <TextBox Grid.Column="1" x:Name="txtFormat" Text="{Binding FormatText, UpdateSourceTrigger=PropertyChanged}" TextChanged="TxtFormat_TextChanged" Background="#12FFFFFF" BorderBrush="#30FFFFFF" BorderThickness="1" Foreground="#DCDCDC" CaretBrush="White" FontSize="12" Height="30" VerticalContentAlignment="Center" Padding="8,0"/>
-                    <Button Grid.Column="2" Content="기본값" Style="{StaticResource GrayButton}" Height="30" Padding="12,0" Margin="8,0,0,0" Click="BtnResetFormat_Click"/>
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding NamingPresets}" SelectedItem="{Binding SelectedNamingPreset, Mode=TwoWay}" Height="30" FontSize="12" Margin="0,0,4,0">
+                        <ComboBox.ItemContainerStyle>
+                            <Style TargetType="ComboBoxItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsSeparator}" Value="True">
+                                        <Setter Property="IsEnabled" Value="False"/>
+                                        <Setter Property="Focusable" Value="False"/>
+                                        <Setter Property="Height" Value="9"/>
+                                        <Setter Property="Padding" Value="0"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ComboBox.ItemContainerStyle>
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <TextBlock Text="{Binding Name}"/>
+                                    <Border Height="1" Background="Gray" VerticalAlignment="Center" Margin="4,0" Visibility="Collapsed">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsSeparator}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBox Grid.Column="2" x:Name="txtFormat" Text="{Binding FormatText, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsFormatReadOnly, Mode=OneWay}" TextChanged="TxtFormat_TextChanged" ToolTip="{}{Name}: 한글 + 영어 제목 (병합 파일명과 동일)&#10;{KTitleName}: 한글 제목&#10;{TitleName}: 한글 → 영어 → 첫 번째 제목 순&#10;{TitleID}: 타이틀 ID&#10;{Tag}: 구성 (B+U+10D)&#10;{DisplayVersion}: 표시 버전 (1.0.0)&#10;{Version}: 버전 (65536)" Background="#12FFFFFF" BorderBrush="#30FFFFFF" BorderThickness="1" Foreground="#DCDCDC" CaretBrush="White" FontSize="12" Height="30" VerticalContentAlignment="Center" Padding="8,0"/>
                 </Grid>
-                <TextBlock Text="사용 가능한 항목: {TitleName}  {TitleID}  {Version}  (확장자는 자동으로 유지됩니다)" Foreground="Gray" FontSize="11" Margin="0,5,0,0"/>
+                <TextBlock Text="사용 가능한 항목: {Name}  {KTitleName}  {TitleName}  {TitleID}  {Tag}  {DisplayVersion}  {Version}  (확장자는 자동으로 유지됩니다)" Foreground="Gray" FontSize="11" Margin="0,5,0,0"/>
             </StackPanel>
         </Border>
 

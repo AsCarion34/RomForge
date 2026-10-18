@@ -1,4 +1,5 @@
 using Common.WPF.ViewModels;
+using NSW.Core.Models;
 using System.Windows.Media;
 
 namespace NSW.WPF.ViewModels;
@@ -46,6 +47,8 @@ public class GameFile(string filePath) : FileItemBase(filePath, "대기중")
     public override long FileSizeBytes => CustomSizeBytes;
 
     public IReadOnlyList<byte> ProgramIdOffsets { get; set; } = [];
+
+    public GameNamingInfo? Naming { get; set; }
 
     protected override void OnStatusChanged() => base.OnStatusChanged();
 

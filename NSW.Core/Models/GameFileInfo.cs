@@ -15,4 +15,6 @@ public class GameFileInfo
     public string Developer { get; set; } = string.Empty;
 
     public byte[]? IconData { get; set; }
+
+    public GameNamingInfo? Naming { get; set; }
 }

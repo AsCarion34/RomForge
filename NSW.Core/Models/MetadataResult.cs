@@ -12,5 +12,9 @@ public record MetadataResult(
 
     public byte[]? IconData { get; init; }
 
+    public string KoreanTitle { get; init; } = string.Empty;
+
+    public string DefaultTitle { get; init; } = string.Empty;
+
     public long Size { get; init; }
 }

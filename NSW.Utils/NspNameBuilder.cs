@@ -5,8 +5,8 @@ namespace NSW.Utils;
 public static class NspNameBuilder
 {
     private static readonly char[] _invalidChars = [.. Path.GetInvalidFileNameChars()
-    .Concat([':', '*', '?', '"', '<', '>', '|', '\\', '/'])
-    .Distinct()];
+        .Concat([':', '*', '?', '"', '<', '>', '|', '\\', '/'])
+        .Distinct()];
 
     public static string FileNameBuild(string suffix, string krName, string enName, string titleId, string displayVersion, uint titleVersion, int dlcCount, NswContainerFormat format = NswContainerFormat.Nsp)
     {
@@ -85,7 +85,7 @@ public static class NspNameBuilder
         return ComposeBaseName(namePart, infoPart);
     }
 
-    private static string BuildNamePart(string krName, string enName)
+    public static string BuildNamePart(string krName, string enName)
     {
         krName = SafeFileName(krName);
         enName = SafeFileName(enName);
@@ -93,12 +93,10 @@ public static class NspNameBuilder
         if (string.IsNullOrWhiteSpace(krName))
             return enName.Trim();
 
-        return string.IsNullOrWhiteSpace(enName) || string.Equals(krName, enName, StringComparison.OrdinalIgnoreCase)
-            ? krName.Trim()
-            : $"{krName} {enName}".Trim();
+        return string.IsNullOrWhiteSpace(enName) || string.Equals(krName, enName, StringComparison.OrdinalIgnoreCase) ? krName.Trim() : $"{krName} {enName}".Trim();
     }
 
-    private static string BuildTagPart(bool hasBase, bool hasUpdate, int dlcCount)
+    public static string BuildTagPart(bool hasBase, bool hasUpdate, int dlcCount)
     {
         var tags = new List<string>();
 
@@ -114,21 +112,16 @@ public static class NspNameBuilder
         return tags.Count > 0 ? $"({string.Join("+", tags)})" : string.Empty;
     }
 
-    private static string ComposeBaseName(string namePart, string infoPart)
-        => Regex.Replace($"{namePart} {infoPart}", @"\s+", " ").Trim();
+    private static string ComposeBaseName(string namePart, string infoPart) => Regex.Replace($"{namePart} {infoPart}", @"\s+", " ").Trim();
 
-    private static string BuildFinalSuffix(string suffix, NswContainerFormat format)
+    public  static string BuildFinalSuffix(string suffix, NswContainerFormat format)
     {
         string ext = GetExtension(format);
 
         return HasKnownExtension(suffix) ? suffix : $"{suffix}.{ext}";
     }
 
-    private static bool HasKnownExtension(string suffix)
-        => suffix.EndsWith(".nsp", StringComparison.OrdinalIgnoreCase)
-        || suffix.EndsWith(".nsz", StringComparison.OrdinalIgnoreCase)
-        || suffix.EndsWith(".xci", StringComparison.OrdinalIgnoreCase)
-        || suffix.EndsWith(".xcz", StringComparison.OrdinalIgnoreCase);
+    private static bool HasKnownExtension(string suffix) => suffix.EndsWith(".nsp", StringComparison.OrdinalIgnoreCase) || suffix.EndsWith(".nsz", StringComparison.OrdinalIgnoreCase) || suffix.EndsWith(".xci", StringComparison.OrdinalIgnoreCase) || suffix.EndsWith(".xcz", StringComparison.OrdinalIgnoreCase);
 
     private static string GetExtension(NswContainerFormat format) => format switch
     {
@@ -139,7 +132,7 @@ public static class NspNameBuilder
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, null)
     };
 
-    private static string NormalizeVersion(string version)
+    public static string NormalizeVersion(string version)
     {
         if (string.IsNullOrWhiteSpace(version))
             return "1.0.0";
