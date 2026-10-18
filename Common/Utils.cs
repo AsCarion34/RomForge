@@ -78,6 +78,7 @@ public static class Utils
         try
         {
             int read;
+
             while ((read = await src.ReadAsync(buf.AsMemory(0, bufferSize), ct)) > 0)
             {
                 await dst.WriteAsync(buf.AsMemory(0, read), ct);
@@ -99,10 +100,12 @@ public static class Utils
         try
         {
             int read;
+
             while (remaining > 0 && (read = await src.ReadAsync(buf.AsMemory(0, (int)Math.Min(bufferSize, remaining)), ct)) > 0)
             {
                 await dst.WriteAsync(buf.AsMemory(0, read), ct);
                 onRead?.Invoke(read);
+
                 remaining -= read;
             }
         }

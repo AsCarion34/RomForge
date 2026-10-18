@@ -3,7 +3,10 @@
 public enum LogLevel 
 { 
     Info,
+
     Highlight,
+
     Ok,
+
     Error
 }

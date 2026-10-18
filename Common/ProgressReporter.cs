@@ -17,6 +17,7 @@ public class ProgressReporter(string gameTitle, string gameId, long totalEstimat
         return (cur, total) =>
         {
             bool force = cur >= total;
+
             Report(cur, total, force);
         };
     }
@@ -24,6 +25,7 @@ public class ProgressReporter(string gameTitle, string gameId, long totalEstimat
     public void ReportPercent(double percent)
     {
         long current = (long)(percent * totalEstimated);
+
         Report(current, totalEstimated, current >= totalEstimated);
     }
 
@@ -40,9 +42,7 @@ public class ProgressReporter(string gameTitle, string gameId, long totalEstimat
     public void ForceReport()
     {
         lock (_lock)
-        {
             Report(_totalWritten, totalEstimated, force: true);
-        }
     }
 
     private void Report(long currentWritten, long totalSize, bool force)
@@ -84,6 +84,7 @@ public class ProgressReporter(string gameTitle, string gameId, long totalEstimat
             pct = 100;
 
         var r = Utils.CalculateProgress(currentWritten, totalSize, Label);
+
         progress?.Report(new ProgressInfo(pct, r.label, gameId, $"{mibPerSec:F1} MiB/s", $"{elapsed:mm\\:ss} / {totalEta:mm\\:ss}"));
         _reportSw.Restart();
     }
