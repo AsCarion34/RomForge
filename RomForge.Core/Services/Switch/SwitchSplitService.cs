@@ -12,7 +12,7 @@ using LibHac.Tools.FsSystem.NcaUtils;
 using LibHac.Tools.Ncm;
 using NSW.Core;
 using NSW.Core.Models;
-using NSW.Utils;
+using NSW.Core.Utils;
 using System.IO;
 using Path = System.IO.Path;
 using Res = NSW.Core.Properties.Resources;

@@ -11,7 +11,7 @@ using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.NcaUtils;
 using NSW.Core;
 using NSW.Core.Models;
-using NSW.Utils;
+using NSW.Core.Utils;
 using RomForge.Core.Models.Switch;
 using System.IO;
 using Path = System.IO.Path;

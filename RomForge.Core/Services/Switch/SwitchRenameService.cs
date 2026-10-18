@@ -1,4 +1,4 @@
-﻿using NSW.Utils;
+﻿using NSW.Core.Utils;
 using RomForge.Core.Models.Switch;
 using System.IO;
 using System.Text.RegularExpressions;

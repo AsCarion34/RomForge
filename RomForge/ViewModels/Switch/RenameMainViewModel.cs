@@ -2,7 +2,7 @@
 using Common.WPF.ViewModels;
 using NSW.Core;
 using NSW.Core.Models;
-using NSW.Utils;
+using NSW.Core.Utils;
 using NSW.WPF.Services;
 using NSW.WPF.ViewModels;
 using RomForge.Core.Models;

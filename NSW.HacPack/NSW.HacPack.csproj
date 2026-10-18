@@ -31,7 +31,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LibHac\LibHac.csproj" />
-    <ProjectReference Include="..\NSW.Utils\NSW.Utils.csproj" />
   </ItemGroup>
 
 </Project>

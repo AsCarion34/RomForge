@@ -1,5 +1,5 @@
 using Common;
-using NSW.Utils;
+using NSW.Core.Utils;
 using Patch.Core;
 using Patch.Core.Services;
 using RomForge.Core.Models.WiiU;

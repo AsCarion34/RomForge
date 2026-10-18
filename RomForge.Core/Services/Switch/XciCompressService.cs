@@ -9,7 +9,7 @@ using LibHac.Tools.Fs;
 using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.NcaUtils;
 using NSW.Core;
-using NSW.Utils;
+using NSW.Core.Utils;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;

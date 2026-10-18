@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 
-namespace NSW.Utils;
+namespace NSW.Core.Utils;
 
 public static class NspNameBuilder
 {

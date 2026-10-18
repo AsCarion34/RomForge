@@ -1,4 +1,4 @@
-﻿namespace NSW.Utils;
+﻿namespace NSW.Core.Utils;
 
 public enum NswContainerFormat
 {

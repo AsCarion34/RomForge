@@ -4,10 +4,10 @@ using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.NcaUtils;
 using NSW.Core;
 using NSW.Core.Enums;
+using NSW.Core.Utils;
 using NSW.HacPack.Enums;
 using NSW.HacPack.Services;
 using NSW.M1.Core.Models;
-using NSW.Utils;
 using System.Diagnostics;
 using Path = System.IO.Path;
 

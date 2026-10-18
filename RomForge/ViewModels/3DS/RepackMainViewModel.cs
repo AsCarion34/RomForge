@@ -2,7 +2,7 @@
 using Common;
 using Common.WPF.ViewModels;
 using NSW.Core.Enums;
-using NSW.Utils;
+using NSW.Core.Utils;
 using NSW.WPF.Services;
 using NSW.WPF.UI;
 using RomForge.Core;

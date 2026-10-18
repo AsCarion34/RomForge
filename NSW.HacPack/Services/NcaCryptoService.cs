@@ -2,7 +2,6 @@
 using NSW.HacPack.Cryptography.Core;
 using NSW.HacPack.Enums;
 using NSW.HacPack.Models;
-using NSW.Utils;
 using System.IO.MemoryMappedFiles;
 
 namespace NSW.HacPack.Services;

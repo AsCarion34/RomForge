@@ -3,7 +3,7 @@ using _3DS.Core.Interfaces;
 using _3DS.Core.Models;
 using _3DS.Core.Services;
 using Common;
-using NSW.Utils;
+using NSW.Core.Utils;
 using Patch.Core.Services;
 using RomForge.Core.Models._3DS;
 using System.IO;
