@@ -2,7 +2,7 @@
 using Patch.Core.Services;
 using static LibHac.Ns.ApplicationControlProperty;
 
-namespace NSW.M1.Core.Models;
+namespace NSW.Core.Models;
 
 public sealed record BuildRequest(string BaseFilePath, string UpdateFilePath, IReadOnlyList<string> DlcFilePaths, string PatchDir, string OutputDir)
 {

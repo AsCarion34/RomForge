@@ -6,11 +6,10 @@ using LibHac.FsSystem;
 using LibHac.Tools.Fs;
 using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.NcaUtils;
-using NSW.Core;
-using NSW.M1.Core.Models;
+using NSW.Core.Models;
 using Path = System.IO.Path;
 
-namespace NSW.M1.Core.Services;
+namespace NSW.Core.Services;
 
 public abstract class NspUnpackerBase(KeySet keySet)
 {
@@ -60,6 +59,7 @@ public abstract class NspUnpackerBase(KeySet keySet)
             var progCtx = CreateProgressContext(uniquePaths, ncas);
 
             progCtx.Reporter = new ProgressReporter(string.Empty, string.Empty, progCtx.TotalSize, progress);
+
             var result = BuildBaseResult(ncas);
             var allOffsets = ncas.BaseProgs.Keys
                 .Union(ncas.UpdateProgs.Keys)
@@ -158,10 +158,8 @@ public abstract class NspUnpackerBase(KeySet keySet)
             return false;
 
         for (int i = 0; i < 4; i++)
-        {
             if (nca.SectionExists(i) && nca.GetFsHeader(i).ExistsCompressionLayer())
                 return true;
-        }
 
         return false;
     }
@@ -198,10 +196,8 @@ public abstract class NspUnpackerBase(KeySet keySet)
         void SumFs(IFileSystem fs)
         {
             foreach (var entry in fs.EnumerateEntries("/", "*", SearchOptions.RecurseSubdirectories))
-            {
                 if (entry.Type == DirectoryEntryType.File && ShouldExtract(entry.FullPath))
                     total += entry.Size;
-            }
         }
 
         void SumControlFsByPath(Nca? baseControl, Nca? updateControl)
@@ -211,10 +207,8 @@ public abstract class NspUnpackerBase(KeySet keySet)
             void Collect(IFileSystem fs)
             {
                 foreach (var entry in fs.EnumerateEntries("/", "*", SearchOptions.RecurseSubdirectories))
-                {
                     if (entry.Type == DirectoryEntryType.File && ShouldExtract(entry.FullPath))
                         sizeByPath[entry.FullPath] = entry.Size;
-                }
             }
 
             NcaExtractor.TryWithFs(baseControl, null, NcaSectionType.Data, Collect);

@@ -1,8 +1,8 @@
 ﻿using Common;
 using LibHac.Common.Keys;
-using NSW.M1.Core.Models;
+using NSW.Core.Models;
 
-namespace NSW.M1.Core.Services;
+namespace NSW.Core.Services;
 
 public class NspUnpacker(KeySet keySet) : NspUnpackerBase(keySet)
 {

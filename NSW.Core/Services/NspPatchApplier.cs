@@ -1,8 +1,8 @@
 ﻿using Common;
-using NSW.M1.Core.Models;
+using NSW.Core.Models;
 using Patch.Core.Services;
 
-namespace NSW.M1.Core.Services;
+namespace NSW.Core.Services;
 
 public static class NspPatchApplier
 {
@@ -34,6 +34,7 @@ public static class NspPatchApplier
             {
                 progress.ReportStatus("한글패치 ExeFS 병합 중...", -1);
                 log($"한글패치 ExeFS 병합: {patchExefs}", LogLevel.Info);
+
                 matchedCount += NspPatchMergeHelper.MergeDirectory(patchExefs, exefsDir, log);
             }
 
@@ -41,6 +42,7 @@ public static class NspPatchApplier
             {
                 progress.ReportStatus("한글패치 RomFS 병합 중...", -1);
                 log($"한글패치 RomFS 병합: {patchRomfs}", LogLevel.Info);
+
                 matchedCount += NspPatchMergeHelper.MergeDirectory(patchRomfs, romfsDir, log);
             }
 
@@ -58,7 +60,6 @@ public static class NspPatchApplier
     private static string GetProgramId(string exefsDir, string romfsDir)
     {
         string dir = exefsDir.Length > 0 ? exefsDir : romfsDir;
-
         return dir.Length == 0 ? string.Empty : Path.GetFileName(Path.GetDirectoryName(dir)) ?? string.Empty;
     }
 
@@ -114,6 +115,7 @@ public static class NspPatchApplier
             {
                 progress.ReportStatus($"DLC 패치 RomFS 병합 중... ({titleIdStr})", -1);
                 log($"DLC 패치 RomFS 병합: {patchRomfs}", LogLevel.Info);
+
                 matchedCount += NspPatchMergeHelper.MergeDirectory(patchRomfs, romfsDir, log);
             }
 

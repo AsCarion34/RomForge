@@ -7,12 +7,12 @@ using LibHac.NSZ;
 using LibHac.Tools.Fs;
 using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.NcaUtils;
-using NSW.M1.Core.Models;
+using NSW.Core.Models;
 using System.Diagnostics;
 using ContentType = LibHac.Ncm.ContentType;
 using Path = System.IO.Path;
 
-namespace NSW.M1.Core.Services;
+namespace NSW.Core.Services;
 
 public sealed record CollectedNcas(
     Dictionary<byte, Nca> BaseProgs, Dictionary<byte, Nca> UpdateProgs, Dictionary<byte, Nca> BaseControls, Dictionary<byte, Nca> UpdateControls, Dictionary<byte, Nca> BaseHtmls,
@@ -43,7 +43,6 @@ public sealed class NcaCollector(KeySet keySet)
         var processedIds = new HashSet<string>();
         var allNcas = new Dictionary<string, Nca>();
         var cnmtList = new List<LibHac.Tools.Ncm.Cnmt>();
-
         bool filtering = req.DlcTitleIdsByFile != null;
 
         for (int i = 0; i < partitions.Count; i++)
@@ -163,7 +162,6 @@ public sealed class NcaCollector(KeySet keySet)
         var updateHtmlReverse = updateHtmlIds.ToDictionary(kv => kv.Value, kv => kv.Key);
         var baseLegalReverse = baseLegalIds.ToDictionary(kv => kv.Value, kv => kv.Key);
         var updateLegalReverse = updateLegalIds.ToDictionary(kv => kv.Value, kv => kv.Key);
-
         var baseProgs = new Dictionary<byte, Nca>();
         var updateProgs = new Dictionary<byte, Nca>();
         var baseControls = new Dictionary<byte, Nca>();

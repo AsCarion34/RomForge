@@ -78,7 +78,7 @@ public class NspMergeService : BaseSwitchService
 
             var allowedNcaIds = BuildAllowedNcaIds(group, latestPatch);
 
-            var req = new BuildRequest(group.BaseMetas.FirstOrDefault()?.SourcePath ?? string.Empty, latestPatch?.SourcePath ?? string.Empty, [.. group.DlcMetas.Select(m => m.SourcePath).Distinct(StringComparer.OrdinalIgnoreCase)], outputDir)
+            var req = new Models.Switch.BuildRequest(group.BaseMetas.FirstOrDefault()?.SourcePath ?? string.Empty, latestPatch?.SourcePath ?? string.Empty, [.. group.DlcMetas.Select(m => m.SourcePath).Distinct(StringComparer.OrdinalIgnoreCase)], outputDir)
             {
                 UseCompression = useCompression,
                 CompressionLevel = compressionLevel,
@@ -153,7 +153,7 @@ public class NspMergeService : BaseSwitchService
         return results;
     }
 
-    public static async Task<string> RunMergeProcess(BuildRequest req, KeySet keySet, List<MetadataResult> cachedMeta, bool isValidationEnabled, bool forceKeyGen0, int index, int groupCount, bool hasBase, bool hasUpdate, IProgress<ProgressInfo> progress, Action<string, LogLevel, string> log, CancellationToken ct = default)
+    public static async Task<string> RunMergeProcess(Models.Switch.BuildRequest req, KeySet keySet, List<MetadataResult> cachedMeta, bool isValidationEnabled, bool forceKeyGen0, int index, int groupCount, bool hasBase, bool hasUpdate, IProgress<ProgressInfo> progress, Action<string, LogLevel, string> log, CancellationToken ct = default)
     {
         var disposables = new List<IDisposable>();
         var converters = new Dictionary<string, NcaToNczConverter>(StringComparer.OrdinalIgnoreCase);

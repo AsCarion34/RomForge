@@ -1,11 +1,11 @@
 ﻿using Common;
+using NSW.Core.Models;
 using NSW.HacPack.Enums;
 using NSW.HacPack.Services;
-using NSW.M1.Core.Models;
 using System.Diagnostics;
 using Path = System.IO.Path;
 
-namespace NSW.M1.Core.Services;
+namespace NSW.Core.Services;
 
 public static class DlcNspBuilder
 {

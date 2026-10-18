@@ -66,7 +66,6 @@ public static class MetadataReader
         {
             using var storage = new LocalStorage(path, FileAccess.Read);
             using var fs = storage.OpenFileSystem(keySet, path);
-
             var foundTypes = new HashSet<string>();
             var entries = fs.EnumerateEntries("/", "*.nca")
                 .Concat(fs.EnumerateEntries("/", "*.ncz"))
@@ -92,7 +91,10 @@ public static class MetadataReader
 
             return foundTypes.Count == 0 ? "?" : string.Join("+", sourceArray.Where(foundTypes.Contains));
         }
-        catch { return "?"; }
+        catch 
+        { 
+            return "?"; 
+        }
     }
 
     public static GameFileInfo GetGameFileInfo(KeySet keySet, string path)
@@ -156,6 +158,7 @@ public static class MetadataReader
                         var control = new ApplicationControlProperty();
 
                         nacpFile.Get.Read(out _, 0, SpanHelpers.AsByteSpan(ref control)).ThrowIfFailure();
+
                         info.DisplayVersion = control.DisplayVersionString.ToString().Trim('\0').Trim();
 
                         var (titleName, developer, language) = control.GetTitleByLanguage(Current);
@@ -232,7 +235,9 @@ public static class MetadataReader
                         try
                         {
                             using var targetFile = allFiles[matchedKey].AsFile(OpenMode.Read);
+
                             targetFile.GetSize(out long size);
+
                             calculatedSize += size;
                         }
                         catch { }
@@ -242,6 +247,7 @@ public static class MetadataReader
                 try
                 {
                     ncaFile.GetSize(out long size);
+
                     calculatedSize += size;
                 }
                 catch { }
@@ -258,8 +264,7 @@ public static class MetadataReader
                 if (ctrlRecord != null)
                 {
                     string ctrlId = BitConverter.ToString(ctrlRecord.NcaId).Replace("-", string.Empty).ToLowerInvariant();
-                    string? ctrlName = allFiles.Keys.FirstOrDefault(k =>
-                        k.StartsWith(ctrlId, StringComparison.OrdinalIgnoreCase));
+                    string? ctrlName = allFiles.Keys.FirstOrDefault(k => k.StartsWith(ctrlId, StringComparison.OrdinalIgnoreCase));
 
                     if (ctrlName != null)
                     {
@@ -415,9 +420,7 @@ public static class MetadataReader
         using var fs = storage.OpenFileSystem(keySet, path);
 
         foreach (var entry in fs.EnumerateEntries("/", "*.nc*")
-            .Where(e => e.Type == DirectoryEntryType.File &&
-                       (e.Name.EndsWith(".nca", StringComparison.OrdinalIgnoreCase) ||
-                        e.Name.EndsWith(".ncz", StringComparison.OrdinalIgnoreCase))))
+            .Where(e => e.Type == DirectoryEntryType.File && (e.Name.EndsWith(".nca", StringComparison.OrdinalIgnoreCase) || e.Name.EndsWith(".ncz", StringComparison.OrdinalIgnoreCase))))
         {
             try
             {

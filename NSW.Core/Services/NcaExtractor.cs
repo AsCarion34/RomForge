@@ -5,12 +5,11 @@ using LibHac.Fs;
 using LibHac.Fs.Fsa;
 using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.NcaUtils;
-using NSW.Core;
-using NSW.M1.Core.Models;
+using NSW.Core.Models;
 using System.Diagnostics;
 using Path = System.IO.Path;
 
-namespace NSW.M1.Core.Services;
+namespace NSW.Core.Services;
 
 public sealed class NcaExtractor(KeySet keySet, Func<string, bool> shouldExtract)
 {

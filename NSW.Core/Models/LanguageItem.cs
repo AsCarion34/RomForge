@@ -1,6 +1,6 @@
 ﻿using static LibHac.Ns.ApplicationControlProperty;
 
-namespace NSW.M1.Core.Models;
+namespace NSW.Core.Models;
 
 public class LanguageItem
 {

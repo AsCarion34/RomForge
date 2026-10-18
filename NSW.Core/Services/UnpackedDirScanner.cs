@@ -1,11 +1,7 @@
-﻿using LibHac.Tools.FsSystem;
-using LibHac.Tools.FsSystem.NcaUtils;
-using NSW.Core;
-using NSW.M1.Core.Models;
+﻿using NSW.Core.Models;
 using Path = System.IO.Path;
-using Res = NSW.Core.Properties.Resources;
 
-namespace NSW.M1.Core.Services;
+namespace NSW.Core.Services;
 
 public static class UnpackedDirScanner
 {
@@ -22,11 +18,9 @@ public static class UnpackedDirScanner
             throw new Exception("언팩된 프로그램 폴더(titleId)를 찾을 수 없습니다.");
 
         ulong baseTitleId = programDirs[0].Id;
-
         string nacpPath = Path.Combine(programDirs[0].Dir, "control", "control.nacp");
         string controlFile = Directory.GetFiles(unpackedDir, "control*.nca").FirstOrDefault() ?? string.Empty;
         var (krTitle, enTitle, displayVersion, titleId) = LibHacHelper.ReadNacpInfo(nacpPath);
-
         byte keyGeneration = 1;
         uint sdkVersion = 0;
         uint gameVersion = 0;
@@ -49,6 +43,7 @@ public static class UnpackedDirScanner
             foreach (var dlcDir in Directory.GetDirectories(dlcBaseDir))
             {
                 string titleIdStr = Path.GetFileName(dlcDir);
+
                 if (ulong.TryParse(titleIdStr, System.Globalization.NumberStyles.HexNumber, null, out ulong dlcTitleId))
                 {
                     dlcs.Add(new DlcUnpackInfo
@@ -71,7 +66,6 @@ public static class UnpackedDirScanner
         foreach (var pd in programDirs)
         {
             byte idOffset = (byte)(pd.Id - baseTitleId);
-
             string exefs = Path.Combine(pd.Dir, "exefs");
 
             if (Directory.Exists(exefs))

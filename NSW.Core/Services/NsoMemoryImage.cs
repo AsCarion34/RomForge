@@ -1,4 +1,4 @@
-﻿namespace NSW.M1.Core.Services;
+﻿namespace NSW.Core.Services;
 
 public static class NsoMemoryImage
 {

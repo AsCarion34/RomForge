@@ -2,7 +2,7 @@
 using LibHac.Util;
 using System.Security.Cryptography;
 
-namespace NSW.M1.Core.Services;
+namespace NSW.Core.Services;
 
 public static class NsoTool
 {
@@ -44,12 +44,7 @@ public static class NsoTool
 
     private record struct SegInfo(int FileOffField, int MemOffField, int SizeField, int FileSizeField, int CompBit, int HashBit, int HashOffset);
 
-    private static readonly SegInfo[] Segs =
-    [
-        new(0x10, 0x14, 0x18, 0x60, 0, 3, 0xA0),
-        new(0x20, 0x24, 0x28, 0x64, 1, 4, 0xC0),
-        new(0x30, 0x34, 0x38, 0x68, 2, 5, 0xE0),
-    ];
+    private static readonly SegInfo[] Segs = [ new(0x10, 0x14, 0x18, 0x60, 0, 3, 0xA0), new(0x20, 0x24, 0x28, 0x64, 1, 4, 0xC0), new(0x30, 0x34, 0x38, 0x68, 2, 5, 0xE0), ];
 
     public static bool IsNso(byte[] data) => data.Length >= 4 && data[0] == 'N' && data[1] == 'S' && data[2] == 'O' && data[3] == '0';
 
@@ -58,7 +53,6 @@ public static class NsoTool
     public static bool IsCompressed(byte[] nso)
     {
         uint flags = BitConverter.ToUInt32(nso, 0x0C);
-
         return Segs.Any(s => (flags & (1u << s.CompBit)) != 0);
     }
 

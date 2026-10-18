@@ -3,7 +3,7 @@ using Patch.Core.Formats;
 using Patch.Core.Services;
 using Path = System.IO.Path;
 
-namespace NSW.M1.Core.Services;
+namespace NSW.Core.Services;
 
 public static class NspXdeltaPatcher
 {
@@ -21,13 +21,9 @@ public static class NspXdeltaPatcher
     private static IEnumerable<string> FindTargetsByContains(ILookup<string, string> index, string targetFileName)
     {
         foreach (var group in index)
-        {
             if (targetFileName.Contains(group.Key, StringComparison.OrdinalIgnoreCase))
-            {
                 foreach (var f in group)
                     yield return f;
-            }
-        }
     }
 
     private static int ApplyXdeltaCandidates(List<XdeltaCandidate> candidates, string? exefsDir, string romfsDir, string displayRoot, bool isDlc, IProgress<ProgressInfo> progress, Action<string, LogLevel> log)
@@ -114,11 +110,7 @@ public static class NspXdeltaPatcher
         log($"발견된 DLC xdelta 패치 수: {xdeltaFiles.Count}개", LogLevel.Info);
 
         var candidates = xdeltaFiles
-            .Select(xdeltaPath => new XdeltaCandidate(
-                Path.GetFileNameWithoutExtension(xdeltaPath),
-                null,
-                PatchFileRef.FromDisk(xdeltaPath),
-                Path.GetFileName(xdeltaPath)))
+            .Select(xdeltaPath => new XdeltaCandidate(Path.GetFileNameWithoutExtension(xdeltaPath), null, PatchFileRef.FromDisk(xdeltaPath), Path.GetFileName(xdeltaPath)))
             .ToList();
 
         return ApplyXdeltaCandidates(candidates, null, romfsDir, romfsDir, true, progress, log);

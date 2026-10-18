@@ -3,8 +3,7 @@ using Common.WPF.ViewModels;
 using LibHac.Ns;
 using NSW.Core;
 using NSW.Core.Enums;
-using NSW.M1.Core.Models;
-using NSW.M1.Core.Services;
+using NSW.Core.Services;
 using NSW.WPF.Services;
 using RomForge.Core.Models;
 using RomForge.Core.Services.Switch;
@@ -346,7 +345,7 @@ namespace RomForge.ViewModels.Switch
 
                 Log("원본 NSP 언팩 중...");
 
-                var unpackReq = new BuildRequest(NspPath, string.Empty, [], string.Empty, WorkPath);
+                var unpackReq = new NSW.Core.Models.BuildRequest(NspPath, string.Empty, [], string.Empty, WorkPath);
 
                 await NspBuildService.Run(unpackReq, BuildMode.UnpackOnly, progress, (msg, lvl) => Log(msg), token);
 
@@ -432,7 +431,7 @@ namespace RomForge.ViewModels.Switch
 
                 Log("리팩 중...");
 
-                var rebuildReq = new BuildRequest(string.Empty, string.Empty, [], string.Empty, WorkPath)
+                var rebuildReq = new NSW.Core.Models.BuildRequest(string.Empty, string.Empty, [], string.Empty, WorkPath)
                 {
                     UserMetadata = metadata,
                     Language = ApplicationControlProperty.Language.None,

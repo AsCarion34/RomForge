@@ -177,7 +177,7 @@ public abstract class BaseSwitchService
         return groups;
     }
 
-    protected static (BuildRequest Request, bool HasBase, bool HasUpdate) BuildSingleRequest(List<MetadataResult> allMeta, IReadOnlyList<string> inputPaths, string outputDir, bool useCompression, int compressionLevel, bool useBlockMode)
+    protected static (Models.Switch.BuildRequest Request, bool HasBase, bool HasUpdate) BuildSingleRequest(List<MetadataResult> allMeta, IReadOnlyList<string> inputPaths, string outputDir, bool useCompression, int compressionLevel, bool useBlockMode)
     {
         var bases = allMeta.Where(m => m.Type == ContentMetaType.Application).ToList();
         var patches = allMeta.Where(m => m.Type == ContentMetaType.Patch).ToList();
@@ -218,7 +218,7 @@ public abstract class BaseSwitchService
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        var req = new BuildRequest(string.Empty, string.Empty, [], outputDir)
+        var req = new Models.Switch.BuildRequest(string.Empty, string.Empty, [], outputDir)
         {
             UseCompression = useCompression,
             CompressionLevel = compressionLevel,
@@ -259,7 +259,7 @@ public abstract class BaseSwitchService
         foreach (var id in meta.ContentNcaIds) set.Add(id);
     }
 
-    protected static List<string> GetAllPaths(BuildRequest req)
+    protected static List<string> GetAllPaths(Models.Switch.BuildRequest req)
     {
         if (req.AllSourcePaths is { Count: > 0 })
             return [.. req.AllSourcePaths.Where(p => !string.IsNullOrEmpty(p) && File.Exists(p))];

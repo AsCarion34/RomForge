@@ -3,7 +3,7 @@ using Patch.Core;
 using Patch.Core.Services;
 using Path = System.IO.Path;
 
-namespace NSW.M1.Core.Services;
+namespace NSW.Core.Services;
 
 public static class NspExefsPatchApplier
 {
@@ -16,7 +16,9 @@ public static class NspExefsPatchApplier
             var entry = archive.FindEntry(key)!;
             using var src = entry.Open();
             using var ms = new MemoryStream();
+
             src.CopyTo(ms);
+
             return ms.ToArray();
         }
 
@@ -36,6 +38,7 @@ public static class NspExefsPatchApplier
             foreach (var f in Directory.EnumerateFiles(patchPath, "*.ips", SearchOption.AllDirectories))
             {
                 string path = f;
+
                 items.Add((Path.GetFileNameWithoutExtension(path).TrimEnd('0'), () => File.ReadAllBytes(path)));
             }
 
@@ -104,7 +107,6 @@ public static class NspExefsPatchApplier
         }
 
         int count = 0;
-
         var processedBuildIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var (buildId, readIps) in ipsItems)

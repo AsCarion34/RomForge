@@ -2,23 +2,21 @@
 using LibHac.Common.Keys;
 using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.NcaUtils;
-using NSW.Core;
 using NSW.Core.Enums;
+using NSW.Core.Models;
 using NSW.Core.Utils;
 using NSW.HacPack.Enums;
 using NSW.HacPack.Services;
-using NSW.M1.Core.Models;
 using System.Diagnostics;
 using Path = System.IO.Path;
 
-namespace NSW.M1.Core.Services;
+namespace NSW.Core.Services;
 
 public static class NspBuildService
 {
     public static async Task<string> Run(BuildRequest req, BuildMode mode, IProgress<ProgressInfo> progress, Action<string, LogLevel> log, CancellationToken ct = default)
     {
         var keySet = KeySetProvider.Instance.KeySet;
-
         return await RunProcess(req, mode, keySet, progress, log, ct);
     }
 
@@ -50,7 +48,6 @@ public static class NspBuildService
             if (mode == BuildMode.UnpackOnly)
             {
                 log("━━ 언팩 완료 ━━", LogLevel.Ok);
-
                 return dirs.Unpacked;
             }
         }
@@ -135,7 +132,6 @@ public static class NspBuildService
             throw new Exception($"유효하지 않은 KeyGeneration입니다: {keyGeneration}");
 
         var settingsList = new List<NcaGenerationOptions>();
-
         var allIdOffsets = result.ExefsDirs.Keys
             .OrderBy(k => k);
 
@@ -188,7 +184,6 @@ public static class NspBuildService
         var sw = Stopwatch.StartNew();
 
         log($"━━ 3단계(3/9): NPDM 처리 (IdOffset={settings.IdOffset}) ━━", LogLevel.Highlight);
-
         NpdmProcessor.PatchNpdmMetadata(settings);
         log($"NPDM 완료 ({sw.Elapsed:mm\\:ss})", LogLevel.Ok);
     }
@@ -234,6 +229,7 @@ public static class NspBuildService
 
             settings.ManualNcaPaths.Add(currentNca);
             settings.HtmlDocNcaPath = currentNca;
+
             log($"[{type}] NCA 등록: {Path.GetFileName(currentNca)}", LogLevel.Ok);
         }
 
@@ -255,7 +251,9 @@ public static class NspBuildService
                 continue;
 
             settings.ManualNcaPaths.Add(currentNca);
+
             settings.LegalNcaPath = currentNca;
+
             log($"[{type}] NCA 등록: {Path.GetFileName(currentNca)}", LogLevel.Ok);
         }
     }
@@ -330,7 +328,6 @@ public static class NspBuildService
 
         log("━━ 9단계(9/9): NSP 패키징 ━━", LogLevel.Highlight);
         progress.ReportStatus("NSP 패키징 중...", 0);
-
         Directory.CreateDirectory(req.OutputDir);
 
         string suffix = req.HasPatch ? "Patched_Repack.nsp" : "Repack.nsp";

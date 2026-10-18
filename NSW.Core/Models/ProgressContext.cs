@@ -1,6 +1,6 @@
 ﻿using Common;
 
-namespace NSW.M1.Core.Models;
+namespace NSW.Core.Models;
 
 public class ProgressContext(long totalSize)
 {

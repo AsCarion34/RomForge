@@ -2,7 +2,7 @@
 using Patch.Core.Services;
 using Path = System.IO.Path;
 
-namespace NSW.M1.Core.Services;
+namespace NSW.Core.Services;
 
 public static class NspPatchMergeHelper
 {
