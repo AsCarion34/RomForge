@@ -1,4 +1,6 @@
-﻿namespace Common.WPF.ViewModels;
+﻿using Common.WPF.Interfaces;
+
+namespace Common.WPF.ViewModels;
 
 public abstract class ProcessableItemBase(string initialStatus = "") : ViewModelBase, IProgressTrackable
 {

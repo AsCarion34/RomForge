@@ -1,6 +1,6 @@
 ﻿using System.Windows.Media;
 
-namespace Common.WPF.ViewModels;
+namespace Common.WPF.Interfaces;
 
 public interface IExtensionColored
 {

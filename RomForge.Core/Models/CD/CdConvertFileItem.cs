@@ -5,7 +5,7 @@ using System.Windows.Media;
 
 namespace RomForge.Core.Models.CD;
 
-public class CdConvertFileItem(string filePath) : FileItemBase(filePath), Common.WPF.ViewModels.IConvertible
+public class CdConvertFileItem(string filePath) : FileItemBase(filePath), Common.WPF.Interfaces.IConvertible
 {
     public CdSourceFormat SourceFormat => Extension switch
     {

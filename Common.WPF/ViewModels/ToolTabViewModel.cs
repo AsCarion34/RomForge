@@ -33,6 +33,7 @@ public abstract class ToolTabViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsUnlocked));
         OnPropertyChanged(nameof(IsIdle));
         CommandManager.InvalidateRequerySuggested();
+
         return new ActionDisposable(() =>
         {
             Interlocked.Decrement(ref _lockCount);

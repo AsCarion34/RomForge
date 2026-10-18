@@ -5,6 +5,7 @@ using CD.Core.Services.Readers;
 using CD.Core.Services.Writers;
 using CHD.Core.Services;
 using Common;
+using Common.WPF.Interfaces;
 using Common.WPF.ViewModels;
 using PBP.Core.Enums;
 using PBP.Core.Services;

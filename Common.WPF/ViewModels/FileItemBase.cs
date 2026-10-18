@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using Common.WPF.Interfaces;
+using System.IO;
 
 namespace Common.WPF.ViewModels;
 

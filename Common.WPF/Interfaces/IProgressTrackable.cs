@@ -1,4 +1,4 @@
-﻿namespace Common.WPF.ViewModels;
+﻿namespace Common.WPF.Interfaces;
 
 public interface IProgressTrackable
 {

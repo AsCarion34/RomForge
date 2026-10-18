@@ -21,9 +21,7 @@ public static class SoundManager
         try
         {
             if (Path.IsPathRooted(packUriString) || File.Exists(packUriString))
-            {
                 stream = new FileStream(packUriString, FileMode.Open, FileAccess.Read, FileShare.Read);
-            }
             else
             {
                 var uri = new Uri(packUriString, UriKind.Absolute);
@@ -62,13 +60,12 @@ public static class SoundManager
                         throw new NotSupportedException($"지원하지 않는 오디오 형식입니다: {extension}");
 
                     _waveOutDevice = new WaveOutEvent();
+
                     _waveOutDevice.Init(_audioFileReader);
 
                     _waveOutDevice.PlaybackStopped += (s, e) => {
-                        lock (_lock)
-                        {
+                        lock (_lock) 
                             DisposeResources();
-                        }
                     };
 
                     _waveOutDevice.Play();
