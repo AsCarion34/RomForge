@@ -1,5 +1,4 @@
 ﻿using Common.WPF;
-using LibHac.Ncm;
 using Microsoft.Win32;
 using NSW.Core;
 using NSW.Core.Models;

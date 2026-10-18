@@ -11,7 +11,8 @@ namespace NSW.WPF.Converters
 
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is not Language lang) return null;
+            if (value is not Language lang) 
+                return null;
 
             string fileName = lang switch
             {
@@ -48,7 +49,6 @@ namespace NSW.WPF.Converters
             }
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-            => throw new NotImplementedException();
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
     }
 }

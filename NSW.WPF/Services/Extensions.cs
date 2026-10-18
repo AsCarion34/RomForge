@@ -1,5 +1,4 @@
 ﻿using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -20,8 +19,10 @@ public static class Extensions
         using var memoryStream = new MemoryStream(imageData);
 
         image.BeginInit();
+
         image.CacheOption = BitmapCacheOption.OnLoad;
         image.StreamSource = memoryStream;
+
         image.EndInit();
         image.Freeze();
 
@@ -32,7 +33,6 @@ public static class Extensions
     {
         using var input = new MemoryStream(imageBytes);
         using var img = Image.FromStream(input);
-
         using var bmp = new Bitmap(width, height);
         using var g = Graphics.FromImage(bmp);
 
@@ -44,6 +44,7 @@ public static class Extensions
         g.DrawImage(img, 0, 0, width, height);
 
         using var output = new MemoryStream();
+
         bmp.Save(output, ImageFormat.Png);
 
         return output.ToArray();
@@ -52,7 +53,6 @@ public static class Extensions
     public static byte[] ToImageBytes(this string filePath)
     {
         using var image = SixLabors.ImageSharp.Image.Load<Bgra32>(filePath);
-
         byte[] pixels = new byte[image.Width * image.Height * 4];
 
         image.CopyPixelDataTo(pixels);
@@ -83,6 +83,7 @@ public static class Extensions
             var encoderParameters = new EncoderParameters(1);
 
             encoderParameters.Param[0] = new EncoderParameter(Encoder.Quality, 95L);
+
             cleanBitmap.Save(ms, encoder, encoderParameters);
         }
         else
