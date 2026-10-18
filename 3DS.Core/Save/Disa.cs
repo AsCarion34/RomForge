@@ -41,6 +41,7 @@ public class Disa
         if (paramB != null)
         {
             int partitionBAlign = paramB.GetAlign();
+
             partitionBOffset = Misc.AlignUp(partitionAOffset + partitionALen, partitionBAlign);
             end = partitionBOffset + partitionBLen;
         }

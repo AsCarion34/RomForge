@@ -117,12 +117,16 @@ public class Fat
                     if (node.Next.HasValue)
                     {
                         var nextNode = GetNode(table, node.Next.Value);
+
                         nextNode.Prev = null;
+
                         SetNode(table, node.Next.Value, nextNode);
                     }
 
                     SetHead(table, node.Next);
+
                     node.Next = null;
+
                     SetNode(table, cur, node);
 
                     break;
@@ -146,6 +150,7 @@ public class Fat
                         throw new InvalidDataException("Fat::allocate: inconsistent prev pointer");
 
                     nextNode.Prev = cur + blockCount;
+
                     SetNode(table, node.Next.Value, nextNode);
                 }
 
@@ -174,6 +179,7 @@ public class Fat
                 throw new InvalidDataException("Fat::free: trying to free from middle");
 
             freeFront.Prev = lastNodeIndex;
+
             SetNode(table, maybeFreeIndex.Value, freeFront);
         }
 
@@ -271,6 +277,7 @@ public class Fat
     public void Delete(FatFile file)
     {
         Free(Table, file.BlockList);
+
         FreeBlocks += file.BlockList.Count;
     }
 
@@ -295,14 +302,16 @@ public class Fat
             var tail = GetNode(Table, tailIndex);
 
             tail.Next = headIndex;
+
             SetNode(Table, tailIndex, tail);
 
             var head = GetNode(Table, headIndex);
 
             head.Prev = tailIndex;
-            SetNode(Table, headIndex, head);
 
+            SetNode(Table, headIndex, head);
             file.BlockList.AddRange(extra);
+
             FreeBlocks -= delta;
         }
         else
@@ -317,11 +326,13 @@ public class Fat
                 var tail = GetNode(Table, tailIndex);
 
                 tail.Next = null;
+
                 SetNode(Table, tailIndex, tail);
 
                 var head2 = GetNode(Table, splitHeadIndex);
 
                 head2.Prev = null;
+
                 SetNode(Table, splitHeadIndex, head2);
             }
             else

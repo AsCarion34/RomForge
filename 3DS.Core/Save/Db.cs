@@ -50,7 +50,6 @@ public class Db : IFileSystem
         }
 
         var withoutPre = new SubFile(diff.Partition, preLen, diff.Partition.Length - preLen);
-
         var header = DbHeader.Read(withoutPre, 0);
 
         if (!header.Magic.AsSpan().SequenceEqual("BDRI"u8) || header.Version != 0x30000)

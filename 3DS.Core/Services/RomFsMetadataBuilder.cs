@@ -18,6 +18,7 @@ public static class RomFsMetadataBuilder
         foreach (var d in dirs)
         {
             uint nameBytes = (uint)Encoding.Unicode.GetByteCount(d.Entry.Name);
+
             dirTableLen += d.Entry.Name.Length == 0 ? RomFsFormat.DirEntryFixed : (RomFsFormat.DirEntryFixed + RomFsFormat.AlignUp(nameBytes, 4));
         }
 
@@ -26,6 +27,7 @@ public static class RomFsMetadataBuilder
         foreach (var f in files)
         {
             uint nameBytes = (uint)Encoding.Unicode.GetByteCount(f.Entry.Name);
+
             fileTableLen += RomFsFormat.FileEntryFixed + RomFsFormat.AlignUp(nameBytes, 4);
         }
 
@@ -66,7 +68,6 @@ public static class RomFsMetadataBuilder
         IvfcHashTreeWriter.WriteIvfcLevel(ivfc, 0x24, logOff2, level2Size);
         IvfcHashTreeWriter.WriteIvfcLevel(ivfc, 0x3C, logOff3, level3Size);
         BinaryPrimitives.WriteUInt32LittleEndian(ivfc.AsSpan(0x54), 0x5C);
-
         await output.WriteAsync(ivfc, ct);
 
         uint dirHashOffset = RomFsFormat.RomFsInfoSize;
@@ -74,7 +75,6 @@ public static class RomFsMetadataBuilder
         uint fileHashOffset = dirEntryOffset + dirTableLen;
         uint fileEntryOffset = fileHashOffset + fileHashCount * 4;
         uint dataOffset = RomFsFormat.AlignUp(fileEntryOffset + fileTableLen, 0x10);
-
         byte[] meta = new byte[romfsHdrSize];
 
         BinaryPrimitives.WriteUInt32LittleEndian(meta.AsSpan(0x00), RomFsFormat.RomFsInfoSize);
@@ -145,6 +145,7 @@ public static class RomFsMetadataBuilder
                     .FirstOrDefault(d => RomFsFormat.GetParentPath(d.FullPath) == parentPath);
 
                 uint sibVaddr = nextSibling != null ? dirVaddrMap[nextSibling.FullPath] : RomFsFormat.UnusedEntry;
+
                 BinaryPrimitives.WriteUInt32LittleEndian(meta.AsSpan(myBase + 0x04), sibVaddr);
             }
 
@@ -169,9 +170,7 @@ public static class RomFsMetadataBuilder
 
             BinaryPrimitives.WriteUInt32LittleEndian(meta.AsSpan(entryBase + 0x00), dirVaddr);
 
-            uint nextFileVaddr = fi < files.Count - 1 && RomFsFormat.GetParentPath(files[fi + 1].FullPath) == parentPath
-                ? fileTablePos + RomFsFormat.FileEntryFixed + RomFsFormat.AlignUp(nameBytes, 4)
-                : RomFsFormat.UnusedEntry;
+            uint nextFileVaddr = fi < files.Count - 1 && RomFsFormat.GetParentPath(files[fi + 1].FullPath) == parentPath ? fileTablePos + RomFsFormat.FileEntryFixed + RomFsFormat.AlignUp(nameBytes, 4) : RomFsFormat.UnusedEntry;
 
             BinaryPrimitives.WriteUInt32LittleEndian(meta.AsSpan(entryBase + 0x04), nextFileVaddr);
 

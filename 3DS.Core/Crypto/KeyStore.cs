@@ -134,14 +134,11 @@ public class KeyStore
 
     public void SetKeyY(int slotId, byte[] keyY) => _slots[slotId].SetKeyY(keyY);
 
-    public byte[] GetNormalKey(int slotId)
-        => _slots[slotId].NormalKey
-           ?? throw new InvalidOperationException($"Slot 0x{slotId:X2} NormalKey 없음 — aes_keys.txt 또는 boot9.bin 확인 필요");
+    public byte[] GetNormalKey(int slotId) => _slots[slotId].NormalKey ?? throw new InvalidOperationException($"Slot 0x{slotId:X2} NormalKey 없음 — aes_keys.txt 또는 boot9.bin 확인 필요");
 
     public byte[] DeriveNormalKey(int slotId, byte[] keyY)
     {
-        byte[] keyX = _slots[slotId].KeyX
-            ?? throw new InvalidOperationException($"Slot 0x{slotId:X2} KeyX 없음 — aes_keys.txt 또는 boot9.bin 확인 필요");
+        byte[] keyX = _slots[slotId].KeyX ?? throw new InvalidOperationException($"Slot 0x{slotId:X2} KeyX 없음 — aes_keys.txt 또는 boot9.bin 확인 필요");
 
         return KeySlot.ComputeNormalKey(keyX, keyY);
     }

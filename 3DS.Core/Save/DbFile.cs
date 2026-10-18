@@ -6,8 +6,11 @@ namespace _3DS.Core.Save;
 public class DbFile : IFileSystemFile
 {
     private readonly DbInner _center;
+
     private readonly FileMeta _meta;
+
     private FatFile? _data;
+
     private int _len;
 
     public int Length => _len;
@@ -106,10 +109,11 @@ public class DbFile : IFileSystemFile
 
     public void Rename(DbDir parent, ulong name)
     {
-        try { 
+        try 
+        { 
             parent.OpenSubFile(name); 
-
-            throw new InvalidOperationException("DbFile::rename: already exists"); }
+            throw new InvalidOperationException("DbFile::rename: already exists");
+        }
         catch (FileNotFoundException) { }
 
         var newKey = DbFileKey.New(parent.Meta.Ino, name);

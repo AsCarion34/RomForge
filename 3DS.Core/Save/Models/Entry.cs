@@ -6,7 +6,9 @@ namespace _3DS.Core.Save.Models;
 public struct Entry
 {
     public const int Size = 8;
+
     public EntryHalf U;
+
     public EntryHalf V;
 
     public static Entry Read(IRandomAccessFile f, int pos)

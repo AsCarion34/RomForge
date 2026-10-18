@@ -1,5 +1,4 @@
-﻿using _3DS.Core.Save.Interfaces;
-using _3DS.Core.Save.Models;
+﻿using _3DS.Core.Save.Models;
 
 namespace _3DS.Core.Save;
 

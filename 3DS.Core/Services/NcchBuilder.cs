@@ -61,6 +61,7 @@ public static class NcchBuilder
             if (patchSource != null)
             {
                 long dataBase = romFs.DataLevel2Offset + romFs.RomFsHeader.DataOffset;
+
                 patchSizeMap = await RomFsPatchSizeResolver.BuildPatchSizeMapAsync(romFs.Files, patchSource, ncchSource, dataBase, log, ct);
             }
 
@@ -134,7 +135,9 @@ public static class NcchBuilder
             BinaryPrimitives.WriteUInt32LittleEndian(ncchHdr.AsSpan(0x180), hdr.ExtendedHeaderSize);
 
         hdr.Flags.CopyTo(ncchHdr, 0x188);
+
         ncchHdr[0x188 + 7] |= 0x04;
+
         if ((hdr.Flags[7] & 0x01) != 0)
             ncchHdr[0x188 + 7] |= 0x01;
 
@@ -171,7 +174,6 @@ public static class NcchBuilder
             byte[] exhdrBuf = new byte[0x400];
 
             await output.ReadExactlyAsync(exhdrBuf, ct);
-
             SHA256.HashData(exhdrBuf).CopyTo(ncchHdr, 0x160);
         }
 
@@ -182,7 +184,6 @@ public static class NcchBuilder
             byte[] logoBuf = new byte[unpack.Logo!.Length];
 
             await output.ReadExactlyAsync(logoBuf, ct);
-
             SHA256.HashData(logoBuf).CopyTo(ncchHdr, 0x130);
         }
 
@@ -193,7 +194,6 @@ public static class NcchBuilder
             byte[] exefsBuf = new byte[exefsHashSize];
 
             await output.ReadExactlyAsync(exefsBuf, ct);
-
             SHA256.HashData(exefsBuf).CopyTo(ncchHdr, 0x1C0);
         }
 
@@ -204,11 +204,11 @@ public static class NcchBuilder
             byte[] romfsBuf = new byte[romfsHashSize];
 
             await output.ReadExactlyAsync(romfsBuf, ct);
-
             SHA256.HashData(romfsBuf).CopyTo(ncchHdr, 0x1E0);
         }
 
         output.Position = basePosition;
+
         await output.WriteAsync(ncchHdr, ct);
     }
 
@@ -235,10 +235,12 @@ public static class NcchBuilder
             if (patchSource != null)
             {
                 long dataBase = romFs.DataLevel2Offset + romFs.RomFsHeader.DataOffset;
+
                 patchSizeMap = await RomFsPatchSizeResolver.BuildPatchSizeMapAsync(romFs.Files, patchSource, ncchSource, dataBase, log, ct);
             }
 
             var (totalSize, _, _, _, _) = RomFsLayoutCalculator.CalculateLayout(romFs.Directories, romFs.Files, patchSizeMap);
+
             ncchSize = AlignUp(ncchSize, RomFsAlign) + AlignUp((long)totalSize, MediaUnit);
         }
 

@@ -6,17 +6,29 @@ namespace _3DS.Core.Save.Models;
 public struct DifiHeader
 {
     public const int Size = 0x44;
+
     public byte[] Magic;
+
     public uint Version;
+
     public ulong IvfcDescriptorOffset;
+
     public ulong IvfcDescriptorSize;
+
     public ulong DpfsDescriptorOffset;
+
     public ulong DpfsDescriptorSize;
+
     public ulong PartitionHashOffset;
+
     public ulong PartitionHashSize;
+
     public byte ExternalIvfcLevel4;
+
     public byte DpfsSelector;
+
     public ushort Padding;
+
     public ulong IvfcLevel4Offset;
 
     public static DifiHeader Read(IRandomAccessFile f, int pos)
@@ -54,8 +66,10 @@ public struct DifiHeader
         BinaryPrimitives.WriteUInt64LittleEndian(buf.AsSpan(0x20), DpfsDescriptorSize);
         BinaryPrimitives.WriteUInt64LittleEndian(buf.AsSpan(0x28), PartitionHashOffset);
         BinaryPrimitives.WriteUInt64LittleEndian(buf.AsSpan(0x30), PartitionHashSize);
+
         buf[0x38] = ExternalIvfcLevel4;
         buf[0x39] = DpfsSelector;
+
         BinaryPrimitives.WriteUInt16LittleEndian(buf.AsSpan(0x3A), Padding);
         BinaryPrimitives.WriteUInt64LittleEndian(buf.AsSpan(0x3C), IvfcLevel4Offset);
         f.Write(pos, buf, 0, Size);

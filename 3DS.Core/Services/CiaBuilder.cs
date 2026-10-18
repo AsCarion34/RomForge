@@ -46,13 +46,9 @@ public static class CiaBuilder
         else if (titleType != 0x00040000)
             throw new NotSupportedException($"지원하지 않는 소프트웨어 타입입니다. (Title ID Type: 0x{titleType:X8})");
 
-        uint saveSize = exHeaderPart0 is { Length: > 0x1C3 }
-            ? BinaryPrimitives.ReadUInt32LittleEndian(exHeaderPart0.AsSpan(0x1C0))
-            : 0;
-
+        uint saveSize = exHeaderPart0 is { Length: > 0x1C3 } ? BinaryPrimitives.ReadUInt32LittleEndian(exHeaderPart0.AsSpan(0x1C0)) : 0;
         int contentCount = partitions.Count;
         byte[] titleKey = RandomNumberGenerator.GetBytes(16);
-
         string certsPath = Path.Combine(AppContext.BaseDirectory, "certs.bin");
 
         if (!File.Exists(certsPath))
@@ -69,11 +65,13 @@ public static class CiaBuilder
         long certOffset = AlignUp(0x2020, CiaAlign);
 
         output.Position = certOffset;
+
         await output.WriteAsync(certChain, ct);
 
         long ticketOffset = AlignUp(certOffset + certChainSize, CiaAlign);
 
         output.Position = ticketOffset;
+
         await output.WriteAsync(BuildTicket(keyStore, titleId, titleKey, partitions), ct);
 
         long tmdOffset = AlignUp(ticketOffset + ticketSize, CiaAlign);
@@ -83,6 +81,7 @@ public static class CiaBuilder
             zeroHashes[i] = new byte[0x20];
 
         output.Position = tmdOffset;
+
         await output.WriteAsync(BuildTmd(titleId, partitions, zeroHashes, saveSize, part0.header.Version), ct);
 
         long firstContentOffset = AlignUp(tmdOffset + tmdSize, CiaAlign);
@@ -101,10 +100,7 @@ public static class CiaBuilder
             var (index, _, size) = partitions[i];
             long partitionStartProcessed = processedBytes;
 
-            await ctx.WriteContentAsync(index, output, size, (written, _) =>
-            {
-                progress?.Invoke(partitionStartProcessed + written, totalBytes);
-            }, ct);
+            await ctx.WriteContentAsync(index, output, size, (written, _) => { progress?.Invoke(partitionStartProcessed + written, totalBytes); }, ct);
 
             processedBytes = partitionStartProcessed + size;
 
@@ -135,10 +131,8 @@ public static class CiaBuilder
             long hashedBase = hashedBytes;
 
             output.Position = contentOffsets[i];
-            contentHashes[i] = await HashRangeAsync(output, size, read =>
-            {
-                hashAction?.Invoke(hashedBase + read, totalBytes);
-            }, ct);
+
+            contentHashes[i] = await HashRangeAsync(output, size, read => { hashAction?.Invoke(hashedBase + read, totalBytes); }, ct);
 
             hashedBytes = hashedBase + size;
         }
@@ -186,7 +180,10 @@ public static class CiaBuilder
                 onProgress?.Invoke(readSoFar);
             }
         }
-        finally { pool.Return(buf); }
+        finally 
+        {
+            pool.Return(buf);
+        }
 
         return sha.GetHashAndReset();
     }

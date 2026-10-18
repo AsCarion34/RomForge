@@ -6,25 +6,45 @@ namespace _3DS.Core.Save.Models;
 public struct IvfcDescriptor
 {
     public const int Size = 0x78;
+
     public byte[] Magic;
+
     public uint Version;
+
     public ulong MasterHashSize;
+
     public ulong Level1Offset;
+
     public ulong Level1Size;
+
     public uint Level1BlockLog;
+
     public uint Padding1;
+
     public ulong Level2Offset;
+
     public ulong Level2Size;
+
     public uint Level2BlockLog;
+
     public uint Padding2;
+
     public ulong Level3Offset;
+
     public ulong Level3Size;
+
     public uint Level3BlockLog;
+
     public uint Padding3;
+
     public ulong Level4Offset;
+
     public ulong Level4Size;
+
     public uint Level4BlockLog;
+
     public uint Padding4;
+
     public ulong IvfcDescriptorSize;
 
     public static IvfcDescriptor Read(IRandomAccessFile f, int pos)

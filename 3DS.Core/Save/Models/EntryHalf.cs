@@ -3,6 +3,7 @@
 public struct EntryHalf
 {
     public uint Index;
+
     public uint Flag;
 
     public static EntryHalf FromRaw(uint raw) => new() { Flag = (raw >> 31) & 1, Index = raw & 0x7FFFFFFFu };

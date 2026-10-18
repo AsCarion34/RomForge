@@ -6,25 +6,45 @@ namespace _3DS.Core.Save.Models;
 public struct FsInfo
 {
     public const int Size = 0x68;
+
     public uint Unknown;
+
     public uint BlockLen;
+
     public ulong DirHashOffset;
+
     public uint DirBuckets;
+
     public uint P0;
+
     public ulong FileHashOffset;
+
     public uint FileBuckets;
+
     public uint P1;
+
     public ulong FatOffset;
+
     public uint FatSize;
+
     public uint P2;
+
     public ulong DataOffset;
+
     public uint DataBlockCount;
+
     public uint P3;
+
     public OffsetOrFatFile DirTable;
+
     public uint MaxDir;
+
     public uint P4;
+
     public OffsetOrFatFile FileTable;
+
     public uint MaxFile;
+
     public uint P5;
 
     public static FsInfo Read(IRandomAccessFile f, int pos)
@@ -61,6 +81,7 @@ public struct FsInfo
     public readonly void Write(IRandomAccessFile f, int pos)
     {
         var buf = new byte[Size];
+
         BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(0x00), Unknown);
         BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(0x04), BlockLen);
         BinaryPrimitives.WriteUInt64LittleEndian(buf.AsSpan(0x08), DirHashOffset);

@@ -95,7 +95,6 @@ public static class BackwardLz77
         var tokenOff = new List<int>();
         var dValues = new List<int> { 0 };
         var boundaryJ = new List<int> { 0 };
-
         int j = 0;
         int k = 0;
         int flagBitCountPass1 = 0;
@@ -129,6 +128,7 @@ public static class BackwardLz77
 
                             continue;
                         }
+
                         if (off > MaxOffset)
                             break;
 
@@ -142,6 +142,7 @@ public static class BackwardLz77
                             if (len >= maxLen)
                                 break;
                         }
+
                         cand = prevPos[cand];
                         steps++;
                     }
@@ -166,6 +167,7 @@ public static class BackwardLz77
                     prevPos[p] = lastPos.TryGetValue(h, out int pv) ? pv : -1;
                     lastPos[h] = p;
                 }
+
                 j = end;
             }
             else
@@ -179,6 +181,7 @@ public static class BackwardLz77
                 if (j < n - 2)
                 {
                     int h = Hash3(rev, j);
+
                     prevPos[j] = lastPos.TryGetValue(h, out int pv2) ? pv2 : -1;
                     lastPos[h] = j;
                 }
@@ -187,6 +190,7 @@ public static class BackwardLz77
             }
 
             flagBitCountPass1 = (flagBitCountPass1 + 1) % 8;
+
             dValues.Add(j - k);
             boundaryJ.Add(j);
         }
@@ -231,6 +235,7 @@ public static class BackwardLz77
 
                 stream.Add(a);
                 stream.Add(b);
+
                 currentFlag |= (byte)(1 << (7 - flagBitCount));
             }
             else
@@ -261,7 +266,6 @@ public static class BackwardLz77
             return raw;
 
         uint originalBottom = (uint)(n - compressedSize);
-
         byte[] result = new byte[compressedSize];
 
         Array.Copy(raw, 0, result, 0, rawPrefixLen);

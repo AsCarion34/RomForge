@@ -130,6 +130,7 @@ public class DirMeta : IDisposable
 
         if (_ino == 1)
             throw new InvalidOperationException("DirMeta::delete: cannot delete root");
+
         if (selfInfo.GetSubDir() != 0 || selfInfo.GetSubFile() != 0)
             throw new InvalidOperationException("DirMeta::delete: not empty");
 
@@ -181,6 +182,7 @@ public class DirMeta : IDisposable
         var newDir = parent.NewSubDirImpl(newKey, info, resetSubInfo: false);
 
         _fs.Dirs.ReleaseTicket(_ino);
+
         _ino = newDir.Ino;
         newDir._disposed = true;
     }

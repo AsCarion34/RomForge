@@ -68,6 +68,7 @@ public class SdTitleScanner
                     continue;
 
                 string titleId = tidHigh + tidLow;
+
                 progress?.Report($"스캔 중: {titleId}");
 
                 try
@@ -89,7 +90,6 @@ public class SdTitleScanner
 
     private InstalledTitle? ReadTitle(string titleDir, string tidHigh, string tidLow, string titleId)
     {
-
         string contentDir = Path.Combine(titleDir, "content");
 
         if (!Directory.Exists(contentDir))
@@ -126,9 +126,7 @@ public class SdTitleScanner
     private string ToSdPath(string absolutePath)
     {
         string id1 = _id1Path.TrimEnd('\\', '/');
-        string relative = absolutePath.StartsWith(id1, StringComparison.OrdinalIgnoreCase)
-            ? absolutePath[id1.Length..]
-            : absolutePath;
+        string relative = absolutePath.StartsWith(id1, StringComparison.OrdinalIgnoreCase) ? absolutePath[id1.Length..] : absolutePath;
 
         return relative.Replace('\\', '/');
     }

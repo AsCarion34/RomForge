@@ -8,14 +8,23 @@ public struct DisaHeader
     public const int Size = 0x69;
 
     public byte[] Magic;
+
     public uint Version;
+
     public uint PartitionCount;
+
     public uint Padding1;
+
     public ulong SecondaryTableOffset;
+
     public ulong PrimaryTableOffset;
+
     public ulong TableSize;
+
     public (ulong Offset, ulong Size)[] PartitionDescriptor;
+
     public (ulong Offset, ulong Size)[] Partition;
+
     public byte ActiveTable;
 
     public static DisaHeader Read(IRandomAccessFile f, int pos)
@@ -56,6 +65,7 @@ public struct DisaHeader
         var buf = new byte[Size];
 
         Magic.CopyTo(buf, 0x00);
+
         BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(0x04), Version);
         BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(0x08), PartitionCount);
         BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(0x0C), Padding1);
@@ -70,7 +80,9 @@ public struct DisaHeader
         BinaryPrimitives.WriteUInt64LittleEndian(buf.AsSpan(0x50), Partition[0].Size);
         BinaryPrimitives.WriteUInt64LittleEndian(buf.AsSpan(0x58), Partition[1].Offset);
         BinaryPrimitives.WriteUInt64LittleEndian(buf.AsSpan(0x60), Partition[1].Size);
+
         buf[0x68] = ActiveTable;
+
         f.Write(pos, buf, 0, Size);
     }
 }

@@ -8,10 +8,15 @@ public class DbFileInfo : IFileInfo
     public const int InfoSize = 28;
 
     public int InfoByteLen => InfoSize;
+
     public uint Next;
+
     public uint Padding1;
+
     public uint Block;
+
     public ulong Size;
+
     public ulong Padding2;
 
     public uint GetNext() => Next;

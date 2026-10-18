@@ -16,6 +16,7 @@ public static class ExeFsUnpacker
         byte[] headerBuf = new byte[ExeFsHeader.Size];
 
         ncchStream.Position = exefsAbsOffset;
+
         await ncchStream.ReadExactlyAsync(headerBuf, ct);
 
         var header = ExeFsHeader.Parse(headerBuf);
@@ -36,6 +37,7 @@ public static class ExeFsUnpacker
             byte[] data = new byte[entry.Size];
 
             ncchStream.Position = dataBase + entry.Offset;
+
             await ncchStream.ReadExactlyAsync(data, ct);
 
             byte[] expectedHash = header.GetHashForEntry(i);
@@ -73,6 +75,7 @@ public static class ExeFsUnpacker
             await File.WriteAllBytesAsync(filePath, file.Data, ct);
 
             currentBytes += file.Data.Length;
+
             reporter?.Invoke(currentBytes, totalBytes);
         }
     }

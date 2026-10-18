@@ -18,6 +18,7 @@ public static class NcchUnpacker
         {
             exHeader = new byte[0x800];
             ncchStream.Position = 0x200;
+
             await ncchStream.ReadExactlyAsync(exHeader, ct);
         }
 
@@ -25,6 +26,7 @@ public static class NcchUnpacker
         {
             logo = new byte[(long)ncchHeader.LogoSize * MediaUnit];
             ncchStream.Position = (long)ncchHeader.LogoOffset * MediaUnit;
+
             await ncchStream.ReadExactlyAsync(logo, ct);
         }
 
@@ -32,6 +34,7 @@ public static class NcchUnpacker
         {
             plainRegion = new byte[(long)ncchHeader.PlainRegionSize * MediaUnit];
             ncchStream.Position = (long)ncchHeader.PlainRegionOffset * MediaUnit;
+
             await ncchStream.ReadExactlyAsync(plainRegion, ct);
         }
 

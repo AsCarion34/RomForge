@@ -14,6 +14,7 @@ public static class NcchGameInfoReader
         byte[] ncchHeaderBuf = new byte[0x200];
 
         ncchStream.Position = 0;
+
         await ncchStream.ReadExactlyAsync(ncchHeaderBuf, 0, 0x200, ct);
 
         var ncch = NcchHeader.Parse(ncchHeaderBuf, 0);
@@ -25,6 +26,7 @@ public static class NcchGameInfoReader
         byte[] exefsHeader = new byte[0x200];
 
         ncchStream.Position = exefsOffset;
+
         await ncchStream.ReadExactlyAsync(exefsHeader, 0, 0x200, ct);
 
         for (int i = 0; i < 8; i++)
@@ -46,7 +48,6 @@ public static class NcchGameInfoReader
             ncchStream.Position = exefsOffset + 0x200 + fileOffset;
 
             await ncchStream.ReadExactlyAsync(smdhData, 0, (int)fileSize, ct);
-
             return SmdhParser.TryParse(smdhData);
         }
 

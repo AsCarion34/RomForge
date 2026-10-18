@@ -31,6 +31,7 @@ public class CiaReader(KeyStore keyStore)
         byte[] headerBuf = new byte[0x2020];
 
         stream.Position = 0;
+
         await stream.ReadExactlyAsync(headerBuf, ct);
 
         var ciaHeader = ParseCiaHeader(headerBuf);
@@ -41,6 +42,7 @@ public class CiaReader(KeyStore keyStore)
         byte[] ticketBuf = new byte[ciaHeader.TicketSize];
 
         stream.Position = ticketOffset;
+
         await stream.ReadExactlyAsync(ticketBuf, 0, (int)ciaHeader.TicketSize, ct);
 
         var ticket = ParseTicket(ticketBuf);
@@ -48,6 +50,7 @@ public class CiaReader(KeyStore keyStore)
         byte[] tmdBuf = new byte[ciaHeader.TmdSize];
 
         stream.Position = tmdOffset;
+
         await stream.ReadExactlyAsync(tmdBuf, 0, (int)ciaHeader.TmdSize, ct);
 
         var tmdHeader = TmdParser.Parse(tmdBuf);

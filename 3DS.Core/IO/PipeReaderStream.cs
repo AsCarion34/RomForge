@@ -22,12 +22,10 @@ public sealed class PipeReaderStream(PipeReader reader) : Stream
         if (readTask.IsCompleted)
             return readTask.Result;
 
-        return Task.Run(async () => await readTask.ConfigureAwait(false))
-                   .GetAwaiter().GetResult();
+        return Task.Run(async () => await readTask.ConfigureAwait(false)).GetAwaiter().GetResult();
     }
 
-    public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken ct)
-        => await ReadAsync(buffer.AsMemory(offset, count), ct);
+    public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken ct) => await ReadAsync(buffer.AsMemory(offset, count), ct);
 
     public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default)
     {
@@ -49,9 +47,11 @@ public sealed class PipeReaderStream(PipeReader reader) : Stream
             }
 
             int toCopy = (int)Math.Min(buffer.Length, sequence.Length);
+
             sequence.Slice(0, toCopy).CopyTo(buffer.Span);
 
             var consumedPosition = sequence.GetPosition(toCopy);
+
             reader.AdvanceTo(consumedPosition, consumedPosition);
 
             return toCopy;

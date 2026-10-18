@@ -5,39 +5,71 @@ public class NcchHeader
     public const int Size = 0x200;
 
     public byte[] Signature = new byte[0x100];
+
     public uint Magic;
+
     public uint ContentSize;
+
     public ulong PartitionId;
+
     public ushort MakerCode;
+
     public ushort Version;
+
     public uint FirmwareHashMask;
+
     public ulong ProgramId;
+
     public byte[] Reserved1 = new byte[0x10];
+
     public byte[] LogoHash = new byte[0x20];
+
     public byte[] ProductCode = new byte[0x10];
+
     public byte[] ExtendedHeaderHash = new byte[0x20];
+
     public uint ExtendedHeaderSize;
+
     public uint Reserved2;
+
     public byte[] Flags = new byte[8];
+
     public uint PlainRegionOffset;
+
     public uint PlainRegionSize;
+
     public uint LogoOffset;
+
     public uint LogoSize;
+
     public uint ExefsOffset;
+
     public uint ExefsSize;
+
     public uint ExefsHashSize;
+
     public uint Reserved3;
+
     public uint RomfsOffset;
+
     public uint RomfsSize;
+
     public uint RomfsHashSize;
+
     public uint Reserved4;
+
     public byte[] ExefsHash = new byte[0x20];
+
     public byte[] RomfsHash = new byte[0x20];
 
     public bool NoCrypto => (Flags[7] & 0x04) != 0;
+
     public bool FixedKey => (Flags[7] & 0x01) != 0;
+
     public bool SeedCrypto => (Flags[7] & 0x20) != 0;
+
     public byte SecondaryKeySlot => Flags[3]; 
+
     public string ProductCodeString => System.Text.Encoding.ASCII.GetString(ProductCode).TrimEnd('\0');
 
 

@@ -8,6 +8,7 @@ using Common;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace _3DS.Core.Services;
 
@@ -55,7 +56,6 @@ public class TitleInstaller(KeyStore keyStore, SdCrypto sdCrypto, SdTitleScanner
 
         long totalBytes = tmd.Contents.Sum(c => c.ContentSize);
         long written = 0;
-
         var reporter = progress is null ? null : new ProgressReporter("설치 중...", string.Empty, totalBytes, progress);
         var report = reporter?.CreateAction();
 
@@ -118,6 +118,7 @@ public class TitleInstaller(KeyStore keyStore, SdCrypto sdCrypto, SdTitleScanner
 
                 byte[] encZeros = sdCrypto.Encrypt(savSdPath, new byte[0x20]);
                 await using var savFile = File.Create(savOutPath);
+
                 await savFile.WriteAsync(encZeros, ct);
                 await savFile.WriteAsync(new byte[tmd.SaveSize - 0x20], ct);
             }
@@ -188,6 +189,7 @@ public class TitleInstaller(KeyStore keyStore, SdCrypto sdCrypto, SdTitleScanner
                 BinaryPrimitives.WriteUInt32LittleEndian(indexBytes, (uint)content.ContentIndex);
 
                 cmacData = new byte[ncchPart.Length + indexBytes.Length + idBytes.Length];
+
                 ncchPart.CopyTo(cmacData, 0);
                 indexBytes.CopyTo(cmacData, ncchPart.Length);
                 idBytes.CopyTo(cmacData, ncchPart.Length + indexBytes.Length);
@@ -205,7 +207,7 @@ public class TitleInstaller(KeyStore keyStore, SdCrypto sdCrypto, SdTitleScanner
         var idsByIndex = new byte[highestIndex + 1][];
         var installedIds = new List<byte[]>();
         var cmacs = new List<byte[]>();
-        byte[] missingCmac = System.Text.Encoding.ASCII.GetBytes("MISSING CONTENT!");
+        byte[] missingCmac = Encoding.ASCII.GetBytes("MISSING CONTENT!");
 
         for (int x = 0; x <= highestIndex; x++)
         {
@@ -249,8 +251,8 @@ public class TitleInstaller(KeyStore keyStore, SdCrypto sdCrypto, SdTitleScanner
         foreach (var id in installedIds)
             await ms.WriteAsync(id, ct);
 
-        foreach (var c in cmacs) await
-                ms.WriteAsync(c, ct);
+        foreach (var c in cmacs) 
+            await ms.WriteAsync(c, ct);
 
         return ms.ToArray();
     }
@@ -264,8 +266,8 @@ public class TitleInstaller(KeyStore keyStore, SdCrypto sdCrypto, SdTitleScanner
         if (File.Exists(dbPath))
         {
             var existingBackups = Directory.GetFiles(dbsDir, "title.db.*.bak")
-                                       .OrderBy(File.GetCreationTime)
-                                       .ToList();
+                .OrderBy(File.GetCreationTime)
+                .ToList();
 
             while (existingBackups.Count >= 20)
             {
@@ -346,7 +348,7 @@ public class TitleInstaller(KeyStore keyStore, SdCrypto sdCrypto, SdTitleScanner
         pos += 4;
         BinaryPrimitives.WriteUInt64LittleEndian(buf.AsSpan(pos), 0x100000000UL);
         pos += 8;
-        System.Text.Encoding.ASCII.GetBytes(productCode.PadRight(0x10, '\0')[..Math.Min(0x10, productCode.Length)]).CopyTo(buf, pos);
+        Encoding.ASCII.GetBytes(productCode.PadRight(0x10, '\0')[..Math.Min(0x10, productCode.Length)]).CopyTo(buf, pos);
         pos += 0x10;
         pos += 0x10;
         BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(pos), (uint)Random.Shared.Next());
@@ -426,15 +428,20 @@ public class TitleInstaller(KeyStore keyStore, SdCrypto sdCrypto, SdTitleScanner
                 {
                     Buffer.BlockCopy(ctr, 0, ctrBuf, 0, 16);
                     encryptor.TransformBlock(ctrBuf, 0, 16, keystream, 0);
+
                     int chunk = Math.Min(16, read - pos);
+
                     for (int i = 0; i < chunk; i++)
                         buf[pos + i] ^= keystream[i];
+
                     SdCrypto.IncrementCtr(ctr);
+
                     pos += chunk;
                 }
 
                 await outFile.WriteAsync(buf.AsMemory(0, read), ct);
                 onProgress(read);
+
                 remaining -= read;
             }
         }

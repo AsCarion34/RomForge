@@ -22,6 +22,7 @@ public class SdNcsdSource(IReadOnlyList<Contents> contents, KeyStore keyStore, S
         try
         {
             src = File.OpenRead(filePath);
+
             var decrypted = new SdDecryptStream(src, sdPath, sdCrypto);
             var ncchStream = new NcchDecryptionStream(decrypted, 0, keyStore);
 

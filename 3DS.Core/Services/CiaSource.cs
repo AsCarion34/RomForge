@@ -102,9 +102,7 @@ public class CiaSource : IInstallSource
         if (target is null)
             throw new InvalidOperationException($"Content index {contentIndex}를 찾을 수 없습니다.");
 
-        Stream stream = target.IsEncrypted
-            ? new AesCbcSubStream(Stream, offset, target.ContentSize, TitleKey, new byte[] { (byte)(target.ContentIndex >> 8), (byte)(target.ContentIndex & 0xFF), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 })
-            : new SubStream(Stream, offset, target.ContentSize);
+        Stream stream = target.IsEncrypted ? new AesCbcSubStream(Stream, offset, target.ContentSize, TitleKey, new byte[] { (byte)(target.ContentIndex >> 8), (byte)(target.ContentIndex & 0xFF), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }) : new SubStream(Stream, offset, target.ContentSize);
 
         return ValueTask.FromResult((stream, target.ContentSize));
     }
@@ -139,6 +137,7 @@ public class CiaSource : IInstallSource
         await ncchStream.ReadExactlyAsync(ncchHeaderBuf, 0, 0x200);
 
         MainNcchHeader = NcchHeader.Parse(ncchHeaderBuf, 0);
+
         long exefsOffset = (long)MainNcchHeader.ExefsOffset * 0x200;
 
         ncchStream.Position = exefsOffset;
@@ -159,6 +158,7 @@ public class CiaSource : IInstallSource
                 byte[] smdhData = new byte[fileSize];
 
                 ncchStream.Position = exefsOffset + 0x200 + fileOffset;
+
                 await ncchStream.ReadExactlyAsync(smdhData, 0, (int)fileSize);                
 
                 SmdhInfo = SmdhParser.TryParse(smdhData);

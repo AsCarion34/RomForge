@@ -5,6 +5,7 @@ namespace _3DS.Core.Models;
 public class RomFsHeader
 {
     public const int Size = 0x28;
+
     public const int DataAlignment = 0x10;
 
     public uint HeaderSize { get; init; }

@@ -14,6 +14,7 @@ public class FileMeta : IDisposable
     {
         _fs = fs;
         _ino = ino;
+
         _fs.Files.AcquireTicket(ino);
     }
 
@@ -22,6 +23,7 @@ public class FileMeta : IDisposable
         if (!_disposed)
         {
             _fs.Files.ReleaseTicket(_ino);
+
             _disposed = true;
         }
     }

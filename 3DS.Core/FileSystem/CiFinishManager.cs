@@ -42,7 +42,6 @@ public class CiFinishManager
             throw new InvalidDataException($"cifinish.bin 버전 불일치: {version}");
 
         var result = new Dictionary<ulong, CiFinishEntry>();
-
         ReadOnlySpan<byte> titleMagic = "TITLE\0"u8;
 
         for (int i = 0; i < count; i++)
@@ -68,6 +67,7 @@ public class CiFinishManager
     public void AddOrUpdate(ulong titleId, byte[]? seed = null)
     {
         _entries[titleId] = new CiFinishEntry { TitleId = titleId, Seed = seed };
+
         Save();
     }
 
@@ -83,7 +83,6 @@ public class CiFinishManager
     {
         using var f = File.Create(_path);
         using var bw = new BinaryWriter(f);
-
         var entries = _entries.Values.OrderBy(e => e.TitleId).ToList();
 
         bw.Write(Magic.ToCharArray());
@@ -95,6 +94,7 @@ public class CiFinishManager
             byte[] raw = new byte[EntrySize];
 
             System.Text.Encoding.ASCII.GetBytes("TITLE\0").CopyTo(raw, 0);
+
             raw[0x06] = entry.Seed is not null ? (byte)1 : (byte)0;
             raw[0x07] = 0;
 

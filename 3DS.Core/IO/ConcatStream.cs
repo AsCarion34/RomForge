@@ -64,6 +64,7 @@ public class ConcatStream(params Stream[] streams) : Stream
         if (disposing)
             foreach (var s in streams)
                 s.Dispose();
+
         base.Dispose(disposing);
     }
 }

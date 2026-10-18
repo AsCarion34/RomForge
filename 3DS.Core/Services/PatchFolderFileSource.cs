@@ -109,6 +109,7 @@ public class PatchFolderFileSource : IRomFsFileSource
             using var ms = new MemoryStream();
 
             s.CopyTo(ms);
+
             cached = ms.ToArray();
             _directCache[relative] = cached;
         }

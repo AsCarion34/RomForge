@@ -33,6 +33,7 @@ public static class IvfcHashTreeWriter
             byte[] hash = SHA256.HashData(block);
 
             stream.Position = hashOffset + (long)(i * Sha256Len);
+
             await stream.WriteAsync(hash, ct);
         }
     }
@@ -70,12 +71,14 @@ public static class IvfcHashTreeWriter
                 int toCopy = Math.Min(blockSize - _blockPos, buffer.Length - offset);
 
                 buffer.Slice(offset, toCopy).CopyTo(_block.AsMemory(_blockPos));
+
                 _blockPos += toCopy;
                 offset += toCopy;
 
                 if (_blockPos == blockSize)
                 {
                     _hashes.Add(SHA256.HashData(_block));
+
                     _blockPos = 0;
                 }
             }
