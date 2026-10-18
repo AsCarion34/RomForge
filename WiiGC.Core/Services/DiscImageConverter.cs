@@ -50,7 +50,7 @@ public class DiscImageConverter
                 _ => -2
             };
 
-            if (result == -1 || ct.IsCancellationRequested)
+            if (result == -1)
             {
                 LogMessage?.Invoke(this, ($"{workType} 취소됨: {Path.GetFileName(inputPath)}", LogLevel.Error));
                 throw new OperationCanceledException(ct);
