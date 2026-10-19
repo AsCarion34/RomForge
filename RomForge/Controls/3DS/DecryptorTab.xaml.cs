@@ -12,7 +12,8 @@ namespace RomForge.Controls._3DS;
 
 public partial class DecryptorTab : UserControl
 {
-    private DecryptorMainViewModel? ViewModel => DataContext as DecryptorMainViewModel;
+    private DecryptorMainViewModel ViewModel => (DecryptorMainViewModel)DataContext;
+    private readonly ListViewColumnSorter _sorter = new();
 
     public DecryptorTab()
     {
@@ -29,19 +30,11 @@ public partial class DecryptorTab : UserControl
             newVm.ScrollToItemRequested += OnScrollToItemRequested;
     }
 
-    private void OnScrollToItemRequested(DecryptorFileItem item)
-    {
-        Dispatcher.InvokeAsync(() =>
-        {
-            lvFiles.ScrollIntoView(item);
-        }, DispatcherPriority.Background);
-    }
+    private void OnScrollToItemRequested(DecryptorFileItem item) => Dispatcher.InvokeAsync(() => lvFiles.ScrollIntoView(item), DispatcherPriority.Background);
 
     private void LvFiles_DragOver(object sender, DragEventArgs e)
     {
-        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop)
-            ? DragDropEffects.Copy
-            : DragDropEffects.None;
+        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
         e.Handled = true;
     }
 
@@ -62,10 +55,9 @@ public partial class DecryptorTab : UserControl
             return;
 
         var selected = lvFiles.SelectedItems.Cast<DecryptorFileItem>().ToList();
+
         ViewModel?.RemoveItems(selected);
     }
-
-    private readonly ListViewColumnSorter _sorter = new();
 
     private void GridViewColumnHeader_Click(object sender, RoutedEventArgs e) => _sorter.HandleHeaderClick(e, lvFiles);
 
@@ -103,6 +95,7 @@ public partial class DecryptorTab : UserControl
     private void BtnRemove_Click(object sender, RoutedEventArgs e)
     {
         var selected = lvFiles.SelectedItems.Cast<DecryptorFileItem>().ToList();
+
         ViewModel?.RemoveItems(selected);
     }
 
@@ -122,6 +115,7 @@ public partial class DecryptorTab : UserControl
             return;
 
         string? dir = Path.GetDirectoryName(selected[0].FilePath);
+
         dir?.OpenFolder();
     }
 }

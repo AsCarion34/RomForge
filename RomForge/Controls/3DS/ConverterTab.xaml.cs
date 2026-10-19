@@ -12,7 +12,8 @@ namespace RomForge.Controls._3DS;
 
 public partial class ConverterTab : UserControl
 {
-    private ConverterMainViewModel? ViewModel => DataContext as ConverterMainViewModel;
+    private ConverterMainViewModel ViewModel => (ConverterMainViewModel)DataContext;
+    private readonly ListViewColumnSorter _sorter = new();
 
     public ConverterTab()
     {
@@ -57,8 +58,6 @@ public partial class ConverterTab : UserControl
 
         ViewModel?.RemoveItems(selected);
     }
-
-    private readonly ListViewColumnSorter _sorter = new();
 
     private void GridViewColumnHeader_Click(object sender, RoutedEventArgs e) => _sorter.HandleHeaderClick(e, lvFiles);
 

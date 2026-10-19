@@ -1,5 +1,6 @@
 ﻿using NSW.Core.Enums;
 using RomForge.ViewModels.Switch;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using Path = System.IO.Path;
@@ -103,5 +104,38 @@ public partial class RepackTab : UserControl
         });
 
         await tcs.Task;
+    }
+
+    private void TxtOutputPath_PreviewDragOver(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            if (e.Data.GetData(DataFormats.FileDrop) is string[] paths && paths.Length > 0 && Directory.Exists(paths[0]))
+                e.Effects = DragDropEffects.Copy;
+            else
+                e.Effects = DragDropEffects.None;
+        }
+        else
+            e.Effects = DragDropEffects.None;
+
+        e.Handled = true;
+    }
+
+    private void TxtOutputPath_Drop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            if (e.Data.GetData(DataFormats.FileDrop) is string[] paths && paths.Length > 0)
+            {
+                string droppedPath = paths[0];
+                string? folderPath = Directory.Exists(droppedPath) ? droppedPath : Path.GetDirectoryName(droppedPath);
+
+                if (!string.IsNullOrEmpty(folderPath) && Directory.Exists(folderPath))
+                    ViewModel.OutputPath = folderPath;
+
+            }
+        }
+
+        e.Handled = true;
     }
 }

@@ -12,7 +12,7 @@ namespace RomForge.Controls.PS;
 
 public partial class UnpackingTab : UserControl
 {
-    private UnpackingMainViewModel? ViewModel => (UnpackingMainViewModel)DataContext;
+    private UnpackingMainViewModel ViewModel => (UnpackingMainViewModel)DataContext;
 
     public UnpackingTab()
     {

@@ -217,7 +217,8 @@
             </Grid.ColumnDefinitions>
             <Border Background="#12FFFFFF" BorderBrush="#30FFFFFF" BorderThickness="1" CornerRadius="6" Grid.Column="0" Height="36">
                 <Grid>
-                    <TextBox Background="Transparent" BorderThickness="0" FontSize="11" Foreground="#DCDCDC" IsEnabled="{Binding PatchVM.IsIdle}" Padding="10,0" Text="{Binding PatchVM.VitaVM.OutputPath, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center"/>
+                    <TextBox Background="Transparent" BorderThickness="0" FontSize="11" Foreground="#DCDCDC" IsEnabled="{Binding PatchVM.IsIdle}" Padding="10,0" Text="{Binding PatchVM.VitaVM.OutputPath, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center"
+                     AllowDrop="True" PreviewDragOver="TxtOutputPath_PreviewDragOver" Drop="TxtOutputPath_Drop"/>
                     <TextBlock FontSize="11" Foreground="#50FFFFFF" IsHitTestVisible="False" Margin="10,0,0,0" Text="작업 폴더를 선택하세요" VerticalAlignment="Center" Visibility="{Binding PatchVM.VitaVM.OutputHintVisibility}"/>
                 </Grid>
             </Border>

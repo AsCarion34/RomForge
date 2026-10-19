@@ -12,7 +12,7 @@ namespace RomForge.Controls.PS;
 
 public partial class ConverterTab : UserControl
 {
-    private PSPConverterViewModel? ViewModel => DataContext as PSPConverterViewModel;
+    private PSPConverterViewModel ViewModel => (PSPConverterViewModel)DataContext;
 
     public ConverterTab()
     {

@@ -328,8 +328,8 @@
                     </StackPanel>
                 </ToggleButton>
 
-                <TextBox Grid.Column="1" Background="Transparent" BorderThickness="0" FontSize="11" Foreground="#DCDCDC" Padding="10,0" VerticalContentAlignment="Center"
-                         Text="{Binding UnifiedConvertVM.OutputPath, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding UnifiedConvertVM.UseCustomOutputPath}"/>
+                <TextBox Grid.Column="1" Background="Transparent" BorderThickness="0" FontSize="11" Foreground="#DCDCDC" Padding="10,0" VerticalContentAlignment="Center" Text="{Binding UnifiedConvertVM.OutputPath, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding UnifiedConvertVM.UseCustomOutputPath}"
+                         AllowDrop="True" PreviewDragOver="TxtOutputPath_PreviewDragOver" Drop="TxtOutputPath_Drop"/>
 
                 <Button Grid.Column="2" Style="{StaticResource GrayButton}" Command="{Binding UnifiedConvertVM.BrowseOutputCommand}" IsEnabled="{Binding UnifiedConvertVM.UseCustomOutputPath}" 
                         Width="30" Height="30" Margin="0,0,3,0" Padding="0" VerticalAlignment="Center" HorizontalAlignment="Center">

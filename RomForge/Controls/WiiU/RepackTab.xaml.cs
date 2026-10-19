@@ -8,190 +8,221 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace RomForge.Controls.WiiU
+namespace RomForge.Controls.WiiU;
+
+public partial class RepackTab : UserControl
 {
-    public partial class RepackTab : UserControl
+    RepackMainViewModel ViewModel => (RepackMainViewModel)DataContext;
+
+    public RepackTab() => InitializeComponent();
+
+    private void PatchDropTarget_Click(object sender, MouseButtonEventArgs e)
     {
-        RepackMainViewModel ViewModel => (RepackMainViewModel)DataContext;
+        if (sender is not FrameworkElement { ContextMenu: not null } fe)
+            return;
 
-        public RepackTab() => InitializeComponent();
+        fe.ContextMenu.PlacementTarget = fe;
+        fe.ContextMenu.IsOpen = true;
+    }
 
-        private void PatchDropTarget_Click(object sender, MouseButtonEventArgs e)
+    private void PatchMenu_SelectFolder_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: TitleInputEntry entry }) 
+            return;
+
+        var dlg = new Microsoft.Win32.OpenFolderDialog { Title = $"{entry.TitleName}에 적용할 한글패치 폴더 선택" };
+
+        if (dlg.ShowDialog() == true)
+            entry.PatchPath = dlg.FolderName;
+    }
+
+    private void PatchMenu_SelectArchive_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: TitleInputEntry entry }) 
+            return;
+
+        var dlg = new Microsoft.Win32.OpenFileDialog
         {
-            if (sender is not FrameworkElement { ContextMenu: not null } fe)
-                return;
+            Title = $"{entry.TitleName}에 적용할 한글패치 압축파일 선택",
+            Filter = "압축파일 (*.zip;*.7z)|*.zip;*.7z"
+        };
 
-            fe.ContextMenu.PlacementTarget = fe;
-            fe.ContextMenu.IsOpen = true;
-        }
+        if (dlg.ShowDialog() == true)
+            entry.PatchPath = dlg.FileName;
+    }
 
-        private void PatchMenu_SelectFolder_Click(object sender, RoutedEventArgs e)
+    private void PatchDropTarget_DragEnter(object sender, DragEventArgs e)
+    {
+        e.Effects = PatchDropValidator.IsValidPatchDrop(e.Data) ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void PatchDropTarget_DragLeave(object sender, DragEventArgs e) => e.Handled = true;
+
+    private void PatchDropTarget_Drop(object sender, DragEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: TitleInputEntry entry }) 
+            return;
+
+        if (e.Data.GetData(DataFormats.FileDrop) is not string[] paths || paths.Length == 0)
+            return;
+
+        string path = paths[0];
+
+        if (PatchDropValidator.IsValidPatchPath(path))
+            entry.PatchPath = path;
+
+        e.Handled = true;
+    }
+
+    private void Root_DragEnter(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private async void Root_Drop(object sender, DragEventArgs e)
+    {
+        if (!e.Data.GetDataPresent(DataFormats.FileDrop))
         {
-            if (sender is not FrameworkElement { DataContext: TitleInputEntry entry }) 
-                return;
-
-            var dlg = new Microsoft.Win32.OpenFolderDialog { Title = $"{entry.TitleName}에 적용할 한글패치 폴더 선택" };
-
-            if (dlg.ShowDialog() == true)
-                entry.PatchPath = dlg.FolderName;
-        }
-
-        private void PatchMenu_SelectArchive_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is not FrameworkElement { DataContext: TitleInputEntry entry }) 
-                return;
-
-            var dlg = new Microsoft.Win32.OpenFileDialog
-            {
-                Title = $"{entry.TitleName}에 적용할 한글패치 압축파일 선택",
-                Filter = "압축파일 (*.zip;*.7z)|*.zip;*.7z"
-            };
-
-            if (dlg.ShowDialog() == true)
-                entry.PatchPath = dlg.FileName;
-        }
-
-        private void PatchDropTarget_DragEnter(object sender, DragEventArgs e)
-        {
-            e.Effects = PatchDropValidator.IsValidPatchDrop(e.Data) ? DragDropEffects.Copy : DragDropEffects.None;
             e.Handled = true;
+            return;
         }
 
-        private void PatchDropTarget_DragLeave(object sender, DragEventArgs e) => e.Handled = true;
+        string[]? items = (string[]?)e.Data.GetData(DataFormats.FileDrop);
 
-        private void PatchDropTarget_Drop(object sender, DragEventArgs e)
+        if (items is null || items.Length == 0)
         {
-            if (sender is not FrameworkElement { DataContext: TitleInputEntry entry }) 
-                return;
-
-            if (e.Data.GetData(DataFormats.FileDrop) is not string[] paths || paths.Length == 0)
-                return;
-
-            string path = paths[0];
-
-            if (PatchDropValidator.IsValidPatchPath(path))
-                entry.PatchPath = path;
-
             e.Handled = true;
+            return;
         }
 
-        private void Root_DragEnter(object sender, DragEventArgs e)
+        foreach (var item in items)
+            await ViewModel.AddDroppedItemAsync(item);
+
+        e.Handled = true;
+    }
+
+    private void LvFiles_KeyUp(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Delete)
+            return;
+
+        var selected = ViewModel?.SelectedEntry;
+
+        if (selected is not null)
+            ViewModel?.Entries.Remove(selected);
+    }
+
+    private async void BtnStart_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.IsLocked)
         {
-            e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+            ViewModel.Cancel();
+            return;
+        }
+
+        await ViewModel.StartAsync(BuildMode.FullProcess);
+    }
+
+    private async void BtnUnpack_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.IsLocked)
+        {
+            ViewModel.Cancel();
+            return;
+        }
+
+        await ViewModel.StartAsync(BuildMode.UnpackOnly);
+    }
+
+    private async void BtnRebuild_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.IsLocked)
+        {
+            ViewModel.Cancel();
+            return;
+        }
+
+        await ViewModel.StartAsync(BuildMode.RebuildOnly);
+    }
+
+    private void BtnRemove_Click(object sender, RoutedEventArgs e)
+    {
+        var selected = ViewModel?.SelectedEntry;
+
+        if (selected is not null)
+            ViewModel?.Entries.Remove(selected);
+    }
+
+    private void BtnClear_Click(object sender, RoutedEventArgs e) => ViewModel?.Entries.Clear();
+
+    private void BtnRemovePatch_Click(object sender, RoutedEventArgs e)
+    {
+        if(ViewModel?.SelectedEntry != null)
+            ViewModel.SelectedEntry.PatchPath = null;
+    }
+
+    private void BtnHelp_Click(object sender, RoutedEventArgs e)
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "https://sinjunyoung.github.io/RomForge/wiiu-repack/",
+            UseShellExecute = true
+        };
+
+        System.Diagnostics.Process.Start(psi);
+    }
+
+    private void LvFiles_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        var selected = ViewModel?.SelectedEntry;
+
+        if (selected == null)
             e.Handled = true;
-        }
+    }
 
-        private async void Root_Drop(object sender, DragEventArgs e)
+    private void MenuItem_OpenFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var selected = ViewModel?.SelectedEntry;
+
+        if (selected == null)
+            return;
+
+        string? dir = Path.GetDirectoryName(selected.FilePath);
+
+        dir?.OpenFolder();
+    }
+
+    private void TxtOutputPath_PreviewDragOver(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
         {
-            if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+            if (e.Data.GetData(DataFormats.FileDrop) is string[] paths && paths.Length > 0 && Directory.Exists(paths[0]))
+                e.Effects = DragDropEffects.Copy;
+            else
+                e.Effects = DragDropEffects.None;
+        }
+        else
+            e.Effects = DragDropEffects.None;
+
+        e.Handled = true;
+    }
+
+    private void TxtOutputPath_Drop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            if (e.Data.GetData(DataFormats.FileDrop) is string[] paths && paths.Length > 0)
             {
-                e.Handled = true;
-                return;
+                string droppedPath = paths[0];
+                string? folderPath = Directory.Exists(droppedPath) ? droppedPath : Path.GetDirectoryName(droppedPath);
+
+                if (!string.IsNullOrEmpty(folderPath) && Directory.Exists(folderPath))
+                    ViewModel.OutputPath = folderPath;
             }
-
-            string[]? items = (string[]?)e.Data.GetData(DataFormats.FileDrop);
-
-            if (items is null || items.Length == 0)
-            {
-                e.Handled = true;
-                return;
-            }
-
-            foreach (var item in items)
-                await ViewModel.AddDroppedItemAsync(item);
-
-            e.Handled = true;
         }
 
-        private void LvFiles_KeyUp(object sender, KeyEventArgs e)
-        {
-            if (e.Key != Key.Delete)
-                return;
-
-            var selected = ViewModel?.SelectedEntry;
-
-            if (selected is not null)
-                ViewModel?.Entries.Remove(selected);
-        }
-
-        private async void BtnStart_Click(object sender, RoutedEventArgs e)
-        {
-            if (ViewModel.IsLocked)
-            {
-                ViewModel.Cancel();
-                return;
-            }
-
-            await ViewModel.StartAsync(BuildMode.FullProcess);
-        }
-
-        private async void BtnUnpack_Click(object sender, RoutedEventArgs e)
-        {
-            if (ViewModel.IsLocked)
-            {
-                ViewModel.Cancel();
-                return;
-            }
-
-            await ViewModel.StartAsync(BuildMode.UnpackOnly);
-        }
-
-        private async void BtnRebuild_Click(object sender, RoutedEventArgs e)
-        {
-            if (ViewModel.IsLocked)
-            {
-                ViewModel.Cancel();
-                return;
-            }
-
-            await ViewModel.StartAsync(BuildMode.RebuildOnly);
-        }
-
-        private void BtnRemove_Click(object sender, RoutedEventArgs e)
-        {
-            var selected = ViewModel?.SelectedEntry;
-
-            if (selected is not null)
-                ViewModel?.Entries.Remove(selected);
-        }
-
-        private void BtnClear_Click(object sender, RoutedEventArgs e) => ViewModel?.Entries.Clear();
-
-        private void BtnRemovePatch_Click(object sender, RoutedEventArgs e)
-        {
-            if(ViewModel?.SelectedEntry != null)
-                ViewModel.SelectedEntry.PatchPath = null;
-        }
-
-        private void BtnHelp_Click(object sender, RoutedEventArgs e)
-        {
-            var psi = new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = "https://sinjunyoung.github.io/RomForge/wiiu-repack/",
-                UseShellExecute = true
-            };
-
-            System.Diagnostics.Process.Start(psi);
-        }
-
-        private void LvFiles_ContextMenuOpening(object sender, ContextMenuEventArgs e)
-        {
-            var selected = ViewModel?.SelectedEntry;
-
-            if (selected == null)
-                e.Handled = true;
-        }
-
-        private void MenuItem_OpenFolder_Click(object sender, RoutedEventArgs e)
-        {
-            var selected = ViewModel?.SelectedEntry;
-
-            if (selected == null)
-                return;
-
-            string? dir = Path.GetDirectoryName(selected.FilePath);
-
-            dir?.OpenFolder();
-        }
+        e.Handled = true;
     }
 }

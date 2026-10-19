@@ -11,7 +11,7 @@ namespace RomForge.Controls.Switch;
 
 public partial class SplitFileListControl : UserControl
 {
-    private SplitMainViewModel? ViewModel => DataContext as SplitMainViewModel;
+    private SplitMainViewModel ViewModel => (SplitMainViewModel)DataContext;
 
     public SplitFileListControl() => InitializeComponent();
 

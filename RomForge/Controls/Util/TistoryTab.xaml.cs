@@ -65,6 +65,38 @@ public partial class TistoryTab : UserControl
             ViewModel.ChangeSaveDirectory(dlg.SelectedPath);
     }
 
+    private void TxtSaveDirectory_PreviewDragOver(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            if (e.Data.GetData(DataFormats.FileDrop) is string[] paths && paths.Length > 0 && Directory.Exists(paths[0]))
+                e.Effects = DragDropEffects.Copy;
+            else
+                e.Effects = DragDropEffects.None;
+        }
+        else
+            e.Effects = DragDropEffects.None;
+
+        e.Handled = true;
+    }
+
+    private void TxtSaveDirectory_Drop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            if (e.Data.GetData(DataFormats.FileDrop) is string[] paths && paths.Length > 0)
+            {
+                string droppedPath = paths[0];
+                string ? folderPath = Directory.Exists(droppedPath) ? droppedPath : Path.GetDirectoryName(droppedPath);
+
+                if (!string.IsNullOrEmpty(folderPath) && Directory.Exists(folderPath))
+                    ViewModel?.ChangeSaveDirectory(folderPath);
+            }
+        }
+
+        e.Handled = true;
+    }
+
     private void LvFiles_KeyUp(object sender, KeyEventArgs e)
     {
         if (e.Key != Key.Delete)

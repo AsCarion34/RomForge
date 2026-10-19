@@ -12,7 +12,7 @@ namespace RomForge.Controls.Switch;
 
 public partial class RenameTab : UserControl
 {
-    private RenameMainViewModel? ViewModel => DataContext as RenameMainViewModel;
+    private RenameMainViewModel ViewModel => (RenameMainViewModel)DataContext;
 
     private readonly ListViewColumnSorter _sorter = new();
 
@@ -40,7 +40,7 @@ public partial class RenameTab : UserControl
         if (e.Key != Key.Delete)
             return;
 
-        ViewModel?.RemoveItems(lvFiles.SelectedItems.Cast<RenameFileItem>().ToList());
+        ViewModel?.RemoveItems([.. lvFiles.SelectedItems.Cast<RenameFileItem>()]);
     }
 
     private void GridViewColumnHeader_Click(object sender, RoutedEventArgs e) => _sorter.HandleHeaderClick(e, lvFiles);
@@ -80,7 +80,7 @@ public partial class RenameTab : UserControl
         await ViewModel.AddPathsAsync(Common.Utils.ExpandPaths([dialog.SelectedPath]));
     }
 
-    private void BtnRemove_Click(object sender, RoutedEventArgs e) => ViewModel?.RemoveItems(lvFiles.SelectedItems.Cast<RenameFileItem>().ToList());
+    private void BtnRemove_Click(object sender, RoutedEventArgs e) => ViewModel?.RemoveItems([.. lvFiles.SelectedItems.Cast<RenameFileItem>()]);
 
     private void BtnClear_Click(object sender, RoutedEventArgs e) => ViewModel?.ClearItems();
 

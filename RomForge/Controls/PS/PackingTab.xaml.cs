@@ -14,7 +14,7 @@ public partial class PackingTab : UserControl
     private readonly string[] _imgExts = [".jpg", ".jpeg", ".png", ".bmp", ".webp"];
     private readonly string[] _audioExts = [".mp3", ".wav", ".at3"];
 
-    private PackingMainViewModel? ViewModel => DataContext as PackingMainViewModel;
+    private PackingMainViewModel ViewModel => (PackingMainViewModel)DataContext;
 
     public PackingTab() => InitializeComponent();
 
