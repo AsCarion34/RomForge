@@ -47,7 +47,6 @@ public sealed class RepackService()
     public static TitleInputEntry PeekFolder(string folderPath)
     {
         using ITitleSource source = WupTitleSource.LooksLikeWupFolder(folderPath) ? new WupTitleSource(folderPath) : new FolderTitleSource(folderPath);
-
         return BuildRowFromFolder(folderPath, source);
     }
 
@@ -90,7 +89,7 @@ public sealed class RepackService()
 
         try
         {
-            var meta = await WiiUMetadataExtractor.Extract(path, keysTxtPath);
+            var meta = await MetadataExtractor.Extract(path, keysTxtPath);
 
             if (meta is not null)
             {
@@ -126,7 +125,7 @@ public sealed class RepackService()
 
         try
         {
-            var meta = source is WupTitleSource ? WiiUMetadataExtractor.ExtractFromTitleSource(source) : WiiUMetadataExtractor.ExtractFromFolder(folderPath);
+            var meta = source is WupTitleSource ? MetadataExtractor.ExtractFromTitleSource(source) : MetadataExtractor.ExtractFromFolder(folderPath);
 
             if (meta is not null)
             {
@@ -160,8 +159,10 @@ public sealed class RepackService()
             var bitmap = new BitmapImage();
 
             bitmap.BeginInit();
+
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
             bitmap.StreamSource = ms;
+
             bitmap.EndInit();
             bitmap.Freeze();
 
@@ -382,7 +383,11 @@ public sealed class RepackService()
                 {
                     if (File.Exists(outputWuaPath))
                     {
-                        try { File.Delete(outputWuaPath); } catch { }
+                        try
+                        { 
+                            File.Delete(outputWuaPath);
+                        }
+                        catch { }
                     }
 
                     throw;
@@ -466,7 +471,11 @@ public sealed class RepackService()
             {
                 if (Directory.Exists(wupFolder))
                 {
-                    try { Directory.Delete(wupFolder, true); } catch { }
+                    try 
+                    {
+                        Directory.Delete(wupFolder, true);
+                    }
+                    catch { }
                 }
                 throw;
             }

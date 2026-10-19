@@ -29,6 +29,7 @@ public class CompressKnownConverter(Action<string, LogLevel> log, IProgress<Prog
                         progress.Report(new ProgressInfo { Label = "CHD 변환 중...", Percent = 0 });
 
                         FileConverter converter = new(AppConfig.Instance.Chdman.Compression);
+
                         converter.LogMessage += (_, e) => log(e.Message, e.Level);
 
                         var chdResult = await converter.ConvertFileAsync(tempCuePath, null, progress, null, ct);
@@ -60,6 +61,7 @@ public class CompressKnownConverter(Action<string, LogLevel> log, IProgress<Prog
                     progress.Report(new ProgressInfo { Label = "CHD 변환 중...", Percent = 0 });
 
                     FileConverter converter = new(AppConfig.Instance.Chdman.Compression);
+
                     converter.LogMessage += (_, e) => log(e.Message, e.Level);
 
                     var chdResult = await converter.ConvertFileAsync(outputCuePath!, null, progress, null, ct);
@@ -83,6 +85,7 @@ public class CompressKnownConverter(Action<string, LogLevel> log, IProgress<Prog
                     progress.Report(new ProgressInfo { Label = "CHD 변환 중...", Percent = 0 });
 
                     FileConverter converter = new(AppConfig.Instance.Chdman.Compression);
+
                     converter.LogMessage += (_, e) => log(e.Message, e.Level);
 
                     var chdResult = await converter.ConvertFileAsync(outputGdiPath!, null, progress, null, ct);
@@ -106,6 +109,7 @@ public class CompressKnownConverter(Action<string, LogLevel> log, IProgress<Prog
                     progress.Report(new ProgressInfo { Label = "CHD 변환 중...", Percent = 0 });
 
                     FileConverter converter = new(AppConfig.Instance.Chdman.Compression);
+
                     converter.LogMessage += (_, e) => log(e.Message, e.Level);
 
                     var chdResult = await converter.ConvertFileAsync(outputPath, null, progress, null, ct);
@@ -144,6 +148,7 @@ public class CompressKnownConverter(Action<string, LogLevel> log, IProgress<Prog
                     progress.Report(new ProgressInfo { Label = "포맷 변환 중...", Percent = 0 });
 
                     DiscImageConverter converter = new();
+
                     converter.LogMessage += (_, e) => log(e.Message, e.Level);
                     converter.ProgressChanged += (_, e) => progress.Report(new ProgressInfo { Label = "포맷 변환 중...", Percent = e.Progress });
 

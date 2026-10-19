@@ -1,8 +1,7 @@
 ﻿using PBP.Core.Services;
+using RomForge.Core.Models.PS;
 
 namespace RomForge.Core.Services.PS;
-
-public record CoverArtResult(byte[] Icon0Png, byte[] Pic0Png, byte[] Pic1Png, string? ETitle);
 
 public class CoverArtUpdater
 {
@@ -36,11 +35,7 @@ public class CoverArtUpdater
 
             ct.ThrowIfCancellationRequested();
 
-            return new CoverArtResult(
-                icon0Png ?? EmbeddedAssetProvider.GetDefaultIcon0(),
-                pic0Png ?? EmbeddedAssetProvider.GetDefaultPic0(),
-                pic1Png ?? EmbeddedAssetProvider.GetDefaultPic1(),
-                !string.IsNullOrWhiteSpace(meta?.ETitle) ? meta.ETitle : null);
+            return new CoverArtResult(icon0Png ?? EmbeddedAssetProvider.GetDefaultIcon0(), pic0Png ?? EmbeddedAssetProvider.GetDefaultPic0(), pic1Png ?? EmbeddedAssetProvider.GetDefaultPic1(), !string.IsNullOrWhiteSpace(meta?.ETitle) ? meta.ETitle : null);
         }
         catch (OperationCanceledException)
         {

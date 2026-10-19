@@ -194,7 +194,7 @@ public class ConvertMainViewModel : ToolTabViewModel
             case "3ds":
             case "cia":
             case "zcci":
-                var ds = new _3DSFileItem(path);
+                var ds = new FileItem(path);
                 return ds.SelectedTargetFormat is "" or "미지원" ? null : ds;
 
             case "wud":
@@ -204,7 +204,7 @@ public class ConvertMainViewModel : ToolTabViewModel
 
             case "mds":
             case "ccd":
-                return new CdConvertFileItem(path);
+                return new ConvertFileItem(path);
 
             case "pbp":
                 return new PbpFileItem(path);
@@ -240,7 +240,7 @@ public class ConvertMainViewModel : ToolTabViewModel
         {
             switch (item)
             {
-                case _3DSFileItem ds:
+                case FileItem ds:
                     {
                         var result = await Task.Run(() => Core.Services._3DS.Util.ParseFile(ds.FilePath));
 
@@ -269,7 +269,7 @@ public class ConvertMainViewModel : ToolTabViewModel
                             wu.TitleIdHex = source.TitleIdHex;
                             wu.TitleVersion = source.TitleVersion;
 
-                            var folderMeta = wu.Extension == "wup" ? WiiUMetadataExtractor.ExtractFromTitleSource(source) : WiiUMetadataExtractor.ExtractFromFolder(wu.FilePath);
+                            var folderMeta = wu.Extension == "wup" ? MetadataExtractor.ExtractFromTitleSource(source) : MetadataExtractor.ExtractFromFolder(wu.FilePath);
 
                             if (folderMeta is not null)
                                 wu.TitleName = folderMeta.Title;
@@ -278,7 +278,7 @@ public class ConvertMainViewModel : ToolTabViewModel
 
                     if (!Directory.Exists(wu.FilePath))
                     {
-                        var meta = await WiiUMetadataExtractor.Extract(wu.FilePath, KeysPath);
+                        var meta = await MetadataExtractor.Extract(wu.FilePath, KeysPath);
 
                         if (meta is not null)
                             wu.TitleName = meta.Title;
@@ -286,7 +286,7 @@ public class ConvertMainViewModel : ToolTabViewModel
 
                     break;
 
-                case CdConvertFileItem cd:
+                case ConvertFileItem cd:
                     var trackCount = await Task.Run(() =>
                     {
                         var reader = DiscImageReaderFactory.Resolve(cd.FilePath);
@@ -477,7 +477,7 @@ public class ConvertMainViewModel : ToolTabViewModel
                 }
                 break;
 
-            case _3DSFileItem ds:
+            case FileItem ds:
                 {
                     KeyStore key = new();
 
@@ -511,7 +511,7 @@ public class ConvertMainViewModel : ToolTabViewModel
                 await Task.Run(() => ConvertWiiUOne(wu, _cts.Token));
                 break;
 
-            case CdConvertFileItem cd:
+            case ConvertFileItem cd:
                 await ConvertCdOneAsync(cd, progress, _cts.Token);
                 break;
 
@@ -533,7 +533,7 @@ public class ConvertMainViewModel : ToolTabViewModel
         }
     }
 
-    private async Task ConvertCdOneAsync(CdConvertFileItem cd, IProgress<ProgressInfo> progress, CancellationToken ct)
+    private async Task ConvertCdOneAsync(ConvertFileItem cd, IProgress<ProgressInfo> progress, CancellationToken ct)
     {
         if (cd.SelectedTargetFormat != "CHD")
         {
@@ -541,7 +541,7 @@ public class ConvertMainViewModel : ToolTabViewModel
             var discImage = reader.Read(cd.FilePath);
             var outDir = ResolveOutputDir(cd.FilePath);
 
-            if (cd.OutputFormat == CdOutputFormat.Iso)
+            if (cd.OutputFormat == Core.Models.CD.OutputFormat.Iso)
                 await IsoWriter.WriteAsync(discImage, outDir, cd.FileName, progress, ct);
             else
                 await BinCueWriter.WriteAsync(discImage, outDir, cd.FileName, progress, ct);
@@ -672,7 +672,7 @@ public class ConvertMainViewModel : ToolTabViewModel
 
     private void ConvertWiiUOne(WiiUFileItem item, CancellationToken ct)
     {
-        var sources = WiiUConverter.OpenSources(item.FilePath, KeysPath);
+        var sources = Converter.OpenSources(item.FilePath, KeysPath);
         var outputRoot = ResolveOutputDir(item.FilePath);
 
         try
@@ -684,7 +684,7 @@ public class ConvertMainViewModel : ToolTabViewModel
                 ct.ThrowIfCancellationRequested();
 
                 var source = sources[i];
-                var outputName = WiiUConverter.BuildOutputName(source, item.TitleName);
+                var outputName = Converter.BuildOutputName(source, item.TitleName);
 
                 void OnFileProgress(int done, int totalFiles, string label)
                 {
@@ -696,17 +696,17 @@ public class ConvertMainViewModel : ToolTabViewModel
                 {
                     case "WUP":
                         var wupFolder = Utils.GetUniqueFolderPath(Path.Combine(outputRoot, $"{outputName} [WUP]"));
-                        WiiUConverter.ConvertToWup(source, wupFolder, OnFileProgress, ct);
+                        Converter.ConvertToWup(source, wupFolder, OnFileProgress, ct);
                         break;
 
                     case "Loadiine":
                         var loadiineFolder = Utils.GetUniqueFolderPath(Path.Combine(outputRoot, $"{outputName} [Loadiine]"));
-                        WiiUConverter.ConvertToLoadiine(source, loadiineFolder, OnFileProgress, ct);
+                        Converter.ConvertToLoadiine(source, loadiineFolder, OnFileProgress, ct);
                         break;
 
                     case "WUA":
                         var wuaFile = Utils.GetUniqueFilePath(Path.Combine(outputRoot, $"{outputName}.wua"));
-                        WiiUConverter.ConvertToWua(source, wuaFile, OnFileProgress, ct);
+                        Converter.ConvertToWua(source, wuaFile, OnFileProgress, ct);
                         break;
 
                     default:

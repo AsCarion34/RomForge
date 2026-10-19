@@ -26,6 +26,7 @@ namespace RomForge.Core.Services.Switch
                 if (trimmed.StartsWith('[') && trimmed.EndsWith(']'))
                 {
                     currentSection = trimmed[1..^1];
+
                     if (!_data.ContainsKey(currentSection))
                         _data[currentSection] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 }

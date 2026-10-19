@@ -40,8 +40,7 @@ public sealed class UnpackService
                     var wud = WudReader.Open(inputPath);
                     try
                     {
-                        byte[]? discKey = WuDiscReader.FindDiscKey(wud, inputPath, keys.KeyCandidates) ?? throw new InvalidDataException(
-                                "Could not find a working disc key. None of the candidates in keys.txt matched, " + "and no companion \"<name>.key\" file was found next to the input.");
+                        byte[]? discKey = WuDiscReader.FindDiscKey(wud, inputPath, keys.KeyCandidates) ?? throw new InvalidDataException("Could not find a working disc key. None of the candidates in keys.txt matched, " + "and no companion \"<name>.key\" file was found next to the input.");
                         var disc = WuDiscReader.Open(wud, discKey);
                         return [new WudTitleSource(wud, disc)];
                     }

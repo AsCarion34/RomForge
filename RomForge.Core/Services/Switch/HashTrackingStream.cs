@@ -11,34 +11,40 @@ public sealed class HashTrackingStream(Stream inner, long hashLimit) : Stream
     public byte[] GetHash() => _sha256.GetHashAndReset();
 
     public override bool CanRead => false;
+
     public override bool CanSeek => inner.CanSeek;
+
     public override bool CanWrite => true;
+
     public override long Length => inner.Length;
+
     public override long Position { get => inner.Position; set => inner.Position = value; }
+
     public override void Flush() => inner.Flush();
+
     public override Task FlushAsync(CancellationToken ct) => inner.FlushAsync(ct);
+
     public override long Seek(long offset, SeekOrigin origin) => inner.Seek(offset, origin);
+
     public override void SetLength(long value) => inner.SetLength(value);
+
     public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
     public override void Write(byte[] buffer, int offset, int count)
     {
         inner.Write(buffer, offset, count);
-
         HashChunk(buffer.AsSpan(offset, count));
     }
 
     public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken ct)
     {
         await inner.WriteAsync(buffer.AsMemory(offset, count), ct);
-
         HashChunk(buffer.AsSpan(offset, count));
     }
 
     public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken ct = default)
     {
         await inner.WriteAsync(buffer, ct);
-
         HashChunk(buffer.Span);
     }
 

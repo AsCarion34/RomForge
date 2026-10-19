@@ -20,8 +20,5 @@ public class BoolToPlayStopTextConverter : IValueConverter
         return isPlaying ? "정지" : "재생";
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-    {
-        throw new NotImplementedException();
-    }
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
 }

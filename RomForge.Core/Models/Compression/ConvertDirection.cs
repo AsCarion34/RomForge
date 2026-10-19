@@ -3,6 +3,8 @@
 public enum ConvertDirection
 {
     Compress,
+
     Decompress,
+
     Unknown,
 }

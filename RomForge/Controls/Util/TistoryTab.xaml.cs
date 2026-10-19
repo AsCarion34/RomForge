@@ -19,7 +19,6 @@ public partial class TistoryTab : UserControl
     public TistoryTab()
     {
         InitializeComponent();
-
         DataContextChanged += TistoryTab_DataContextChanged;
     }
 

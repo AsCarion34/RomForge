@@ -35,11 +35,7 @@ public class InstallerMainViewModel : ToolTabViewModel
 
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
-    private static readonly string[] MovableSearchPaths =
-    [
-        "movable.sed",
-        @"gm9\out\movable.sed",
-    ];
+    private static readonly string[] MovableSearchPaths = [ "movable.sed", @"gm9\out\movable.sed", ];
 
     public InstalledTitlesMainViewModel InstalledTitles { get; }
 
@@ -119,7 +115,6 @@ public class InstallerMainViewModel : ToolTabViewModel
 
         Tools.Add(InstalledTitles);
         Tools.Add(Install);
-
         RegisterChild(InstalledTitles);
         RegisterChild(Install);
 
@@ -156,7 +151,9 @@ public class InstallerMainViewModel : ToolTabViewModel
             return;
 
         _keyStore = new KeyStore();
+
         _keyStore.LoadMovable(MovablePath);
+
         _sdCrypto = new SdCrypto(_keyStore);
         _scanner = new SdTitleScanner(SdPath, _keyStore, _sdCrypto);
     }
@@ -226,6 +223,7 @@ public class InstallerMainViewModel : ToolTabViewModel
                 StatusMessage = $"오류: {ex.Message}";
                 MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
                 AppendLog($"오류: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 throw;
             }
         }

@@ -123,21 +123,18 @@ public static class SourceArchiveExtractor
             if (string.Equals(Path.GetExtension(entry.Key), ".cue", StringComparison.OrdinalIgnoreCase))
             {
                 var cueResult = ResolveCue(session, entry, entries, extractDir, progress, ct);
-
                 return cueResult.ResolvedPath!;
             }
 
             if (string.Equals(Path.GetExtension(entry.Key), ".gdi", StringComparison.OrdinalIgnoreCase))
             {
                 var gdiResult = ResolveGdi(session, entry, entries, extractDir, progress, ct);
-
                 return gdiResult.ResolvedPath!;
             }
 
             if (string.Equals(Path.GetExtension(entry.Key), ".ccd", StringComparison.OrdinalIgnoreCase))
             {
                 var ccdResult = ResolveCcd(session, entry, entries, extractDir, progress, ct);
-
                 return ccdResult.ResolvedPath!;
             }
 
@@ -152,9 +149,7 @@ public static class SourceArchiveExtractor
         Task.Run(() =>
         {
             using var session = OpenSession(archivePath);
-
             var targets = PickHashTargets(session, ct, out int skipped);
-
             long totalBytes = Math.Max(1, targets.Sum(e => e.Size));
             long doneBytes = 0;
 
@@ -164,11 +159,7 @@ public static class SourceArchiveExtractor
 
                 long baseBytes = doneBytes;
                 long entrySize = target.Size;
-
-                var entryProgress = progress is null
-                    ? null
-                    : new DirectProgress(value => progress.Report((baseBytes + value * entrySize) / totalBytes));
-
+                var entryProgress = progress is null ? null : new DirectProgress(value => progress.Report((baseBytes + value * entrySize) / totalBytes));
                 var result = session.ComputeHash(target.Key, entryProgress, ct);
 
                 doneBytes += entrySize;
@@ -257,7 +248,6 @@ public static class SourceArchiveExtractor
             .Where(e => !IgnoredExtensions.Contains(Path.GetExtension(e.Key), StringComparer.OrdinalIgnoreCase))
             .Where(e => !HashExcludedExtensions.Contains(Path.GetExtension(e.Key), StringComparer.OrdinalIgnoreCase))
             .ToList();
-
         var romLike = dataFiles.Where(e => RomLikeExtensions.Contains(Path.GetExtension(e.Key))).ToList();
         var pool = romLike.Count > 0 ? romLike : dataFiles;
 
@@ -285,13 +275,10 @@ public static class SourceArchiveExtractor
             if (Directory.Exists(path))
                 Directory.Delete(path, true);
         }
-        catch
-        {
-        }
+        catch { }
     }
 
-    private static List<ArchiveEntryInfo> FindByExtension(List<ArchiveEntryInfo> entries, string extension) =>
-        [.. entries.Where(e => string.Equals(Path.GetExtension(e.Key), extension, StringComparison.OrdinalIgnoreCase))];
+    private static List<ArchiveEntryInfo> FindByExtension(List<ArchiveEntryInfo> entries, string extension) => [.. entries.Where(e => string.Equals(Path.GetExtension(e.Key), extension, StringComparison.OrdinalIgnoreCase))];
 
     private static List<ArchiveEntryInfo> SelectCandidates(List<ArchiveEntryInfo> entries)
     {
@@ -393,11 +380,9 @@ public static class SourceArchiveExtractor
     {
         string ccdDir = GetEntryDirectory(ccdEntry.Key);
         string ccdBaseName = Path.GetFileNameWithoutExtension(ccdEntry.Key);
-
         var companionEntries = entries
             .Where(e => GetEntryDirectory(e.Key) == ccdDir && string.Equals(Path.GetFileNameWithoutExtension(e.Key), ccdBaseName, StringComparison.OrdinalIgnoreCase))
             .ToList();
-
         var imgEntry = companionEntries.FirstOrDefault(e => string.Equals(Path.GetExtension(e.Key), ".img", StringComparison.OrdinalIgnoreCase));
 
         if (imgEntry.Key is null)
@@ -504,7 +489,6 @@ public static class SourceArchiveExtractor
         public RomHashResult ComputeHash(string key, IProgress<double>? progress, CancellationToken ct)
         {
             var entry = _byKey[key];
-
             using var entryStream = entry.OpenEntryStream();
 
             return RomHasher.HashStream(entryStream, entry.Size, progress, ct);
@@ -534,6 +518,7 @@ public static class SourceArchiveExtractor
                 string key = info.FileName.Replace('\\', '/');
 
                 _byKey[key] = info;
+
                 entries.Add(new ArchiveEntryInfo(key, (long)info.Size, info.IsDirectory));
             }
 

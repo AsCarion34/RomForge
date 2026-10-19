@@ -38,9 +38,9 @@ public class RepackMainViewModel : ToolTabViewModel
     private RiivolutionWorkspace? _workspace;
     private RiivolutionPatchSet? _patch;
     private WiiDiscInfo? _disc;
-    private WiiGameDisplay? _gameInfo;
+    private GameDisplay? _gameInfo;
     private ImageSource? _gameIcon;
-    private WiiPatchDisplay? _patchInfo;
+    private PatchDisplay? _patchInfo;
     private int _discVersion;
     private int _patchVersion;
     private string _inputPath = string.Empty;
@@ -146,7 +146,7 @@ public class RepackMainViewModel : ToolTabViewModel
         }
     }
 
-    public WiiGameDisplay? GameInfo
+    public GameDisplay? GameInfo
     {
         get => _gameInfo;
         private set
@@ -164,7 +164,7 @@ public class RepackMainViewModel : ToolTabViewModel
         private set { _gameIcon = value; OnPropertyChanged(); }
     }
 
-    public WiiPatchDisplay? PatchInfo
+    public PatchDisplay? PatchInfo
     {
         get => _patchInfo;
         private set
@@ -497,7 +497,7 @@ public class RepackMainViewModel : ToolTabViewModel
             return;
 
         _disc = info;
-        GameInfo = info == null ? null : WiiGameDisplay.From(info);
+        GameInfo = info == null ? null : GameDisplay.From(info);
         GameIcon = null;
 
         RebuildPatchDisplay();
@@ -512,7 +512,7 @@ public class RepackMainViewModel : ToolTabViewModel
 
         try
         {
-            bytes = await WiiCoverArtFetcher.TryGetDiscPngAsync(gameId);
+            bytes = await CoverArtFetcher.TryGetDiscPngAsync(gameId);
         }
         catch
         {
@@ -566,7 +566,7 @@ public class RepackMainViewModel : ToolTabViewModel
 
         if (!RiivolutionWorkspace.IsSupported(path))
         {
-            PatchInfo = WiiPatchDisplay.Failed("폴더, zip, 7z, xml만 지정할 수 있습니다.");
+            PatchInfo = PatchDisplay.Failed("폴더, zip, 7z, xml만 지정할 수 있습니다.");
 
             Log($"'{Path.GetFileName(path)}'는 지원하지 않는 형식입니다 (폴더, zip, 7z, xml만 가능).", LogLevel.Error);
 
@@ -589,7 +589,7 @@ public class RepackMainViewModel : ToolTabViewModel
                 if (workspace == null)
                 {
                     if (version == _patchVersion)
-                        PatchInfo = WiiPatchDisplay.Failed("압축 파일을 열지 못했습니다.");
+                        PatchInfo = PatchDisplay.Failed("압축 파일을 열지 못했습니다.");
 
                     return;
                 }
@@ -620,7 +620,7 @@ public class RepackMainViewModel : ToolTabViewModel
                 {
                     ReleaseWorkspace();
 
-                    PatchInfo = WiiPatchDisplay.Failed("취소되었습니다.");
+                    PatchInfo = PatchDisplay.Failed("취소되었습니다.");
                     ProgressPct = 0;
 
                     Log("패치 읽기가 취소되었습니다.", LogLevel.Error);
@@ -632,7 +632,7 @@ public class RepackMainViewModel : ToolTabViewModel
                 {
                     ReleaseWorkspace();
 
-                    PatchInfo = WiiPatchDisplay.Failed(ex.Message);
+                    PatchInfo = PatchDisplay.Failed(ex.Message);
 
                     MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
                     Log($"패치를 읽을 수 없습니다: {ex.Message}", LogLevel.Error);
@@ -677,7 +677,7 @@ public class RepackMainViewModel : ToolTabViewModel
         if (_workspace == null || _patch == null)
             return;
 
-        PatchInfo = WiiPatchDisplay.From(_workspace.Kind, _patch, _disc?.GameId);
+        PatchInfo = PatchDisplay.From(_workspace.Kind, _patch, _disc?.GameId);
     }
 
     private void ReleaseWorkspace()
@@ -809,7 +809,7 @@ public class RepackMainViewModel : ToolTabViewModel
 
         _disc = new WiiDiscInfo(folderInfo.GameId, folderInfo.Title, 0, folderInfo.Version, DiscContainerFormat.PlainDisc, 0, 0);
 
-        GameInfo = WiiGameDisplay.From(_disc);
+        GameInfo = GameDisplay.From(_disc);
         GameIcon = null;
 
         RebuildPatchDisplay();

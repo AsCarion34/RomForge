@@ -225,6 +225,7 @@ public class CertsMainViewModel : ToolTabViewModel
             catch (Exception ex)
             {
                 AppendLog($"오류 발생: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
 
                 SelectedFile.Status = "실패";

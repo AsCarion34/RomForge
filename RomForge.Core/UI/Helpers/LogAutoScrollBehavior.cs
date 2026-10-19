@@ -22,7 +22,6 @@ public static class LogAutoScrollBehavior
         var descriptor = System.ComponentModel.DependencyPropertyDescriptor.FromProperty(ItemsControl.ItemsSourceProperty, typeof(ListBox));
 
         descriptor?.AddValueChanged(listBox, (_, _) => OnItemsSourceChanged(listBox));
-
         OnItemsSourceChanged(listBox);
     }
 
@@ -41,8 +40,8 @@ public static class LogAutoScrollBehavior
         }
 
         entries.CollectionChanged += handler;
-        LogSubscriptions.Set(listBox, entries, handler);
 
+        LogSubscriptions.Set(listBox, entries, handler);
         ScrollToEnd(listBox);
     }
 
@@ -70,6 +69,7 @@ public static class LogAutoScrollBehavior
         public class Subscription(ObservableCollection<LogEntry> entries, NotifyCollectionChangedEventHandler handler)
         {
             public ObservableCollection<LogEntry> Entries { get; } = entries;
+
             public NotifyCollectionChangedEventHandler Handler { get; } = handler;
         }
     }

@@ -97,10 +97,9 @@ public static class PatchVersionInfoExtractor
             ["Es-MX"] = ("S", "Es", "Smx", "Latin American Spanish")
         };
 
-    private static readonly Dictionary<string, (string Code1, string Code2, string Code3, string Full)> LanguageByFull =
-        LanguageMap.Values
-            .GroupBy(x => x.Full, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(x => x.Key, x => x.First(), StringComparer.OrdinalIgnoreCase);
+    private static readonly Dictionary<string, (string Code1, string Code2, string Code3, string Full)> LanguageByFull = LanguageMap.Values
+        .GroupBy(x => x.Full, StringComparer.OrdinalIgnoreCase)
+        .ToDictionary(x => x.Key, x => x.First(), StringComparer.OrdinalIgnoreCase);
 
     public static (string? Version, string? Date, string? Language) Extract(string patchFileName)
     {
@@ -153,7 +152,6 @@ public static class PatchVersionInfoExtractor
 
             return Regex.Replace(m.Value, @"\{Lan(?:guage|1)(?::[^{}]+)?\}", _ => formatted, RegexOptions.IgnoreCase);
         });
-
         result = Lan2TokenRegex.Replace(result, m =>
         {
             if (string.IsNullOrEmpty(patchLanguage))
@@ -164,7 +162,6 @@ public static class PatchVersionInfoExtractor
 
             return Regex.Replace(m.Value, @"\{Lan2(?::[^{}]+)?\}", _ => formatted, RegexOptions.IgnoreCase);
         });
-
         result = DateTokenRegex.Replace(result, m =>
         {
             string dateFormat = m.Groups["Format"].Success ? m.Groups["Format"].Value : "yyMMdd";
@@ -177,7 +174,6 @@ public static class PatchVersionInfoExtractor
 
             return date;
         });
-
         result = Regex.Replace(result, @"\(\s*[\-_]\s*", "(");
         result = Regex.Replace(result, @"\s*[\-_]\s*\)", ")");
         result = Regex.Replace(result, @"\(\s*\)", string.Empty);
@@ -266,12 +262,8 @@ public static class PatchVersionInfoExtractor
         return formatType.ToLowerInvariant() switch
         {
             "code1" or "1" => normalizedLanguage[..1].ToUpperInvariant(),
-            "code2" or "2" => normalizedLanguage.Length >= 2
-                ? normalizedLanguage[..2]
-                : normalizedLanguage,
-            "code3" or "3" => normalizedLanguage.Length >= 3
-                ? normalizedLanguage[..3]
-                : normalizedLanguage,
+            "code2" or "2" => normalizedLanguage.Length >= 2 ? normalizedLanguage[..2] : normalizedLanguage,
+            "code3" or "3" => normalizedLanguage.Length >= 3 ? normalizedLanguage[..3] : normalizedLanguage,
             _ => normalizedLanguage
         };
     }

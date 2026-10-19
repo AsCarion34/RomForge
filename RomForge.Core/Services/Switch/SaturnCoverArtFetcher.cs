@@ -21,11 +21,10 @@ public static class SaturnCoverArtFetcher
         try 
         {
             byte[] imageBytes = await Http.GetByteArrayAsync($"{BaseUrl}/{gameId}.jpg", ct);
-
             using var msInput = new MemoryStream(imageBytes);
             using var image = SixLabors.ImageSharp.Image.Load<Bgra32>(msInput);
-
             byte[] pixels = new byte[image.Width * image.Height * 4];
+
             image.CopyPixelDataTo(pixels);
 
             using var tempBitmap = new Bitmap(image.Width, image.Height, PixelFormat.Format32bppArgb);
@@ -52,7 +51,9 @@ public static class SaturnCoverArtFetcher
             if (encoder != null)
             {
                 var encoderParameters = new EncoderParameters(1);
+
                 encoderParameters.Param[0] = new EncoderParameter(Encoder.Quality, 95L);
+
                 cleanBitmap.Save(msOutput, encoder, encoderParameters);
             }
             else

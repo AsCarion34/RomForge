@@ -30,14 +30,12 @@ public static class XciCompressService
     public static Task<string> CompressAsync(string inputPath, int compressionLevel, bool validation, bool useBlockMode, IProgress<ProgressInfo> progress, Action<string, LogLevel, string> log, string? outputDir = null, CancellationToken ct = default)
     {
         var keySet = KeySetProvider.Instance.KeySet ?? throw new InvalidOperationException(Res.Main_Err_NoKeys);
-
         return RunCoreAsync(inputPath, true, compressionLevel, validation, useBlockMode, false, keySet?.Clone(), progress, log, outputDir, ct);
     }
 
     public static Task<string> DecompressAsync(string inputPath, IProgress<ProgressInfo> progress, Action<string, LogLevel, string> log, string? outputDir = null, CancellationToken ct = default)
     {
         var keySet = KeySetProvider.Instance.KeySet ?? throw new InvalidOperationException(Res.Main_Err_NoKeys);
-
         return RunCoreAsync(inputPath, false, 0, false, false, false, keySet?.Clone(), progress, log, outputDir, ct);
     }
 
@@ -69,7 +67,6 @@ public static class XciCompressService
                 xciHeaderFile.Position = 0;
                 xciPrefixBuffer = reader.ReadBytes((int)hfs0StartOffset);
             }
-
             var sourceStorage = new LocalStorage(inputPath, FileAccess.Read);
 
             disposables.Add(sourceStorage);
@@ -190,7 +187,6 @@ public static class XciCompressService
             var fout = File.Open(finalPath, FileMode.Create, FileAccess.ReadWrite);
 
             disposables.Add(fout);
-
             await fout.WriteAsync(xciPrefixBuffer, ct);
 
             long rootHeaderPos = fout.Position;
@@ -245,9 +241,7 @@ public static class XciCompressService
             long totalEstimated = fileEntries.Sum(f => f.EstimatedSize);
             string currentLabel = string.Empty;
             var reporter = new ProgressReporter(displayName, meta.TitleId, totalEstimated, progress);
-
             void onRead(long bytesRead) => reporter.AddProgress(bytesRead);
-
             var actualOffsets = new ulong[fileEntries.Count];
             var actualSizes = new ulong[fileEntries.Count];
             var actualHashes = new byte[fileEntries.Count][];

@@ -29,8 +29,8 @@ public class RenameMainViewModel : ToolTabViewModel
     private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase) { ".nsp", ".xci", ".nsz", ".xcz" };
 
     private CancellationTokenSource _cts = new();
-    private string _formatText = SwitchRenamePresets.Default.Format!;
-    private NamingFormatPreset _selectedNamingPreset = SwitchRenamePresets.Default;
+    private string _formatText = RenamePresets.Default.Format!;
+    private NamingFormatPreset _selectedNamingPreset = RenamePresets.Default;
     private string _summary = string.Empty;
     private bool _refreshQueued;
 
@@ -38,7 +38,7 @@ public class RenameMainViewModel : ToolTabViewModel
 
     public ObservableCollection<RenameFileItem> Items { get; } = [];
 
-    public static IReadOnlyList<NamingFormatPreset> NamingPresets => SwitchRenamePresets.All;
+    public static IReadOnlyList<NamingFormatPreset> NamingPresets => RenamePresets.All;
 
     public Visibility HintVisibility => Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
@@ -164,7 +164,7 @@ public class RenameMainViewModel : ToolTabViewModel
             return;
         }
 
-        int ready = plans.Count(p => p.State == SwitchRenameState.Ready);
+        int ready = plans.Count(p => p.State == RenameState.Ready);
         int skipped = CountSkipped(plans);
 
         Summary = skipped == 0
@@ -184,7 +184,7 @@ public class RenameMainViewModel : ToolTabViewModel
         }
 
         var plans = BuildPlans();
-        var ready = plans.Where(p => p.State == SwitchRenameState.Ready).ToList();
+        var ready = plans.Where(p => p.State == RenameState.Ready).ToList();
 
         if (ready.Count == 0)
         {
@@ -205,7 +205,7 @@ public class RenameMainViewModel : ToolTabViewModel
         {
             try
             {
-                var results = await Task.Run(() => SwitchRenameService.Apply(ready, token));
+                var results = await Task.Run(() => RenameService.Apply(ready, token));
 
                 int succeeded = 0;
                 int failed = 0;
@@ -325,9 +325,9 @@ public class RenameMainViewModel : ToolTabViewModel
         return null;
     }
 
-    private List<SwitchRenamePlan> BuildPlans() => SwitchRenameService.BuildPlans(Items.Select(ToSource), FormatText);
+    private List<RenamePlan> BuildPlans() => RenameService.BuildPlans(Items.Select(ToSource), FormatText);
 
-    private static SwitchRenameSource ToSource(GameFile file)
+    private static RenameSource ToSource(GameFile file)
     {
         var naming = file.Naming;
 
@@ -335,7 +335,7 @@ public class RenameMainViewModel : ToolTabViewModel
 
         string name = naming is null ? string.Empty : NspNameBuilder.BuildNamePart(naming.KrTitle, naming.EnTitle);
 
-        return new SwitchRenameSource(
+        return new RenameSource(
             file.FilePath,
             name,
             naming?.KoreanTitle,
@@ -354,10 +354,10 @@ public class RenameMainViewModel : ToolTabViewModel
         && file.FileType != Res.Status_Analyzing
         && file.FileType != "?";
 
-    private static int CountSkipped(IEnumerable<SwitchRenamePlan> plans) =>
-        plans.Count(p => p.State is not (SwitchRenameState.Ready or SwitchRenameState.Unchanged));
+    private static int CountSkipped(IEnumerable<RenamePlan> plans) =>
+        plans.Count(p => p.State is not (RenameState.Ready or RenameState.Unchanged));
 
-    private void ReplaceItem(SwitchRenamePlan plan)
+    private void ReplaceItem(RenamePlan plan)
     {
         for (int i = 0; i < Items.Count; i++)
         {

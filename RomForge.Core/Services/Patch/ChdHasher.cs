@@ -27,8 +27,7 @@ public static class ChdHasher
             return layout is not null && index >= 0 && IsRedumpLayoutDifferent(layout[index], track);
         }, ct);
 
-    public static Task<(string Name, RomHashResult Hashes)> HashAsync(string chdPath, GdRomHashLayout gdRomLayout, IProgress<double>? progress, CancellationToken ct) =>
-        Task.Run(() => Hash(chdPath, gdRomLayout, progress, ct), ct);
+    public static Task<(string Name, RomHashResult Hashes)> HashAsync(string chdPath, GdRomHashLayout gdRomLayout, IProgress<double>? progress, CancellationToken ct) => Task.Run(() => Hash(chdPath, gdRomLayout, progress, ct), ct);
 
     private static (string Name, RomHashResult Hashes) Hash(string chdPath, GdRomHashLayout gdRomLayout, IProgress<double>? progress, CancellationToken ct)
     {

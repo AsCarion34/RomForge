@@ -26,6 +26,7 @@ public class PackingJobRunner
         {
             var safeTitle = string.Concat(gameTitle.Split(Path.GetInvalidFileNameChars()));
             var extension = AppConfig.Instance.PS1.UseUpperCase ? ".PBP" : ".pbp";
+
             targetOutputPath = Path.Combine(baseDirectory, safeTitle + extension);
         }
 

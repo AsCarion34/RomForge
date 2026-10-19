@@ -16,7 +16,6 @@ public partial class ConverterTab : UserControl
     public ConverterTab()
     {
         InitializeComponent();
-
         DataContextChanged += ConverterTab_DataContextChanged;
     }
 
@@ -36,10 +35,7 @@ public partial class ConverterTab : UserControl
 
     private void LvFiles_DragOver(object sender, DragEventArgs e)
     {
-        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop)
-            ? DragDropEffects.Copy
-            : DragDropEffects.None;
-
+        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
         e.Handled = true;
     }
 
@@ -60,6 +56,7 @@ public partial class ConverterTab : UserControl
             return;
 
         var selected = lvFiles.SelectedItems.Cast<WiiUFileItem>().ToList();
+
         ViewModel?.RemoveItems(selected);
     }
 
@@ -97,13 +94,11 @@ public partial class ConverterTab : UserControl
     private void BtnRemove_Click(object sender, RoutedEventArgs e)
     {
         var selected = lvFiles.SelectedItems.Cast<WiiUFileItem>().ToList();
+
         ViewModel?.RemoveItems(selected);
     }
 
-    private void BtnClear_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel?.ClearItems();
-    }
+    private void BtnClear_Click(object sender, RoutedEventArgs e) => ViewModel?.ClearItems();
 
     private void LvFiles_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
@@ -118,9 +113,7 @@ public partial class ConverterTab : UserControl
         if (selected.Count == 0)
             return;
 
-        string target = Directory.Exists(selected[0].FilePath)
-            ? selected[0].FilePath
-            : Path.GetDirectoryName(selected[0].FilePath) ?? selected[0].FilePath;
+        string target = Directory.Exists(selected[0].FilePath) ? selected[0].FilePath : Path.GetDirectoryName(selected[0].FilePath) ?? selected[0].FilePath;
 
         target.OpenFolder();
     }

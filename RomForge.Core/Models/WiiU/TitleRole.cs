@@ -3,7 +3,10 @@
 public enum TitleRole
 {
     Unknown,
+
     Base,
+
     Update,
+
     Dlc,
 }

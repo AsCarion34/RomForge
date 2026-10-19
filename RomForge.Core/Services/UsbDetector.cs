@@ -25,6 +25,7 @@ public class UsbDetector
     {
         var windowHandle = new WindowInteropHelper(window).Handle;
         var source = HwndSource.FromHwnd(windowHandle);
+
         source?.AddHook(HwndHandler);
     }
 

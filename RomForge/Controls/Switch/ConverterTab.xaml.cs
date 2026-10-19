@@ -20,7 +20,6 @@ public partial class ConverterTab : UserControl
     public ConverterTab()
     {
         InitializeComponent();
-
         DataContextChanged += ConverterTab_DataContextChanged;
     }
 

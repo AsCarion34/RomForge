@@ -14,10 +14,7 @@ namespace RomForge.Controls.WiiU
     {
         RepackMainViewModel ViewModel => (RepackMainViewModel)DataContext;
 
-        public RepackTab()
-        {
-            InitializeComponent();
-        }
+        public RepackTab() => InitializeComponent();
 
         private void PatchDropTarget_Click(object sender, MouseButtonEventArgs e)
         {

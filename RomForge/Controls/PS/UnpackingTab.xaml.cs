@@ -17,7 +17,6 @@ public partial class UnpackingTab : UserControl
     public UnpackingTab()
     {
         InitializeComponent();
-
         DataContextChanged += ConverterTab_DataContextChanged;
     }
 
@@ -47,8 +46,7 @@ public partial class UnpackingTab : UserControl
             return;
 
         var pbpFiles = paths
-            .Where(path => !Directory.Exists(path) &&
-                           string.Equals(Path.GetExtension(path), ".pbp", StringComparison.OrdinalIgnoreCase))
+            .Where(path => !Directory.Exists(path) && string.Equals(Path.GetExtension(path), ".pbp", StringComparison.OrdinalIgnoreCase))
             .ToArray();
 
         if (pbpFiles.Length > 0)

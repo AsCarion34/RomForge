@@ -2,7 +2,6 @@
 using NSW.Core.Enums;
 using RomForge.Core.Services.Wii;
 using RomForge.ViewModels.Wii;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -13,10 +12,7 @@ public partial class RepackTab : UserControl
 {
     private RepackMainViewModel ViewModel => (RepackMainViewModel)DataContext;
 
-    public RepackTab()
-    {
-        InitializeComponent();
-    }
+    public RepackTab() => InitializeComponent();
 
     private void Drag_Over(object sender, DragEventArgs e)
     {

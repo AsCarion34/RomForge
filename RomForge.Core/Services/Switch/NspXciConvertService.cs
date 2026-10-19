@@ -99,11 +99,13 @@ public class NspXciConvertService : BaseSwitchService
                 var xci = new Xci(keySet, sourceStorage);
 
                 secureFs = xci.OpenPartition(XciPartitionType.Secure);
+
                 disposables.Add(secureFs);
             }
             else
             {
                 secureFs = sourceStorage.OpenFileSystem(keySet, inputPath);
+
                 disposables.Add(secureFs);
             }
 
@@ -124,10 +126,13 @@ public class NspXciConvertService : BaseSwitchService
                     continue;
 
                 fileRef.Get.GetSize(out long size).ThrowIfFailure();
+
                 IFile rawFile = fileRef.Release();
+
                 disposables.Add(rawFile);
 
                 IStorage currentStorage = new FileStorage(rawFile);
+
                 disposables.Add(currentStorage);
 
                 if (entryExt is ".tik" or ".cert")
@@ -159,9 +164,7 @@ public class NspXciConvertService : BaseSwitchService
             if (outputFormat == ContainerFormat.Xci)
             {
                 byte[] xciPrefix = GetXciPrefix(inputIsXci ? [inputPath] : []);
-                var rootEntries = inputIsXci
-                    ? GetRootEntriesFromXci(keySet, sourceStorage)
-                    : GetDummyRootEntries();
+                var rootEntries = inputIsXci ? GetRootEntriesFromXci(keySet, sourceStorage) : GetDummyRootEntries();
 
                 await WriteXciAsync(displayName, meta.TitleId, xciPrefix, rootEntries, inputIsXci ? sourceStorage.AsStream() : null, fileEntries, fout, progress, ct);
 
@@ -193,9 +196,7 @@ public class NspXciConvertService : BaseSwitchService
                         string label = $"{meta.KrTitle ?? meta.EnTitle} [{entry.Name}]";
 
                         log?.Invoke($"- {label} {Res.ToolTip_ValidateCompress}", LogLevel.Info, meta.TitleId);
-
                         await converter.ValidateAsync(nczFile.Get.AsStream(), meta.TitleId, totalValidationSize, label, progress, ct);
-
                         log?.Invoke($"- {label} OK", LogLevel.Ok, meta.TitleId);
                     }
                 }
@@ -217,8 +218,11 @@ public class NspXciConvertService : BaseSwitchService
         }
         finally
         {
-            for (int i = disposables.Count - 1; i >= 0; i--) disposables[i]?.Dispose();
-            if (!isCompleted) CleanupOnFailure(finalPath, log, string.Empty);
+            for (int i = disposables.Count - 1; i >= 0; i--) 
+                disposables[i]?.Dispose();
+
+            if (!isCompleted) 
+                CleanupOnFailure(finalPath, log, string.Empty);
         }
     }
 

@@ -4,8 +4,5 @@ namespace RomForge.Controls.Settings;
 
 public partial class PatchSettingsTab : UserControl
 {
-    public PatchSettingsTab()
-    {
-        InitializeComponent();
-    }
+    public PatchSettingsTab() => InitializeComponent();
 }

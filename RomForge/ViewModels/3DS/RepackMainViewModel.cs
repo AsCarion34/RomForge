@@ -39,8 +39,8 @@ public class RepackMainViewModel : ToolTabViewModel
     private string _progressTime = "00:00 경과";
     private string _progressSpeed = string.Empty;
     private TitleViewModel? _romInfo;
-    private ThreeDsPatchDisplay? _patchInfo;
-    private ThreeDsPatchSet? _patch;
+    private PatchDisplay? _patchInfo;
+    private PatchSet? _patch;
     private RepackOutputFormat _outputFormat = RepackOutputFormat.Cci;
 
     public RepackOutputFormat OutputFormat
@@ -172,7 +172,7 @@ public class RepackMainViewModel : ToolTabViewModel
         set { _romInfo = value; OnPropertyChanged(); OnPropertyChanged(nameof(RomInfoVisibility)); }
     }
 
-    public ThreeDsPatchDisplay? PatchInfo
+    public PatchDisplay? PatchInfo
     {
         get => _patchInfo;
         private set
@@ -409,7 +409,7 @@ public class RepackMainViewModel : ToolTabViewModel
             {
                 ProgressLabel = "패치 정보 분석 중...";
 
-                var patch = await Task.Run(() => ThreeDsPatchParser.Parse(path, ct), ct);
+                var patch = await Task.Run(() => PatchParser.Parse(path, ct), ct);
 
                 if (version != _patchVersion)
                     return;
@@ -423,7 +423,7 @@ public class RepackMainViewModel : ToolTabViewModel
             {
                 if (version == _patchVersion)
                 {
-                    PatchInfo = ThreeDsPatchDisplay.Failed("취소되었습니다.");
+                    PatchInfo = PatchDisplay.Failed("취소되었습니다.");
                     ProgressPct = 0;
 
                     Log("패치 읽기가 취소되었습니다.", LogLevel.Error);
@@ -433,7 +433,7 @@ public class RepackMainViewModel : ToolTabViewModel
             {
                 if (version == _patchVersion)
                 {
-                    PatchInfo = ThreeDsPatchDisplay.Failed(ex.Message);
+                    PatchInfo = PatchDisplay.Failed(ex.Message);
                     MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
                     Log($"패치를 읽을 수 없습니다: {ex.Message}", LogLevel.Error);
                 }
@@ -461,7 +461,7 @@ public class RepackMainViewModel : ToolTabViewModel
         string? titleId = _romInfo?.TitleId;
         string? productCode = _romInfo?.ProductCode;
 
-        PatchInfo = ThreeDsPatchDisplay.From(_patch, titleId, productCode);
+        PatchInfo = PatchDisplay.From(_patch, titleId, productCode);
     }
 
     private bool Validate(BuildMode mode, out string error)

@@ -29,13 +29,7 @@ public partial class ConverterTab : UserControl
             newVm.ScrollToItemRequested += OnScrollToItemRequested;
     }
 
-    private void OnScrollToItemRequested(PspFileItem item)
-    {
-        Dispatcher.InvokeAsync(() =>
-        {
-            lvFiles.ScrollIntoView(item);
-        }, DispatcherPriority.Background);
-    }
+    private void OnScrollToItemRequested(PspFileItem item) => Dispatcher.InvokeAsync(() => lvFiles.ScrollIntoView(item), DispatcherPriority.Background);
 
     private void LvFiles_DragOver(object sender, DragEventArgs e)
     {

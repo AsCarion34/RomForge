@@ -12,10 +12,7 @@ public partial class ArcadeTab : UserControl
 {
     private MainViewModel ViewModel => (MainViewModel)DataContext;
 
-    public ArcadeTab()
-    {
-        InitializeComponent();
-    }
+    public ArcadeTab() => InitializeComponent();
 
     private void ArcadeSourceDrop_Drop(object sender, DragEventArgs e)
     {

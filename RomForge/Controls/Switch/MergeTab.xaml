@@ -28,18 +28,18 @@
                     <StackPanel VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal" Margin="10,0">
                             <TextBlock Text="병합 방식:" Foreground="White" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                            <RadioButton Content="타이틀 ID 별 그룹핑 (기존 방식)" GroupName="MergeMode" IsChecked="{Binding MergeMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:SwitchMergeMode.ByTitleId}}" 
+                            <RadioButton Content="타이틀 ID 별 그룹핑 (기존 방식)" GroupName="MergeMode" IsChecked="{Binding MergeMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:MergeMode.ByTitleId}}" 
                                          Foreground="White" FontSize="12" VerticalAlignment="Center" Margin="0,0,16,0" ToolTip="타이틀 ID별로 항목을 그룹화하여 각각 별도의 파일로 병합합니다."/>
-                            <RadioButton Content="전체" GroupName="MergeMode" IsChecked="{Binding MergeMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:SwitchMergeMode.AllInOne}}" 
+                            <RadioButton Content="전체" GroupName="MergeMode" IsChecked="{Binding MergeMode, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:MergeMode.AllInOne}}" 
                                          Foreground="White" FontSize="12" VerticalAlignment="Center" Margin="0,0,16,0" ToolTip="전체 항목을 하나의 파일로 병합합니다."/>
                             
                             <Border Width="1" Height="18" Background="#444" Margin="0,0,15,0"/>
 
                             <TextBlock Text="출력 포맷:" Foreground="White" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                            <RadioButton Content="NSP" GroupName="MergeFormat" IsChecked="{Binding OutputFormat, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:SwitchOutputFormat.NSP}}" Foreground="White" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                            <RadioButton Content="NSZ" GroupName="MergeFormat" IsChecked="{Binding OutputFormat, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:SwitchOutputFormat.NSZ}}" Foreground="White" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                            <RadioButton Content="XCI" GroupName="MergeFormat" IsChecked="{Binding OutputFormat, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:SwitchOutputFormat.XCI}}" Foreground="White" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                            <RadioButton Content="XCZ" GroupName="MergeFormat" IsChecked="{Binding OutputFormat, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:SwitchOutputFormat.XCZ}}" Foreground="White" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>                            
+                            <RadioButton Content="NSP" GroupName="MergeFormat" IsChecked="{Binding OutputFormat, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:OutputFormat.NSP}}" Foreground="White" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <RadioButton Content="NSZ" GroupName="MergeFormat" IsChecked="{Binding OutputFormat, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:OutputFormat.NSZ}}" Foreground="White" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <RadioButton Content="XCI" GroupName="MergeFormat" IsChecked="{Binding OutputFormat, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:OutputFormat.XCI}}" Foreground="White" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <RadioButton Content="XCZ" GroupName="MergeFormat" IsChecked="{Binding OutputFormat, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static models:OutputFormat.XCZ}}" Foreground="White" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>                            
                         </StackPanel>
                     </StackPanel>
                 </Border>

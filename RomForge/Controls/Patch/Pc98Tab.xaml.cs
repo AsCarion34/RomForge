@@ -11,10 +11,7 @@ public partial class Pc98Tab : UserControl
 {
     private MainViewModel ViewModel => (MainViewModel)DataContext;
 
-    public Pc98Tab()
-    {
-        InitializeComponent();
-    }
+    public Pc98Tab() => InitializeComponent();
 
     private void SourceDrop_Click(object sender, MouseButtonEventArgs e)
     {

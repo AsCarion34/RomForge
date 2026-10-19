@@ -34,8 +34,8 @@ public class MergeMainViewModel : ToolTabViewModel
     private string _progressPercent = string.Empty;
     private string _progressTime = "00:00 경과";
     private string _progressSpeed = string.Empty;
-    private SwitchOutputFormat _outputFormat = SwitchOutputFormat.NSP;
-    private SwitchMergeMode _mergeMode = SwitchMergeMode.ByTitleId;
+    private OutputFormat _outputFormat = OutputFormat.NSP;
+    private MergeMode _mergeMode = MergeMode.ByTitleId;
 
     public int ProgressPct
     {
@@ -83,13 +83,13 @@ public class MergeMainViewModel : ToolTabViewModel
         }
     }
 
-    public SwitchOutputFormat OutputFormat
+    public OutputFormat OutputFormat
     {
         get => _outputFormat;
         set { _outputFormat = value; OnPropertyChanged(); }
     }
 
-    public SwitchMergeMode MergeMode
+    public MergeMode MergeMode
     {
         get => _mergeMode;
         set { _mergeMode = value; OnPropertyChanged(); }
@@ -130,13 +130,13 @@ public class MergeMainViewModel : ToolTabViewModel
                 _cts = new CancellationTokenSource();
 
                 var progress = BuildProgressReporter();
-                bool useCompression = OutputFormat is SwitchOutputFormat.NSZ or SwitchOutputFormat.XCZ;
-                bool asXci = OutputFormat is SwitchOutputFormat.XCI or SwitchOutputFormat.XCZ;
+                bool useCompression = OutputFormat is OutputFormat.NSZ or OutputFormat.XCZ;
+                bool asXci = OutputFormat is OutputFormat.XCI or OutputFormat.XCZ;
                 var config = AppConfig.Instance.Switch;
                 var keySet = KeySetProvider.Instance.KeySet.Clone();
                 var results = new List<string>();
 
-                bool mergeAll = MergeMode == SwitchMergeMode.AllInOne;
+                bool mergeAll = MergeMode == MergeMode.AllInOne;
 
                 List<string> output =
                     asXci

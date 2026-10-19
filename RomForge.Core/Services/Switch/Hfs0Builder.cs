@@ -15,25 +15,25 @@ public class Hfs0Builder
     public void AddFile(string name, ulong size, byte[] hash, uint hashTargetSize)
     {
         ulong offset = _files.Count == 0 ? 0 : _files[^1].Offset + _files[^1].Size;
+
         _files.Add(new Hfs0BuilderEntry(name, offset, size, hash, hashTargetSize));
     }
 
-    public void AddFileWithOffset(string name, ulong offset, ulong size, byte[] hash, uint hashTargetSize)
-    {
-        _files.Add(new Hfs0BuilderEntry(name, offset, size, hash, hashTargetSize));
-    }
+    public void AddFileWithOffset(string name, ulong offset, ulong size, byte[] hash, uint hashTargetSize) => _files.Add(new Hfs0BuilderEntry(name, offset, size, hash, hashTargetSize));
 
     public int FileCount => _files.Count;
 
     public ulong RawHeaderSize()
     {
         ulong stringTableSize = (ulong)_files.Sum(f => f.Name.Length + 1);
+
         return (ulong)(HeaderBaseSize + EntrySize * _files.Count) + stringTableSize;
     }
 
     public ulong AlignedHeaderSize(ulong alignment)
     {
         ulong raw = RawHeaderSize();
+
         return alignment > 1 ? AlignUp(raw, alignment) : raw;
     }
 
@@ -43,7 +43,6 @@ public class Hfs0Builder
         ulong rawSize = (ulong)(HeaderBaseSize + EntrySize * _files.Count) + (ulong)stringTableRawSize;
         ulong totalSize = alignment > 1 ? AlignUp(rawSize, alignment) : rawSize;
         int padding = (int)(totalSize - rawSize);
-
         byte[] header = new byte[totalSize];
         var span = header.AsSpan();
 
@@ -64,17 +63,17 @@ public class Hfs0Builder
             BinaryPrimitives.WriteUInt64LittleEndian(entrySpan[8..], f.Size);
             BinaryPrimitives.WriteUInt32LittleEndian(entrySpan[16..], (uint)stringOffset);
             BinaryPrimitives.WriteUInt32LittleEndian(entrySpan[20..], f.HashTargetSize);
-
             f.Hash.CopyTo(entrySpan[32..]);
 
             var nameBytes = System.Text.Encoding.UTF8.GetBytes(f.Name);
+
             nameBytes.CopyTo(header, stringTableBase + stringOffset);
+
             stringOffset += nameBytes.Length + 1;
         }
 
         return header;
     }
 
-    private static ulong AlignUp(ulong value, ulong alignment) =>
-        (value + alignment - 1) & ~(alignment - 1);
+    private static ulong AlignUp(ulong value, ulong alignment) => (value + alignment - 1) & ~(alignment - 1);
 }

@@ -32,6 +32,7 @@ public partial class PackingTab : UserControl
             return;
 
         var selected = lvFiles.SelectedItems.Cast<DiscFileItem>().ToList();
+
         ViewModel?.Files.Remove(selected);
     }
 
@@ -50,6 +51,7 @@ public partial class PackingTab : UserControl
             return;
 
         byte[] rawBytes = File.ReadAllBytes(files[0]);
+
         ViewModel?.Images.SetIcon0FromBytes(rawBytes);
     }
 
@@ -68,6 +70,7 @@ public partial class PackingTab : UserControl
             return;
 
         byte[] rawBytes = File.ReadAllBytes(files[0]);
+
         ViewModel?.Images.SetPic0FromBytes(rawBytes);
     }
 
@@ -86,6 +89,7 @@ public partial class PackingTab : UserControl
             return;
 
         byte[] rawBytes = File.ReadAllBytes(files[0]);
+
         ViewModel?.Images.SetPic1FromBytes(rawBytes);
     }
 
@@ -204,7 +208,11 @@ public partial class PackingTab : UserControl
         {
             if (File.Exists(tempFilePath))
             {
-                try { File.Delete(tempFilePath); } catch { }
+                try 
+                {
+                    File.Delete(tempFilePath);
+                } 
+                catch { }
             }
         }
     }

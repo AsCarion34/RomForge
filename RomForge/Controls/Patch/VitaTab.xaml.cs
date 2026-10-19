@@ -14,10 +14,7 @@ namespace RomForge.Controls.Patch
     {
         private MainViewModel? ViewModel => DataContext as MainViewModel;
 
-        public VitaTab()
-        {
-            InitializeComponent();
-        }
+        public VitaTab() => InitializeComponent();
 
         private void LvPkg_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
@@ -41,15 +38,11 @@ namespace RomForge.Controls.Patch
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
-                if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.Length > 0)
-                {
-                    if (ViewModel?.PatchVM.VitaVM != null)
-                    {
-                        foreach (var file in files)
-                            ViewModel.PatchVM.VitaVM.AddSourceFile(file);
-                    }
-                }
+                if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.Length > 0)                    
+                    foreach (var file in files)
+                        ViewModel?.PatchVM.VitaVM?.AddSourceFile(file);
             }
+
             e.Handled = true;
         }
 
@@ -68,6 +61,7 @@ namespace RomForge.Controls.Patch
                 e.Effects = DragDropEffects.Copy;
             else
                 e.Effects = DragDropEffects.None;
+
             e.Handled = true;
         }
 
@@ -81,6 +75,7 @@ namespace RomForge.Controls.Patch
                         row.License = files[0];
                 }
             }
+
             e.Handled = true;
         }
 
@@ -94,10 +89,7 @@ namespace RomForge.Controls.Patch
             e.Handled = true;
         }
 
-        private void PatchDropTarget_DragLeave(object sender, DragEventArgs e)
-        {
-            e.Handled = true;
-        }
+        private void PatchDropTarget_DragLeave(object sender, DragEventArgs e) => e.Handled = true;
 
         private void PatchDropTarget_Drop(object sender, DragEventArgs e)
         {
@@ -114,6 +106,7 @@ namespace RomForge.Controls.Patch
                     }
                 }
             }
+
             e.Handled = true;
         }
 

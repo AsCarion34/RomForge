@@ -52,16 +52,20 @@ public partial class InstalledTitlesTab : UserControl
         }
     }
 
-    private void Search_TextChanged(object sender, TextChangedEventArgs e) =>
-        Vm.InstalledTitles.RefreshFilter(SearchBox.Text);
+    private void Search_TextChanged(object sender, TextChangedEventArgs e) => Vm.InstalledTitles.RefreshFilter(SearchBox.Text);
 
     private ToggleButton[] FilterButtons => [FilterAll, FilterGame, FilterUpdate, FilterDlc];
 
     private void Filter_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not ToggleButton btn) return;
-        foreach (var b in FilterButtons) b.IsChecked = false;
+        if (sender is not ToggleButton btn) 
+            return;
+
+        foreach (var b in FilterButtons)
+            b.IsChecked = false;
+
         btn.IsChecked = true;
+
         Vm.InstalledTitles.SetFilter(btn.Tag?.ToString() ?? "All", SearchBox.Text);
     }
 
@@ -75,13 +79,15 @@ public partial class InstalledTitlesTab : UserControl
 
         var selected = TitleListView.SelectedItems.Cast<TitleViewModel>().ToList();
         bool allBase = selected.All(t => t.Title.IsApplication);
+
         MenuExtractCci.IsEnabled = allBase;
         MenuExtractCci.Visibility = allBase ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private async void ExtractTitle_Click(object sender, RoutedEventArgs e)
     {
-        if (TitleListView.SelectedItem is not TitleViewModel selected) return;
+        if (TitleListView.SelectedItem is not TitleViewModel selected) 
+            return;
 
         bool asCci = sender == MenuExtractCci;
         var (ext, desc) = asCci ? ("cci", "CCI(CTR Cartridge Image)") : ("cia", "CIA(CTR Importable Archive)");
@@ -93,7 +99,8 @@ public partial class InstalledTitlesTab : UserControl
             FileName = $"{selected.ShortDescription}.{ext}",
         };
 
-        if (dialog.ShowDialog() != true) return;
+        if (dialog.ShowDialog() != true) 
+            return;
 
         try
         {

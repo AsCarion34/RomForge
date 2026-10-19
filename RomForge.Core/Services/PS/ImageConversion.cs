@@ -9,11 +9,12 @@ public static class ImageConversion
     {
         using var input = new MemoryStream(anyImageBytes);
         var decoder = BitmapDecoder.Create(input, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
-
         var encoder = new PngBitmapEncoder();
+
         encoder.Frames.Add(decoder.Frames[0]);
 
         using var output = new MemoryStream();
+
         encoder.Save(output);
 
         return output.ToArray();

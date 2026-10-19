@@ -3,5 +3,6 @@
 public enum RepackOutputFormat
 {
     Wua,
+
     Wup,
 }

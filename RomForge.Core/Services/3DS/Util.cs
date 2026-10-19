@@ -29,6 +29,7 @@ public static class Util
                     var ciaSource = await reader.ParseAsync(stream);
 
                     await ciaSource.LoadGameInfoAsync();
+
                     smdhInfo = ciaSource.SmdhInfo;
                     ncchHeader = ciaSource.MainNcchHeader;
                     title = new InstalledTitle

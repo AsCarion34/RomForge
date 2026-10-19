@@ -189,7 +189,7 @@ public class RepackMainViewModel : ToolTabViewModel
                 var row = RepackService.PeekFolder(path);
 
                 AssignByGuessedRole(row);
-                WiiUEntryListOrganizer.Reorganize(Entries);
+                EntryListOrganizer.Reorganize(Entries);
                 return;
             }
 
@@ -214,7 +214,7 @@ public class RepackMainViewModel : ToolTabViewModel
             foreach (var row in rows)
                 AssignByGuessedRole(row);
 
-            WiiUEntryListOrganizer.Reorganize(Entries);
+            EntryListOrganizer.Reorganize(Entries);
 
             Log($"{Path.GetFileName(path)} — {rows.Count}개 타이틀 추가됨.", LogLevel.Info);
         }

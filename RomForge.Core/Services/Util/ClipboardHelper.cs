@@ -30,7 +30,8 @@ public static class ClipboardHelper
 
     public static bool CopyText(string text)
     {
-        if (string.IsNullOrEmpty(text)) return false;
+        if (string.IsNullOrEmpty(text)) 
+            return false;
 
         for (int i = 0; i < 5; i++)
         {

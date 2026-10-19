@@ -29,8 +29,7 @@ namespace RomForge.Controls.Switch
 
             var files = (string[])e.Data.GetData(DataFormats.FileDrop);
 
-            if (files != null && files.Length > 0 &&
-                (files[0].EndsWith(".cue", StringComparison.OrdinalIgnoreCase) || files[0].EndsWith(".chd", StringComparison.OrdinalIgnoreCase)))
+            if (files != null && files.Length > 0 && (files[0].EndsWith(".cue", StringComparison.OrdinalIgnoreCase) || files[0].EndsWith(".chd", StringComparison.OrdinalIgnoreCase)))
                 ViewModel.CuePath = files[0];
         }
 
@@ -71,18 +70,23 @@ namespace RomForge.Controls.Switch
                 using (var fs = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write))
                 {
                     var encoder = new PngBitmapEncoder();
+
                     encoder.Frames.Add(BitmapFrame.Create(bitmapSource));
                     encoder.Save(fs);
                 }
 
                 var data = new DataObject();
+
                 data.SetFileDropList([tempFilePath]);
                 DragDrop.DoDragDrop(imgCover, data, DragDropEffects.Copy);
             }
             finally
             {
                 if (File.Exists(tempFilePath))
-                    try { File.Delete(tempFilePath); }
+                    try 
+                    { 
+                        File.Delete(tempFilePath);
+                    }
                     catch { }
             }
         }

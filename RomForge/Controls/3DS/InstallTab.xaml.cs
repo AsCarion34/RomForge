@@ -106,6 +106,7 @@ public partial class InstallTab : UserControl
     private async void Install_Click(object sender, RoutedEventArgs e)
     {
         _installCts = new CancellationTokenSource();
+
         Vm.Install.IsInstalling = true;
 
         try
@@ -129,6 +130,7 @@ public partial class InstallTab : UserControl
         finally
         {
             _installCts.Dispose();
+
             _installCts = null;
             Vm.Install.IsInstalling = false;
         }
@@ -145,6 +147,7 @@ public partial class InstallTab : UserControl
             files.AddRange(Directory.GetFiles(folder)); 
         } 
         catch { }
+
         foreach (var subDir in Directory.GetDirectories(folder))
             try 
             { 

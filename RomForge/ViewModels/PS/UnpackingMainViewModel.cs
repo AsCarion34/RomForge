@@ -110,6 +110,7 @@ public class UnpackingMainViewModel : ToolTabViewModel
         catch(Exception ex)
         {
             AppendLog($"오류: {ex.Message}", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
         }
     }
 

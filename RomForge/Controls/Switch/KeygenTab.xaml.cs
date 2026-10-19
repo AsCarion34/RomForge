@@ -8,10 +8,7 @@ public partial class KeygenTab : UserControl
 {
     private KeygenMainViewModel ViewModel => (KeygenMainViewModel)DataContext;
 
-    public KeygenTab()
-    {
-        InitializeComponent();
-    }
+    public KeygenTab() => InitializeComponent();
 
     protected override void OnVisualParentChanged(DependencyObject oldParent)
     {

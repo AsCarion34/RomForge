@@ -112,13 +112,11 @@ public sealed class RiivolutionWorkspace : IDisposable
 
             using var input = entry.Open();
             using var output = new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None, CopyBufferSize);
-
             int read;
 
             while ((read = input.Read(buffer, 0, buffer.Length)) > 0)
             {
                 ct.ThrowIfCancellationRequested();
-
                 output.Write(buffer, 0, read);
 
                 done += read;
@@ -148,8 +146,14 @@ public sealed class RiivolutionWorkspace : IDisposable
 
             string[] subDirectories;
 
-            try { subDirectories = Directory.GetDirectories(current); }
-            catch { continue; }
+            try
+            {
+                subDirectories = Directory.GetDirectories(current); 
+            }
+            catch
+            { 
+                continue;
+            }
 
             foreach (string sub in subDirectories)
                 queue.Enqueue((sub, depth + 1));

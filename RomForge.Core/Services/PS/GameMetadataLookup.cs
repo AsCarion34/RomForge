@@ -31,7 +31,6 @@ public static class GameMetadataLookup
         try
         {
             var bytes = await Http.GetByteArrayAsync(url, ct);
-
             return ImageConversion.ToPng(bytes);
         }
         catch

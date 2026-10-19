@@ -18,22 +18,12 @@ namespace RomForge.ViewModels._3DS;
 
 public class ConverterMainViewModel : ToolTabViewModel
 {
-    #region Fields
-
     private bool _isConverting;
     private CancellationTokenSource _cts = new();
 
-    #endregion
-
-    #region Collections
-
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
-    public ObservableCollection<_3DSFileItem> FileItems { get; } = [];
-
-    #endregion
-
-    #region Properties
+    public ObservableCollection<FileItem> FileItems { get; } = [];
 
     public bool IsConverting
     {
@@ -43,28 +33,16 @@ public class ConverterMainViewModel : ToolTabViewModel
 
     public Visibility HintVisibility => FileItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-    #endregion
-
-    #region Commands
-
     public ICommand RunCommand { get; }
 
-    #endregion
-
-    public event Action<_3DSFileItem>? ScrollToItemRequested;
+    public event Action<FileItem>? ScrollToItemRequested;
     public event EventHandler RunNavigateCerts;
-
-    #region Constructor
 
     public ConverterMainViewModel()
     {
         RunCommand = new RelayCommand(async _ => await RunAsync(), _ => !IsConverting && FileItems.Count > 0);
         CancelCommand = new RelayCommand(_ => _cts.Cancel(), _ => IsConverting);
     }
-
-    #endregion
-
-    #region Public Methods
 
     public async Task AddPaths(IEnumerable<string> paths)
     {
@@ -81,7 +59,7 @@ public class ConverterMainViewModel : ToolTabViewModel
             try
             {
                 var result = await Task.Run(() => Core.Services._3DS.Util.ParseFile(path));
-                var vm = new _3DSFileItem(path)
+                var vm = new FileItem(path)
                 {
                     TitleId = result.Title!.TitleId,
                     ProductCode = result.ProductCode,
@@ -102,6 +80,7 @@ public class ConverterMainViewModel : ToolTabViewModel
             catch (Exception ex)
             {
                 AppendLog($"오류: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
             }
         }
 
@@ -112,7 +91,7 @@ public class ConverterMainViewModel : ToolTabViewModel
         CommandManager.InvalidateRequerySuggested();
     }
 
-    public void RemoveItems(IEnumerable<_3DSFileItem> items)
+    public void RemoveItems(IEnumerable<FileItem> items)
     {
         foreach (var item in items.ToList())
             FileItems.Remove(item);
@@ -128,10 +107,6 @@ public class ConverterMainViewModel : ToolTabViewModel
         FileItems.Clear();
         OnPropertyChanged(nameof(HintVisibility));
     }
-
-    #endregion
-
-    #region Private Methods
 
     private async Task RunAsync()
     {
@@ -211,6 +186,7 @@ public class ConverterMainViewModel : ToolTabViewModel
 
                         item.Progress = 100;
                         MainViewModel.SetTaskbarProgress(100);
+
                         item.Status = "완료";                        
                         cnt++;
                     }
@@ -286,6 +262,4 @@ public class ConverterMainViewModel : ToolTabViewModel
 
         Application.Current.Dispatcher.Invoke(() => LogEntries.Clear());
     }
-
-    #endregion
 }

@@ -5,7 +5,6 @@ using RomForge.Core.Models.Util;
 using RomForge.Core.Services.Util;
 using RomForge.ViewModels.Util;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -67,6 +66,7 @@ public partial class HashTab : UserControl
         if (e.Key == Key.Delete)
         {
             var selected = lvFiles.SelectedItems.Cast<HashFileItem>().ToList();
+
             ViewModel.RemoveItems(selected);
         }
     }
@@ -98,6 +98,7 @@ public partial class HashTab : UserControl
     private void BtnRemove_Click(object sender, RoutedEventArgs e)
     {
         var selected = lvFiles.SelectedItems.Cast<HashFileItem>().ToList();
+
         ViewModel.RemoveItems(selected);
     }
 

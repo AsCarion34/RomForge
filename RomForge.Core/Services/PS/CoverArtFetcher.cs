@@ -28,7 +28,6 @@ public static class CoverArtFetcher
     private static string? ToDashedSerial(string gameId)
     {
         var m = System.Text.RegularExpressions.Regex.Match(gameId, @"^([A-Z]{4})(\d+)$");
-
         return m.Success ? $"{m.Groups[1].Value}-{m.Groups[2].Value}" : null;
     }
 }

@@ -91,7 +91,9 @@ public static class RomInfoParser
             if (smdhInfo?.IconPixels is not null)
             {
                 var bitmap = BitmapSource.Create(48, 48, 96, 96, PixelFormats.Bgr32, null, smdhInfo.IconPixels, 48 * 4);
+
                 bitmap.Freeze();
+
                 vm.Icon = bitmap;
             }
 

@@ -27,11 +27,11 @@ public class SplitMainViewModel : ToolTabViewModel
 
     private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase) { ".nsp", ".xci", ".nsz", ".xcz" };
 
-    private readonly List<SplitRow> _files = [];
+    private readonly List<SplitRowViewModel> _files = [];
 
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
-    public ObservableCollection<SplitRow> Rows { get; } = [];
+    public ObservableCollection<SplitRowViewModel> Rows { get; } = [];
 
     public bool HasFiles => _files.Count > 0;
 
@@ -40,7 +40,7 @@ public class SplitMainViewModel : ToolTabViewModel
     private string _progressPercent = string.Empty;
     private string _progressTime = "00:00 경과";
     private string _progressSpeed = string.Empty;
-    private SwitchOutputFormat _outputFormat = SwitchOutputFormat.NSP;
+    private OutputFormat _outputFormat = OutputFormat.NSP;
     private bool? _allSelected = false;
 
     public int ProgressPct
@@ -89,7 +89,7 @@ public class SplitMainViewModel : ToolTabViewModel
         }
     }
 
-    public SwitchOutputFormat OutputFormat
+    public OutputFormat OutputFormat
     {
         get => _outputFormat;
         set { _outputFormat = value; OnPropertyChanged(); }
@@ -127,7 +127,7 @@ public class SplitMainViewModel : ToolTabViewModel
     public async Task AddFilesAsync(IEnumerable<string> paths)
     {
         var candidates = await Task.Run(() => paths.Where(p => SupportedExtensions.Contains(Path.GetExtension(p))).ToList());
-        var added = new List<SplitRow>();
+        var added = new List<SplitRowViewModel>();
         bool hasKey = KeySetProvider.Instance.KeySet != null;
 
         foreach (var path in candidates)
@@ -135,7 +135,7 @@ public class SplitMainViewModel : ToolTabViewModel
             if (_files.Any(f => string.Equals(f.FilePath, path, StringComparison.OrdinalIgnoreCase)))
                 continue;
 
-            var row = new SplitRow(path)
+            var row = new SplitRowViewModel(path)
             {
                 SizeBytes = GetFileLength(path),
                 TypeText = hasKey ? Res.Status_Analyzing : Res.Status_NoKey
@@ -184,7 +184,7 @@ public class SplitMainViewModel : ToolTabViewModel
         _ => 2
     };
 
-    private static async Task AnalyzeAsync(SplitRow row)
+    private static async Task AnalyzeAsync(SplitRowViewModel row)
     {
         var keySet = KeySetProvider.Instance.KeySet;
 
@@ -234,7 +234,7 @@ public class SplitMainViewModel : ToolTabViewModel
             {
                 string childName = TitleOf(meta);
 
-                row.Children.Add(new SplitRow(row.FilePath, row)
+                row.Children.Add(new SplitRowViewModel(row.FilePath, row)
                 {
                     Name = string.IsNullOrEmpty(childName) ? row.Name : childName,
                     TitleId = meta.TitleId,
@@ -249,7 +249,7 @@ public class SplitMainViewModel : ToolTabViewModel
         row.NotifyStructureChanged();
     }
 
-    public void ToggleExpand(SplitRow row)
+    public void ToggleExpand(SplitRowViewModel row)
     {
         if (!row.CanExpand)
             return;
@@ -274,7 +274,7 @@ public class SplitMainViewModel : ToolTabViewModel
         row.IsExpanded = true;
     }
 
-    public void RemoveRows(IEnumerable<SplitRow> selected)
+    public void RemoveRows(IEnumerable<SplitRowViewModel> selected)
     {
         var parents = selected.Select(r => r.Parent ?? r).Distinct().ToList();
 
@@ -356,13 +356,13 @@ public class SplitMainViewModel : ToolTabViewModel
                 int resultCount = 0;
                 var progress = BuildProgressReporter();                
                 var config = AppConfig.Instance.Switch;
-                bool compress = OutputFormat is SwitchOutputFormat.NSZ or SwitchOutputFormat.XCZ;
-                bool asXci = OutputFormat is SwitchOutputFormat.XCI or SwitchOutputFormat.XCZ;
+                bool compress = OutputFormat is OutputFormat.NSZ or OutputFormat.XCZ;
+                bool asXci = OutputFormat is OutputFormat.XCI or OutputFormat.XCZ;
 
                 for (int i = 0; i < jobs.Count; i++)
                 {
                     _cts.Token.ThrowIfCancellationRequested();
-                    resultCount += await SwitchSplitService.Split(jobs[i].FilePath, outputDir, compress, config.CompressLevel, config.UseBlockMode, config.VerifyCompress, config.ForceKeyGen0, asXci, i + 1, jobs.Count, progress, Log, jobs[i].TitleIds, _cts.Token);
+                    resultCount += await SplitService.Split(jobs[i].FilePath, outputDir, compress, config.CompressLevel, config.UseBlockMode, config.VerifyCompress, config.ForceKeyGen0, asXci, i + 1, jobs.Count, progress, Log, jobs[i].TitleIds, _cts.Token);
                 }
 
                 Log(string.Format(Res.Main_Log_AllComplete, _totalSw.Elapsed.ToString(@"mm\:ss")), LogLevel.Ok);

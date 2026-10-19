@@ -11,27 +11,20 @@ public partial class CertsTab : UserControl
 {
     private CertsMainViewModel ViewModel => (CertsMainViewModel)DataContext;
 
-    public CertsTab()
-    {
-        InitializeComponent();
-    }
+    public CertsTab() => InitializeComponent();
 
     private void CiaDrop_Drop(object sender, DragEventArgs e)
     {
         if (e.Data.GetData(DataFormats.FileDrop) is not string[] files)
             return;
 
-        string? cia = files.FirstOrDefault(f =>
-            string.Equals(Path.GetExtension(f), ".cia", StringComparison.OrdinalIgnoreCase));
+        string? cia = files.FirstOrDefault(f => string.Equals(Path.GetExtension(f), ".cia", StringComparison.OrdinalIgnoreCase));
 
         if (cia != null)
             ViewModel.SetFile(cia);
     }
 
-    private void CiaDrop_Click(object sender, MouseButtonEventArgs e)
-    {
-        BtnAddFile_Click(sender, e);
-    }
+    private void CiaDrop_Click(object sender, MouseButtonEventArgs e) => BtnAddFile_Click(sender, e);
 
     private void BtnAddFile_Click(object sender, RoutedEventArgs e)
     {

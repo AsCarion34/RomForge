@@ -49,14 +49,12 @@ public static class PatchService
     private static async Task WritePatchedEntryAsync(ZipArchiveEntry sourceEntry, PatchEntry patchEntry, ZipArchive outputZip, Dictionary<string, ZipArchive> openPatchZips, IProgress<ProgressInfo>? progress, CancellationToken ct = default)
     {
         byte[] sourceBytes;
-
         using (var srcStream = sourceEntry.Open())
         using (var ms = new MemoryStream(checked((int)sourceEntry.Length)))
         {
             await srcStream.CopyToAsync(ms, ct);
             sourceBytes = ms.Length == ms.Capacity ? ms.GetBuffer() : ms.ToArray();
         }
-
         var patchBytes = await ReadPatchBytesAsync(patchEntry, openPatchZips, ct);
 
         ct.ThrowIfCancellationRequested();
@@ -71,9 +69,7 @@ public static class PatchService
         });
 
         var resultBytes = await UniversalPatcher.ApplyPatchAsync(sourceBytes, patchBytes, entryProgress, ct);
-
         var newEntry = outputZip.CreateEntry(sourceEntry.FullName, CompressionLevel.Optimal);
-
         using (var destStream = newEntry.Open())
             await destStream.WriteAsync(resultBytes, ct);
 
@@ -83,7 +79,6 @@ public static class PatchService
     private static async Task CopyEntryAsync(ZipArchiveEntry sourceEntry, ZipArchive outputZip, CancellationToken ct)
     {
         var newEntry = outputZip.CreateEntry(sourceEntry.FullName, CompressionLevel.Optimal);
-
         using var srcStream = sourceEntry.Open();
         using var destStream = newEntry.Open();
 
@@ -101,11 +96,10 @@ public static class PatchService
             openPatchZips[patchEntry.ZipPath!] = zip;
         }
 
-        var entry = zip.GetEntry(patchEntry.EntryPath)
-            ?? throw new FileNotFoundException($"ZIP 없음: {patchEntry.EntryPath}");
-
+        var entry = zip.GetEntry(patchEntry.EntryPath) ?? throw new FileNotFoundException($"ZIP 없음: {patchEntry.EntryPath}");
         using var stream = entry.Open();
         using var ms = new MemoryStream();
+
         await stream.CopyToAsync(ms, ct);
 
         return ms.ToArray();

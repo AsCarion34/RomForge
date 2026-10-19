@@ -210,20 +210,20 @@ public class ConverterMainViewModel : ToolTabViewModel
                     using ITitleSource source = item.Extension == "wup" ? new WupTitleSource(item.FilePath) : new FolderTitleSource(item.FilePath);
                     item.TitleIdHex = source.TitleIdHex;
                     item.TitleVersion = source.TitleVersion;
-                    var meta = item.Extension == "wup" ? WiiUMetadataExtractor.ExtractFromTitleSource(source) : WiiUMetadataExtractor.ExtractFromFolder(item.FilePath);
+                    var meta = item.Extension == "wup" ? MetadataExtractor.ExtractFromTitleSource(source) : MetadataExtractor.ExtractFromFolder(item.FilePath);
 
                     ApplyMetadata(item, meta);
                 });
             }
             else
             {
-                var meta = await WiiUMetadataExtractor.Extract(item.FilePath, KeysPath);
+                var meta = await MetadataExtractor.Extract(item.FilePath, KeysPath);
 
                 ApplyMetadata(item, meta);
 
                 await Task.Run(() =>
                 {
-                    var sources = WiiUConverter.OpenSources(item.FilePath, KeysPath);
+                    var sources = Converter.OpenSources(item.FilePath, KeysPath);
 
                     try
                     {
@@ -380,7 +380,7 @@ public class ConverterMainViewModel : ToolTabViewModel
 
     private void ConvertOne(WiiUFileItem item, CancellationToken ct)
     {
-        var sources = WiiUConverter.OpenSources(item.FilePath, KeysPath);
+        var sources = Converter.OpenSources(item.FilePath, KeysPath);
 
         try
         {
@@ -392,7 +392,7 @@ public class ConverterMainViewModel : ToolTabViewModel
                 ct.ThrowIfCancellationRequested();
 
                 var source = sources[i];
-                string outputName = WiiUConverter.BuildOutputName(source, item.TitleName);
+                string outputName = Converter.BuildOutputName(source, item.TitleName);
 
                 void OnFileProgress(int done, int totalFiles, string label)
                 {
@@ -405,21 +405,21 @@ public class ConverterMainViewModel : ToolTabViewModel
                     case "WUP":
                         {
                             string outFolder = Utils.GetUniqueFolderPath(Path.Combine(outputRoot, $"{outputName} [WUP]"));
-                            WiiUConverter.ConvertToWup(source, outFolder, OnFileProgress, ct);
+                            Converter.ConvertToWup(source, outFolder, OnFileProgress, ct);
                             break;
                         }
 
                     case "Loadiine":
                         {
                             string outFolder = Utils.GetUniqueFolderPath(Path.Combine(outputRoot, $"{outputName} [Loadiine]"));
-                            WiiUConverter.ConvertToLoadiine(source, outFolder, OnFileProgress, ct);
+                            Converter.ConvertToLoadiine(source, outFolder, OnFileProgress, ct);
                             break;
                         }
 
                     case "WUA":
                         {
                             string outFile = Utils.GetUniqueFilePath(Path.Combine(outputRoot, $"{outputName}.wua"));
-                            WiiUConverter.ConvertToWua(source, outFile, OnFileProgress, ct);
+                            Converter.ConvertToWua(source, outFile, OnFileProgress, ct);
                             break;
                         }
 

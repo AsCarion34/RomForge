@@ -20,7 +20,6 @@ public partial class CompressTab : UserControl
     public CompressTab()
     {
         InitializeComponent();
-
         DataContextChanged += CompressTab_DataContextChanged;
     }
 

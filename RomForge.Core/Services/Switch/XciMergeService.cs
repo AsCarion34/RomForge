@@ -12,8 +12,6 @@ using LibHac.Tools.FsSystem.NcaUtils;
 using NSW.Core;
 using NSW.Core.Models;
 using NSW.Core.Utils;
-using RomForge.Core.Models.Switch;
-using System.DirectoryServices.ActiveDirectory;
 using System.IO;
 using Path = System.IO.Path;
 using Res = NSW.Core.Properties.Resources;
@@ -25,7 +23,8 @@ public class XciMergeService : BaseSwitchService
     public static async Task<List<string>> Merge(IReadOnlyList<string> inputPaths, string outputDir, int compressionLevel, bool useBlockMode, bool isValidationEnabled, bool forceKeyGen0, IProgress<ProgressInfo> progress, Action<string, LogLevel, string> log, CancellationToken ct = default)
         => await RunMergeAll(inputPaths, outputDir, compressionLevel > 0, compressionLevel, useBlockMode, isValidationEnabled, forceKeyGen0, KeySetProvider.Instance.KeySet.Clone(), progress, log, ct);
 
-    public static async Task<List<string>> RunMergeAll(IReadOnlyList<string> inputPaths, string outputDir, bool useCompression, int compressionLevel, bool useBlockMode, bool isValidationEnabled, bool forceKeyGen0, KeySet keySet, IProgress<ProgressInfo> progress, Action<string, LogLevel, string> log, CancellationToken ct = default)
+    public static async Task<List<string>> RunMergeAll(IReadOnlyList<string> inputPaths, string outputDir, bool useCompression, int compressionLevel, bool useBlockMode, bool isValidationEnabled, bool forceKeyGen0, KeySet keySet, 
+        IProgress<ProgressInfo> progress, Action<string, LogLevel, string> log, CancellationToken ct = default)
     {
         log?.Invoke(Res.Log_AnalyzeMetadata, LogLevel.Info, string.Empty);
 
@@ -71,13 +70,10 @@ public class XciMergeService : BaseSwitchService
                 .Where(p => !string.IsNullOrEmpty(p) && File.Exists(p))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
-
             var latestPatch = group.PatchMetas
                 .OrderByDescending(m => m.TitleVersion)
                 .FirstOrDefault();
-
             var allowedNcaIds = BuildAllowedNcaIds(group, latestPatch);
-
             var req = new Models.Switch.BuildRequest(group.BaseMetas.FirstOrDefault()?.SourcePath ?? string.Empty, latestPatch?.SourcePath ?? string.Empty, [.. group.DlcMetas.Select(m => m.SourcePath).Distinct(StringComparer.OrdinalIgnoreCase)], outputDir)
             {
                 UseCompression = useCompression,
@@ -109,7 +105,10 @@ public class XciMergeService : BaseSwitchService
 
                 results.Add(await RunMergeProcess(req, keySet, groupMeta, isValidationEnabled, forceKeyGen0, idx, groups.Count, group.BaseMetas.Count > 0, group.PatchMetas.Count > 0, progress, log, ct));
             }
-            catch (OperationCanceledException) { throw; }
+            catch (OperationCanceledException) 
+            { 
+                throw; 
+            }
             catch (Exception ex)
             {
                 log?.Invoke(string.Format(Res.Log_MergeFailed, group.BaseTitleId, ex.Message), LogLevel.Error, group.BaseTitleId);
@@ -119,7 +118,8 @@ public class XciMergeService : BaseSwitchService
         return results;
     }
 
-    public static async Task<List<string>> RunMergeSingle(IReadOnlyList<string> inputPaths, string outputDir, bool useCompression, int compressionLevel, bool useBlockMode, bool isValidationEnabled, bool forceKeyGen0, KeySet keySet, IProgress<ProgressInfo> progress, Action<string, LogLevel, string> log, CancellationToken ct = default)
+    public static async Task<List<string>> RunMergeSingle(IReadOnlyList<string> inputPaths, string outputDir, bool useCompression, int compressionLevel, bool useBlockMode, bool isValidationEnabled, bool forceKeyGen0, KeySet keySet,
+        IProgress<ProgressInfo> progress, Action<string, LogLevel, string> log, CancellationToken ct = default)
     {
         log?.Invoke(Res.Log_AnalyzeMetadata, LogLevel.Info, string.Empty);
 
@@ -145,7 +145,10 @@ public class XciMergeService : BaseSwitchService
         {
             results.Add(await RunMergeProcess(req, keySet, allMeta, isValidationEnabled, forceKeyGen0, 1, 1, hasBase, hasUpdate, progress, log, ct));
         }
-        catch (OperationCanceledException) { throw; }
+        catch (OperationCanceledException) 
+        { 
+            throw; 
+        }
         catch (Exception ex)
         {
             log?.Invoke(string.Format(Res.Log_MergeFailed, req.TargetBaseTitleId, ex.Message), LogLevel.Error, req.TargetBaseTitleId);
@@ -154,7 +157,8 @@ public class XciMergeService : BaseSwitchService
         return results;
     }
 
-    public static async Task<string> RunMergeProcess(Models.Switch.BuildRequest req, KeySet keySet, List<MetadataResult> cachedMeta, bool isValidationEnabled, bool forceKeyGen0, int index, int groupCount, bool hasBase, bool hasUpdate, IProgress<ProgressInfo> progress, Action<string, LogLevel, string> log, CancellationToken ct = default)
+    public static async Task<string> RunMergeProcess(Models.Switch.BuildRequest req, KeySet keySet, List<MetadataResult> cachedMeta, bool isValidationEnabled, bool forceKeyGen0, int index, int groupCount, bool hasBase, bool hasUpdate, 
+        IProgress<ProgressInfo> progress, Action<string, LogLevel, string> log, CancellationToken ct = default)
     {
         var disposables = new List<IDisposable>();
         var converters = new Dictionary<string, NcaToNczConverter>(StringComparer.OrdinalIgnoreCase);
@@ -164,18 +168,13 @@ public class XciMergeService : BaseSwitchService
         try
         {
             var allPaths = GetAllPaths(req);
-
-            string? xciBasePath = allPaths.FirstOrDefault(p =>
-                Path.GetExtension(p).ToLowerInvariant() is ".xci" or ".xcz");
-
+            string? xciBasePath = allPaths.FirstOrDefault(p => Path.GetExtension(p).ToLowerInvariant() is ".xci" or ".xcz");
             byte[] xciPrefixBuffer = GetXciPrefix(allPaths);
-
             var ncaIdToMeta = cachedMeta
                 .Where(m => m.ContentNcaIds != null)
                 .SelectMany(m => m.ContentNcaIds!.Select(id => (id, m)))
                 .GroupBy(x => x.id, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.First().m, StringComparer.OrdinalIgnoreCase);
-
             var fileRegistry = new Dictionary<string, (string Path, string EntryName, string Ext)>(StringComparer.OrdinalIgnoreCase);
             List<(string Name, ulong AbsOffset, ulong Size, byte[] Hash, uint HashTargetSize)>? rootEntriesTemplate = null;
             var xciStorages = new List<(string Path, IFileSystem Secure)>();
@@ -364,9 +363,7 @@ public class XciMergeService : BaseSwitchService
                     string label = $"{(nczMetaInfo?.KrTitle ?? nczMetaInfo?.EnTitle ?? entry.Name)} [{nczTypeTag}]";
 
                     log?.Invoke($"- {label} {Res.ToolTip_ValidateCompress}", LogLevel.Info, req.TargetBaseTitleId);
-
                     await converter.ValidateAsync(nczFile.Get.AsStream(), nczMetaInfo?.TitleId, totalValidationSize, label, progress, ct);
-
                     log?.Invoke($"- {label} OK", LogLevel.Ok, req.TargetBaseTitleId);
                 }
 

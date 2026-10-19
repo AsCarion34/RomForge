@@ -1,5 +1,4 @@
-﻿using Common.WPF;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using NSW.WPF.Services;
 using RomForge.ViewModels.Switch;
 using System.IO;
@@ -41,7 +40,7 @@ public partial class SplitFileListControl : UserControl
             _ = ViewModel.AddFilesAsync(Common.Utils.ExpandPaths([dlg.SelectedPath]));
     }
 
-    private void BtnRemoveFile_Click(object sender, RoutedEventArgs e) => ViewModel?.RemoveRows([.. lvFiles.SelectedItems.Cast<SplitRow>()]);
+    private void BtnRemoveFile_Click(object sender, RoutedEventArgs e) => ViewModel?.RemoveRows([.. lvFiles.SelectedItems.Cast<SplitRowViewModel>()]);
 
     private void BtnRemoveAllFiles_Click(object sender, RoutedEventArgs e) => ViewModel?.ClearAll();
 
@@ -56,13 +55,14 @@ public partial class SplitFileListControl : UserControl
         if (sender is CheckBox checkBox)
         {
             bool isChecked = checkBox.IsChecked == true;
+
             ViewModel?.SelectAll(isChecked);
         }
     }
 
     private void BtnExpand_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is FrameworkElement { DataContext: SplitRow row })
+        if (sender is FrameworkElement { DataContext: SplitRowViewModel row })
             ViewModel?.ToggleExpand(row);
 
         e.Handled = true;
@@ -96,7 +96,7 @@ public partial class SplitFileListControl : UserControl
 
     private void MenuItem_OpenFolder_Click(object sender, RoutedEventArgs e)
     {
-        if (lvFiles.SelectedItem is not SplitRow selected)
+        if (lvFiles.SelectedItem is not SplitRowViewModel selected)
             return;
 
         string? dir = Path.GetDirectoryName(selected.FilePath);

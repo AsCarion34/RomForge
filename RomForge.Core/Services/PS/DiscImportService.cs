@@ -1,19 +1,13 @@
 ﻿using PBP.Core.Models;
 using PBP.Core.Services;
+using RomForge.Core.Models.PS;
 using System.IO;
 
 namespace RomForge.Core.Services.PS;
 
-public record ImportedDiscFile(string Path, string GameId, long Size, byte[]? PresetConfig);
-public record ImportFailure(string FileName, string Reason);
-public record ImportResult(List<ImportedDiscFile> Imported, int OverLimitSkipped, List<ImportFailure> Failures);
-
 public class DiscImportService
 {
-    private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".cue", ".m3u", ".iso", ".chd", ".bin"
-    };
+    private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase) { ".cue", ".m3u", ".iso", ".chd", ".bin" };
 
     public async Task<ImportResult> ImportAsync(IEnumerable<string> inputPaths, IEnumerable<string> existingPaths, int roomAvailable)
     {
@@ -79,9 +73,7 @@ public class DiscImportService
                 string gameId;
 
                 if (ext == ".chd")
-                {
                     gameId = GameIdReader.ReadFromDisk(DiskSource.FromChd(path));
-                }
                 else if (ext == ".cue")
                 {
                     var binPath = CueFileResolver.GetBinPath(path);

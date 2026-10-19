@@ -10,7 +10,6 @@ public class GdiTrackCopier(Action<string, LogLevel> log)
     public string? CopyGdiTracks(string sourcePath, string outputDir, string outputPath, List<string> copiedTrackPaths, bool moveInsteadOfCopy = false, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         string[] gdiCandidates = Directory.GetFiles(Path.GetDirectoryName(sourcePath)!, "*.gdi");
-
         GdiFile? gdi = null;
         string sourceMainFileName = Path.GetFileName(sourcePath);
 
@@ -23,7 +22,6 @@ public class GdiTrackCopier(Action<string, LogLevel> log)
                 if (parsed.Tracks.Any(t => string.Equals(t.FileName, sourceMainFileName, StringComparison.OrdinalIgnoreCase)))
                 {
                     gdi = parsed;
-
                     break;
                 }
             }
@@ -52,7 +50,6 @@ public class GdiTrackCopier(Action<string, LogLevel> log)
             if (!File.Exists(sourceTrackPath))
             {
                 log($"트랙 파일을 찾을 수 없습니다: {track.FileName}", LogLevel.Error);
-
                 return null;
             }
 
@@ -91,7 +88,6 @@ public class GdiTrackCopier(Action<string, LogLevel> log)
         catch (Exception ex)
         {
             log($"GDI 파일 처리 중 오류 발생: {ex.Message}", LogLevel.Error);
-
             return null;
         }
     }

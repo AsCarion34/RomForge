@@ -1,4 +1,5 @@
 ﻿using LibHac.Common.Keys;
+using LibHac.Crypto;
 using LibHac.Fs;
 using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.NcaUtils;
@@ -44,6 +45,7 @@ public static class NcaRecryptService
             await outputStream.WriteAsync(buf.AsMemory(0, readSize), ct);
 
             onRead?.Invoke(readSize);
+
             offset += readSize;
             remaining -= readSize;
         }
@@ -92,9 +94,8 @@ public static class NcaRecryptService
                 if (key.All(b => b == 0))
                     continue;
 
-                LibHac.Crypto.Aes.DecryptEcb128(key.AsSpan(), key.AsSpan(), oldKaek.DataRo);
-                LibHac.Crypto.Aes.EncryptEcb128(key.AsSpan(), key.AsSpan(), newKaek.DataRo);
-
+                Aes.DecryptEcb128(key.AsSpan(), key.AsSpan(), oldKaek.DataRo);
+                Aes.EncryptEcb128(key.AsSpan(), key.AsSpan(), newKaek.DataRo);
                 Array.Copy(key, 0, headerBytes, keyOffset, 0x10);
             }
         }
@@ -114,12 +115,10 @@ public static class NcaRecryptService
     {
         byte[] titleKey = nca.GetDecryptedTitleKey();
         var newKaek = keySet.KeyAreaKeys[newKeyGenIdx][libHacHdr.KeyAreaKeyIndex];
-
         byte[] encryptedTitleKey = new byte[0x10];
 
         Array.Copy(titleKey, encryptedTitleKey, 0x10);
-        LibHac.Crypto.Aes.EncryptEcb128(encryptedTitleKey.AsSpan(), encryptedTitleKey.AsSpan(), newKaek.DataRo);
-
+        Aes.EncryptEcb128(encryptedTitleKey.AsSpan(), encryptedTitleKey.AsSpan(), newKaek.DataRo);
         Array.Clear(headerBytes, 0x230, 0x10);
         Array.Clear(headerBytes, 0x300, 0x40);
         Array.Copy(encryptedTitleKey, 0, headerBytes, 0x320, 0x10);

@@ -36,7 +36,6 @@ public class BinTrackCopier(Action<string, LogLevel> log)
 
         var sourceDir = Path.GetDirectoryName(cuePath)!;
         string sourceMainFileName = Path.GetFileName(sourcePath);
-
         var binsToCopy = referencedBins.Where(b => !string.Equals(Path.GetFileName(b), sourceMainFileName, StringComparison.OrdinalIgnoreCase)).ToList();
         int trackIndex = 0;
 

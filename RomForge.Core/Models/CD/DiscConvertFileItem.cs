@@ -10,10 +10,7 @@ public class DiscConvertFileItem : ConvertibleFileItemBase
 {
     public RomFormat DetectedFormat { get; }
 
-    public DiscConvertFileItem(string filePath) : base(filePath)
-    {
-        DetectedFormat = GetDetectedFormat(filePath, Extension);
-    }
+    public DiscConvertFileItem(string filePath) : base(filePath) => DetectedFormat = GetDetectedFormat(filePath, Extension);
 
     public Brush ExtensionBackground => ExtensionColorMap.Resolve(Extension, ColorMap);
 

@@ -8,11 +8,10 @@ public class CdOutputFormatLabelConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => value switch
     {
-        CdOutputFormat.Iso => "ISO",
-        CdOutputFormat.BinCue => "CUE",
+        OutputFormat.Iso => "ISO",
+        OutputFormat.BinCue => "CUE",
         _ => value?.ToString() ?? string.Empty
     };
 
-    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
-        throw new NotImplementedException();
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => throw new NotImplementedException();
 }

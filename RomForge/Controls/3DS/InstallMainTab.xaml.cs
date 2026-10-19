@@ -2,7 +2,6 @@
 using PickPack.Disk.Helpers;
 using RomForge.Core.Services;
 using RomForge.ViewModels._3DS;
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -17,7 +16,6 @@ public partial class InstallMainTab : UserControl
     public InstallMainTab()
     {
         InitializeComponent();
-
         Loaded += MainTab_Loaded;
     }
 
@@ -71,17 +69,18 @@ public partial class InstallMainTab : UserControl
             SdDriveComboBox.IsEnabled = true;
 
             foreach (var info in infos)
-            {
                 SdDriveComboBox.Items.Add(info);
-            }
 
             int lastIndex = SdDriveComboBox.Items.Count - 1;
+
             SdDriveComboBox.SelectedIndex = lastIndex;
 
             if (SdDriveComboBox.Items[lastIndex] is DriveInfos lastDrive)
             {
                 ViewModel.SdPath = lastDrive.DriveLetter!;
+
                 await ViewModel.CheckAndSetMovablePathAsync(ViewModel.SdPath!);
+
                 MovablePathBox.Text = ViewModel.MovablePath;
             }
         }
@@ -105,6 +104,7 @@ public partial class InstallMainTab : UserControl
             return;
 
         await ViewModel.CheckAndSetMovablePathAsync(ViewModel.SdPath);
+
         MovablePathBox.Text = ViewModel.MovablePath;
     }
 

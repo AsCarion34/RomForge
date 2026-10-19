@@ -23,16 +23,18 @@ public partial class RepackTab : UserControl
         if (System.ComponentModel.DesignerProperties.GetIsInDesignMode(this))
             return;
 
-        if (titleList.DataContext is SwitchTitleListViewModel vm)
+        if (titleList.DataContext is TitleListViewModel vm)
             vm.LogAction = (msg, level) => ViewModel.Log(msg, level);
 
         titleList.FileListChanged += SyncAll;
+
         SyncAll();
     }
 
     private async void SyncAll()
     {
         _cts?.Cancel();
+
         _cts = new CancellationTokenSource();
 
         try
@@ -44,12 +46,15 @@ public partial class RepackTab : UserControl
         catch (OperationCanceledException) { }
     }
 
-    private void SyncContext()
-        => ViewModel.Context = new RepackMainViewModel.BuildContext(titleList.GameFiles, langTab.CurrentMetadata, langTab.ForcedLanguage, langTab.TargetIdOffset, langTab.OverrideTitleId);
+    private void SyncContext() => ViewModel.Context = new RepackMainViewModel.BuildContext(titleList.GameFiles, langTab.CurrentMetadata, langTab.ForcedLanguage, langTab.TargetIdOffset, langTab.OverrideTitleId);
 
     private async void BtnStart_Click(object sender, RoutedEventArgs e)
     {
-        if (ViewModel.IsLocked) { ViewModel.Cancel(); return; }
+        if (ViewModel.IsLocked) 
+        { 
+            ViewModel.Cancel();
+            return;
+        }
 
         await RecalcIfNeededAsync();
         langTab.SyncMetadataFromUI();
@@ -60,7 +65,11 @@ public partial class RepackTab : UserControl
 
     private async void BtnUnpack_Click(object sender, RoutedEventArgs e)
     {
-        if (ViewModel.IsLocked) { ViewModel.Cancel(); return; }
+        if (ViewModel.IsLocked) 
+        { 
+            ViewModel.Cancel(); 
+            return; 
+        }
 
         await RecalcIfNeededAsync();
         SyncContext();
@@ -70,7 +79,11 @@ public partial class RepackTab : UserControl
 
     private void BtnRebuild_Click(object sender, RoutedEventArgs e)
     {
-        if (ViewModel.IsLocked) { ViewModel.Cancel(); return; }
+        if (ViewModel.IsLocked) 
+        { 
+            ViewModel.Cancel(); 
+            return;
+        }
 
         SyncContext();
         _ = ViewModel.StartAsync(BuildMode.RebuildOnly);

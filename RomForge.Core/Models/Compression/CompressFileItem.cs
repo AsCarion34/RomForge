@@ -51,7 +51,6 @@ public class CompressFileItem(string filePath) : FileItemBase(filePath)
     {
         var ext = Extension;
         var dir = Directory;
-
         long SumFiles(IEnumerable<string> paths) => paths.Where(File.Exists).Sum(p => new FileInfo(p).Length);
         long ParsedSum(IEnumerable<string> referencedFiles) => new FileInfo(filePath).Length + SumFiles(referencedFiles.Select(f => Path.Combine(dir, f)));
 

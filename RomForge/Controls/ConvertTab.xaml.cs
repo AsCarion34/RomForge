@@ -19,7 +19,6 @@ public partial class ConvertTab : UserControl
     public ConvertTab()
     {
         InitializeComponent();
-
         DataContextChanged += UnifiedConvertTab_DataContextChanged;
     }
 

@@ -72,6 +72,7 @@ public partial class MergeTab : UserControl
     private Task RecalcKeyMissingAsync()
     {
         var tcs = new TaskCompletionSource();
+
         fileMgr.RecalcKeyMissingFiles(() => tcs.SetResult());
 
         return tcs.Task;
