@@ -24,8 +24,6 @@ namespace RomForge.ViewModels.Switch;
 
 public class RenameMainViewModel : ToolTabViewModel
 {
-    #region Fields & Properties
-
     private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase) { ".nsp", ".xci", ".nsz", ".xcz" };
 
     private CancellationTokenSource _cts = new();
@@ -79,21 +77,12 @@ public class RenameMainViewModel : ToolTabViewModel
         private set => SetProperty(ref _summary, value);
     }
 
-    #endregion
-
-    #region Constructor
-
     public RenameMainViewModel()
     {
         RunCommand = new RelayCommand(async _ => await RunAsync(), _ => !IsLocked && Items.Count > 0);
         CancelCommand = new RelayCommand(_ => _cts.Cancel(), _ => IsLocked);
-
         Items.CollectionChanged += Items_CollectionChanged;
     }
-
-    #endregion
-
-    #region Public Methods
 
     public async Task AddPathsAsync(IEnumerable<string> paths)
     {
@@ -167,9 +156,7 @@ public class RenameMainViewModel : ToolTabViewModel
         int ready = plans.Count(p => p.State == RenameState.Ready);
         int skipped = CountSkipped(plans);
 
-        Summary = skipped == 0
-            ? $"변경 예정 {ready}개 / 전체 {plans.Count}개"
-            : $"변경 예정 {ready}개 / 전체 {plans.Count}개 (건너뜀 {skipped}개)";
+        Summary = skipped == 0 ? $"변경 예정 {ready}개 / 전체 {plans.Count}개" : $"변경 예정 {ready}개 / 전체 {plans.Count}개 (건너뜀 {skipped}개)";
     }
 
     public async Task RunAsync()
@@ -251,10 +238,6 @@ public class RenameMainViewModel : ToolTabViewModel
 
     public void Log(string msg, LogLevel level = LogLevel.Info) => Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
 
-    #endregion
-
-    #region Private Methods
-
     private void Items_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         if (e.OldItems != null)
@@ -330,32 +313,15 @@ public class RenameMainViewModel : ToolTabViewModel
     private static RenameSource ToSource(GameFile file)
     {
         var naming = file.Naming;
-
         string tag = NspNameBuilder.BuildTagPart(file.FileType.Contains('B'), file.FileType.Contains('U'), naming?.DlcCount ?? 0);
-
         string name = naming is null ? string.Empty : NspNameBuilder.BuildNamePart(naming.KrTitle, naming.EnTitle);
 
-        return new RenameSource(
-            file.FilePath,
-            name,
-            naming?.KoreanTitle,
-            naming?.DefaultTitle,
-            file.TitleID,
-            tag,
-            naming?.DisplayVersion ?? file.Version,
-            naming?.TitleVersion.ToString(),
-            HasMetadata(file));
+        return new RenameSource(file.FilePath, name, naming?.KoreanTitle, naming?.DefaultTitle, file.TitleID, tag, naming?.DisplayVersion ?? file.Version, naming?.TitleVersion.ToString(), HasMetadata(file));
     }
 
-    private static bool HasMetadata(GameFile file) =>
-        file.Naming is not null
-        && !string.IsNullOrEmpty(file.TitleID)
-        && file.FileType != Res.Status_NoKey
-        && file.FileType != Res.Status_Analyzing
-        && file.FileType != "?";
+    private static bool HasMetadata(GameFile file) => file.Naming is not null && !string.IsNullOrEmpty(file.TitleID) && file.FileType != Res.Status_NoKey && file.FileType != Res.Status_Analyzing && file.FileType != "?";
 
-    private static int CountSkipped(IEnumerable<RenamePlan> plans) =>
-        plans.Count(p => p.State is not (RenameState.Ready or RenameState.Unchanged));
+    private static int CountSkipped(IEnumerable<RenamePlan> plans) => plans.Count(p => p.State is not (RenameState.Ready or RenameState.Unchanged));
 
     private void ReplaceItem(RenamePlan plan)
     {
@@ -379,6 +345,4 @@ public class RenameMainViewModel : ToolTabViewModel
             return;
         }
     }
-
-    #endregion
 }

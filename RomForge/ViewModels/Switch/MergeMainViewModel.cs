@@ -20,8 +20,6 @@ namespace RomForge.ViewModels.Switch;
 
 public class MergeMainViewModel : ToolTabViewModel
 {
-    #region Fields & Properties
-
     private readonly Stopwatch _totalSw = new();
     private CancellationTokenSource? _cts;
 
@@ -97,19 +95,11 @@ public class MergeMainViewModel : ToolTabViewModel
 
     public ICommand OpenWorkSpaceCommand { get; }
 
-    #endregion
-
-    #region Constructor
-
     public MergeMainViewModel()
     {
         OutputPath = string.IsNullOrWhiteSpace(AppConfig.Instance.OutputFolders.SwitchMergeOutputPath) ? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "output") : AppConfig.Instance.OutputFolders.SwitchMergeOutputPath;
         OpenWorkSpaceCommand = new RelayCommand(_ => ExecuteOpenWorkSpace());
     }
-
-    #endregion
-
-    #region Public Methods
 
     public async Task MergeAsync(IList<GameFile> gameFiles)
     {
@@ -181,10 +171,6 @@ public class MergeMainViewModel : ToolTabViewModel
 
     public void Cancel() => _cts?.Cancel();
 
-    #endregion
-
-    #region Private Methods
-
     private Progress<ProgressInfo> BuildProgressReporter() =>
         new(info => Application.Current.Dispatcher.BeginInvoke(() =>
         {
@@ -231,6 +217,4 @@ public class MergeMainViewModel : ToolTabViewModel
     }
 
     public void Log(string msg, LogLevel level = LogLevel.Info, string titleId = "") => Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
-
-    #endregion
 }

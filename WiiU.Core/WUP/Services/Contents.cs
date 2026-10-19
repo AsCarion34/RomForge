@@ -11,7 +11,17 @@ namespace WiiU.Core.WUP.Services
 
         public Contents() => FSTContent = GetNewContent();
 
-        public Content FSTContent { get; set; } = null!;
+        private Content _fstContent = null!;
+
+        public Content FSTContent
+        {
+            get => _fstContent;
+            set
+            {
+                _fstContent = value;
+                value.IsFSTContent = true;
+            }
+        }
 
         public short ContentCount => (short)_contents.Count;
 

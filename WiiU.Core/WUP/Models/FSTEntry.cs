@@ -289,7 +289,7 @@ namespace WiiU.Core.WUP.Models
                 sb.Append(" ParentID:").Append(ParentOffset).Append('\n');
 
             if (IsDir)
-                sb.Append("    NextID:").Append(NextOffset).Append('\n');
+                sb.Append("   NextID:").Append(NextOffset).Append('\n');
 
             foreach (FSTEntry e in Children)
                 sb.Append(e.ToString());

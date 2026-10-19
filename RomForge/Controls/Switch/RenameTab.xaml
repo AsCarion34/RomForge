@@ -15,9 +15,10 @@
 
         <Grid Grid.Row="0">
             <ListView x:Name="lvFiles" Margin="5,0,5,0" ItemsSource="{Binding Items}" IsEnabled="{Binding IsLocked, Converter={StaticResource InverseBool}}" SelectionMode="Extended" AllowDrop="True"
-                      KeyUp="LvFiles_KeyUp" Drop="LvFiles_Drop" DragOver="LvFiles_DragOver" GridViewColumnHeader.Click="GridViewColumnHeader_Click" ContextMenuOpening="LvFiles_ContextMenuOpening">
+                     KeyUp="LvFiles_KeyUp" Drop="LvFiles_Drop" DragOver="LvFiles_DragOver" GridViewColumnHeader.Click="GridViewColumnHeader_Click" ContextMenuOpening="LvFiles_ContextMenuOpening">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                         <Style.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter Property="Background" Value="#252526"/>
@@ -67,34 +68,28 @@
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
 
-                        <GridViewColumn Width="380">
+                        <GridViewColumn Width="770">
                             <GridViewColumn.Header>
                                 <GridViewColumnHeader Tag="OldName">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <Image Source="/Common.WPF;component/Assets/Images/Title.png" Width="24" Height="24" Margin="0,0,4,0"/>
-                                        <TextBlock Text="현재 파일명" Foreground="#BBBBBB" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                                        <TextBlock Text="파일명 비교 (현재 / 변경)" Foreground="#BBBBBB" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </GridViewColumnHeader>
                             </GridViewColumn.Header>
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding OldName}" ToolTip="{Binding FilePath}" Foreground="#E8E8F0" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="6,6"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-
-                        <GridViewColumn Width="380">
-                            <GridViewColumn.Header>
-                                <GridViewColumnHeader Tag="NewName">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Image Source="/Common.WPF;component/Assets/Images/Title.png" Width="24" Height="24" Margin="0,0,4,0"/>
-                                        <TextBlock Text="변경 파일명" Foreground="#BBBBBB" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="2,2">
+                                        <Border Width="36" Height="36" CornerRadius="6" Margin="0,0,12,0">
+                                            <Border.Background>
+                                                <ImageBrush ImageSource="{Binding Icon}" Stretch="UniformToFill"/>
+                                            </Border.Background>
+                                        </Border>
+                                        <StackPanel Orientation="Vertical" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding OldName}" ToolTip="{Binding FilePath}" Foreground="#A0A0A5" FontSize="11" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding NewName}" ToolTip="{Binding NewName}" Foreground="#E8E8F0" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                                        </StackPanel>
                                     </StackPanel>
-                                </GridViewColumnHeader>
-                            </GridViewColumn.Header>
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding NewName}" ToolTip="{Binding NewName}" Foreground="#E8E8F0" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="6,6"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
@@ -156,14 +151,13 @@
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="300"/>
+                        <ColumnDefinition Width="380"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="파일명 포맷:" Foreground="White" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <ComboBox Grid.Column="1" ItemsSource="{Binding NamingPresets}" SelectedItem="{Binding SelectedNamingPreset, Mode=TwoWay}" Height="30" FontSize="12" Margin="0,0,4,0">
+                    <ComboBox Grid.Column="1" HorizontalContentAlignment="Left" ItemsSource="{Binding NamingPresets}" SelectedItem="{Binding SelectedNamingPreset, Mode=TwoWay}" Height="30" FontSize="12" Margin="0,0,4,0">
                         <ComboBox.ItemContainerStyle>
-                            <Style TargetType="ComboBoxItem">
-                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Style TargetType="ComboBoxItem">                                
                                 <Setter Property="VerticalContentAlignment" Value="Center"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsSeparator}" Value="True">

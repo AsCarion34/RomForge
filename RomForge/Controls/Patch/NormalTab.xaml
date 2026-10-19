@@ -375,15 +375,15 @@
                             </Grid.ColumnDefinitions>
                             <Grid Grid.Column="0">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="300" />
+                                    <ColumnDefinition Width="320" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                
-                                <ComboBox Grid.Column="0" ItemsSource="{Binding PatchVM.NormalVM.NamingPresets}" SelectedItem="{Binding PatchVM.NormalVM.SelectedNamingPreset, Mode=TwoWay}" IsEnabled="{Binding PatchVM.NormalVM.NamingEnabled}" Height="30" FontSize="12" Margin="0,0,4,0">
+
+                                <ComboBox Grid.Column="0" HorizontalContentAlignment="Left" Height="30" FontSize="12" Margin="0,0,4,0" 
+                                          ItemsSource="{Binding PatchVM.NormalVM.NamingPresets}" SelectedItem="{Binding PatchVM.NormalVM.SelectedNamingPreset, Mode=TwoWay}" IsEnabled="{Binding PatchVM.NormalVM.NamingEnabled}">
                                     <ComboBox.ItemContainerStyle>
                                         <Style TargetType="ComboBoxItem">
-                                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                                             <Setter Property="VerticalContentAlignment" Value="Center"/>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding IsSeparator}" Value="True">

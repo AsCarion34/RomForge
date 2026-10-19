@@ -5,7 +5,15 @@ namespace WiiU.Core.WUP.Crypto
         private static readonly int Length = 0x10;
         private byte[] _value = new byte[Length];
 
-        public byte[] Value { get => _value; private set => _value = value; }
+        public byte[] Value 
+        { 
+            get => _value;
+            private set
+            {
+                if (value != null && value.Length == _value.Length)
+                    _value = value;
+            }
+        }
 
         public IV() { }
 
