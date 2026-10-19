@@ -1,6 +1,7 @@
 ﻿using Ionic.Zlib;
+using PickPack.Disk.Interfaces;
 
-namespace PickPack.Disk
+namespace PickPack.Disk.Services
 {
     public static class ImageReaderFactory
     {

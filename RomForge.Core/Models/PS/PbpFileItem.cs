@@ -63,7 +63,7 @@ public class PbpFileItem(string filePath) : FileItemBase(filePath), Common.WPF.I
         set => SetProperty(ref _languages, value);
     }
 
-    protected override string FormatSize(long bytes) => PickPack.Disk.ETC.FileSize.FormatSize(bytes);
+    protected override string FormatSize(long bytes) => PickPack.Disk.Helpers.FileSize.FormatSize(bytes);
 
     public List<string> AvailableFormats { get; } = ["CUE"];
 

@@ -1,12 +1,15 @@
 ﻿using System.Buffers;
 
-namespace PickPack.Disk.ETC
+namespace PickPack.Disk.Models
 {
     internal static class Optimal
     {
         public static readonly byte[] ZeroBuffer;
+
         public static readonly ArrayPool<byte> ArrayPool = ArrayPool<byte>.Shared;
+
         public static readonly int BufferSize;
+
         public static readonly int ChannelCapacity;
 
         static Optimal()

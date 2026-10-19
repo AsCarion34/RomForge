@@ -1,51 +1,40 @@
-﻿using PickPack.Disk.ETC;
+﻿using PickPack.Disk.Helpers;
+using PickPack.Disk.Models;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading.Channels;
 
-namespace PickPack.Disk
+namespace PickPack.Disk.Services
 {
-    public struct DataChunk
-    {
-        public byte[] Buffer;
-        public int ValidLength;
-    }
-
     public class ImageWriter
     {
-        #region Field
         readonly ProgressReporter _progressReporter;
         CancellationToken _ct;
-        #endregion
 
-        #region Property
         public string WorkTitle { get; set; } = "이미지 굽기";
-        #endregion
 
-        #region Constructor
         public ImageWriter()
         {
             _progressReporter = new ProgressReporter();
             _progressReporter.ProgressChanged += (sender, args) => OnProgressChanged(args.Percent, args.Message1, args.Message2);
         }
-        #endregion
 
-        #region Event
         public event EventHandler<ProgressEventArgs>? ProgressChanged;
+
         public event EventHandler<EventArgs>? WriteEnded;
 
         protected virtual void OnProgressChanged(int percent, string message1, string? message2 = "") => ProgressChanged?.Invoke(this, new ProgressEventArgs { Percent = percent, Message1 = message1, Message2 = message2 });
 
         protected virtual void OnWriteEnded() => WriteEnded?.Invoke(this, EventArgs.Empty);
-        #endregion
 
         public async Task WriteImageAsync(string imagePath, int physicalDriveNumber, long diskSize, CancellationToken ct)
         {
             Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
-            _ct = ct;
-            _progressReporter.Initialize(ct);
 
+            _ct = ct;
+
+            _progressReporter.Initialize(ct);
             await WriteImageAsyncInternal(imagePath, physicalDriveNumber, diskSize, ct);
             OnWriteEnded();
         }
@@ -127,21 +116,22 @@ namespace PickPack.Disk
                 while (totalRead < remainingBytes && (read = await fs.ReadAsync(buffer.AsMemory(0, (int)Math.Min(bufferSize, remainingBytes - totalRead)), ct)) > 0)
                 {
                     ct.ThrowIfCancellationRequested();
+
                     totalRead += read;
 
                     if (read == bufferSize)
                     {
-                        await writer.WriteAsync(new DataChunk { Buffer = buffer, ValidLength = bufferSize }, ct);
+                        await writer.WriteAsync(new DataChunk { Buffer = buffer, ValidLength = bufferSize }, ct)
+                            ;
                         buffer = Optimal.ArrayPool.Rent(bufferSize);
                     }
                     else
                     {
                         int padding = (sectorSize - (read % sectorSize)) % sectorSize;
                         int totalSize = read + padding;
-
                         byte[] dataToSend = Optimal.ArrayPool.Rent(totalSize);
-                        Buffer.BlockCopy(buffer, 0, dataToSend, 0, read);
 
+                        Buffer.BlockCopy(buffer, 0, dataToSend, 0, read);
                         await writer.WriteAsync(new DataChunk { Buffer = dataToSend, ValidLength = totalSize }, ct);
                     }
                 }
@@ -166,6 +156,7 @@ namespace PickPack.Disk
                     long bytesToWriteFromBuffer = Math.Min(chunk.ValidLength, remainingBytes - totalWritten);
 
                     await physicalDriveStream.WriteAsync(chunk.Buffer.AsMemory(0, (int)bytesToWriteFromBuffer), ct);
+
                     totalWritten += bytesToWriteFromBuffer;
 
                     long overallWritten = headerSize + totalWritten;
@@ -186,6 +177,7 @@ namespace PickPack.Disk
                 if (totalWritten >= remainingBytes)
                     break;
             }
+
             physicalDriveStream.Flush();
         }
     }

@@ -93,7 +93,7 @@ public class CdConvertFileItem(string filePath) : FileItemBase(filePath), Common
         ["ccd"] = "#A6C8E2",
     };
 
-    protected override string FormatSize(long bytes) => PickPack.Disk.ETC.FileSize.FormatSize(bytes);
+    protected override string FormatSize(long bytes) => PickPack.Disk.Helpers.FileSize.FormatSize(bytes);
 
     protected override long CalculateSize(string filePath)
     {

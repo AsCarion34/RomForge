@@ -1,6 +1,7 @@
 ﻿using _3DS.Core.Enums;
 using _3DS.Core.Models;
 using Common.WPF.ViewModels;
+using PickPack.Disk.Helpers;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -26,7 +27,7 @@ public class TitleViewModel : ViewModelBase
 
     public string TitleId => Title.TitleId.ToUpperInvariant();
 
-    public string SizeText => PickPack.Disk.ETC.FileSize.FormatSize((long)Title.ContentSize);
+    public string SizeText => FileSize.FormatSize((long)Title.ContentSize);
 
     public BitmapSource? Icon
     {

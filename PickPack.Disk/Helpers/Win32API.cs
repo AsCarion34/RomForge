@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace PickPack.Disk
+namespace PickPack.Disk.Helpers
 {
     internal static class Win32API
     {
@@ -10,10 +10,8 @@ namespace PickPack.Disk
         public const uint IOCTL_DISK_CREATE_DISK = 0x0007C058;
         public const uint IOCTL_DISK_GET_DRIVE_GEOMETRY = 0x00070000;
         public const uint IOCTL_DISK_UPDATE_PROPERTIES = 0x00070140;
-
         public const uint FILE_VOLUME_IS_SYSTEM = 0x00002000;
         public const uint FILE_SYSTEM_IS_HIDDEN = 0x00010000;
-
         public const uint ES_CONTINUOUS = 0x80000000;
         public const uint ES_SYSTEM_REQUIRED = 0x00000001;
 
@@ -21,9 +19,13 @@ namespace PickPack.Disk
         public struct DISK_GEOMETRY
         {
             public long Cylinders;
+
             public int MediaType;
+
             public int TracksPerCylinder;
+
             public int SectorsPerTrack;
+
             public uint BytesPerSector;
         }
 
@@ -31,6 +33,7 @@ namespace PickPack.Disk
         public struct CREATE_DISK_GPT
         {
             public Guid DiskId;
+
             public uint MaxPartitionCount;
         }
 
@@ -38,6 +41,7 @@ namespace PickPack.Disk
         public struct CREATE_DISK
         {
             public int PartitionStyle;
+
             public CREATE_DISK_GPT Gpt;
         }
 

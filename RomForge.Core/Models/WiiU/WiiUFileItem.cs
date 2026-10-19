@@ -73,5 +73,5 @@ public class WiiUFileItem(string filePath) : ConvertibleFileItemBase(filePath, "
         _ => [],
     };
 
-    protected override string FormatSize(long bytes) => PickPack.Disk.ETC.FileSize.FormatSize(bytes);
+    protected override string FormatSize(long bytes) => PickPack.Disk.Helpers.FileSize.FormatSize(bytes);
 }

@@ -1,6 +1,8 @@
 ﻿using ICSharpCode.SharpZipLib.GZip;
+using PickPack.Disk.Interfaces;
+using PickPack.Disk.IO;
 
-namespace PickPack.Disk
+namespace PickPack.Disk.Services
 {
     public class HttpGzipWriteHandler(HttpClient httpClient, Action<int, string, string?> progressCallback, long compressedSize, long uncompressedSize) : IImageWriteHandler
     {
@@ -27,9 +29,13 @@ namespace PickPack.Disk
             private DateTime lastReportTime = DateTime.MinValue;
 
             public override bool CanRead => baseStream.CanRead;
+
             public override bool CanSeek => baseStream.CanSeek;
+
             public override bool CanWrite => baseStream.CanWrite;
+
             public override long Length => baseStream.Length;
+
             public override long Position
             {
                 get => baseStream.Position;
@@ -78,8 +84,11 @@ namespace PickPack.Disk
             }
 
             public override void Flush() => baseStream.Flush();
+
             public override long Seek(long offset, SeekOrigin origin) => baseStream.Seek(offset, origin);
+
             public override void SetLength(long value) => baseStream.SetLength(value);
+
             public override void Write(byte[] buffer, int offset, int count) => baseStream.Write(buffer, offset, count);
 
             protected override void Dispose(bool disposing)
@@ -97,7 +106,11 @@ namespace PickPack.Disk
             {
                 foreach (var d in disposables)
                 {
-                    try { d?.Dispose(); } catch { }
+                    try 
+                    { 
+                        d?.Dispose();
+                    }
+                    catch { }
                 }
             }
         }

@@ -3,7 +3,7 @@ using System.Management;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace PickPack.Disk.ETC
+namespace PickPack.Disk.Helpers
 {
     public static class PartitionUtil
     {
@@ -14,7 +14,6 @@ namespace PickPack.Disk.ETC
         private static int GetPartitionCountByDiskNumber(int diskNumber)
         {
             using var searcher = new ManagementObjectSearcher($"SELECT * FROM Win32_DiskPartition WHERE DiskIndex = {diskNumber}");
-
             return searcher.Get().Count;
         }
 
@@ -37,6 +36,7 @@ namespace PickPack.Disk.ETC
                                 driveLetters.Add(deviceId);
                         }
                     }
+
                     break;
                 }
             }
@@ -71,19 +71,13 @@ namespace PickPack.Disk.ETC
 
                     var fsName = new StringBuilder(260);
 
-                    if (!Win32API.GetVolumeInformation(currentVolumeGuid, null, 0, out _, out _,
-                        out uint fileSystemFlags, fsName, (uint)fsName.Capacity)) 
+                    if (!Win32API.GetVolumeInformation(currentVolumeGuid, null, 0, out _, out _, out uint fileSystemFlags, fsName, (uint)fsName.Capacity))
                         continue;
 
                     string fileSystem = fsName.ToString();
 
-                    if (SafeFileSystems.Contains(fileSystem, StringComparer.OrdinalIgnoreCase) &&
-                        !string.IsNullOrEmpty(fileSystem) &&
-                        (fileSystemFlags & Win32API.FILE_SYSTEM_IS_HIDDEN) == 0 &&
-                        (fileSystemFlags & Win32API.FILE_VOLUME_IS_SYSTEM) == 0)
-                    {
+                    if (SafeFileSystems.Contains(fileSystem, StringComparer.OrdinalIgnoreCase) && !string.IsNullOrEmpty(fileSystem) && (fileSystemFlags & Win32API.FILE_SYSTEM_IS_HIDDEN) == 0 && (fileSystemFlags & Win32API.FILE_VOLUME_IS_SYSTEM) == 0)
                         result.Add(currentVolumeGuid);
-                    }
 
                 } while (Win32API.FindNextVolume(findHandle, volumeName, (uint)volumeName.Capacity));
             }
@@ -107,8 +101,7 @@ namespace PickPack.Disk.ETC
 
         public static char? FindFirstAvailableDriveLetter()
         {
-            var usedLetters = new HashSet<char>(
-                DriveInfo.GetDrives()
+            var usedLetters = new HashSet<char>(DriveInfo.GetDrives()
                 .Where(d => d.Name.Length >= 2 && char.IsLetter(d.Name[0]))
                 .Select(d => d.Name[0])
                 .Select(char.ToUpper)
@@ -128,6 +121,7 @@ namespace PickPack.Disk.ETC
             string diskPath = $@"\\.\PhysicalDrive{diskNumber}";
 
             using var handle = Win32API.CreateFile(diskPath, FileAccess.ReadWrite, FileShare.None, IntPtr.Zero, FileMode.Open, 0, IntPtr.Zero);
+
             if (handle.IsInvalid)
                 throw new Win32Exception(Marshal.GetLastWin32Error(), "디스크 핸들 열기 실패.");
 

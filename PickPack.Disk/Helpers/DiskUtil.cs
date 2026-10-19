@@ -1,7 +1,7 @@
 ﻿using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 
-namespace PickPack.Disk.ETC
+namespace PickPack.Disk.Helpers
 {
     public static class DiskUtil
     {    
@@ -19,9 +19,7 @@ namespace PickPack.Disk.ETC
                     return (int)geometry.BytesPerSector;
                 }
                 else
-                {
                     return 512;
-                }
             }
             finally
             {   
@@ -33,8 +31,7 @@ namespace PickPack.Disk.ETC
 
         public static long GetDiskLength(string physicalDrivePath)
         {
-            using var stream = new FileStream(physicalDrivePath, FileMode.Open, FileAccess.ReadWrite);            
-
+            using var stream = new FileStream(physicalDrivePath, FileMode.Open, FileAccess.ReadWrite);
             return stream.Length;
         }
 
@@ -51,9 +48,6 @@ namespace PickPack.Disk.ETC
             return freeBytesAvailable;
         }
 
-        public static void PreventSleep()
-        {
-            _ = Win32API.SetThreadExecutionState(Win32API.ES_CONTINUOUS | Win32API.ES_SYSTEM_REQUIRED);
-        }
+        public static void PreventSleep() => _ = Win32API.SetThreadExecutionState(Win32API.ES_CONTINUOUS | Win32API.ES_SYSTEM_REQUIRED);
     }
 }

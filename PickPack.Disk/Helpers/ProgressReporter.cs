@@ -1,28 +1,19 @@
-﻿using PickPack.Disk.ETC;
+﻿using PickPack.Disk.Models;
 using System.Diagnostics;
 using System.Text;
 
-namespace PickPack.Disk
+namespace PickPack.Disk.Helpers
 {
     public class ProgressReporter
     {
-        #region Field
-
-        private readonly object _progressLock = new();
-        private Stopwatch? _stopwatch;
-        private readonly List<Tuple<double, long>> _progressHistory = [];
-        private CancellationToken _ct;
-        private DateTime _lastProgressReport = DateTime.MinValue;
-
-        #endregion
-
-        #region Const
-
         private const int HISTORY_WINDOW_SECONDS = 10;
 
-        #endregion
+        private readonly object _progressLock = new();
+        private readonly List<Tuple<double, long>> _progressHistory = [];
 
-        #region Event
+        private Stopwatch? _stopwatch;        
+        private CancellationToken _ct;
+        private DateTime _lastProgressReport = DateTime.MinValue;
 
         public event EventHandler<ProgressEventArgs>? ProgressChanged;
 
@@ -36,13 +27,10 @@ namespace PickPack.Disk
             });
         }
 
-        #endregion
-
-        #region Public
-
         public void Initialize(CancellationToken ct)
         {
             _ct = ct;
+
             _stopwatch = Stopwatch.StartNew();
             _progressHistory.Clear();
         }
@@ -57,6 +45,7 @@ namespace PickPack.Disk
                     return;
 
                 _lastProgressReport = now;
+
                 _ct.ThrowIfCancellationRequested();
 
                 if (_stopwatch == null)
@@ -65,7 +54,6 @@ namespace PickPack.Disk
                 double elapsedSeconds = _stopwatch.Elapsed.TotalSeconds;
 
                 _progressHistory.Add(Tuple.Create(elapsedSeconds, transferred));
-
                 CleanupProgressHistory(elapsedSeconds);
 
                 double speedMBps = CalculateSpeed();
@@ -113,10 +101,6 @@ namespace PickPack.Disk
             OnProgressChanged(100, completionMessage, null);
         }
 
-        #endregion
-
-        #region Private
-
         private double CalculateSpeed()
         {
             if (_progressHistory.Count <= 1)
@@ -156,7 +140,5 @@ namespace PickPack.Disk
 
             return sb.ToString();
         }
-
-        #endregion
     }
 }

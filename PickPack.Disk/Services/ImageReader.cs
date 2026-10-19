@@ -1,7 +1,8 @@
 ﻿using Ionic.Zlib;
-using PickPack.Disk.ETC;
+using PickPack.Disk.Helpers;
+using PickPack.Disk.Models;
 
-namespace PickPack.Disk
+namespace PickPack.Disk.Services
 {
     public class ImageReader
     {
@@ -25,6 +26,7 @@ namespace PickPack.Disk
         #region Event
 
         public event EventHandler<ProgressEventArgs>? ProgressChanged;
+
         public event EventHandler<EventArgs>? WriteEnded;
 
         protected virtual void OnProgressChanged(int percent, string message1, string? message2 = "")
@@ -59,15 +61,11 @@ namespace PickPack.Disk
                 string physicalDrivePath = $@"\\.\PHYSICALDRIVE{physicalDriveNumber}";
                 long driveSize = DiskUtil.GetDiskLength(physicalDriveNumber);
                 using var driveStream = new FileStream(physicalDrivePath, FileMode.Open, FileAccess.Read, FileShare.None, Optimal.BufferSize, FileOptions.Asynchronous);
-                var handler = ImageReaderFactory.GetHandler(extension, maxOutputSegmentSize64, compressionLevel, _progressReporter.ReportProgress, ct)
-                    ?? throw new InvalidOperationException($"지원하지 않는 파일 형식입니다: {extension}");
+                var handler = ImageReaderFactory.GetHandler(extension, maxOutputSegmentSize64, compressionLevel, _progressReporter.ReportProgress, ct) ?? throw new InvalidOperationException($"지원하지 않는 파일 형식입니다: {extension}");
 
                 await handler.WriteImageAsync(driveStream, outputPath, driveSize, ct);
-
-                ct.ThrowIfCancellationRequested();
-                
+                ct.ThrowIfCancellationRequested();                
                 _progressReporter.ReportCompletion("이미지 저장 완료");
-
                 OnWriteEnded();
             }
             catch (OperationCanceledException)

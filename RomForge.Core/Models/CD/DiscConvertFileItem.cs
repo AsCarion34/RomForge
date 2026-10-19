@@ -84,5 +84,5 @@ public class DiscConvertFileItem : ConvertibleFileItemBase
         return [defaultTarget];
     }
 
-    protected override string FormatSize(long bytes) => PickPack.Disk.ETC.FileSize.FormatSize(bytes);
+    protected override string FormatSize(long bytes) => PickPack.Disk.Helpers.FileSize.FormatSize(bytes);
 }

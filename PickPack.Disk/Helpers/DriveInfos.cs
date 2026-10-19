@@ -1,7 +1,6 @@
-﻿using PickPack.Disk.ETC;
-using System.Management;
+﻿using System.Management;
 
-namespace PickPack.Disk
+namespace PickPack.Disk.Helpers
 {
     public class DriveInfos(string devicePath, string model, long sizeBytes, int diskNumber, string? driveLetter)
     {
@@ -28,7 +27,6 @@ namespace PickPack.Disk
         public override string ToString()
         {
             string letter = string.IsNullOrEmpty(DriveLetter) ? "?" : DriveLetter;
-
             return $"[{letter}] ({FileSize.FormatSize(SizeBytes)}) {Model}";
         }
 
@@ -52,7 +50,6 @@ namespace PickPack.Disk
                 string deviceId = disk["DeviceID"]?.ToString() ?? string.Empty;
                 string model = disk[nameof(Model)]?.ToString() ?? "Unknown";
                 long size = Convert.ToInt64(disk["Size"] ?? 0);
-
                 string? matchedLetter = null;
                 var partitions = disk.GetRelated("Win32_DiskPartition");
 

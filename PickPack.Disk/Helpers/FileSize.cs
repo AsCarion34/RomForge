@@ -1,4 +1,4 @@
-﻿namespace PickPack.Disk.ETC
+﻿namespace PickPack.Disk.Helpers
 {
     public static class FileSize
     {

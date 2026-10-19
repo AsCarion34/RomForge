@@ -1,21 +1,14 @@
 ﻿using Ionic.Zip;
 using Ionic.Zlib;
-using PickPack.Disk.ETC;
+using PickPack.Disk.Interfaces;
+using PickPack.Disk.IO;
+using PickPack.Disk.Models;
 using System.Threading.Channels;
 
-namespace PickPack.Disk
+namespace PickPack.Disk.Services
 {
-    public interface IImageReaderHandler
-    {
-        Task WriteImageAsync(Stream sourceStream, string outputPath, long totalSize, CancellationToken ct);
-    }
-
     public class ZipReadHandler(long maxOutputSegmentSize, CompressionLevel compressionLevel, Action<long, long, string> progressReporter, CancellationToken ct) : IImageReaderHandler
     {
-        #region Constructor
-
-        #endregion
-
         public async Task WriteImageAsync(Stream sourceStream, string outputPath, long totalSize, CancellationToken ct)
         {
             using var zipFile = new ZipFile();
@@ -34,8 +27,8 @@ namespace PickPack.Disk
             var optimizedStream = new DirectReadStream(sourceStream as FileStream, totalSize);
 
             zipFile.SaveProgress += (sender, e) => OnZipSaveProgress(e);
-            zipFile.AddEntry(imgFileName, optimizedStream);
-            
+
+            zipFile.AddEntry(imgFileName, optimizedStream);            
             await Task.Run(() => zipFile.Save(outputPath), ct);
         }
 
@@ -49,100 +42,13 @@ namespace PickPack.Disk
                     progressReporter(e.BytesTransferred, e.TotalBytesToTransfer, "이미지 저장 중...");
             }
         }
-
-        #region Inner Class
-
-        private class DirectReadStream(Stream baseStream, long length) : Stream
-        {
-            long _position = 0;
-            bool _disposed = false;
-
-            public override bool CanRead => true;
-            public override bool CanSeek => true;
-            public override bool CanWrite => false;
-            public override long Length => length;
-
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                long remaining = length - _position;
-
-                if (remaining <= 0) 
-                    return 0;
-
-                int bytesToRead = (int)Math.Min(count, remaining);
-
-                try
-                {
-                    int bytesRead = baseStream.Read(buffer, offset, bytesToRead);
-
-                    _position += bytesRead;
-
-                    return bytesRead;
-                }
-                catch (IOException)
-                {
-                    Array.Clear(buffer, offset, bytesToRead);
-                    _position += bytesToRead;
-
-                    return bytesToRead;
-                }
-            }
-
-            public override long Position
-            {
-                get => _position;
-                set => Seek(value, SeekOrigin.Begin);
-            }
-
-            public override long Seek(long offset, SeekOrigin origin)
-            {
-                switch (origin)
-                {
-                    case SeekOrigin.Begin:
-                        _position = offset;
-                        break;
-
-                    case SeekOrigin.Current:
-                        _position += offset;
-                        break;
-
-                    case SeekOrigin.End:
-                        _position = length + offset;
-                        break;
-                }
-
-                baseStream.Seek(_position, SeekOrigin.Begin);
-                return _position;
-            }
-
-            protected override void Dispose(bool disposing)
-            {
-                if (!_disposed && disposing)
-                    _disposed = true;
-
-                base.Dispose(disposing);
-            }
-
-            public override void SetLength(long value) => throw new NotSupportedException();
-            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-            public override void Flush() => baseStream.Flush();
-        }
-
-        #endregion
     }
 
     public class RawImageReadHandler(Action<long, long, string> progressReporter) : IImageReaderHandler
     {
-
-        #region Field & Const
-
         const int ERROR_CRC = unchecked((int)0x80070017);
+
         const int ERROR_SECTOR_NOT_FOUND = unchecked((int)0x8007001B);
-
-        #endregion
-        #region Constructor
-
-        #endregion
 
         public async Task WriteImageAsync(Stream sourceStream, string outputPath, long totalSize, CancellationToken ct)
         {
@@ -181,17 +87,20 @@ namespace PickPack.Disk
                     catch (IOException ex) when (ex.HResult == ERROR_CRC || ex.HResult == ERROR_SECTOR_NOT_FOUND)
                     {
                         Array.Clear(rentedBuffer, 0, Optimal.BufferSize);
+
                         read = Optimal.BufferSize;
                     }
 
                     if (read == Optimal.BufferSize)
                     {
                         await writer.WriteAsync(rentedBuffer, ct);
+
                         rentedBuffer = Optimal.ArrayPool.Rent(Optimal.BufferSize);
                     }
                     else
                     {
                         byte[] dataToSend = Optimal.ArrayPool.Rent(read);
+
                         Array.Copy(rentedBuffer, dataToSend, read);
 
                         await writer.WriteAsync(dataToSend, ct);
@@ -240,6 +149,7 @@ namespace PickPack.Disk
                         await outStream.WriteAsync(buffer, ct);
 
                         totalWritten += buffer.Length;
+
                         progressReporter(totalWritten, totalSize, "이미지 저장 중...");
                     }
                 }

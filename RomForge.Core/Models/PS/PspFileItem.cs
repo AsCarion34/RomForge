@@ -24,5 +24,5 @@ public class PspFileItem(string filePath) : ConvertibleFileItemBase(filePath, "ë
         _ => []
     };
 
-    protected override string FormatSize(long bytes) => PickPack.Disk.ETC.FileSize.FormatSize(bytes);
+    protected override string FormatSize(long bytes) => PickPack.Disk.Helpers.FileSize.FormatSize(bytes);
 }

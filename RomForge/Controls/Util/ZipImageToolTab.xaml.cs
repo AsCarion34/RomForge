@@ -1,4 +1,4 @@
-﻿using PickPack.Disk;
+﻿using PickPack.Disk.Helpers;
 using RomForge.Core.Services;
 using RomForge.ViewModels.Util;
 using System.Windows;

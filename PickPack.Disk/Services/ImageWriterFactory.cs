@@ -1,4 +1,6 @@
-﻿namespace PickPack.Disk
+﻿using PickPack.Disk.Interfaces;
+
+namespace PickPack.Disk.Services
 {
     public static class ImageWriterFactory
     {

@@ -3,8 +3,6 @@ using Common.WPF.ViewModels;
 using Ionic.Zlib;
 using NSW.WPF.Services;
 using NSW.WPF.UI;
-using PickPack.Disk;
-using PickPack.Disk.ETC;
 using RomForge.Core.UI.Command;
 using RomForge.Core.Models;
 using System.Collections.ObjectModel;
@@ -16,6 +14,9 @@ using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using System.Windows.Shell;
 using RomForge.Core.Services;
+using PickPack.Disk.Models;
+using PickPack.Disk.Services;
+using PickPack.Disk.Helpers;
 
 namespace RomForge.ViewModels.Util;
 

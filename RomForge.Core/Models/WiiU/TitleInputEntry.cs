@@ -1,4 +1,5 @@
 ﻿using Common.WPF.ViewModels;
+using PickPack.Disk.Helpers;
 using System.IO;
 using System.Windows.Media;
 
@@ -120,7 +121,7 @@ public class TitleInputEntry(string filePath, string titleIdHex) : ViewModelBase
             {
                 long size = IsFolder ? GetDirectorySize(new DirectoryInfo(FilePath)) : new FileInfo(FilePath).Length;
 
-                return PickPack.Disk.ETC.FileSize.FormatSize(size);
+                return FileSize.FormatSize(size);
             }
             catch
             {

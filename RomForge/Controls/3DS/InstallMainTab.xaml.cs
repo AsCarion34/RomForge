@@ -1,5 +1,5 @@
 ﻿using Microsoft.Win32;
-using PickPack.Disk;
+using PickPack.Disk.Helpers;
 using RomForge.Core.Services;
 using RomForge.ViewModels._3DS;
 using System.Diagnostics;

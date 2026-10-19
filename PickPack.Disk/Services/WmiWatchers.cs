@@ -1,7 +1,8 @@
-﻿using System.Diagnostics;
+﻿using PickPack.Disk.Helpers;
+using System.Diagnostics;
 using System.Management;
 
-namespace PickPack.Disk.ETC;
+namespace PickPack.Disk.Services;
 
 public class WmiWatchers
 {
@@ -20,15 +21,9 @@ public class WmiWatchers
     public event EventHandler USBArrival;
     public event EventHandler USBRemoval;
 
-    protected virtual void OnUSBArrival()
-    {
-        USBArrival?.Invoke(this, new EventArgs());
-    }
+    protected virtual void OnUSBArrival() => USBArrival?.Invoke(this, new EventArgs());
 
-    protected virtual void OnUSBRemoval()
-    {
-        USBRemoval?.Invoke(this, new EventArgs());
-    }
+    protected virtual void OnUSBRemoval() => USBRemoval?.Invoke(this, new EventArgs());
 
     #endregion
 
@@ -55,6 +50,7 @@ public class WmiWatchers
         WqlEventQuery removalQuery = new("SELECT * FROM __InstanceDeletionEvent WITHIN 2 WHERE TargetInstance ISA 'Win32_DiskDrive'");
 
         _removalWatcher = new ManagementEventWatcher(removalQuery);
+
         _removalWatcher.EventArrived += (sender, e) =>
         {
             try
@@ -89,7 +85,6 @@ public class WmiWatchers
                 {
                     DriveInfos.Infos.Clear();
                     DriveInfos.Infos.AddRange(newItems);
-
                     return true;
                 }
 
@@ -102,7 +97,6 @@ public class WmiWatchers
                     {
                         DriveInfos.Infos.Clear();
                         DriveInfos.Infos.AddRange(newItems);
-
                         return true;
                     }
                 }
@@ -112,7 +106,6 @@ public class WmiWatchers
             catch (Exception ex)
             {
                 Debug.WriteLine($"HasRemovableDrivesChanged Error: {ex.Message}");
-
                 return false;
             }
         }

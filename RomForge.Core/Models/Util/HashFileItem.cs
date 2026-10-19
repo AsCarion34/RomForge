@@ -30,5 +30,5 @@ public class HashFileItem(string filePath) : FileItemBase(filePath)
 
     public override string FileName => Path.GetFileName(FilePath);
 
-    protected override string FormatSize(long bytes) => PickPack.Disk.ETC.FileSize.FormatSize(bytes);
+    protected override string FormatSize(long bytes) => PickPack.Disk.Helpers.FileSize.FormatSize(bytes);
 }
