@@ -4,9 +4,9 @@ namespace Vita.Core.Models;
 
 public sealed class OwnerContext
 {
-    public required VitaSourceItem Item { get; init; }
+    public required SourceItem Item { get; init; }
 
-    public required VitaPfsFileTable Table { get; init; }
+    public required PfsFileTable Table { get; init; }
 
     public required WorkBinLicense License { get; init; }
 

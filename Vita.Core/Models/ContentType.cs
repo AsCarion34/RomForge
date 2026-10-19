@@ -1,6 +1,6 @@
 ﻿namespace Vita.Core.Models;
 
-public enum VitaContentType
+public enum ContentType
 {
     App = 0x15,
 

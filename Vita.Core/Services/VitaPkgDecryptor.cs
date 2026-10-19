@@ -10,15 +10,15 @@ public static class VitaPkgDecryptor
     private const uint PkgMagic = 0x7f504b47;
     private const uint ExtMagic = 0x7f657874;
 
-    public static VitaPkgHeader ReadHeader(Stream pkgStream)
+    public static PkgHeader ReadHeader(Stream pkgStream)
     {
         pkgStream.Seek(0, SeekOrigin.Begin);
 
-        var header = new byte[VitaPkgHeader.HeaderSize + VitaPkgHeader.HeaderExtSize];
+        var header = new byte[PkgHeader.HeaderSize + PkgHeader.HeaderExtSize];
 
         pkgStream.ReadExactly(header);
 
-        if (BinaryPrimitives.ReadUInt32BigEndian(header) != PkgMagic || BinaryPrimitives.ReadUInt32BigEndian(header.AsSpan(VitaPkgHeader.HeaderSize)) != ExtMagic)
+        if (BinaryPrimitives.ReadUInt32BigEndian(header) != PkgMagic || BinaryPrimitives.ReadUInt32BigEndian(header.AsSpan(PkgHeader.HeaderSize)) != ExtMagic)
             throw new InvalidDataException("PKG 파일이 아닙니다.");
 
         long metaOffset = BinaryPrimitives.ReadUInt32BigEndian(header.AsSpan(8));
@@ -55,14 +55,14 @@ public static class VitaPkgDecryptor
             cursor += 8 + size;
         }
 
-        if (contentType is not ((uint)VitaContentType.App or (uint)VitaContentType.Dlc or (uint)VitaContentType.Psm or (uint)VitaContentType.PsmUnk))
+        if (contentType is not ((uint)ContentType.App or (uint)ContentType.Dlc or (uint)ContentType.Psm or (uint)ContentType.PsmUnk))
             throw new NotSupportedException($"지원하지 않는 PKG content type: 0x{contentType:x}");
 
         string contentId = Encoding.ASCII
-            .GetString(header, VitaPkgHeader.ContentIdOffset, VitaPkgHeader.ContentIdSize)
+            .GetString(header, PkgHeader.ContentIdOffset, PkgHeader.ContentIdSize)
             .TrimEnd('\0');
 
-        return new VitaPkgHeader
+        return new PkgHeader
         {
             ItemCount = itemCount,
             EncOffset = encOffset,
@@ -76,16 +76,15 @@ public static class VitaPkgDecryptor
         };
     }
 
-    public static VitaAes128Ctr CreateCipher(VitaPkgHeader header)
+    public static VitaAes128Ctr CreateCipher(PkgHeader header)
     {
         byte[] mainKey = VitaPkgKeys.DeriveMainKey(header.KeyType, header.Iv);
-
         return new VitaAes128Ctr(mainKey, header.Iv);
     }
 
-    public static List<VitaPkgItem> ReadItemTable(Stream pkgStream, VitaPkgHeader header, VitaAes128Ctr ctr)
+    public static List<PkgItem> ReadItemTable(Stream pkgStream, PkgHeader header, VitaAes128Ctr ctr)
     {
-        var items = new List<VitaPkgItem>(header.ItemCount);
+        var items = new List<PkgItem>(header.ItemCount);
 
         for (int i = 0; i < header.ItemCount; i++)
         {
@@ -109,7 +108,7 @@ public static class VitaPkgDecryptor
 
             string name = Encoding.UTF8.GetString(nameBytes);
 
-            items.Add(new VitaPkgItem
+            items.Add(new PkgItem
             {
                 Name = name,
                 DataOffset = dataOffset,
@@ -121,9 +120,9 @@ public static class VitaPkgDecryptor
         return items;
     }
 
-    public static bool IsDirectory(VitaPkgItem item) => item.Flags is 4 or 18;
+    public static bool IsDirectory(PkgItem item) => item.Flags is 4 or 18;
 
-    public static byte[] DecryptItemData(Stream pkgStream, VitaPkgHeader header, VitaAes128Ctr ctr, VitaPkgItem item)
+    public static byte[] DecryptItemData(Stream pkgStream, PkgHeader header, VitaAes128Ctr ctr, PkgItem item)
     {
         var data = new byte[item.DataSize];
 

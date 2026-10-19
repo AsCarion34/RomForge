@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text;
+using WiiU.Core.IO;
 using WiiU.Core.Models;
 
 namespace WiiU.Core.Services;
@@ -44,7 +45,6 @@ public sealed class WuDiscReader
             foreach (var key in candidates)
             {
                 Array.Copy(ciphertext, scratch, 32);
-
                 AesCbcDecryptInPlace(scratch, 32, key, iv);
 
                 if (Array.TrueForAll(scratch, b => b == 0))
@@ -146,7 +146,9 @@ public sealed class WuDiscReader
     private readonly struct PartitionHeaderInfo(uint fstSize, uint fstSector, byte fstHashType)
     {
         public readonly uint FstSize = fstSize;
+
         public readonly uint FstSector = fstSector;
+
         public readonly byte FstHashType = fstHashType;
     }
 
@@ -173,7 +175,6 @@ public sealed class WuDiscReader
     {
         long fstOffset = header.FstSector * DiscSectorSize;
         uint fstSizePadded = (header.FstSize + 15u) & ~15u;
-
         var fstData = new byte[fstSizePadded];
 
         if (_wud.ReadData(fstData, partitionBaseOffset + fstOffset) != fstData.Length)
@@ -351,26 +352,6 @@ public sealed class WuDiscReader
         ReadFile(volume, index.Value, 0, buffer, 0, buffer.Length);
 
         return buffer;
-    }
-
-    public void ExtractFileTo(WuFstVolume volume, int entryIndex, Stream destination)
-    {
-        var entry = volume.Entries[entryIndex];
-        const int chunkSize = 1024 * 1024;
-        var buffer = new byte[Math.Min(chunkSize, entry.FileSize == 0 ? 1 : entry.FileSize)];
-        long offset = 0;
-
-        while (offset < entry.FileSize)
-        {
-            int toRead = (int)Math.Min(buffer.Length, entry.FileSize - offset);
-            int got = ReadFile(volume, entryIndex, offset, buffer, 0, toRead);
-
-            if (got <= 0) 
-                break;
-
-            destination.Write(buffer, 0, got);
-            offset += got;
-        }
     }
 
     public Stream OpenFileStream(WuFstVolume volume, int entryIndex)

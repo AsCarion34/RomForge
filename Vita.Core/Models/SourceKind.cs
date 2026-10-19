@@ -1,6 +1,6 @@
 ﻿namespace Vita.Core.Models;
 
-public enum VitaSourceKind
+public enum SourceKind
 {
     Pkg,
 

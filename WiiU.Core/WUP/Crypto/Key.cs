@@ -2,37 +2,28 @@ namespace WiiU.Core.WUP.Crypto
 {
     public class Key
     {
-        private static readonly int LENGTH = 0x10;
-        private byte[] key = new byte[LENGTH];
+        private static readonly int Length = 0x10;
+        private byte[] _value = new byte[Length];
 
-        public Key()
-        {
-        }
-
-        public Key(byte[] key)
-        {
-            SetKey(key);
-        }
-
-        public Key(string hex) : this(Services.Utils.HexStringToByteArray(hex))
-        {
-        }
-
-        public byte[] GetKey() => key;
-
-        public void SetKey(byte[]? key)
-        {
-            if (key != null && key.Length == GetKey().Length)
+        public byte[] Value 
+        { 
+            get => _value;
+            private set
             {
-                this.key = key;
+                if (value != null && value.Length == Value.Length)
+                    _value = value;
             }
+            
         }
 
-        public static int GetLength() => LENGTH;
+        public Key() { }
 
-        public override string ToString()
-        {
-            return Services.Utils.ByteArrayToString(key);
-        }
+        public Key(byte[] key) => Value = key;
+
+        public Key(string hex) : this(Services.Utils.HexStringToByteArray(hex)) { }
+
+        public static int GetLength() => Length;
+
+        public override string ToString() => Services.Utils.ByteArrayToString(Value);
     }
 }

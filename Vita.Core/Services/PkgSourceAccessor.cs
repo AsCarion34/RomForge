@@ -15,23 +15,17 @@ public sealed class PkgSourceAccessor : IVitaSourceAccessor
 
     private readonly FileStream _stream;
     private readonly VitaAes128Ctr _ctr;
-    private readonly Dictionary<string, VitaPkgItem> _items;
+    private readonly Dictionary<string, PkgItem> _items;
     private readonly byte[]? _workBinBytes;
     private readonly byte[] _headBinBytes;
     private readonly byte[] _tailBinBytes;
-    private readonly VitaPkgItem? _bodyBinItem;
+    private readonly PkgItem? _bodyBinItem;
 
-    public VitaPkgHeader Header { get; }
+    public PkgHeader Header { get; }
 
-    public PkgSourceAccessor(string pkgPath, string? license = null)
-        : this(pkgPath, license, null)
-    {
-    }
+    public PkgSourceAccessor(string pkgPath, string? license = null) : this(pkgPath, license, null) { }
 
-    public PkgSourceAccessor(string pkgPath, byte[] klicensee)
-        : this(pkgPath, null, klicensee)
-    {
-    }
+    public PkgSourceAccessor(string pkgPath, byte[] klicensee) : this(pkgPath, null, klicensee) { }
 
     private PkgSourceAccessor(string pkgPath, string? license, byte[]? klicensee)
     {
@@ -49,6 +43,7 @@ public sealed class PkgSourceAccessor : IVitaSourceAccessor
         if (_items.TryGetValue(DigsBinRelativePath, out var digsItem))
         {
             _bodyBinItem = digsItem;
+
             _items.Remove(DigsBinRelativePath);
         }
 

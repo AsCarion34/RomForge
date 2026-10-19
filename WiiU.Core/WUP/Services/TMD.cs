@@ -1,111 +1,153 @@
 using WiiU.Core.WUP.Crypto;
-using WiiU.Core.WUP.NusPackage.Interfaces;
+using WiiU.Core.WUP.Interfaces;
 
 namespace WiiU.Core.WUP.Services
 {
     public class TMD : IHasData
     {
-        private readonly int signatureType = 0x00010004;
-        private readonly byte[] signature = new byte[0x100];
-        private readonly byte[] padding0 = new byte[0x3C];
-        private readonly byte[] issuer = Services.Utils.HexStringToByteArray("526F6F742D434130303030303030332D435030303030303030620000000000000000000000000000000000000000000000000000000000000000000000000000");
+        private readonly int _signatureType = 0x00010004;
+        private readonly byte[] _signature = new byte[0x100];
+        private readonly byte[] _padding0 = new byte[0x3C];
+        private readonly byte[] _issuer = Utils.HexStringToByteArray("526F6F742D434130303030303030332D435030303030303030620000000000000000000000000000000000000000000000000000000000000000000000000000");
 
-        private readonly byte version = 0x01;
-        private readonly byte CACRLVersion = 0x00;
-        private readonly byte signerCRLVersion = 0x00;
-        private readonly byte padding1 = 0x00;
+        private readonly byte _version = 0x01;
+        private readonly byte _caCRLVersion = 0x00;
+        private readonly byte _signerCRLVersion = 0x00;
+        private readonly byte _padding1 = 0x00;
 
-        private long systemVersion = 0x000500101000400AL;        
-        private readonly int titleType = 0x000100;
-        private short groupID = 0x0000;
-        private int appType = unchecked((int)0x80000000);
-        private readonly int random1 = 0;
-        private readonly int random2 = 0;
-        private readonly byte[] reserved = new byte[50];
-        private readonly int accessRights = 0x0000;
-        private short titleVersion = 0x00;
-        private short contentCount = 0x00;
-        private readonly short bootIndex = 0x00;
-        private readonly byte[] padding3 = new byte[2];
-        private byte[] SHA2 = new byte[0x20];
+        private long _systemVersion = 0x000500101000400AL;
+        private readonly int _titleType = 0x000100;
+        private short _groupID = 0x0000;
+        private int _appType = unchecked((int)0x80000000);
+        private readonly int _random1 = 0;
+        private readonly int _random2 = 0;
+        private readonly byte[] _reserved = new byte[50];
+        private readonly int _accessRights = 0x0000;
+        private short _titleVersion = 0x00;
+        private short _contentCount = 0x00;
+        private readonly short _bootIndex = 0x00;
+        private readonly byte[] _padding3 = new byte[2];
+        private byte[] _sha2 = new byte[0x20];
 
-        private ContentInfos? contentInfos = null;
-        private Contents? contents = null;
-        private Ticket ticket = null!;
+        private ContentInfos? _contentInfos = null;
+        private Contents? _contents = null;
+        private Ticket _ticket = null!;
 
         public TMD(AppXMLInfo appInfo, FST fst, Ticket ticket)
         {
-            SetGroupID(appInfo.GetGroupID());
-            SetSystemVersion(appInfo.GetOSVersion());
-            SetAppType(appInfo.GetAppType());
-            SetTitleVersion(appInfo.GetTitleVersion());
-            SetTicket(ticket);
-            SetContents(fst.GetContents());
-
-            contentInfos = new ContentInfos();
+            GroupID = appInfo.GroupID;
+            SystemVersion = appInfo.OSVersion;
+            AppType = appInfo.AppType;
+            TitleVersion = appInfo.TitleVersion;
+            Ticket = ticket;
+            Contents = fst.Contents;
+            _contentInfos = new ContentInfos();
         }
 
-        private void SetContents(Contents contents)
+        public long SystemVersion
         {
-            if (contents != null)
+            get => _systemVersion;
+            set => _systemVersion = value;
+        }
+
+        public short GroupID
+        {
+            get => _groupID;
+            set => _groupID = value;
+        }
+
+        public int AppType
+        {
+            get => _appType;
+            set => _appType = value;
+        }
+
+        public short TitleVersion
+        {
+            get => _titleVersion;
+            set => _titleVersion = value;
+        }
+
+        public Ticket Ticket
+        {
+            get => _ticket;
+            set => _ticket = value;
+        }
+
+        public ContentInfos ContentInfos => _contentInfos ??= new ContentInfos();
+
+        public Contents Contents
+        {
+            get => _contents ??= new Contents();
+            set
             {
-                this.contents = contents;
-                contentCount = contents.GetContentCount();
+                _contents = value;
+
+                if (value != null)
+                    _contentCount = value.ContentCount;
             }
         }
 
-        public void Update()
+        public Encryption Encryption
         {
-            UpdateContents();
+            get
+            {
+                JByteBuffer iv = JByteBuffer.Allocate(0x10);
+
+                iv.PutLong(Ticket.TitleID);
+
+                Key key = Ticket.DecryptedKey;
+
+                return new Encryption(key, new IV(iv.Array()));
+            }
         }
 
         public void UpdateContents()
         {
-            contentCount = contents!.GetContentCount();
+            _contentCount = Contents.ContentCount;
 
-            ContentInfo firstContentInfo = new (contents.GetContentCount());
+            ContentInfo firstContentInfo = new(Contents.ContentCount)
+            {
+                SHA2Hash = HashUtil.HashSHA2(Contents.GetAsData())
+            };
 
-            firstContentInfo.SetSHA2Hash(HashUtil.HashSHA2(contents.GetAsData()));
-            GetContentInfos().SetContentInfo(0, firstContentInfo);
+            ContentInfos[0] = firstContentInfo;
         }
 
-        public void UpdateContentInfoHash()
-        {
-            SHA2 = HashUtil.HashSHA2(GetContentInfos().GetAsData());
-        }
+        public void UpdateContentInfoHash() => _sha2 = HashUtil.HashSHA2(ContentInfos.GetAsData());
 
         public byte[] GetAsData()
         {
             JByteBuffer buffer = JByteBuffer.Allocate(GetDataSize());
 
-            buffer.PutInt(signatureType);
-            buffer.Put(signature);
-            buffer.Put(padding0);
-            buffer.Put(issuer);
+            buffer.PutInt(_signatureType);
+            buffer.Put(_signature);
+            buffer.Put(_padding0);
+            buffer.Put(_issuer);
 
-            buffer.Put(version);
-            buffer.Put(CACRLVersion);
-            buffer.Put(signerCRLVersion);
-            buffer.Put(padding1);
+            buffer.Put(_version);
+            buffer.Put(_caCRLVersion);
+            buffer.Put(_signerCRLVersion);
+            buffer.Put(_padding1);
 
-            buffer.PutLong(GetSystemVersion());
-            buffer.PutLong(GetTicket().GetTitleID());
-            buffer.PutInt(titleType);
-            buffer.PutShort(GetGroupID());
-            buffer.PutInt(GetAppType());
-            buffer.PutInt(random1);
-            buffer.PutInt(random2);
-            buffer.Put(reserved);
-            buffer.PutInt(accessRights);
-            buffer.PutShort(GetTitleVersion());
-            buffer.PutShort(contentCount);
-            buffer.PutShort(bootIndex);
+            buffer.PutLong(SystemVersion);
+            buffer.PutLong(Ticket.TitleID);
+            buffer.PutInt(_titleType);
+            buffer.PutShort(GroupID);
+            buffer.PutInt(AppType);
+            buffer.PutInt(_random1);
+            buffer.PutInt(_random2);
+            buffer.Put(_reserved);
+            buffer.PutInt(_accessRights);
+            buffer.PutShort(TitleVersion);
+            buffer.PutShort(_contentCount);
+            buffer.PutShort(_bootIndex);
 
-            buffer.Put(padding3);
-            buffer.Put(SHA2);
+            buffer.Put(_padding3);
+            buffer.Put(_sha2);
 
-            buffer.Put(GetContentInfos().GetAsData());
-            buffer.Put(GetContents().GetAsData());
+            buffer.Put(ContentInfos.GetAsData());
+            buffer.Put(Contents.GetAsData());
 
             return buffer.Array();
         }
@@ -113,70 +155,10 @@ namespace WiiU.Core.WUP.Services
         public int GetDataSize()
         {
             int staticSize = 0x204;
-            int contentInfoSize = contentInfos!.GetDataSize();
-            int contentsSize = contents!.GetDataSize();
+            int contentInfoSize = ContentInfos.GetDataSize();
+            int contentsSize = Contents.GetDataSize();
 
             return staticSize + contentInfoSize + contentsSize;
-        }
-
-        public ContentInfos GetContentInfos()
-        {
-            return contentInfos ??= new ContentInfos();
-        }
-
-        public void SetContentInfos(ContentInfos contentInfos)
-        {
-            this.contentInfos = contentInfos;
-        }
-
-        public Contents GetContents()
-        {
-            return contents ??= new Contents();
-        }
-
-        public Ticket GetTicket() => ticket;
-
-        public void SetTicket(Ticket ticket)
-        {
-            this.ticket = ticket;
-        }
-
-        public Encryption GetEncryption()
-        {
-            JByteBuffer iv = JByteBuffer.Allocate(0x10);
-
-            iv.PutLong(GetTicket().GetTitleID());
-            Key key = GetTicket().GetDecryptedKey();
-
-            return new Encryption(key, new IV(iv.Array()));
-        }
-
-        public long GetSystemVersion() => systemVersion;
-
-        public void SetSystemVersion(long systemVersion)
-        {
-            this.systemVersion = systemVersion;
-        }
-
-        public short GetGroupID() => groupID;
-
-        public void SetGroupID(short groupID)
-        {
-            this.groupID = groupID;
-        }
-
-        public int GetAppType() => appType;
-
-        public void SetAppType(int appType)
-        {
-            this.appType = appType;
-        }
-
-        public short GetTitleVersion() => titleVersion;
-
-        public void SetTitleVersion(short titleVersion)
-        {
-            this.titleVersion = titleVersion;
         }
     }
 }

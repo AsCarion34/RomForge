@@ -1,6 +1,6 @@
 ﻿namespace Vita.Core.Models;
 
-public sealed class VitaPfsFileTable
+public sealed class PfsFileTable
 {
     public required List<PfsFlatEntry> Entries { get; init; }
 

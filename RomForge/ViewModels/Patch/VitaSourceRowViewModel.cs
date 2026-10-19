@@ -13,7 +13,7 @@ public class VitaSourceRowViewModel : ViewModelBase
     private string _license = string.Empty;
     private string _path = string.Empty;
     private string _patchPath = string.Empty;
-    private VitaContentCategory _category;
+    private ContentCategory _category;
     private string? _errorMessage;
     private bool _isLicenseEditable = true;
     private long _sizeBytes = -1;
@@ -21,19 +21,19 @@ public class VitaSourceRowViewModel : ViewModelBase
     private string? _gameName;
     private CancellationTokenSource? _iconReloadCts;
 
-    public VitaSourceKind Kind { get; }
+    public SourceKind Kind { get; }
 
     public string? ItemSourcePath { get; }
 
-    public string FileName => Kind == VitaSourceKind.Pkg ? System.IO.Path.GetFileName(Path) : $"{System.IO.Path.GetFileName(Path.TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar))} :: {ItemSourcePath}";
+    public string FileName => Kind == SourceKind.Pkg ? System.IO.Path.GetFileName(Path) : $"{System.IO.Path.GetFileName(Path.TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar))} :: {ItemSourcePath}";
 
-    public bool IsPkg => Kind == VitaSourceKind.Pkg;
+    public bool IsPkg => Kind == SourceKind.Pkg;
 
     public string TitleId { get; }
 
     public string? ContentIdSuffix { get; }
 
-    public VitaContentCategory Category
+    public ContentCategory Category
     {
         get => _category;
         set { _category = value; OnPropertyChanged(); }
@@ -48,7 +48,7 @@ public class VitaSourceRowViewModel : ViewModelBase
             OnPropertyChanged();
             CommandManager.InvalidateRequerySuggested();
 
-            if (Kind == VitaSourceKind.Pkg && Category == VitaContentCategory.App)
+            if (Kind == SourceKind.Pkg && Category == ContentCategory.App)
                 _ = DebounceReloadIconAsync();
         }
     }
@@ -126,13 +126,13 @@ public class VitaSourceRowViewModel : ViewModelBase
 
     public SolidColorBrush CategoryBadgeColor => Category switch
     {
-        VitaContentCategory.App => new SolidColorBrush(Color.FromRgb(0x3B, 0x82, 0xF6)),
-        VitaContentCategory.Patch => new SolidColorBrush(Color.FromRgb(0x10, 0xB9, 0x81)),
-        VitaContentCategory.Addcont => new SolidColorBrush(Color.FromRgb(0x8B, 0x5C, 0xF6)),
+        ContentCategory.App => new SolidColorBrush(Color.FromRgb(0x3B, 0x82, 0xF6)),
+        ContentCategory.Patch => new SolidColorBrush(Color.FromRgb(0x10, 0xB9, 0x81)),
+        ContentCategory.Addcont => new SolidColorBrush(Color.FromRgb(0x8B, 0x5C, 0xF6)),
         _ => new SolidColorBrush(Color.FromRgb(0x6B, 0x72, 0x80)),
     };
 
-    private VitaSourceRowViewModel(string path, VitaSourceKind kind, string? itemSourcePath, string titleId, VitaContentCategory category, string? contentIdSuffix)
+    private VitaSourceRowViewModel(string path, SourceKind kind, string? itemSourcePath, string titleId, ContentCategory category, string? contentIdSuffix)
     {
         Path = path;
         Kind = kind;
@@ -146,10 +146,10 @@ public class VitaSourceRowViewModel : ViewModelBase
     {
         var result = VitaPkgProbe.Probe(pkgPath);
 
-        return new VitaSourceRowViewModel(pkgPath, VitaSourceKind.Pkg, null, result.TitleId, result.Category, result.ContentIdSuffix);
+        return new VitaSourceRowViewModel(pkgPath, SourceKind.Pkg, null, result.TitleId, result.Category, result.ContentIdSuffix);
     }
 
-    public static VitaSourceRowViewModel FromZipItem(string containerPath, VitaSourceItem item) => new(containerPath, VitaSourceKind.ZipOrFolder, item.SourcePath, item.TitleId, item.Category, item.ContentIdSuffix);
+    public static VitaSourceRowViewModel FromZipItem(string containerPath, SourceItem item) => new(containerPath, SourceKind.ZipOrFolder, item.SourcePath, item.TitleId, item.Category, item.ContentIdSuffix);
 
     public static List<VitaSourceRowViewModel> DiscoverFromContainer(string containerPath)
     {
@@ -174,7 +174,7 @@ public class VitaSourceRowViewModel : ViewModelBase
         {
             long bytes = await Task.Run(() =>
             {
-                if (Kind == VitaSourceKind.Pkg)
+                if (Kind == SourceKind.Pkg)
                     return new FileInfo(Path).Length;
 
                 using var accessor = VitaSourceAccessorFactory.Open(Path);
@@ -206,7 +206,7 @@ public class VitaSourceRowViewModel : ViewModelBase
         {
             var result = await Task.Run(() =>
             {
-                if (Kind == VitaSourceKind.Pkg)
+                if (Kind == SourceKind.Pkg)
                 {
                     using var accessor = new PkgSourceAccessor(Path);
                     string? pkgTitle = accessor.FileExists("sce_sys/param.sfo")
@@ -215,7 +215,7 @@ public class VitaSourceRowViewModel : ViewModelBase
 
                     byte[]? pkgIcon = null;
 
-                    if (Category == VitaContentCategory.App && !string.IsNullOrWhiteSpace(License))
+                    if (Category == ContentCategory.App && !string.IsNullOrWhiteSpace(License))
                     {
                         try
                         {
@@ -251,7 +251,7 @@ public class VitaSourceRowViewModel : ViewModelBase
                 string? title = containerAccessor.FileExists(sfoRel) ? VitaSfoParser.GetString(VitaSfoParser.Parse(containerAccessor.ReadAllBytes(sfoRel)), "TITLE") : null;
                 byte[]? icon = null;
 
-                if (Category == VitaContentCategory.App)
+                if (Category == ContentCategory.App)
                 {
                     string workBinRel = $"{ItemSourcePath}/sce_sys/package/work.bin";
 
@@ -334,18 +334,18 @@ public class VitaSourceRowViewModel : ViewModelBase
         return $"{size:0.##} {units[unitIndex]}";
     }
 
-    public VitaBatchSourceEntry ToBatchEntry() => Kind == VitaSourceKind.Pkg
-        ? new VitaBatchSourceEntry
+    public BatchSourceEntry ToBatchEntry() => Kind == SourceKind.Pkg
+        ? new BatchSourceEntry
         {
-            Kind = VitaSourceKind.Pkg,
+            Kind = SourceKind.Pkg,
             Path = Path,
             License = License,
             PatchPath = string.IsNullOrWhiteSpace(PatchPath) ? null : PatchPath,
-            Probe = new VitaPkgProbeResult { TitleId = TitleId, Category = Category, ContentIdSuffix = ContentIdSuffix, ContentId = string.Empty }
+            Probe = new PkgProbeResult { TitleId = TitleId, Category = Category, ContentIdSuffix = ContentIdSuffix, ContentId = string.Empty }
         }
-        : new VitaBatchSourceEntry
+        : new BatchSourceEntry
         {
-            Kind = VitaSourceKind.ZipOrFolder,
+            Kind = SourceKind.ZipOrFolder,
             Path = Path,
             PatchPath = string.IsNullOrWhiteSpace(PatchPath) ? null : PatchPath,
             ItemCategory = Category,

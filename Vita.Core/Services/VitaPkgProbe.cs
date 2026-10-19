@@ -5,7 +5,7 @@ namespace Vita.Core.Services;
 
 public static class VitaPkgProbe
 {
-    public static VitaPkgProbeResult Probe(string pkgPath)
+    public static PkgProbeResult Probe(string pkgPath)
     {
         using var accessor = new PkgSourceAccessor(pkgPath);
 
@@ -14,16 +14,16 @@ public static class VitaPkgProbe
 
         return accessor.Header.ContentType switch
         {
-            (uint)VitaContentType.App => new VitaPkgProbeResult
+            (uint)ContentType.App => new PkgProbeResult
             {
                 TitleId = titleId,
                 Category = VitaPkgCategoryResolver.ResolveAppOrPatch(accessor),
                 ContentId = accessor.Header.ContentId
             },
-            (uint)VitaContentType.Dlc => new VitaPkgProbeResult
+            (uint)ContentType.Dlc => new PkgProbeResult
             {
                 TitleId = titleId,
-                Category = VitaContentCategory.Addcont,
+                Category = ContentCategory.Addcont,
                 ContentIdSuffix = accessor.Header.ContentId.Length > 20 ? accessor.Header.ContentId[20..] : accessor.Header.ContentId,
                 ContentId = accessor.Header.ContentId
             },

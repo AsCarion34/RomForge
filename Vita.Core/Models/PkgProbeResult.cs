@@ -1,10 +1,10 @@
 ﻿namespace Vita.Core.Models;
 
-public sealed class VitaPkgProbeResult
+public sealed class PkgProbeResult
 {
     public required string TitleId { get; init; }
 
-    public required VitaContentCategory Category { get; init; }
+    public required ContentCategory Category { get; init; }
 
     public string? ContentIdSuffix { get; init; }
 

@@ -35,7 +35,6 @@ public static class WorkBinReader
         if (contentId.Length >= 16)
         {
             titleId = contentId.Substring(7, 9);
-
             return true;
         }
 

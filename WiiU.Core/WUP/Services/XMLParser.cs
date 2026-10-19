@@ -7,44 +7,37 @@ namespace WiiU.Core.WUP.Services
     {
         private XmlDocument? document;
 
-        public void LoadDocument(string path)
+        public void LoadDocument(Stream stream)
         {
             var doc = new XmlDocument();
-            doc.Load(path);
-            document = doc;
-        }
 
-        public void LoadDocument(System.IO.Stream stream)
-        {
-            var doc = new XmlDocument();
             doc.Load(stream);
+
             document = doc;
         }
 
         public AppXMLInfo GetAppXMLInfo()
         {
-            var appxmlinfo = new AppXMLInfo();
-            appxmlinfo.SetOSVersion(GetValueOfElementAsLongHex("os_version", 0));
-            appxmlinfo.SetTitleID(GetValueOfElementAsLongHex("title_id", 0));
-            appxmlinfo.SetTitleVersion((short)GetValueOfElementAsLongHex("title_version", 0));
-            appxmlinfo.SetSDKVersion((int)GetValueOfElementAsInt("sdk_version", 0));
-            appxmlinfo.SetAppType((int)GetValueOfElementAsLongHex("app_type", 0));
-            appxmlinfo.SetGroupID((short)GetValueOfElementAsLongHex("group_id", 0));
-            appxmlinfo.SetOSMask(GetValueOfElementAsByteArray("os_mask", 0));
-            appxmlinfo.SetCommon_id(GetValueOfElementAsLongHex("common_id", 0));
+            var appxmlinfo = new AppXMLInfo
+            {
+                OSVersion = GetValueOfElementAsLongHex("os_version", 0),
+                TitleID = GetValueOfElementAsLongHex("title_id", 0),
+                TitleVersion = (short)GetValueOfElementAsLongHex("title_version", 0),
+                SDKVersion = (int)GetValueOfElementAsInt("sdk_version", 0),
+                AppType = (int)GetValueOfElementAsLongHex("app_type", 0),
+                GroupID = (short)GetValueOfElementAsLongHex("group_id", 0),
+                OSMask = GetValueOfElementAsByteArray("os_mask", 0),
+                CommonId = GetValueOfElementAsLongHex("common_id", 0)
+            };
 
             return appxmlinfo;
         }
 
         public long GetValueOfElementAsInt(string element, int index) => long.Parse(GetValueOfElement(element, index));
 
-        public long GetValueOfElementAsLong(string element, int index) => long.Parse(GetValueOfElement(element, index));
-
         public long GetValueOfElementAsLongHex(string element, int index) => Utils.HexStringToLong(GetValueOfElement(element, index));
 
         public byte[] GetValueOfElementAsByteArray(string element, int index) => Utils.HexStringToByteArray(GetValueOfElement(element, index));
-
-        public string GetValueOfElement(string element) => GetValueOfElement(element, 0);
 
         public string GetValueOfElement(string element, int index)
         {

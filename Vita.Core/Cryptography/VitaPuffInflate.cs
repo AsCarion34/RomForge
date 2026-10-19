@@ -11,6 +11,7 @@ internal sealed class VitaPuffInflate
     private sealed class Huffman
     {
         public short[] Count = new short[MaxBits + 1];
+
         public short[] Symbol = new short[FixLCodes];
     }
 
@@ -43,6 +44,7 @@ internal sealed class VitaPuffInflate
             do
             {
                 last = Bits(1) != 0;
+
                 int type = Bits(2);
 
                 err = type switch
@@ -312,7 +314,6 @@ internal sealed class VitaPuffInflate
         var lengths = new short[MaxCodes];
         var lenCode = new Huffman();
         var distCode = new Huffman();
-
         int nlen = Bits(5) + 257;
         int ndist = Bits(5) + 1;
         int ncode = Bits(4) + 4;

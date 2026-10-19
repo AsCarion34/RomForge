@@ -1,6 +1,6 @@
 ﻿namespace Vita.Core.Models;
 
-public sealed class VitaPkgBatchEntry
+public sealed class PkgBatchEntry
 {
     public required string PkgPath { get; init; }
 
@@ -8,5 +8,5 @@ public sealed class VitaPkgBatchEntry
 
     public string? PatchPath { get; init; }
 
-    public required VitaPkgProbeResult Probe { get; init; }
+    public required PkgProbeResult Probe { get; init; }
 }

@@ -1,9 +1,10 @@
 namespace WiiU.Core.WUP.Services
 {
     public class ByteArrayBuffer(int length)
-    {
-        public byte[] buffer = new byte[length];
+    {   
         private int lengthOfDataInBuffer;
+
+        public byte[] buffer = new byte[length];
 
         public int GetLengthOfDataInBuffer() => lengthOfDataInBuffer;
 

@@ -6,10 +6,10 @@ namespace Vita.Core.Services;
 
 public static class VitaPatchOnlyBuilder
 {
-    public static Task<VitaPatchOnlyResult> BuildFromEntriesAsync(List<VitaBatchSourceEntry> entries, string defaultPatchPath, string outputZipPath, VitaOutputTarget target, Action<string, LogLevel> log, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default) =>
-        VitaPatchShared.RunWithItemsAsync(entries, log, items => BuildCoreAsync(items, defaultPatchPath, outputZipPath, target, log, progress, ct));
+    public static Task<PatchOnlyResult> BuildFromEntriesAsync(List<BatchSourceEntry> entries, string defaultPatchPath, string outputZipPath, OutputTarget target, Action<string, LogLevel> log, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default) 
+        => VitaPatchShared.RunWithItemsAsync(entries, log, items => BuildCoreAsync(items, defaultPatchPath, outputZipPath, target, log, progress, ct));
 
-    private static async Task<VitaPatchOnlyResult> BuildCoreAsync(List<VitaSourceItem> items, string defaultPatchPath, string outputZipPath, VitaOutputTarget target, Action<string, LogLevel> log, IProgress<ProgressInfo>? progress, CancellationToken ct)
+    private static async Task<PatchOnlyResult> BuildCoreAsync(List<SourceItem> items, string defaultPatchPath, string outputZipPath, OutputTarget target, Action<string, LogLevel> log, IProgress<ProgressInfo>? progress, CancellationToken ct)
     {
         var patchContexts = new Dictionary<string, PatchContext>(StringComparer.OrdinalIgnoreCase);
 
@@ -70,7 +70,7 @@ public static class VitaPatchOnlyBuilder
 
                 LogGroupResult(log, group, groupMatched, groupSuccess);
 
-                if (target == VitaOutputTarget.Emu)
+                if (target == OutputTarget.Emu)
                 {
                     foreach (var owner in group.Owners)
                         VitaPatchShared.WriteLicenseEntry(zip, writtenEntries, owner);
@@ -79,7 +79,7 @@ public static class VitaPatchOnlyBuilder
 
             reporter.ForceReport();
 
-            return new VitaPatchOnlyResult { MatchedCandidates = matched, PatchedSuccessfully = success };
+            return new PatchOnlyResult { MatchedCandidates = matched, PatchedSuccessfully = success };
         }
         finally
         {
@@ -93,7 +93,7 @@ public static class VitaPatchOnlyBuilder
         if (matched == 0)
             return;
 
-        string name = group.Category == VitaContentCategory.Addcont ? $"{group.TitleId}/{group.ContentIdSuffix}" : group.TitleId;
+        string name = group.Category == ContentCategory.Addcont ? $"{group.TitleId}/{group.ContentIdSuffix}" : group.TitleId;
 
         if (success == matched)
             log($"[{group.Category}] {name}: {matched}개 중 {success}개 패치 완료", LogLevel.Ok);

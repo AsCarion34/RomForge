@@ -12,10 +12,6 @@ public sealed class WuaTitleSource : ITitleSource
 
     public int TitleVersion { get; }
 
-    public WuaTitleSource(WuaReader reader) : this(reader, null, DetectFirstRootFolder(reader))
-    {
-    }
-
     private WuaTitleSource(WuaReader reader, RefCountedReader? shared, string rootPrefix)
     {
         _reader = reader;
@@ -49,14 +45,6 @@ public sealed class WuaTitleSource : ITitleSource
         return [.. dirNames.Select(name => new WuaTitleSource(reader, shared, name))];
     }
 
-    private static string DetectFirstRootFolder(WuaReader reader)
-    {
-        if (reader.GetDirEntryCount(WuaReader.RootNode) >= 1 && reader.GetDirEntry(WuaReader.RootNode, 0, out var entry) && entry.IsDirectory)
-            return entry.Name;
-
-        return string.Empty;
-    }
-
     public IEnumerable<string> EnumerateFiles()
     {
         string prefix = _rootPrefix.Length == 0 ? string.Empty : _rootPrefix + "/";
@@ -85,7 +73,6 @@ public sealed class WuaTitleSource : ITitleSource
     public long GetFileSize(string path)
     {
         uint node = _reader.LookUp(ToFullPath(path));
-
         return node == WuaReader.InvalidNodeHandle ? 0 : (long)_reader.GetFileSize(node);
     }
 

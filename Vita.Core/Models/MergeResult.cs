@@ -1,6 +1,6 @@
 ﻿namespace Vita.Core.Models;
 
-public sealed class VitaMergeResult
+public sealed class MergeResult
 {
     public required int TotalFiles { get; init; }
 

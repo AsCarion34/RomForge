@@ -1,8 +1,8 @@
 ﻿namespace Vita.Core.Models;
 
-public sealed class VitaPrepareResult
+public sealed class PrepareResult
 {
-    public required VitaSourceItem Item { get; init; }
+    public required SourceItem Item { get; init; }
 
     public string? OutputPath { get; init; }
 

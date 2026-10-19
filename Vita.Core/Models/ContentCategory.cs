@@ -1,6 +1,6 @@
 ﻿namespace Vita.Core.Models;
 
-public enum VitaContentCategory
+public enum ContentCategory
 {
     App,
 

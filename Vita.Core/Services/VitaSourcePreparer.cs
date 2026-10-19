@@ -6,13 +6,13 @@ public static class VitaSourcePreparer
 {
     private const int MaxSearchDepth = 8;
 
-    public static List<VitaSourceItem> DiscoverItems(IVitaSourceAccessor accessor)
+    public static List<SourceItem> DiscoverItems(IVitaSourceAccessor accessor)
     {
         var contentRoots = new List<string>();
 
         FindContentRoots(accessor, string.Empty, contentRoots, 0);
 
-        var items = new List<VitaSourceItem>();
+        var items = new List<SourceItem>();
 
         foreach (var root in contentRoots)
         {
@@ -52,7 +52,7 @@ public static class VitaSourcePreparer
         return accessor.DirectoryExists($"{path}/sce_pfs") && accessor.DirectoryExists($"{path}/sce_sys");
     }
 
-    private static VitaSourceItem? ClassifyContentRoot(IVitaSourceAccessor accessor, string contentRootPath)
+    private static SourceItem? ClassifyContentRoot(IVitaSourceAccessor accessor, string contentRootPath)
     {
         string sfoPath = $"{contentRootPath}/sce_sys/param.sfo";
         Dictionary<string, byte[]>? sfo = null;
@@ -63,9 +63,7 @@ public static class VitaSourcePreparer
             {
                 sfo = VitaSfoParser.Parse(accessor.ReadAllBytes(sfoPath));
             }
-            catch
-            {
-            }
+            catch { }
         }
 
         string? contentId = sfo != null ? VitaSfoParser.GetString(sfo, "CONTENT_ID") : null;
@@ -79,18 +77,16 @@ public static class VitaSourcePreparer
         string? parentName = segments.Length >= 2 ? segments[^2] : null;
         bool hasPatchAncestor = segments.Any(s => string.Equals(s, "patch", StringComparison.OrdinalIgnoreCase));
         bool hasAddcontAncestor = segments.Any(s => string.Equals(s, "addcont", StringComparison.OrdinalIgnoreCase));
-
-        bool looksLikeAddcont = hasAddcontAncestor
-            || (titleIdFromContentId != null && parentName != null && string.Equals(parentName, titleIdFromContentId, StringComparison.OrdinalIgnoreCase));
+        bool looksLikeAddcont = hasAddcontAncestor || (titleIdFromContentId != null && parentName != null && string.Equals(parentName, titleIdFromContentId, StringComparison.OrdinalIgnoreCase));
 
         if (looksLikeAddcont)
         {
             string titleId = titleIdFromContentId ?? parentName ?? ownName;
             string contentIdSuffix = contentId != null && contentId.Length > 20 ? contentId[20..] : ownName;
 
-            return new VitaSourceItem
+            return new SourceItem
             {
-                Category = VitaContentCategory.Addcont,
+                Category = ContentCategory.Addcont,
                 TitleId = titleId,
                 ContentIdSuffix = contentIdSuffix,
                 SourcePath = contentRootPath
@@ -101,9 +97,9 @@ public static class VitaSourcePreparer
         string? category = sfo != null ? VitaSfoParser.GetString(sfo, "CATEGORY") : null;
         bool isPatch = hasPatchAncestor || string.Equals(category, "gp", StringComparison.OrdinalIgnoreCase);
 
-        return new VitaSourceItem
+        return new SourceItem
         {
-            Category = isPatch ? VitaContentCategory.Patch : VitaContentCategory.App,
+            Category = isPatch ? ContentCategory.Patch : ContentCategory.App,
             TitleId = resolvedTitleId,
             SourcePath = contentRootPath
         };

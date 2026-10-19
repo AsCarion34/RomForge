@@ -2,28 +2,15 @@ namespace WiiU.Core.WUP.Crypto
 {
     public class IV
     {
-        private static readonly int LENGTH = 0x10;
-        private byte[] iv = new byte[LENGTH];
+        private static readonly int Length = 0x10;
+        private byte[] _value = new byte[Length];
 
-        public IV()
-        {
-        }
+        public byte[] Value { get => _value; private set => _value = value; }
 
-        public IV(byte[] array)
-        {
-            SetIV(array);
-        }
+        public IV() { }
 
-        public byte[] GetIV() => iv;
+        public IV(byte[] array) => Value = array;
 
-        public void SetIV(byte[]? iv)
-        {
-            if (iv != null && iv.Length == GetIV().Length)
-            {
-                this.iv = iv;
-            }
-        }
-
-        public static int GetLength() => LENGTH;
+        public static int GetLength() => Length;
     }
 }

@@ -33,9 +33,7 @@ public sealed class FolderTitleSource : ITitleSource
                         TitleVersion = v;
                 }
             }
-            catch
-            {
-            }
+            catch { }
         }
 
         if (TitleIdHex == "0000000000000000")

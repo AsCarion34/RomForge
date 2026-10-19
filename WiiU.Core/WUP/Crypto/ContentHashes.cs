@@ -10,13 +10,14 @@ namespace WiiU.Core.WUP.Crypto
         private readonly SortedDictionary<int, byte[]> h2hashes = [];
         private readonly SortedDictionary<int, byte[]> h3hashes = [];
 
-        private byte[] TMDHash = new byte[0x14];
+        private byte[] _tmdHash = new byte[0x14];
+        private int _blockCount = 0;
 
-        private int blockCount = 0;
+        public byte[] TMDHash { get => _tmdHash; private set => _tmdHash = value; }
 
-        public ContentHashes(string filePath, bool hashed) : this(filePath, hashed, null)
-        {
-        }
+        public int BlockCount { get => _blockCount; set => _blockCount = value; }
+
+        public ContentHashes(string filePath, bool hashed) : this(filePath, hashed, null) { }
 
         public ContentHashes(string filePath, bool hashed, Action<long>? onBytesHashed)
         {
@@ -28,7 +29,7 @@ namespace WiiU.Core.WUP.Crypto
                     CalculateOtherHashes(1, h0hashes, h1hashes);
                     CalculateOtherHashes(2, h1hashes, h2hashes);
                     CalculateOtherHashes(3, h2hashes, h3hashes);
-                    SetTMDHash(HashUtil.HashSHA1(GetH3Hashes()));
+                    TMDHash = HashUtil.HashSHA1(GetH3Hashes());
                 }
                 catch (Exception e)
                 {
@@ -36,13 +37,13 @@ namespace WiiU.Core.WUP.Crypto
                 }
             }
             else
-                SetTMDHash(HashUtil.HashSHA1(filePath, Content.CONTENT_FILE_PADDING));
+                TMDHash = HashUtil.HashSHA1(filePath, Content.CONTENT_FILE_PADDING);
         }
 
         private void CalculateOtherHashes(int hash_level, SortedDictionary<int, byte[]> in_hashes, SortedDictionary<int, byte[]> out_hashes)
         {
             int hash_level_pow = (int)Math.Pow(16, hash_level);
-            int hashescount = (blockCount / hash_level_pow) + 1;
+            int hashescount = (BlockCount / hash_level_pow) + 1;
             int new_blocks = 0;
 
             for (int j = 0; j < hashescount; j++)
@@ -74,31 +75,32 @@ namespace WiiU.Core.WUP.Crypto
 
             do
             {
-                read = Services.Utils.GetChunkFromStream(in_, buffer, overflowbuffer, buffer_size);
+                read = Utils.GetChunkFromStream(in_, buffer, overflowbuffer, buffer_size);
 
                 if (read != buffer_size)
                 {
                     byte[] new_buffer = new byte[buffer_size];
+
                     Array.Copy(buffer, new_buffer, buffer.Length);
+
                     buffer = new_buffer;
                 }
 
                 h0hashes[block] = HashUtil.HashSHA1(buffer);
-
                 block++;
+
                 onBytesHashed?.Invoke((long)block * buffer_size);
             } while (read == buffer_size);
 
-            SetBlockCount(block);
+            BlockCount = block;
         }
 
         public byte[] GetHashForBlock(int block)
         {
-            if (block > blockCount)
+            if (block > BlockCount)
                 throw new Exception("fofof");
 
             JByteBuffer hashes = JByteBuffer.Allocate(0x400);
-
             int h0_hash_start = (block / 16) * 16;
 
             for (int i = 0; i < 16; i++)
@@ -138,13 +140,6 @@ namespace WiiU.Core.WUP.Crypto
             return hashes.Array();
         }
 
-        public int GetBlockCount() => blockCount;
-
-        public void SetBlockCount(int blockCount)
-        {
-            this.blockCount = blockCount;
-        }
-
         public byte[] GetH3Hashes()
         {
             JByteBuffer buffer = JByteBuffer.Allocate(h3hashes.Count * 0x14);
@@ -153,13 +148,6 @@ namespace WiiU.Core.WUP.Crypto
                 buffer.Put(h3hashes[i]);
 
             return buffer.Array();
-        }
-
-        public byte[] GetTMDHash() => TMDHash;
-
-        public void SetTMDHash(byte[] TMDHash)
-        {
-            this.TMDHash = TMDHash;
         }
 
         public void SaveH3ToFile(string h3_path)

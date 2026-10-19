@@ -44,8 +44,7 @@ public sealed class WudTitleSource : ITitleSource
         return _disc.OpenFileStream(_disc.GmVolume, idx);
     }
 
-    public long GetFileSize(string path)
-        => _pathToEntry.TryGetValue(path, out int idx) ? _disc.GmVolume.Entries[idx].FileSize : 0;
+    public long GetFileSize(string path) => _pathToEntry.TryGetValue(path, out int idx) ? _disc.GmVolume.Entries[idx].FileSize : 0;
 
     public void Dispose() => _wud.Dispose();
 }

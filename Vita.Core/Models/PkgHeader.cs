@@ -1,6 +1,6 @@
 ﻿namespace Vita.Core.Models;
 
-public sealed class VitaPkgHeader
+public sealed class PkgHeader
 {
     public required int ItemCount { get; init; }
 

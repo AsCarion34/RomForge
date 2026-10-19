@@ -1,6 +1,7 @@
 
 using System.Buffers.Binary;
 using System.Text;
+using WiiU.Core.IO;
 using WiiU.Core.Models;
 using ZstdSharp;
 
@@ -195,6 +196,7 @@ public sealed class WuaReader : IDisposable
                     break;
                 }
             }
+
             if (match == InvalidNode) 
                 return InvalidNode;
 
@@ -246,9 +248,7 @@ public sealed class WuaReader : IDisposable
             string path = prefix.Length == 0 ? name : $"{prefix}/{name}";
 
             if (entry.IsFile)
-            {
                 yield return (path, i);
-            }
             else
             {
                 foreach (var sub in EnumerateFiles(i, path))
@@ -300,42 +300,6 @@ public sealed class WuaReader : IDisposable
         }
 
         return written;
-    }
-
-    public void ExtractFileTo(uint node, Stream destination)
-    {
-        ulong size = GetFileSize(node);
-        var buffer = new byte[Math.Min(1024 * 1024UL, size == 0 ? 1 : size)];
-        ulong offset = 0;
-
-        while (offset < size)
-        {
-            int toRead = (int)Math.Min((ulong)buffer.Length, size - offset);
-            int got = ReadFromFile(node, offset, buffer, 0, toRead);
-
-            if (got <= 0) 
-                break;
-
-            destination.Write(buffer, 0, got);
-            offset += (ulong)got;
-        }
-    }
-
-    public byte[] ExtractFile(uint node)
-    {
-        var buffer = new byte[GetFileSize(node)];
-        int totalRead = 0;
-
-        while ((ulong)totalRead < (ulong)buffer.Length)
-        {
-            int got = ReadFromFile(node, (ulong)totalRead, buffer, totalRead, buffer.Length - totalRead);
-
-            if (got <= 0) 
-                break;
-
-            totalRead += got;
-        }
-        return buffer;
     }
 
     private byte[] LoadBlock(ulong blockIndex)

@@ -178,11 +178,11 @@ public class VitaPatchMainViewModel : ToolTabViewModel, IPatchViewModel
             }
             else if (e.PropertyName == nameof(VitaSourceRowViewModel.License))
             {
-                if (changedRow.Category != VitaContentCategory.Addcont)
+                if (changedRow.Category != ContentCategory.Addcont)
                 {
                     foreach (var row in SourceRows)
                     {
-                        if (row.IsPkg && row.Category != VitaContentCategory.Addcont && row != changedRow && !string.Equals(row.License, changedRow.License))
+                        if (row.IsPkg && row.Category != ContentCategory.Addcont && row != changedRow && !string.Equals(row.License, changedRow.License))
                             row.License = changedRow.License;
                     }
                 }
@@ -216,7 +216,7 @@ public class VitaPatchMainViewModel : ToolTabViewModel, IPatchViewModel
 
         bool everyTitleHasApp = SourceRows
             .GroupBy(r => r.TitleId, StringComparer.OrdinalIgnoreCase)
-            .All(g => g.Any(r => r.Category == VitaContentCategory.App));
+            .All(g => g.Any(r => r.Category == ContentCategory.App));
 
         return everyTitleHasApp;
     }
@@ -297,9 +297,9 @@ public class VitaPatchMainViewModel : ToolTabViewModel, IPatchViewModel
                 }
             }
 
-            if (row.Category != VitaContentCategory.Addcont)
+            if (row.Category != ContentCategory.Addcont)
             {
-                var existingAppOrPatch = SourceRows.FirstOrDefault(r => r.IsPkg && r.Category != VitaContentCategory.Addcont && !string.IsNullOrEmpty(r.License));
+                var existingAppOrPatch = SourceRows.FirstOrDefault(r => r.IsPkg && r.Category != ContentCategory.Addcont && !string.IsNullOrEmpty(r.License));
 
                 if (existingAppOrPatch != null && string.IsNullOrEmpty(row.License))
                     row.License = existingAppOrPatch.License;
@@ -316,7 +316,7 @@ public class VitaPatchMainViewModel : ToolTabViewModel, IPatchViewModel
 
     private void AddOrReplaceRow(VitaSourceRowViewModel newRow)
     {
-        if (newRow.Category is VitaContentCategory.App or VitaContentCategory.Patch)
+        if (newRow.Category is ContentCategory.App or ContentCategory.Patch)
         {
             var existing = SourceRows.FirstOrDefault(r => r.Category == newRow.Category);
 
@@ -328,7 +328,7 @@ public class VitaPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         }
         else
         {
-            var duplicate = SourceRows.FirstOrDefault(r => r.Category == VitaContentCategory.Addcont && string.Equals(r.TitleId, newRow.TitleId, StringComparison.OrdinalIgnoreCase) && string.Equals(r.ContentIdSuffix, newRow.ContentIdSuffix, StringComparison.OrdinalIgnoreCase));
+            var duplicate = SourceRows.FirstOrDefault(r => r.Category == ContentCategory.Addcont && string.Equals(r.TitleId, newRow.TitleId, StringComparison.OrdinalIgnoreCase) && string.Equals(r.ContentIdSuffix, newRow.ContentIdSuffix, StringComparison.OrdinalIgnoreCase));
 
             if (duplicate != null)
             {
@@ -340,19 +340,19 @@ public class VitaPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         SourceRows.Insert(ComputeInsertIndex(newRow.Category, newRow.ContentIdSuffix), newRow);
     }
 
-    private int ComputeInsertIndex(VitaContentCategory category, string? contentIdSuffix)
+    private int ComputeInsertIndex(ContentCategory category, string? contentIdSuffix)
     {
-        if (category == VitaContentCategory.App)
+        if (category == ContentCategory.App)
             return 0;
 
-        if (category == VitaContentCategory.Patch)
-            return SourceRows.Any(r => r.Category == VitaContentCategory.App) ? 1 : 0;
+        if (category == ContentCategory.Patch)
+            return SourceRows.Any(r => r.Category == ContentCategory.App) ? 1 : 0;
 
-        int index = SourceRows.Count(r => r.Category is VitaContentCategory.App or VitaContentCategory.Patch);
+        int index = SourceRows.Count(r => r.Category is ContentCategory.App or ContentCategory.Patch);
 
         foreach (var row in SourceRows)
         {
-            if (row.Category != VitaContentCategory.Addcont)
+            if (row.Category != ContentCategory.Addcont)
                 continue;
 
             if (string.Compare(contentIdSuffix, row.ContentIdSuffix, StringComparison.OrdinalIgnoreCase) < 0)
@@ -374,13 +374,13 @@ public class VitaPatchMainViewModel : ToolTabViewModel, IPatchViewModel
                 continue;
             }
 
-            if (row.Category == VitaContentCategory.Addcont)
+            if (row.Category == ContentCategory.Addcont)
             {
                 row.IsLicenseEditable = true;
                 continue;
             }
 
-            var appRow = SourceRows.FirstOrDefault(r => r.Category == VitaContentCategory.App && string.Equals(r.TitleId, row.TitleId, StringComparison.OrdinalIgnoreCase));
+            var appRow = SourceRows.FirstOrDefault(r => r.Category == ContentCategory.App && string.Equals(r.TitleId, row.TitleId, StringComparison.OrdinalIgnoreCase));
 
             row.IsLicenseEditable = appRow == null || appRow.IsPkg;
 
@@ -410,20 +410,20 @@ public class VitaPatchMainViewModel : ToolTabViewModel, IPatchViewModel
             {
                 _cts = new CancellationTokenSource();
 
-                string baseName = SourceRows.First(r => r.Category == VitaContentCategory.App).TitleId;
+                string baseName = SourceRows.First(r => r.Category == ContentCategory.App).TitleId;
                 string defaultPatchPath = SourceRows.FirstOrDefault(r => !string.IsNullOrEmpty(r.PatchPath))?.PatchPath ?? string.Empty;
                 var entries = SourceRows.Select(r => r.ToBatchEntry()).ToList();
-                VitaOutputTarget target;
+                OutputTarget target;
                 string label;
 
                 if (BuildEmu)
                 {
-                    target = VitaOutputTarget.Emu;
+                    target = OutputTarget.Emu;
                     label = "에뮬";
                 }
                 else if (BuildRetail)
                 {
-                    target = VitaOutputTarget.Retail;
+                    target = OutputTarget.Retail;
                     label = "실기";
                 }
                 else

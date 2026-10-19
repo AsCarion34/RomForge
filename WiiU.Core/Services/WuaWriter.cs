@@ -76,6 +76,7 @@ public sealed class WuaWriter(Stream output) : IDisposable
             if (next is null)
             {
                 next = new PathNode { IsFile = false, NameIndex = CreateNameEntry(node) };
+
                 current.Subnodes.Add(next);
             }
 
@@ -88,8 +89,8 @@ public sealed class WuaWriter(Stream output) : IDisposable
     public bool StartNewFile(string path)
     {
         _currentFileNode = null;
-
         path = path.Trim('/', '\\');
+
         SplitFilenameFromPath(path, out var parentPath, out var filename);
 
         var dir = GetNodeByPath(parentPath);
@@ -121,10 +122,10 @@ public sealed class WuaWriter(Stream output) : IDisposable
             {
                 StoreBlock(data[..CompressedBlockSize]);
                 data = data[CompressedBlockSize..];
-
                 continue;
             }
             data[..bytesToCopy].CopyTo(_writeBuffer.AsSpan(_writeBufferLength));
+
             _writeBufferLength += bytesToCopy;
             data = data[bytesToCopy..];
 
@@ -149,6 +150,7 @@ public sealed class WuaWriter(Stream output) : IDisposable
         _finalized = true;
 
         _currentFileNode = null;
+
         if (_writeBufferLength > 0)
         {
             var pad = new byte[CompressedBlockSize - _writeBufferLength];
@@ -191,11 +193,13 @@ public sealed class WuaWriter(Stream output) : IDisposable
         if (compressed.Length >= CompressedBlockSize)
         {
             outputSize = CompressedBlockSize;
+
             OutputData(uncompressedBlock);
         }
         else
         {
             outputSize = compressed.Length;
+
             OutputData(compressed);
         }
 
@@ -203,6 +207,7 @@ public sealed class WuaWriter(Stream output) : IDisposable
             _offsetRecords.Add(new OffsetRecord { BaseOffset = compressedWriteOffset });
 
         var rec = _offsetRecords[^1];
+
         rec.Size[_numWrittenOffsetRecords % OffsetRecord.EntriesPerOffsetRecord] = (ushort)(outputSize - 1);
         _numWrittenOffsetRecords++;
     }
@@ -210,6 +215,7 @@ public sealed class WuaWriter(Stream output) : IDisposable
     private void WriteOffsetRecords()
     {
         _secOffsetRecords = (_outputOffset, 0);
+
         Span<byte> buf = stackalloc byte[OffsetRecordSize];
 
         foreach (var rec in _offsetRecords)
@@ -243,13 +249,17 @@ public sealed class WuaWriter(Stream output) : IDisposable
             {
                 header[0] = (byte)((bytes.Length & 0x7F) | 0x80);
                 header[1] = (byte)(bytes.Length >> 7);
+
                 OutputData(header);
+
                 currentOffset += 2;
             }
             else
             {
                 header[0] = (byte)(bytes.Length & 0x7F);
+
                 OutputData(header[..1]);
+
                 currentOffset += 1;
             }
 
@@ -257,6 +267,7 @@ public sealed class WuaWriter(Stream output) : IDisposable
 
             currentOffset += (uint)bytes.Length;
         }
+
         _secNames.Size = _outputOffset - _secNames.Offset;
     }
 
@@ -375,6 +386,7 @@ public sealed class WuaWriter(Stream output) : IDisposable
         var index = (uint)_nodeNames.Count;
 
         _nodeNames.Add(name);
+
         _nodeNameLookup[name] = index;
 
         return index;

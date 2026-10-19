@@ -1,6 +1,6 @@
 ﻿namespace Vita.Core.Models;
 
-public enum VitaOutputTarget
+public enum OutputTarget
 {
     Emu,
 

@@ -1,6 +1,6 @@
 ﻿namespace Vita.Core.Models;
 
-public sealed class VitaPatchOnlyResult
+public sealed class PatchOnlyResult
 {
     public required int MatchedCandidates { get; init; }
 

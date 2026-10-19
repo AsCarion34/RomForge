@@ -2,9 +2,9 @@
 
 namespace Vita.Core.Models;
 
-public sealed class VitaSourceItem
+public sealed class SourceItem
 {
-    public required VitaContentCategory Category { get; init; }
+    public required ContentCategory Category { get; init; }
 
     public required string TitleId { get; init; }
 

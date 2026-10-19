@@ -13,13 +13,7 @@ public static class VitaPfsLegacyKeyDerivation
         return digest.AsSpan(0, 16).ToArray();
     }
 
-    private static byte[] WriteUInt32LittleEndian(uint value) =>
-    [
-        (byte)value,
-        (byte)(value >> 8),
-        (byte)(value >> 16),
-        (byte)(value >> 24)
-    ];
+    private static byte[] WriteUInt32LittleEndian(uint value) => [ (byte)value, (byte)(value >> 8), (byte)(value >> 16), (byte)(value >> 24) ];
 
     private static byte[] Concat(byte[] a, byte[] b)
     {

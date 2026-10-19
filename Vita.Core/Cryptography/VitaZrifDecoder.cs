@@ -97,6 +97,7 @@ public static class VitaZrifDecoder
                 throw new InvalidDataException("output buffer too small");
 
             Array.Copy(ZrifDict, outBuf, ZrifDict.Length);
+
             dictLen = ZrifDict.Length;
 
             uint dictId = (uint)((input[2] << 24) | (input[3] << 16) | (input[4] << 8) | input[5]);
@@ -109,6 +110,7 @@ public static class VitaZrifDecoder
 
         int slen = input.Length - pos - 4;
         var compressed = new byte[slen];
+
         Array.Copy(input, pos, compressed, 0, slen);
 
         int outLen = outBuf.Length;
@@ -120,6 +122,7 @@ public static class VitaZrifDecoder
             throw new InvalidDataException($"failed to uncompress zRIF (err={err})");
 
         var result = new byte[outLen];
+
         Array.Copy(outBuf, dictLen, result, 0, outLen);
 
         uint expectedAdler = (uint)((input[pos + srcLen] << 24) | (input[pos + srcLen + 1] << 16) | (input[pos + srcLen + 2] << 8) | input[pos + srcLen + 3]);

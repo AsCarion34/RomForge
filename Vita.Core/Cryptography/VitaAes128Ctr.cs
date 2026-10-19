@@ -24,6 +24,7 @@ public sealed class VitaAes128Ctr : IDisposable
 
         _aes = Aes.Create();
         _aes.Key = key.ToArray();
+
         _ivHigh = BinaryPrimitives.ReadUInt64BigEndian(iv);
         _ivLow = BinaryPrimitives.ReadUInt64BigEndian(iv[8..]);
     }

@@ -28,6 +28,7 @@ public sealed class ZipSourceAccessor : IVitaSourceAccessor
             return _entries.Count > 0;
 
         prefix += "/";
+
         return _entries.Keys.Any(k => k.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
     }
 
@@ -72,7 +73,6 @@ public sealed class ZipSourceAccessor : IVitaSourceAccessor
             throw new FileNotFoundException(relativePath);
 
         var data = new byte[entry.Length];
-
         using var s = entry.Open();
 
         s.ReadExactly(data);

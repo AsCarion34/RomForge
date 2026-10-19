@@ -16,7 +16,5 @@ public sealed class FolderSourceAccessor(string root) : IVitaSourceAccessor
 
     public long GetFileSize(string relativePath) => new FileInfo(Full(relativePath)).Length;
 
-    public void Dispose()
-    {
-    }
+    public void Dispose() { }
 }

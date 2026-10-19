@@ -7,10 +7,7 @@ public static class VitaSfoParser
 {
     private const uint Magic = 0x00505346;
 
-    static VitaSfoParser()
-    {
-        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-    }
+    static VitaSfoParser() => Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
     public static Dictionary<string, byte[]> Parse(byte[] data)
     {

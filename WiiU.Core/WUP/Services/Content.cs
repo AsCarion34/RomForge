@@ -1,142 +1,83 @@
 using System.Diagnostics;
 using WiiU.Core.WUP.Crypto;
+using WiiU.Core.WUP.Interfaces;
 using WiiU.Core.WUP.Models;
-using WiiU.Core.WUP.NusPackage.Interfaces;
 
 namespace WiiU.Core.WUP.Services
 {
     public class Content : IHasData
     {
         public const short TYPE_CONTENT = 0x2000;
+
         public const short TYPE_ENCRYPTED = 0x0001;
+
         public const short TYPE_HASHED = 0x0002;
-        
+
         public const int ALIGNMENT_IN_CONTENT_FILE = 0x20;
+
         public const int CONTENT_FILE_PADDING = 0x08000;
 
-        private int ID = 0x00;
-        private short index = 0x00;
-        private short type = TYPE_CONTENT & TYPE_ENCRYPTED;
-        private long encryptedFileSize;
-        private byte[] SHA2 = new byte[0x14];
-        private long curFileOffset = 0;
-        private List<FSTEntry> entries = [];
-        private int groupID = 0;
-        private long parentTitleID = 0;
-        private short entriesFlags = 0x0000;
-        private bool isFSTContentFlag;
+        private long _curFileOffset = 0;
+        private List<FSTEntry> _entries = [];
+        private short _type = TYPE_CONTENT & TYPE_ENCRYPTED;
 
-        internal Content()
+        internal Content() { }
+
+        public int ID { get; set; } = 0x00;
+
+        public short Index { get; set; } = 0x00;
+
+        public short ContentType
         {
+            get => _type;
+            set => _type = value;
         }
 
-        public int GetID() => ID;
+        public long EncryptedFileSize { get; set; }
 
-        public void SetID(int id)
+        public byte[] Hash { get; set; } = new byte[0x14];
+
+        public int GroupID { get; set; } = 0;
+
+        public long ParentTitleID { get; set; } = 0;
+
+        public short EntriesFlags { get; set; } = 0x0000;
+
+        public bool IsFSTContent { get; set; }
+
+        private long CurFileOffset
         {
-            ID = id;
+            get => _curFileOffset;
+            set => _curFileOffset = value;
         }
 
-        public short GetContentType() => type;
+        public void AddType(short type) => _type |= type;
 
-        public void AddType(short type)
-        {
-            this.type |= type;
-        }
-
-        public void RemoveType(short type)
-        {
-            this.type &= (short)~type;
-        }
-
-        public void SetType(short type)
-        {
-            this.type = type;
-        }
-
-        public short GetIndex() => index;
-
-        public void SetIndex(short index)
-        {
-            this.index = index;
-        }
-
-        public long GetParentTitleID() => parentTitleID;
-
-        public void SetParentTitleID(long parentTitleID)
-        {
-            this.parentTitleID = parentTitleID;
-        }
-
-        public int GetGroupID() => groupID;
-
-        public void SetGroupID(int groupID)
-        {
-            this.groupID = groupID;
-        }
-
-        private long GetCurFileOffset() => curFileOffset;
-
-        private void SetCurFileOffset(long curFileOffset)
-        {
-            this.curFileOffset = curFileOffset;
-        }
-
-        public void SetEncryptedFileSize(long size)
-        {
-            encryptedFileSize = size;
-        }
-
-        public long GetEncryptedFileSize() => encryptedFileSize;
-
-        public void SetHash(byte[] hash)
-        {
-            SHA2 = hash;
-        }
-
-        public byte[] GetHash() => SHA2;
-
-        public bool IsHashed() => (GetContentType() & TYPE_HASHED) == TYPE_HASHED;
-
-        public bool IsFSTContent() => isFSTContentFlag;
-
-        public void SetFSTContent(bool isFSTContent)
-        {
-            isFSTContentFlag = isFSTContent;
-        }
-
-        public void SetEntriesFlags(short entriesFlag)
-        {
-            entriesFlags = entriesFlag;
-        }
-
-        public short GetEntriesFlags() => entriesFlags;
+        public bool IsHashed() => (ContentType & TYPE_HASHED) == TYPE_HASHED;
 
         public static int GetFSTContentHeaderDataSize() => 0x20;
-        
+
         public Pair<byte[], long> GetFSTContentHeaderAsData(long old_content_offset)
         {
             JByteBuffer buffer = JByteBuffer.Allocate(GetFSTContentHeaderDataSize());
 
             byte unkwn;
             long content_offset = old_content_offset;
-
-            long fst_content_size = GetEncryptedFileSize() / CONTENT_FILE_PADDING;
+            long fst_content_size = EncryptedFileSize / CONTENT_FILE_PADDING;
             long fst_content_size_written = fst_content_size;
 
             if (IsHashed())
             {
                 unkwn = 2;
-
                 fst_content_size_written -= ((fst_content_size / 64) + 1) * 2;
-                if (fst_content_size_written < 0) fst_content_size_written = 0;
+
+                if (fst_content_size_written < 0)
+                    fst_content_size_written = 0;
             }
             else
-            {
                 unkwn = 1;
-            }
 
-            if (IsFSTContent())
+            if (IsFSTContent)
             {
                 unkwn = 0;
 
@@ -150,8 +91,8 @@ namespace WiiU.Core.WUP.Services
 
             buffer.PutInt((int)old_content_offset);
             buffer.PutInt((int)fst_content_size_written);
-            buffer.PutLong(GetParentTitleID());
-            buffer.PutInt(0x10, GetGroupID());
+            buffer.PutLong(ParentTitleID);
+            buffer.PutInt(0x10, GroupID);
             buffer.Put(0x14, unkwn);
 
             return new Pair<byte[], long>(buffer.Array(), content_offset);
@@ -159,63 +100,57 @@ namespace WiiU.Core.WUP.Services
 
         public long GetOffsetForFileAndIncrease(FSTEntry fstEntry)
         {
-            long old_fileoffset = GetCurFileOffset();
-            SetCurFileOffset(old_fileoffset + Services.Utils.Align(fstEntry.GetFilesize(), ALIGNMENT_IN_CONTENT_FILE));
+            long old_fileoffset = CurFileOffset;
+
+            CurFileOffset = old_fileoffset + Services.Utils.Align(fstEntry.Filesize, ALIGNMENT_IN_CONTENT_FILE);
 
             return old_fileoffset;
         }
 
-        public void ResetFileOffsets()
-        {
-            curFileOffset = 0;
-        }
+        public void ResetFileOffsets() => CurFileOffset = 0;
 
-        private List<FSTEntry> GetFSTEntries() => entries;
+        private List<FSTEntry> GetFSTEntries() => _entries;
 
-        public int GetFSTEntryNumber() => entries.Count;
+        public int GetFSTEntryNumber() => _entries.Count;
 
         public byte[] GetAsData()
         {
             JByteBuffer buffer = JByteBuffer.Allocate(GetDataSize());
 
-            buffer.PutInt(GetID());
-            buffer.PutShort(GetIndex());
-            buffer.PutShort(GetContentType());
-            buffer.PutLong(GetEncryptedFileSize());
-            buffer.Put(GetHash());
+            buffer.PutInt(ID);
+            buffer.PutShort(Index);
+            buffer.PutShort(ContentType);
+            buffer.PutLong(EncryptedFileSize);
+            buffer.Put(Hash);
 
             return buffer.Array();
         }
 
         public int GetDataSize() => 0x30;
 
-        public void PackContentToFile(string outputDir)
-        {
-            PackContentToFile(outputDir, null);
-        }
-
         public void PackContentToFile(string outputDir, Action<string, long, long>? onBytesProcessed)
         {
             NUSPackage nusPackage = NUSPackageFactory.GetPackageByContent(this)!;
-            Encryption encryption = nusPackage.GetEncryption();
+            Encryption encryption = nusPackage.Encryption;
             string decryptedFile = PackDecrypted(onBytesCopied: onBytesProcessed == null ? null : (done, total) => onBytesProcessed("stage", done, total));
             long decryptedSize = new FileInfo(decryptedFile).Length;
-            ContentHashes contentHashes = new (decryptedFile, IsHashed(), onBytesHashed: bytes => onBytesProcessed?.Invoke("hash", bytes, decryptedSize));
+            ContentHashes contentHashes = new(decryptedFile, IsHashed(), onBytesHashed: bytes => onBytesProcessed?.Invoke("hash", bytes, decryptedSize));
+            string h3_path = outputDir + "/" + ID.ToString("X8") + ".h3";
 
-            string h3_path = outputDir + "/" + GetID().ToString("X8") + ".h3";
             contentHashes.SaveH3ToFile(h3_path);
-            SetHash(contentHashes.GetTMDHash());
+
+            Hash = contentHashes.TMDHash;
 
             string encryptedFile = PackEncrypted(outputDir, decryptedFile, contentHashes, encryption, onBytesEncrypted: bytes => onBytesProcessed?.Invoke("encrypt", bytes, decryptedSize));
 
-            SetEncryptedFileSize(new FileInfo(encryptedFile).Length);
+            EncryptedFileSize = new FileInfo(encryptedFile).Length;
         }
 
         private string PackEncrypted(string outputDir, string decryptedFile, ContentHashes hashes, Encryption encryption, Action<long>? onBytesEncrypted)
         {
-            string outputFilePath = $"{outputDir}/{GetID():X8}.app";
+            string outputFilePath = $"{outputDir}/{ID:X8}.app";
 
-            if ((GetContentType() & TYPE_HASHED) == TYPE_HASHED)
+            if ((ContentType & TYPE_HASHED) == TYPE_HASHED)
                 encryption.EncryptFileHashed(decryptedFile, this, outputFilePath, hashes, onBytesEncrypted);
             else
                 encryption.EncryptFileWithPadding(decryptedFile, this, outputFilePath, CONTENT_FILE_PADDING, onBytesEncrypted);
@@ -229,13 +164,12 @@ namespace WiiU.Core.WUP.Services
 
             foreach (FSTEntry e in GetFSTEntries())
             {
-                if (!e.IsNotInPackage() && e.IsFile())
-                    totalFileBytes += e.GetFilesize();
+                if (!e.IsNotInPackage && e.IsFile)
+                    totalFileBytes += e.Filesize;
             }
 
             long copiedSoFar = 0;
-            string tmp_path = $"{Settings.TmpDir}/{GetID():X8}.dec";
-
+            string tmp_path = $"{Settings.TmpDir}/{ID:X8}.dec";
             using (FileStream fos = new(tmp_path, FileMode.Create, FileAccess.Write))
             {
                 int totalCount = GetFSTEntryNumber();
@@ -244,21 +178,20 @@ namespace WiiU.Core.WUP.Services
 
                 foreach (FSTEntry entry in GetFSTEntries())
                 {
-                    if (!entry.IsNotInPackage())
+                    if (!entry.IsNotInPackage)
                     {
-                        if (entry.IsFile())
+                        if (entry.IsFile)
                         {
-                            if (cur_offset != entry.GetFileOffset())
-                            {
+                            if (cur_offset != entry.FileOffset)
                                 Debug.WriteLine("FAILED");
-                            }
+
                             long old_offset = cur_offset;
 
-                            cur_offset += Services.Utils.Align(entry.GetFilesize(), ALIGNMENT_IN_CONTENT_FILE);
+                            cur_offset += Utils.Align(entry.Filesize, ALIGNMENT_IN_CONTENT_FILE);
 
-                            string output = string.Format("[{0:D5}/{1:D5}] Writing at {2:x8} | FileSize: {3:x8} | {4}", cnt_file, totalCount, old_offset, entry.GetFilesize(), entry.GetFilename());
+                            string output = string.Format("[{0:D5}/{1:D5}] Writing at {2:x8} | FileSize: {3:x8} | {4}", cnt_file, totalCount, old_offset, entry.Filesize, entry.Filename);
 
-                            Func<Stream>? streamFactory = entry.GetStreamFactory();
+                            Func<Stream>? streamFactory = entry.StreamFactory;
 
                             if (streamFactory != null)
                             {
@@ -275,30 +208,31 @@ namespace WiiU.Core.WUP.Services
                             }
                             else
                             {
-                                Services.Utils.CopyFileInto(entry.GetFile()!, fos);
-                                copiedSoFar += entry.GetFilesize();
+                                Utils.CopyFileInto(entry.FilePath!, fos);
+                                copiedSoFar += entry.Filesize;
                                 onBytesCopied?.Invoke(copiedSoFar, totalFileBytes);
                             }
 
-                            int padding = (int)(cur_offset - (old_offset + entry.GetFilesize()));
+                            int padding = (int)(cur_offset - (old_offset + entry.Filesize));
                             byte[] paddingBytes = new byte[padding];
+
                             fos.Write(paddingBytes, 0, paddingBytes.Length);
                         }
                         else
-                        {
-                            Debug.WriteLine($"[{cnt_file:D5}/{totalCount:D5}] Wrote folder: \"{entry.GetFilename()}\"");
-                        }
+                            Debug.WriteLine($"[{cnt_file:D5}/{totalCount:D5}] Wrote folder: \"{entry.Filename}\"");
                     }
+
                     cnt_file++;
                 }
             }
+
             return tmp_path;
         }
 
         public void Update(List<FSTEntry>? entries)
         {
             if (entries != null)
-                this.entries = entries;
+                _entries = entries;
         }
 
         public override bool Equals(object? other)
@@ -312,5 +246,6 @@ namespace WiiU.Core.WUP.Services
         }
 
         public override int GetHashCode() => 0;
+
     }
 }

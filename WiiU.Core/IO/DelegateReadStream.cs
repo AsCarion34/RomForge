@@ -1,4 +1,4 @@
-namespace WiiU.Core.Services;
+namespace WiiU.Core.IO;
 
 public sealed class DelegateReadStream(long length, Func<long, byte[], int, int, int> read) : Stream
 {
@@ -36,6 +36,8 @@ public sealed class DelegateReadStream(long length, Func<long, byte[], int, int,
     }
 
     public override void Flush() { }
+
     public override void SetLength(long value) => throw new NotSupportedException();
+
     public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 }

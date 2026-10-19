@@ -1,60 +1,65 @@
 using System.Text;
+using WiiU.Core.WUP.Interfaces;
 using WiiU.Core.WUP.Models;
-using WiiU.Core.WUP.NusPackage.Interfaces;
 
 namespace WiiU.Core.WUP.Services
 {
     public class FST(Contents contents) : IHasData
     {
-        private readonly byte[] magicbytes = [ 0x46, 0x53, 0x54, 0x00 ];
-        private readonly int unknown = 0x20;
-        private int contentCount = 0;
+        private readonly byte[] _magicbytes = [0x46, 0x53, 0x54, 0x00];
+        private readonly int _unknown = 0x20;
+        private int _contentCount = 0;
 
-        private readonly byte[] padding = new byte[0x14];
-        private FSTEntries? fileEntries = null;
-        private static readonly JByteBuffer strings = JByteBuffer.Allocate(0x300000);
-        
+        private readonly byte[] _padding = new byte[0x14];
+        private FSTEntries? _fileEntries = null;
+        private static readonly JByteBuffer _strings = JByteBuffer.Allocate(0x300000);
+
         public static int CurEntryOffset = 0x00;
 
-        private byte[]? alignment = null;
+        private byte[]? _alignment = null;
+
+        public Contents Contents => contents;
+
+        public FSTEntries FSTEntries => _fileEntries ??= new FSTEntries();
 
         public void Update()
         {
-            strings.Clear();
+            _strings.Clear();
+
             CurEntryOffset = 0;
 
-            contents.ResetFileOffsets();
-            GetFSTEntries().Update();
-            contents.Update(GetFSTEntries());
-            GetFSTEntries().GetRootEntry()!.SetEntryCount(GetFSTEntries().GetFSTEntryCount());
+            Contents.ResetFileOffsets();
+            FSTEntries.Update();
+            Contents.Update(FSTEntries);
+            FSTEntries.GetRootEntry()!.RootEntryCount = FSTEntries.GetFSTEntryCount();
 
-            contentCount = contents.GetContentCount();
+            _contentCount = Contents.ContentCount;
         }
 
-        public static int GetStringPos() => strings.Position;
+        public static int GetStringPos() => _strings.Position;
 
         public static void AddString(string filename)
         {
-            strings.Put(Encoding.UTF8.GetBytes(filename));
-            strings.Put((byte)0x00);
+            _strings.Put(Encoding.UTF8.GetBytes(filename));
+            _strings.Put((byte)0x00);
         }
 
         public byte[] GetAsData()
         {
             JByteBuffer buffer = JByteBuffer.Allocate(GetDataSize());
 
-            buffer.Put(magicbytes);
-            buffer.PutInt(unknown);
-            buffer.PutInt(contentCount);
-            buffer.Put(padding);
-            buffer.Put(contents.GetFSTContentHeaderAsData());
-            buffer.Put(fileEntries!.GetAsData());
+            buffer.Put(_magicbytes);
+            buffer.PutInt(_unknown);
+            buffer.PutInt(_contentCount);
+            buffer.Put(_padding);
+            buffer.Put(Contents.GetFSTContentHeaderAsData());
+            buffer.Put(FSTEntries.GetAsData());
 
-            byte[] stringData = new byte[strings.Position];
+            byte[] stringData = new byte[_strings.Position];
 
-            Array.Copy(strings.Array(), 0, stringData, 0, strings.Position);
+            Array.Copy(_strings.Array(), 0, stringData, 0, _strings.Position);
             buffer.Put(stringData);
-            buffer.Put(alignment!);
+            buffer.Put(_alignment!);
 
             return buffer.Array();
         }
@@ -63,26 +68,19 @@ namespace WiiU.Core.WUP.Services
         {
             int size = 0;
 
-            size += magicbytes.Length;
+            size += _magicbytes.Length;
             size += 0x04;
             size += 0x04;
-            size += padding.Length;
-            size += contents.GetFSTContentHeaderDataSize();
-            size += fileEntries!.GetDataSize();
-            size += strings.Position;
-            
+            size += _padding.Length;
+            size += Contents.GetFSTContentHeaderDataSize();
+            size += FSTEntries.GetDataSize();
+            size += _strings.Position;
+
             int newsize = (int)Services.Utils.Align(size, 0x8000);
-            
-            alignment = new byte[newsize - size];
+
+            _alignment = new byte[newsize - size];
 
             return newsize;
         }
-
-        public FSTEntries GetFSTEntries()
-        {
-            return fileEntries ??= new FSTEntries();
-        }
-
-        public Contents GetContents() => contents;
     }
 }

@@ -5,7 +5,7 @@ namespace Vita.Core.Services;
 
 public static class VitaNoNpDrmDecryptor
 {
-    public static VitaPfsFileTable ParseFileTable(IVitaSourceAccessor accessor, string titleRelPath)
+    public static PfsFileTable ParseFileTable(IVitaSourceAccessor accessor, string titleRelPath)
     {
         string filesDbRel = Combine(titleRelPath, "sce_pfs/files.db");
         string unicvDbRel = Combine(titleRelPath, "sce_pfs/unicv.db");
@@ -21,7 +21,7 @@ public static class VitaNoNpDrmDecryptor
         using var unicvDbStream = new MemoryStream(accessor.ReadAllBytes(unicvDbRel));
         var unicv = PfsUnicvDbParser.Parse(unicvDbStream, flat.Count);
 
-        return new VitaPfsFileTable { Entries = flat, UnicvEntries = unicv, FilesSalt = filesSalt };
+        return new PfsFileTable { Entries = flat, UnicvEntries = unicv, FilesSalt = filesSalt };
     }
 
     public static byte[] DecryptEntry(IVitaSourceAccessor accessor, string titleRelPath, byte[] klicensee, PfsFlatEntry entry, PfsUnicvEntry unicvEntry, uint filesSalt)

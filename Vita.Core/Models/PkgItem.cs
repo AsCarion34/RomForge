@@ -1,6 +1,6 @@
 ﻿namespace Vita.Core.Models;
 
-public sealed class VitaPkgItem
+public sealed class PkgItem
 {
     public required string Name { get; init; }
 

@@ -4,7 +4,7 @@ namespace Vita.Core.Services;
 
 public static class VitaPkgCategoryResolver
 {
-    public static VitaContentCategory ResolveAppOrPatch(IVitaSourceAccessor source)
+    public static ContentCategory ResolveAppOrPatch(IVitaSourceAccessor source)
     {
         try
         {
@@ -12,11 +12,11 @@ public static class VitaPkgCategoryResolver
             var sfo = VitaSfoParser.Parse(sfoBytes);
             string? category = VitaSfoParser.GetString(sfo, "CATEGORY");
 
-            return string.Equals(category, "gp", StringComparison.OrdinalIgnoreCase) ? VitaContentCategory.Patch : VitaContentCategory.App;
+            return string.Equals(category, "gp", StringComparison.OrdinalIgnoreCase) ? ContentCategory.Patch : ContentCategory.App;
         }
         catch
         {
-            return VitaContentCategory.App;
+            return ContentCategory.App;
         }
     }
 }

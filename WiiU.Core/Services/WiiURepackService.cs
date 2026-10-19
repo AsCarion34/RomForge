@@ -125,7 +125,6 @@ public sealed class WiiURepackService
                     while ((read = srcStream.Read(buffer, 0, buffer.Length)) > 0)
                     {
                         ct.ThrowIfCancellationRequested();
-
                         writer.AppendData(buffer.AsSpan(0, read));
                         progress.Advance(read, label);
                     }
@@ -147,7 +146,6 @@ public sealed class WiiURepackService
         if (overwriteFiles.TryGetValue(path, out var overwriteRef))
         {
             log?.Invoke($"교체: {overwriteRef.DisplayName} → {path}", LogLevel.Info);
-
             return overwriteRef.OpenRead();
         }
 
@@ -175,7 +173,6 @@ public sealed class WiiURepackService
     private static string GetDirectoryPart(string path)
     {
         int idx = path.LastIndexOf('/');
-
         return idx < 0 ? string.Empty : path[..idx];
     }
 

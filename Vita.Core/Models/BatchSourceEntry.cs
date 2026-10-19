@@ -1,8 +1,8 @@
 ﻿namespace Vita.Core.Models;
 
-public sealed class VitaBatchSourceEntry
+public sealed class BatchSourceEntry
 {
-    public required VitaSourceKind Kind { get; init; }
+    public required SourceKind Kind { get; init; }
 
     public required string Path { get; init; }
 
@@ -10,9 +10,9 @@ public sealed class VitaBatchSourceEntry
 
     public string? PatchPath { get; init; }
 
-    public VitaPkgProbeResult? Probe { get; init; }
+    public PkgProbeResult? Probe { get; init; }
 
-    public VitaContentCategory? ItemCategory { get; init; }
+    public ContentCategory? ItemCategory { get; init; }
 
     public string? ItemTitleId { get; init; }
 

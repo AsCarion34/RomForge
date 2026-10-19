@@ -6,10 +6,10 @@ namespace Vita.Core.Services;
 
 public static class VitaPatchOutputBuilder
 {
-    public static Task<VitaMergeResult> BuildMergedFromEntriesAsync(List<VitaBatchSourceEntry> entries, string defaultPatchPath, string outputZipPath, VitaOutputTarget target, Action<string, LogLevel> log, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default) =>
-        VitaPatchShared.RunWithItemsAsync(entries, log, items => BuildCoreAsync(items, defaultPatchPath, outputZipPath, target, log, progress, ct));
+    public static Task<MergeResult> BuildMergedFromEntriesAsync(List<BatchSourceEntry> entries, string defaultPatchPath, string outputZipPath, OutputTarget target, Action<string, LogLevel> log, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
+        => VitaPatchShared.RunWithItemsAsync(entries, log, items => BuildCoreAsync(items, defaultPatchPath, outputZipPath, target, log, progress, ct));
 
-    private static async Task<VitaMergeResult> BuildCoreAsync(List<VitaSourceItem> items, string defaultPatchPath, string outputZipPath, VitaOutputTarget target, Action<string, LogLevel> log, IProgress<ProgressInfo>? progress, CancellationToken ct)
+    private static async Task<MergeResult> BuildCoreAsync(List<SourceItem> items, string defaultPatchPath, string outputZipPath, OutputTarget target, Action<string, LogLevel> log, IProgress<ProgressInfo>? progress, CancellationToken ct)
     {
         var patchContexts = new Dictionary<string, PatchContext>(StringComparer.OrdinalIgnoreCase);
 
@@ -56,7 +56,7 @@ public static class VitaPatchOutputBuilder
                     var targetByPath = group.Targets.ToDictionary(t => t.RelativePath, StringComparer.OrdinalIgnoreCase);
                     var handledTargets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                    if (target == VitaOutputTarget.Emu)
+                    if (target == OutputTarget.Emu)
                     {
                         foreach (var (relativePath, appEntry) in group.Index)
                         {
@@ -111,7 +111,7 @@ public static class VitaPatchOutputBuilder
                         }
                     }
 
-                    if (target == VitaOutputTarget.Emu)
+                    if (target == OutputTarget.Emu)
                     {
                         foreach (var owner in group.Owners)
                             VitaPatchShared.WriteLicenseEntry(zip, writtenEntries, owner);
@@ -121,7 +121,7 @@ public static class VitaPatchOutputBuilder
                 reporter.ForceReport();
             }
 
-            return new VitaMergeResult { TotalFiles = writtenEntries.Count, PatchCandidates = patchCandidates, PatchedSuccessfully = patchedSuccess };
+            return new MergeResult { TotalFiles = writtenEntries.Count, PatchCandidates = patchCandidates, PatchedSuccessfully = patchedSuccess };
         }
         finally
         {
@@ -130,9 +130,9 @@ public static class VitaPatchOutputBuilder
         }
     }
 
-    private static long GetWriteTotal(MergeGroup group, VitaOutputTarget target)
+    private static long GetWriteTotal(MergeGroup group, OutputTarget target)
     {
-        if (target == VitaOutputTarget.Emu)
+        if (target == OutputTarget.Emu)
             return group.Index.Values.Sum(e => (long)e.FileEntry.Size);
 
         long ownedTotal = group.Owners.Sum(owner => VitaPatchShared.GetAllOwnedFiles(owner).Sum(f => f.Size));
@@ -152,7 +152,6 @@ public static class VitaPatchOutputBuilder
         catch (Exception ex)
         {
             log($"[{owner.Item.Category}] {relativePath}: 원본 읽기 실패 - {ex.Message}", LogLevel.Error);
-
             return false;
         }
 
