@@ -6,7 +6,7 @@ internal sealed class OrderedPipeline<TContext, TResult, TTag> : IDisposable
     private readonly Func<TContext> _contextFactory;
     private readonly Action<TResult, TTag> _complete;
     private readonly CancellationToken _ct;
-    private readonly List<TContext> _contexts = new();
+    private readonly List<TContext> _contexts = [];
     private readonly Stack<TContext> _idle = new();
     private readonly Queue<(Task<TResult> Task, TContext Context, TTag Tag)> _pending = new();
 
@@ -43,7 +43,6 @@ internal sealed class OrderedPipeline<TContext, TResult, TTag> : IDisposable
         _pending.Enqueue((Task.Run(() =>
         {
             ct.ThrowIfCancellationRequested();
-
             return work(context);
         }, CancellationToken.None), context, tag));
     }
@@ -70,9 +69,7 @@ internal sealed class OrderedPipeline<TContext, TResult, TTag> : IDisposable
             {
                 entry.Task.Wait();
             }
-            catch
-            {
-            }
+            catch { }
         }
 
         _pending.Clear();

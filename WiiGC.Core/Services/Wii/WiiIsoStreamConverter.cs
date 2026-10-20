@@ -38,7 +38,8 @@ public static class WiiIsoStreamConverter
         return source.Result;
     }
 
-    public static WiiPatchResult RepackFolderToRvz(string folder, string outputPath, IReadOnlyDictionary<string, string>? overlay, int compressionLevel = 5, int chunkSize = 131072, Action<double>? prepareProgress = null, Action<double>? convertProgress = null, Action<WiiPatchEntry>? entryLog = null, CancellationToken ct = default)
+    public static WiiPatchResult RepackFolderToRvz(string folder, string outputPath, IReadOnlyDictionary<string, string>? overlay, int compressionLevel = 5, int chunkSize = 131072, Action<double>? prepareProgress = null, Action<double>? convertProgress = null, Action<WiiPatchEntry>? entryLog = null, 
+        CancellationToken ct = default)
     {
         using var source = WiiRebuiltIsoSource.CreateFromFolder(folder, overlay, prepareProgress, entryLog, ct);
 
@@ -57,7 +58,8 @@ public static class WiiIsoStreamConverter
         return source.Result;
     }
 
-    public static WiiPatchResult RebuildToRvz(string inputPath, string outputPath, IReadOnlyDictionary<string, string> replacements, int compressionLevel = 5, int chunkSize = 131072, Action<double>? prepareProgress = null, Action<double>? convertProgress = null, Action<WiiPatchEntry>? entryLog = null, CancellationToken ct = default)
+    public static WiiPatchResult RebuildToRvz(string inputPath, string outputPath, IReadOnlyDictionary<string, string> replacements, int compressionLevel = 5, int chunkSize = 131072, Action<double>? prepareProgress = null, Action<double>? convertProgress = null, Action<WiiPatchEntry>? entryLog = null, 
+        CancellationToken ct = default)
     {
         using var input = RvzInputSource.Open(inputPath);
         using var source = WiiRebuiltIsoSource.Create(input, replacements, prepareProgress, entryLog, ct);

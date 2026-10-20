@@ -1,6 +1,6 @@
 ﻿using WiiGC.Core.Models;
 
-namespace WiiGC.Core.Services;
+namespace WiiGC.Core.Interfaces;
 
 internal interface IWiiPartitionSource
 {

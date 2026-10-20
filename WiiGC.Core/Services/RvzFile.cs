@@ -1,6 +1,7 @@
 using Microsoft.Win32.SafeHandles;
 using System.Buffers.Binary;
 using System.Security.Cryptography;
+using WiiGC.Core.Enums;
 using WiiGC.Core.Models;
 
 namespace WiiGC.Core.Services;
@@ -164,11 +165,7 @@ internal sealed class RvzFile
             partitions[i] = new PartitionEntry
             {
                 Key = entryBuffer.AsSpan(0, 16).ToArray(),
-                DataEntries =
-                [
-                    ReadPartitionData(entryBuffer.AsSpan(16, 16)),
-                    ReadPartitionData(entryBuffer.AsSpan(32, 16))
-                ]
+                DataEntries = [ ReadPartitionData(entryBuffer.AsSpan(16, 16)), ReadPartitionData(entryBuffer.AsSpan(32, 16)) ]
             };
         }
 

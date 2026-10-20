@@ -38,7 +38,6 @@ public sealed record WiiFolderInfo(int Version, long ContainerOffset, long DiscL
         string path = GetPath(unpackedFolder);
 
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-
         File.WriteAllText(path, JsonSerializer.Serialize(this, Options));
     }
 }

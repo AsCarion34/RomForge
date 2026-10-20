@@ -1,5 +1,3 @@
-﻿using WiiGC.Core.Models;
-
-namespace WiiGC.Core.Services.Wii;
+﻿namespace WiiGC.Core.Models;
 
 internal sealed record WiiRebuildTarget(int Index, WiiPartitionSpec Spec, WiiRepackPlan Plan);

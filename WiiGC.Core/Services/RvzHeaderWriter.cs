@@ -1,12 +1,11 @@
 ﻿using System.Buffers.Binary;
 using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
+using WiiGC.Core.Enums;
 using WiiGC.Core.Models;
 using ZstdSharp.Unsafe;
 
 namespace WiiGC.Core.Services;
-
-internal readonly record struct RvzRawEntry(long Offset, long Size, uint GroupIndex, uint GroupCount);
 
 internal static class RvzHeaderWriter
 {

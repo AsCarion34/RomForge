@@ -3,6 +3,7 @@ using static WiiGC.Core.Services.RvzHeaderWriter;
 using System.Buffers.Binary;
 using System.Security.Cryptography;
 using WiiGC.Core.Models;
+using WiiGC.Core.Interfaces;
 
 namespace WiiGC.Core.Services.Wii;
 

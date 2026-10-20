@@ -1,4 +1,4 @@
-﻿namespace WiiGC.Core.Models;
+﻿namespace WiiGC.Core.Enums;
 
 internal enum RvzCompressionType : uint
 {

@@ -1,4 +1,5 @@
-﻿using WiiGC.Core.Models;
+﻿using WiiGC.Core.Interfaces;
+using WiiGC.Core.Models;
 
 namespace WiiGC.Core.Services.Wii;
 
@@ -47,7 +48,6 @@ internal sealed class WiiRebuiltIsoSource : IRvzInputSource
         catch
         {
             source.Dispose();
-
             throw;
         }
     }
@@ -156,7 +156,6 @@ internal sealed class WiiRebuiltIsoSource : IRvzInputSource
             if (position < target.Spec.DataStart)
             {
                 nextStart = target.Spec.DataStart;
-
                 return null;
             }
 
@@ -181,7 +180,6 @@ internal sealed class WiiRebuiltIsoSource : IRvzInputSource
             if (current >= encodedSize)
             {
                 destination[written..].Clear();
-
                 return;
             }
 

@@ -1,5 +1,6 @@
 ﻿using System.Buffers.Binary;
 using System.Security.Cryptography;
+using WiiGC.Core.Interfaces;
 using WiiGC.Core.Models;
 
 namespace WiiGC.Core.Services.Wii;
@@ -111,9 +112,7 @@ public static class WiiIsoRebuilder
         for (int i = 0; i < targets.Count; i++)
         {
             var plan = targets[i].Plan;
-            var entries = i == 0
-                ? [.. plan.Entries.Where(e => e.Applied || !appliedAnywhere.Contains(e.Path))]
-                : plan.Entries.Where(e => e.Applied && !owned.Contains(e.Path)).ToList();
+            var entries = i == 0 ? [.. plan.Entries.Where(e => e.Applied || !appliedAnywhere.Contains(e.Path))] : plan.Entries.Where(e => e.Applied && !owned.Contains(e.Path)).ToList();
 
             foreach (var entry in entries.Where(e => e.Applied))
                 owned.Add(entry.Path);
@@ -210,7 +209,6 @@ public static class WiiIsoRebuilder
             byte[] size = new byte[4];
 
             BinaryPrimitives.WriteUInt32BigEndian(size, (uint)(dataSize.Value >> 2));
-
             patches.Add((spec.ContainerOffset + WiiPartitionHeader.DataSizeField, size));
         }
 

@@ -1,4 +1,5 @@
 using Microsoft.Win32.SafeHandles;
+using WiiGC.Core.Interfaces;
 using WiiGC.Core.Models;
 
 namespace WiiGC.Core.Services;
@@ -167,8 +168,7 @@ internal sealed class RvzDiscReader : IDisposable
         pipeline.Drain();
     }
 
-    private WorkResult Process(RvzWorkerContext context, WorkItem item) =>
-        item.Kind == WorkKind.Raw ? ProcessRaw(context, item) : ProcessPartition(context, item);
+    private WorkResult Process(RvzWorkerContext context, WorkItem item) => item.Kind == WorkKind.Raw ? ProcessRaw(context, item) : ProcessPartition(context, item);
 
     private WorkResult ProcessRaw(RvzWorkerContext context, WorkItem item)
     {

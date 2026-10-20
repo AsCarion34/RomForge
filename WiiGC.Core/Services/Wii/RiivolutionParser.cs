@@ -150,14 +150,12 @@ public static class RiivolutionParser
         if (string.IsNullOrEmpty(disc) || string.IsNullOrEmpty(external))
         {
             warnings.Add("disc 또는 external이 없는 <file> 항목을 건너뜁니다.");
-
             return;
         }
 
         if (element.Attribute("offset") != null || element.Attribute("length") != null)
         {
             warnings.Add($"일부 영역 덮어쓰기(offset/length)는 지원하지 않아 건너뜁니다: {disc}");
-
             return;
         }
 
@@ -166,7 +164,6 @@ public static class RiivolutionParser
         if (!File.Exists(file))
         {
             missing.Add(external);
-
             return;
         }
 
@@ -181,7 +178,6 @@ public static class RiivolutionParser
         if (string.IsNullOrEmpty(disc) || string.IsNullOrEmpty(external))
         {
             warnings.Add("disc 또는 external이 없는 <folder> 항목을 건너뜁니다.");
-
             return;
         }
 
@@ -190,7 +186,6 @@ public static class RiivolutionParser
         if (!Directory.Exists(directory))
         {
             missing.Add(external);
-
             return;
         }
 

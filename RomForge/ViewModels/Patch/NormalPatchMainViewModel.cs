@@ -153,12 +153,15 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
     private void TriggerPreviewUpdate()
     {
         _previewCts?.Cancel();
+
         _previewCts = new CancellationTokenSource();
+
         var token = _previewCts.Token;
 
         Task.Delay(100, token).ContinueWith(t =>
         {
-            if (t.IsCanceled) return;
+            if (t.IsCanceled) 
+                return;
 
             string baseFileName = ResolvePreviewBaseFileName();
 
@@ -184,7 +187,6 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
             string version = _cachedPatchVersion ?? "1.0";
             string date = _cachedPatchDate ?? DateTime.Now.ToString("yyMMdd");
             string? language = _cachedPatchLanguage;
-
             string result = PatchVersionInfoExtractor.ApplyFormat(baseFileName, version, date, language, NamingFormat, AppConfig.Instance.Common.Language);
 
             NamingPreview = result;
@@ -355,10 +357,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         TriggerPreviewUpdate();
     }
 
-    public void Log(string message, LogLevel level)
-    {
-        Application.Current?.Dispatcher?.Invoke(() => LogEntries.Add(new LogEntry { Message = message, Level = level }));
-    }
+    public void Log(string message, LogLevel level) => Application.Current?.Dispatcher?.Invoke(() => LogEntries.Add(new LogEntry { Message = message, Level = level }));
 
     private static string ResolveOutputDir(string sourcePath)
     {
@@ -393,7 +392,6 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         try
         {
             PatchChain.Validate(patchPaths);
-
             Directory.CreateDirectory(outputDir);
 
             string actualSourcePath = SourcePath;

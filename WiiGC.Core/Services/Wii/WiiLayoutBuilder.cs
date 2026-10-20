@@ -75,6 +75,7 @@ internal sealed class WiiLayoutBuilder
 
         node.Offset = offset;
         node.Size = size;
+
         _cursor = Align(offset + size);
 
         return offset;

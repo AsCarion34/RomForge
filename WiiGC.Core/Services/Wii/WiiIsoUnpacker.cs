@@ -113,7 +113,6 @@ public static class WiiIsoUnpacker
                     throw new InvalidDataException($"디스크에 안전하지 않은 경로가 있습니다: {file.Path}");
 
                 Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-
                 CopyRange(reader, file.Offset, file.Size, destination, buffer, reporter, ct);
             }
 
@@ -142,9 +141,7 @@ public static class WiiIsoUnpacker
                 if (Directory.Exists(folder))
                     Directory.Delete(folder, true);
             }
-            catch
-            {
-            }
+            catch { }
         }
 
         try
@@ -158,7 +155,6 @@ public static class WiiIsoUnpacker
     private static void CopyRange(WiiPartitionReader reader, long offset, long size, string destination, byte[] buffer, ProgressReporter reporter, CancellationToken ct)
     {
         using var output = new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None, CopyChunkSize);
-
         long remaining = size;
 
         while (remaining > 0)

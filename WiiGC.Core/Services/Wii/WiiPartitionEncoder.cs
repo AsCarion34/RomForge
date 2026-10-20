@@ -1,6 +1,6 @@
 ﻿using System.Security.Cryptography;
+using WiiGC.Core.Interfaces;
 using WiiGC.Core.Models;
-using WiiGC.Core.Services;
 
 namespace WiiGC.Core.Services.Wii;
 
@@ -21,7 +21,7 @@ internal sealed class WiiPartitionEncoder : IDisposable
 
         data.Read(start, _decrypted.AsSpan(0, dataBytes));
         _decrypted.AsSpan(dataBytes).Clear();
-        _encryptor.Encrypt(key, _decrypted, Array.Empty<HashException>(), _encrypted);
+        _encryptor.Encrypt(key, _decrypted, [], _encrypted);
         SHA1.HashData(_encryptor.H2Table, h3Entry);
 
         return dataBytes / WiiLayout.BlockDataSize * WiiLayout.BlockTotalSize;

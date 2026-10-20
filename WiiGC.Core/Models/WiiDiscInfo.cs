@@ -1,3 +1,5 @@
-﻿namespace WiiGC.Core.Models;
+﻿using WiiGC.Core.Enums;
+
+namespace WiiGC.Core.Models;
 
 public sealed record WiiDiscInfo(string GameId, string Title, int DiscNumber, int Version, DiscContainerFormat Container, long FileSize, long DiscSize);

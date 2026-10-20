@@ -1,4 +1,4 @@
-﻿namespace WiiGC.Core.Services;
+﻿namespace WiiGC.Core.Interfaces;
 
 internal interface IIsoSink
 {

@@ -33,7 +33,6 @@ internal sealed class WiiFstTree
     public int GetSerializedSize()
     {
         Count(Root, out int entries, out int nameBytes);
-
         return Align4((entries + 1) * 12 + nameBytes);
     }
 

@@ -3,10 +3,6 @@ using WiiGC.Core.Models;
 
 namespace WiiGC.Core.Services;
 
-internal readonly record struct RvzRegion(long Start, long End, int RawIndex, int PartitionIndex, int DataIndex);
-
-internal readonly record struct RvzChunk(byte[] Data, int Length, List<HashException>[] ExceptionLists);
-
 internal sealed class RvzGroupReader<TContext> where TContext : RvzWorkerContext
 {
     private readonly RvzFile _file;

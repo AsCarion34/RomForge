@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.IO.Compression;
 using Microsoft.Win32.SafeHandles;
+using WiiGC.Core.Interfaces;
 
 namespace WiiGC.Core.Services.GameCube;
 

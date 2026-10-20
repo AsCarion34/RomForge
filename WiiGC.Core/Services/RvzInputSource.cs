@@ -1,3 +1,4 @@
+using WiiGC.Core.Interfaces;
 using WiiGC.Core.Services.GameCube;
 using WiiGC.Core.Services.Wii;
 
@@ -25,7 +26,6 @@ internal static class RvzInputSource
         catch
         {
             handle.Dispose();
-
             throw;
         }
     }

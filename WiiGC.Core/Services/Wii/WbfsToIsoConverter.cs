@@ -1,6 +1,4 @@
-﻿using WiiGC.Core.Services;
-
-namespace WiiGC.Core.Services.Wii;
+﻿namespace WiiGC.Core.Services.Wii;
 
 public static class WbfsToIsoConverter
 {

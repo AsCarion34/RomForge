@@ -17,6 +17,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using WiiGC.Core.Enums;
 using WiiGC.Core.Models;
 using WiiGC.Core.Services.Wii;
 

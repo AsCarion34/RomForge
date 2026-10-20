@@ -1,4 +1,5 @@
 ﻿using System.Buffers.Binary;
+using WiiGC.Core.Interfaces;
 using WiiGC.Core.Models;
 
 namespace WiiGC.Core.Services.Wii;
@@ -105,7 +106,6 @@ public static class IsoToWbfsConverter
 
             RandomAccess.Write(output, discInfo, HdSectorSize);
             RandomAccess.Write(output, BuildFreeBlockTable(usedBlocks), FreeBlockTableOffset);
-
             progress?.Invoke(1.0);
 
             succeeded = true;

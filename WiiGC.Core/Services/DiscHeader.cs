@@ -1,5 +1,5 @@
 ﻿using System.Buffers.Binary;
-using WiiGC.Core.Models;
+using WiiGC.Core.Enums;
 
 namespace WiiGC.Core.Services;
 

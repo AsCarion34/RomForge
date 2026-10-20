@@ -20,12 +20,13 @@ internal static class WiiFstName
             if (status == OperationStatus.Done && (rune.Value < EscapeFirst || rune.Value > EscapeLast))
             {
                 builder.Append(rune.ToString());
-                bytes = bytes[consumed..];
 
+                bytes = bytes[consumed..];
                 continue;
             }
 
             builder.Append((char)(EscapeBase + bytes[0]));
+
             bytes = bytes[1..];
         }
 
@@ -42,7 +43,6 @@ internal static class WiiFstName
             if (rune.Value >= EscapeFirst && rune.Value <= EscapeLast)
             {
                 result.Add((byte)(rune.Value - EscapeBase));
-
                 continue;
             }
 

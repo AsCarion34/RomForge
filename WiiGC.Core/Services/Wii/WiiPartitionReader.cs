@@ -1,4 +1,5 @@
 ﻿using System.Security.Cryptography;
+using WiiGC.Core.Interfaces;
 using WiiGC.Core.Models;
 
 namespace WiiGC.Core.Services.Wii;
@@ -68,7 +69,6 @@ internal sealed class WiiPartitionReader : IWiiPartitionData, IDisposable
             throw new EndOfStreamException("파티션 범위를 벗어난 읽기입니다.");
 
         _input.Read(position, _encrypted);
-
         _aes.DecryptCbc(_encrypted.AsSpan(WiiLayout.BlockHeaderSize, WiiLayout.BlockDataSize), _encrypted.AsSpan(WiiLayout.IvOffset, IvSize), _plain, PaddingMode.None);
 
         _cached = cluster;

@@ -2,6 +2,8 @@
 using static WiiGC.Core.Services.RvzHeaderWriter;
 using WiiGC.Core.Models;
 using WiiGC.Core.Services.Wii;
+using WiiGC.Core.Enums;
+using WiiGC.Core.Interfaces;
 
 namespace WiiGC.Core.Services.GameCube;
 

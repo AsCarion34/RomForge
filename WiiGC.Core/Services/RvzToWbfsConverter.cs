@@ -1,4 +1,4 @@
-﻿using WiiGC.Core.Models;
+﻿using WiiGC.Core.Enums;
 using WiiGC.Core.Services.Wii;
 
 namespace WiiGC.Core.Services;

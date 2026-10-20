@@ -1,4 +1,4 @@
-﻿namespace WiiGC.Core.Services.Wii;
+﻿namespace WiiGC.Core.Interfaces;
 
 internal interface IWiiPartitionData
 {

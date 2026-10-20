@@ -67,9 +67,7 @@ internal sealed unsafe class LzmaFastDecoder
         fixed (ushort* probs = _probs)
         fixed (byte* input = _input)
         fixed (byte* output = destination)
-        {
             return DecodeCore(probs, input, input + source.Length, output, destination.Length, _lc, _lp, _pb);
-        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -117,6 +115,7 @@ internal sealed unsafe class LzmaFastDecoder
         range -= bound;
         code -= bound;
         *p = (ushort)(ttt - (ttt >> 5));
+
         return 1;
     }
 
@@ -127,6 +126,7 @@ internal sealed unsafe class LzmaFastDecoder
 
         uint range = 0xFFFFFFFF;
         uint code = ((uint)buf[1] << 24) | ((uint)buf[2] << 16) | ((uint)buf[3] << 8) | buf[4];
+
         buf += 5;
 
         uint lpMask = (1u << lp) - 1;
@@ -164,6 +164,7 @@ internal sealed unsafe class LzmaFastDecoder
                     do
                     {
                         matchByte <<= 1;
+
                         uint bit = matchByte & offs;
                         ushort* p = lit + offs + bit + symbol;
                         uint ttt = *p;
@@ -181,7 +182,6 @@ internal sealed unsafe class LzmaFastDecoder
                         range = (bound & mask) | ((range - bound) & inv);
                         code -= bound & inv;
                         *p = (ushort)(ttt + (((2048 - ttt) >> 5) & mask) - ((ttt >> 5) & inv));
-
                         symbol = (symbol << 1) | (inv & 1);
                         offs &= (~bit & mask) | (bit & inv);
                     }
@@ -362,7 +362,6 @@ internal sealed unsafe class LzmaFastDecoder
                 rep2 = rep1;
                 rep1 = rep0;
                 rep0 = distance + 1;
-
                 state = state < 7 ? 7u : 10u;
             }
 

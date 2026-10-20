@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32.SafeHandles;
+using WiiGC.Core.Interfaces;
 
 namespace WiiGC.Core.Services.Wii;
 
@@ -10,7 +11,7 @@ internal sealed class WiiRepackedPartition : IWiiPartitionData, IDisposable
 
     public WiiRepackedPartition(List<Extent> extents, long length)
     {
-        _extents = extents.OrderBy(e => e.Start).ToList();
+        _extents = [.. extents.OrderBy(e => e.Start)];
         Length = length;
 
         long end = 0;
@@ -79,6 +80,7 @@ internal sealed class WiiRepackedPartition : IWiiPartitionData, IDisposable
             if (_handle == null || _handlePath != extent.FilePath)
             {
                 _handle?.Dispose();
+
                 _handle = File.OpenHandle(extent.FilePath!, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.RandomAccess);
                 _handlePath = extent.FilePath;
             }

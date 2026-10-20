@@ -7,6 +7,7 @@ namespace WiiGC.Core.Services;
 public class DiscImageConverter
 {
     public event EventHandler<(string Message, LogLevel Level)>? LogMessage;
+
     public event EventHandler<ProgressEventArgs>? ProgressChanged;
 
     public Task ConvertFileAsync(string inputPath, string format, string outputExtension, int compressionLevel = 18, string? outputDir = null, CancellationToken ct = default)
@@ -43,10 +44,8 @@ public class DiscImageConverter
             int result = rvzToWbfs ? ConvertRvzToWbfs(inputPath, outputPath, ct) : wbfsToIso ? ConvertWbfsToIso(inputPath, outputPath, ct) : isoToWbfs ? ConvertIsoToWbfs(inputPath, outputPath, ct) 
             : format switch
             {
-                "gcm" or "gcz" or "wii" or "wbfs" or "wia" =>
-                ConvertIsoToRvz(inputPath, outputPath, compressionLevel, ct),
-                "rvz" =>
-                ConvertRvzToIso(inputPath, outputPath, ct),
+                "gcm" or "gcz" or "wii" or "wbfs" or "wia" => ConvertIsoToRvz(inputPath, outputPath, compressionLevel, ct),
+                "rvz" => ConvertRvzToIso(inputPath, outputPath, ct),
                 _ => -2
             };
 
@@ -59,7 +58,6 @@ public class DiscImageConverter
             if (result != 0)
             {
                 OutputGuard.TryDelete(outputPath);
-
                 LogMessage?.Invoke(this, ($"{workType} 실패 (에러 코드: {result})", LogLevel.Error));
                 throw new InvalidOperationException($"{workType} 실패 (에러 코드: {result})");
             }

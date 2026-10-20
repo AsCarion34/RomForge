@@ -1,4 +1,5 @@
 ﻿using System.Buffers.Binary;
+using WiiGC.Core.Interfaces;
 
 namespace WiiGC.Core.Services.Wii;
 

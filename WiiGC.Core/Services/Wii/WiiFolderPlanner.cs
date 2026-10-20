@@ -107,7 +107,6 @@ internal static class WiiFolderPlanner
             long size = new FileInfo(path).Length;
 
             WiiLayoutBuilder.EnsureFileSize(size, path);
-
             layout.PlaceFile(node, size, path);
         }
 

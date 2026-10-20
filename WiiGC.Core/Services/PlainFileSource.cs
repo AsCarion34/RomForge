@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32.SafeHandles;
+using WiiGC.Core.Interfaces;
 
 namespace WiiGC.Core.Services;
 

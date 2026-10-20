@@ -1,5 +1,7 @@
 ﻿using Microsoft.Win32.SafeHandles;
 using System.Collections.Concurrent;
+using WiiGC.Core.Enums;
+using WiiGC.Core.Interfaces;
 using WiiGC.Core.Models;
 
 namespace WiiGC.Core.Services.Wii;
