@@ -13,6 +13,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using PatchSource = RomForge.Core.Services.Switch.PatchSource;
 using Res = NSW.Core.Properties.Resources;
 
 namespace RomForge.Controls.Switch;

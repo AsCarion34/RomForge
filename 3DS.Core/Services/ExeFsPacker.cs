@@ -1,6 +1,7 @@
 ﻿using _3DS.Core.Models;
 using Common;
 using Patch.Core;
+using Patch.Core.Enums;
 using Patch.Core.Services;
 using System.Security.Cryptography;
 using System.Text;

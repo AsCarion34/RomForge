@@ -1,10 +1,8 @@
-﻿using Patch.Core.Interfaces;
+﻿using Patch.Core.Enums;
+using Patch.Core.Interfaces;
+using Patch.Core.Models;
 
 namespace Patch.Core.Services;
-
-public enum PatchFileKind { Overwrite, BinaryPatch }
-
-public record PatchFileEntry(PatchFileRef File, string RelativeDir, string BaseName, PatchFileKind Kind);
 
 public class PatchFileIndex
 {
