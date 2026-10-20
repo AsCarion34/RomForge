@@ -5,10 +5,20 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Patch.Core.Services;
 
+public sealed record PlannedPatch(PatchFileRef File, PatchFormat Format, bool Strict);
+
 public sealed class PatchPlan
 {
-    private readonly Dictionary<string, PatchFileRef> _overwrites = new(StringComparer.Ordinal);
-    private readonly Dictionary<string, List<PlannedPatch>> _patches = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, PatchFileRef> _overwrites;
+    private readonly Dictionary<string, PatchFileRef> _unmatchedOverwrites;
+    private readonly Dictionary<string, List<PlannedPatch>> _patches;
+
+    private PatchPlan(StringComparer comparer)
+    {
+        _overwrites = new Dictionary<string, PatchFileRef>(comparer);
+        _unmatchedOverwrites = new Dictionary<string, PatchFileRef>(comparer);
+        _patches = new Dictionary<string, List<PlannedPatch>>(comparer);
+    }
 
     public int OverwriteCount => _overwrites.Count;
 
@@ -18,18 +28,26 @@ public sealed class PatchPlan
 
     public bool HasAnyMatch => OverwriteCount > 0 || _patches.Count > 0;
 
+    public IReadOnlyDictionary<string, PatchFileRef> Overwrites => _overwrites;
+
+    public IReadOnlyDictionary<string, PatchFileRef> UnmatchedOverwrites => _unmatchedOverwrites;
+
+    public IEnumerable<string> PatchedPaths => _patches.Keys;
+
     public bool TryGetOverwrite(string path, [NotNullWhen(true)] out PatchFileRef? file) => _overwrites.TryGetValue(path, out file);
 
     public bool IsPatched(string path) => _patches.ContainsKey(path);
 
     public IReadOnlyList<PlannedPatch> GetPatches(string path) => _patches.TryGetValue(path, out var list) ? list : [];
 
-    public static PatchPlan Build(PatchFileIndex index, IEnumerable<string> targetPaths)
+    public static PatchPlan Build(PatchFileIndex index, IEnumerable<string> targetPaths, StringComparer? comparer = null)
     {
-        var plan = new PatchPlan();
+        comparer ??= StringComparer.Ordinal;
+
+        var plan = new PatchPlan(comparer);
         var targets = targetPaths.ToList();
-        var targetSet = new HashSet<string>(targets, StringComparer.Ordinal);
-        var binaryEntries = new List<(PatchFileEntry Entry, string Key, string RelDir, PatchFormat Format)>();
+        var targetSet = new HashSet<string>(targets, comparer);
+        var binaryEntries = new List<(PatchFileEntry Entry, string Key, PatchFormat Format)>();
 
         foreach (var entry in index.Entries)
         {
@@ -40,16 +58,18 @@ public sealed class PatchPlan
             {
                 if (targetSet.Contains(key))
                     plan._overwrites[key] = entry.File;
+                else
+                    plan._unmatchedOverwrites[key] = entry.File;
 
                 continue;
             }
 
-            binaryEntries.Add((entry, key, relDir, DetectFormat(entry.File)));
+            binaryEntries.Add((entry, key, DetectFormat(entry.File)));
         }
 
-        var exactKeys = new HashSet<string>(StringComparer.Ordinal);
+        var exactKeys = new HashSet<string>(comparer);
 
-        foreach (var (entry, key, _, format) in binaryEntries)
+        foreach (var (entry, key, format) in binaryEntries)
         {
             if (!targetSet.Contains(key) || plan._overwrites.ContainsKey(key))
                 continue;
@@ -58,16 +78,12 @@ public sealed class PatchPlan
             exactKeys.Add(key);
         }
 
-        foreach (var (entry, key, relDir, format) in binaryEntries)
+        foreach (var (entry, _, format) in binaryEntries)
         {
-            if (targetSet.Contains(key) || entry.BaseName.Length == 0 || !PatchMatchPolicy.AllowsLooseNameMatch(format))
+            if (entry.BaseName.Length == 0 || !PatchMatchPolicy.AllowsLooseNameMatch(format))
                 continue;
 
-            bool IsFree(string target) => !plan._overwrites.ContainsKey(target) && !exactKeys.Contains(target) && FileNameOf(target).Contains(entry.BaseName, StringComparison.OrdinalIgnoreCase);
-            var candidates = targets.Where(t => IsFree(t) && DirOf(t) == relDir).ToList();
-
-            if (candidates.Count == 0)
-                candidates = [.. targets.Where(IsFree)];
+            var candidates = targets.Where(t => !plan._overwrites.ContainsKey(t) && !exactKeys.Contains(t) && NameMatches(FileNameOf(t), entry.BaseName));
 
             foreach (string candidate in candidates)
             {
@@ -109,15 +125,11 @@ public sealed class PatchPlan
         byte[] header = new byte[8];
         using var stream = file.OpenRead();
         int read = stream.ReadAtLeast(header, header.Length, throwOnEndOfStream: false);
-
         return UniversalPatcher.DetectFormat(header.AsSpan(0, read));
     }
 
-    private static string DirOf(string path)
-    {
-        int idx = path.LastIndexOf('/');
-        return idx < 0 ? string.Empty : path[..idx];
-    }
+    private static bool NameMatches(string targetFileName, string patchBaseName)
+        => targetFileName.Contains(patchBaseName, StringComparison.OrdinalIgnoreCase) || patchBaseName.Contains(targetFileName, StringComparison.OrdinalIgnoreCase);
 
     private static string FileNameOf(string path)
     {

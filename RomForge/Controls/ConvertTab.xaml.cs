@@ -33,6 +33,11 @@ public partial class ConvertTab : UserControl
 
     private void OnScrollToItemRequested(object item) => Dispatcher.InvokeAsync(() => lvFiles.ScrollIntoView(item), DispatcherPriority.Background);
 
+    private void LvFiles_DragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
 
     private async void LvFiles_Drop(object sender, DragEventArgs e)
     {

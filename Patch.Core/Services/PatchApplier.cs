@@ -21,29 +21,33 @@ public static class PatchApplier
     public static byte[] ApplyPatches(string path, PatchPlan plan, Func<Stream> openOriginal, long originalLength, Action<string, LogLevel>? log, CancellationToken ct)
     {
         byte[] original = ReadAll(openOriginal, originalLength);
+        return ApplyPatchesAsync(path, plan, original, log, ct).GetAwaiter().GetResult().Data;
+    }
 
+    public static async Task<(byte[] Data, bool Applied)> ApplyPatchesAsync(string path, PatchPlan plan, byte[] original, Action<string, LogLevel>? log, CancellationToken ct)
+    {
         foreach (var patch in plan.GetPatches(path))
         {
             ct.ThrowIfCancellationRequested();
 
-            byte[] patchData = patch.File.ReadSmallFileBytes();
+            byte[] patchData = await patch.File.ReadSmallFileBytesAsync(ct);
 
             if (patch.Strict)
             {
-                byte[] patched = UniversalPatcher.ApplyPatchAsync(original, patchData, null, ct).GetAwaiter().GetResult();
+                byte[] patched = await UniversalPatcher.ApplyPatchAsync(original, patchData, null, ct);
 
-                log?.Invoke($"패치 완료: {patch.File.DisplayName} → {path}", LogLevel.Info);
+                log?.Invoke($"패치 완료: {patch.File.DisplayName} → {path} ({original.Length:N0} → {patched.Length:N0} bytes)", LogLevel.Info);
 
-                return patched;
+                return (patched, true);
             }
 
             try
             {
-                byte[] patched = UniversalPatcher.ApplyPatchAsync(original, patchData, null, ct).GetAwaiter().GetResult();
+                byte[] patched = await UniversalPatcher.ApplyPatchAsync(original, patchData, null, ct);
 
-                log?.Invoke($"패치 완료: {patch.File.DisplayName} → {path}", LogLevel.Info);
+                log?.Invoke($"패치 완료: {patch.File.DisplayName} → {path} ({original.Length:N0} → {patched.Length:N0} bytes)", LogLevel.Info);
 
-                return patched;
+                return (patched, true);
             }
             catch (OperationCanceledException)
             {
@@ -55,7 +59,7 @@ public static class PatchApplier
             }
         }
 
-        return original;
+        return (original, false);
     }
 
     private static byte[] ReadAll(Func<Stream> openOriginal, long expectedSize)

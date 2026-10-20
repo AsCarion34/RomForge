@@ -35,7 +35,6 @@ public sealed class PatchSourceContext : IDisposable
             catch (Exception ex)
             {
                 log($"⚠️ 한글패치 압축파일을 열 수 없습니다: {ex.Message}", LogLevel.Error);
-
                 return new PatchSourceContext(null, null, false);
             }
         }
@@ -43,7 +42,6 @@ public sealed class PatchSourceContext : IDisposable
         if (!Directory.Exists(rawPath))
         {
             log($"⚠️ 한글패치 경로를 찾을 수 없습니다: {rawPath}", LogLevel.Error);
-
             return new PatchSourceContext(null, null, false);
         }
 
@@ -58,12 +56,10 @@ public sealed class PatchSourceContext : IDisposable
         if (_archive != null)
         {
             string? prefix = ArchivePatchFolderResolver.FindSubDir(_archive.EntryPaths, folderName);
-
             return prefix == null ? null : PatchFileIndex.Build(_archive, prefix);
         }
 
         string? dir = PatchFolderResolver.FindSubDir(_diskPath!, folderName);
-
         return dir == null ? null : PatchFileIndex.Build(dir);
     }
 
@@ -126,7 +122,6 @@ public sealed class PatchSourceContext : IDisposable
     {
         string trimmed = subDirPrefix.TrimEnd('/');
         int lastSlash = trimmed.LastIndexOf('/');
-
         return lastSlash < 0 ? string.Empty : trimmed[..(lastSlash + 1)];
     }
 
@@ -184,21 +179,10 @@ public sealed class PatchSourceContext : IDisposable
         return best;
     }
 
-    public PatchFolderFileSource? CreateRomfsSource(string folderName)
+    public PatchFolderFileSource? CreateRomfsSource(string folderName, IEnumerable<string> targetPaths)
     {
-        if (!HasSource)
-            return null;
-
-        if (_archive != null)
-        {
-            string? prefix = ArchivePatchFolderResolver.FindSubDir(_archive.EntryPaths, folderName);
-
-            return prefix == null ? null : PatchFolderFileSource.ForArchive(_archive, prefix);
-        }
-
-        string? dir = PatchFolderResolver.FindSubDir(_diskPath!, folderName);
-
-        return dir == null ? null : PatchFolderFileSource.ForFolder(dir);
+        var index = FindSubIndex(folderName);
+        return index == null ? null : new PatchFolderFileSource(index, targetPaths, _archive is { SupportsCheapRepeatedOpen: false });
     }
 
     public void Dispose() => _archive?.Dispose();

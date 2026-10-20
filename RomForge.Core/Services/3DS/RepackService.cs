@@ -196,7 +196,7 @@ public class RepackService(Action<string, LogLevel> log, Func<string?> getPatchP
 
                 if (idx == 0)
                 {
-                    romfsPatchSource = patchCtx.CreateRomfsSource("romfs");
+                    romfsPatchSource = patchCtx.CreateRomfsSource("romfs", romfsResult.Files.Select(f => f.FullPath));
                     patchSource = romfsPatchSource;
                 }
 
@@ -315,7 +315,7 @@ public class RepackService(Action<string, LogLevel> log, Func<string?> getPatchP
 
             if (idx == 0)
             {
-                romfsPatchSource = patchCtx.CreateRomfsSource("romfs");
+                romfsPatchSource = patchCtx.CreateRomfsSource("romfs", (unpack.RomFs?.Files ?? []).Select(f => f.FullPath));
                 patchSource = romfsPatchSource;
             }
 
