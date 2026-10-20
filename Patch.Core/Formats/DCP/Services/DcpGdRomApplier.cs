@@ -10,6 +10,15 @@ public static class DcpGdRomApplier
 
         var gdi = GdiFile.Parse(gdiPath);
         Dictionary<string, byte[]> replacedFiles = [];
+
+        await PreparePatchedFilesAsync(gdi, dcpPath, replacedFiles, onProgress, onLog, ct);
+        await Task.Run(() => GdRomRebuilder.RebuildFull(gdi, replacedFiles, outputDir, (p, msg) => onProgress?.Invoke(0.20 + 0.80 * p, msg), onLog, ct), ct);
+
+        onProgress?.Invoke(1.0, "모든 패치 적용 작업 완료!");
+    }
+
+    private static async Task PreparePatchedFilesAsync(GdiFile gdi, string dcpPath, Dictionary<string, byte[]> replacedFiles, Action<double, string>? onProgress, Action<string>? onLog, CancellationToken ct)
+    {
         using var sourceReader = new GdRomCompositeSectorReader(gdi);
         var sourceFunc = sourceReader.AsFunc();
         var pvdLba = sourceReader.PvdAbsoluteLba;
@@ -67,9 +76,5 @@ public static class DcpGdRomApplier
 
             xdeltaDone++;
         }
-
-        await Task.Run(() => GdRomRebuilder.RebuildFull(gdi, replacedFiles, outputDir, (p, msg) => onProgress?.Invoke(0.20 + 0.80 * p, msg), onLog, ct), ct);
-
-        onProgress?.Invoke(1.0, "모든 패치 적용 작업 완료!");
     }
 }
