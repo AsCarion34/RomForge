@@ -31,14 +31,7 @@ public partial class HashTab : UserControl
         }
     }
 
-    private void OnScrollToItemRequested(HashFileItem item)
-    {
-        Dispatcher.InvokeAsync(() =>
-        {
-            if (item != null)
-                lvFiles.ScrollIntoView(item);
-        }, DispatcherPriority.Background);
-    }
+    private void OnScrollToItemRequested(HashFileItem item) => Dispatcher.InvokeAsync(() => lvFiles.ScrollIntoView(item), DispatcherPriority.Background);
 
     private void RadioButton_Checked(object sender, RoutedEventArgs e)
     {
@@ -133,8 +126,6 @@ public partial class HashTab : UserControl
         if (selected.Count == 0)
             return;
 
-        string? dir = Path.GetDirectoryName(selected[0].FilePath);
-
-        dir?.OpenFolder();
+        Path.GetDirectoryName(selected[0].FilePath)?.OpenFolder();
     }
 }

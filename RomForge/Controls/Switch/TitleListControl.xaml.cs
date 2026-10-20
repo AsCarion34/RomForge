@@ -198,9 +198,7 @@ public partial class TitleListControl : UserControl
         if (lvFiles.SelectedItem is not GameFile selected)
             return;
 
-        string? dir = Path.GetDirectoryName(selected.FilePath);
-
-        dir?.OpenFolder();
+        Path.GetDirectoryName(selected.FilePath)?.OpenFolder();
     }
 
     private void MenuItem_RemovePatch_Click(object sender, RoutedEventArgs e)

@@ -31,14 +31,8 @@ public partial class CueTab : UserControl
         }
     }
 
-    private void OnScrollToItemRequested(object item)
-    {
-        Dispatcher.InvokeAsync(() =>
-        {
-            if (item != null)
-                lvFiles.ScrollIntoView(item);
-        }, DispatcherPriority.Background);
-    }
+    private void OnScrollToItemRequested(CueFileItem item) => Dispatcher.InvokeAsync(() => lvFiles.ScrollIntoView(item), DispatcherPriority.Background);
+
 
     private void LvFiles_DragOver(object sender, DragEventArgs e)
     {
@@ -108,8 +102,6 @@ public partial class CueTab : UserControl
         if (selected.Count == 0)
             return;
 
-        string? dir = Path.GetDirectoryName(selected[0].FilePath);
-
-        dir?.OpenFolder();
+        Path.GetDirectoryName(selected[0].FilePath)?.OpenFolder();
     }
 }

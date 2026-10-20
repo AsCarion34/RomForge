@@ -189,9 +189,7 @@ public partial class RepackTab : UserControl
         if (selected == null)
             return;
 
-        string? dir = Path.GetDirectoryName(selected.FilePath);
-
-        dir?.OpenFolder();
+        Path.GetDirectoryName(selected.FilePath)?.OpenFolder();
     }
 
     private void TxtOutputPath_PreviewDragOver(object sender, DragEventArgs e)

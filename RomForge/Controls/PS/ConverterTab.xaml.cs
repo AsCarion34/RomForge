@@ -115,8 +115,6 @@ public partial class ConverterTab : UserControl
         if (selected.Count == 0) 
             return;
 
-        string? dir = Path.GetDirectoryName(selected[0].FilePath);
-
-        dir?.OpenFolder();
+        Path.GetDirectoryName(selected[0].FilePath)?.OpenFolder();
     }
 }

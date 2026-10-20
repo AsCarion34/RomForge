@@ -213,7 +213,6 @@ namespace RomForge.ViewModels.Switch
 
                     Log($"완료! 총 소요: {_totalSw.Elapsed:mm\\:ss}", LogLevel.Ok);
                     await SoundPlayer.PlayCompleteAsync();
-
                     req.OutputDir?.OpenFolder();
                 }
                 catch (OperationCanceledException)

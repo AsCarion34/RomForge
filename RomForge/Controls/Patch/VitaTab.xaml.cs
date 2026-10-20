@@ -140,9 +140,8 @@ public partial class VitaTab : UserControl
     private void MenuItem_OpenFolder_Click(object sender, RoutedEventArgs e)
     {
         var selected = ViewModel?.PatchVM.VitaVM.SelectedRow;
-        string? dir = Path.GetDirectoryName(selected?.Path);
 
-        dir?.OpenFolder();
+        Path.GetDirectoryName(selected?.Path)?.OpenFolder();
     }
 
     private void MenuItem_RemovePatch_Click(object sender, RoutedEventArgs e)

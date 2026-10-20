@@ -1,6 +1,7 @@
 ﻿using Common.WPF;
 using Microsoft.Win32;
 using NSW.WPF.Services;
+using RomForge.Core.Models._3DS;
 using RomForge.Core.Models.Compression;
 using RomForge.ViewModels;
 using System.IO;
@@ -32,14 +33,7 @@ public partial class CompressTab : UserControl
         }
     }
 
-    private void OnScrollToItemRequested(object item)
-    {
-        Dispatcher.InvokeAsync(() =>
-        {
-            if (item != null)
-                lvFiles.ScrollIntoView(item);
-        }, DispatcherPriority.Background);
-    }
+    private void OnScrollToItemRequested(CompressFileItem item) => Dispatcher.InvokeAsync(() => lvFiles.ScrollIntoView(item), DispatcherPriority.Background);
 
     private void LvFiles_DragOver(object sender, DragEventArgs e)
     {
@@ -111,9 +105,7 @@ public partial class CompressTab : UserControl
         if (selected.Count == 0)
             return;
 
-        string? dir = Path.GetDirectoryName(selected[0].FilePath);
-
-        dir?.OpenFolder();
+        Path.GetDirectoryName(selected[0].FilePath)?.OpenFolder();
     }
 
     private void TxtOutputPath_PreviewDragOver(object sender, DragEventArgs e)

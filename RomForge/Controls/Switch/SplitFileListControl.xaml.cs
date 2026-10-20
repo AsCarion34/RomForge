@@ -99,8 +99,6 @@ public partial class SplitFileListControl : UserControl
         if (lvFiles.SelectedItem is not SplitRowViewModel selected)
             return;
 
-        string? dir = Path.GetDirectoryName(selected.FilePath);
-
-        dir?.OpenFolder();
+        Path.GetDirectoryName(selected.FilePath)?.OpenFolder();
     }
 }

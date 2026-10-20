@@ -31,15 +31,7 @@ public partial class TistoryTab : UserControl
         }
     }
 
-    private void OnScrollToItemRequested(object item)
-    {
-        Dispatcher.InvokeAsync(() =>
-        {
-            if (item != null)
-                lvFiles.ScrollIntoView(item);
-
-        }, DispatcherPriority.Background);
-    }
+    private void OnScrollToItemRequested(TistoryDownloadItem item) => Dispatcher.InvokeAsync(() => lvFiles.ScrollIntoView(item), DispatcherPriority.Background);
 
     private void TxtUrl_PreviewKeyDown(object sender, KeyEventArgs e)
     {

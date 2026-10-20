@@ -224,8 +224,6 @@ public partial class FileManagerControl : UserControl
         if (lvFiles.SelectedItem is not GameFile selected)
             return;
 
-        string? dir = Path.GetDirectoryName(selected.FilePath);
-
-        dir?.OpenFolder();
+        Path.GetDirectoryName(selected.FilePath)?.OpenFolder();
     }
 }
