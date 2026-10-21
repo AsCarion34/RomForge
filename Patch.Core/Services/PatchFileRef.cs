@@ -1,4 +1,5 @@
 ﻿using Patch.Core.Interfaces;
+using Patch.Core.Models;
 
 namespace Patch.Core.Services;
 
@@ -7,21 +8,25 @@ public sealed class PatchFileRef
     public string? DiskPath { get; }
     private readonly Func<Stream>? _archiveOpener;
     private readonly long _archiveLength;
+    private readonly string? _displayName;
 
-    private PatchFileRef(string? diskPath, Func<Stream>? archiveOpener, long archiveLength)
+    private PatchFileRef(string? diskPath, Func<Stream>? archiveOpener, long archiveLength, string? displayName = null)
     {
         DiskPath = diskPath;
         _archiveOpener = archiveOpener;
         _archiveLength = archiveLength;
+        _displayName = displayName;
     }
 
     public static PatchFileRef FromDisk(string path) => new(path, null, 0);
 
     public static PatchFileRef FromArchiveEntry(IArchivePatchEntry entry) => new(null, entry.Open, entry.Length);
 
+    public static PatchFileRef FromStream(Func<Stream> opener, long length, string? displayName = null) => new(null, opener, length, displayName);
+
     public bool IsDisk => DiskPath != null;
 
-    public string DisplayName => DiskPath != null ? Path.GetFileName(DiskPath) : "(archive)";
+    public string DisplayName => _displayName ?? (DiskPath != null ? Path.GetFileName(DiskPath) : "(archive)");
 
     public long Length => IsDisk ? new FileInfo(DiskPath!).Length : _archiveLength;
 
@@ -59,22 +64,5 @@ public sealed class PatchFileRef
             src.CopyTo(dst);
 
         return MaterializedTempFile.Owned(tempPath);
-    }
-}
-
-public readonly struct MaterializedTempFile(string path, bool owned) : IDisposable
-{
-    public string Path { get; } = path;
-
-    public static MaterializedTempFile Wrap(string path) => new(path, false);
-
-    public static MaterializedTempFile Owned(string path) => new(path, true);
-
-    public void Dispose()
-    {
-        if (owned && File.Exists(Path))
-        {
-            try { File.Delete(Path); } catch { }
-        }
     }
 }

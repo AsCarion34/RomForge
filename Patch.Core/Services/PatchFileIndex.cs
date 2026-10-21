@@ -63,6 +63,30 @@ public class PatchFileIndex
         return index;
     }
 
+    public static PatchFileIndex Build(IEnumerable<string> relativePaths, Func<string, PatchFileRef> createRef)
+    {
+        var index = new PatchFileIndex();
+
+        foreach (string path in relativePaths)
+        {
+            string rel = path.Replace('\\', '/').Trim('/');
+
+            if (rel.Length == 0)
+                continue;
+
+            string ext = Path.GetExtension(rel);
+            bool isPatch = PatchExtensions.Contains(ext, StringComparer.OrdinalIgnoreCase);
+            int lastSlash = rel.LastIndexOf('/');
+            string relDir = lastSlash < 0 ? string.Empty : rel[..lastSlash];
+            string fileName = lastSlash < 0 ? rel : rel[(lastSlash + 1)..];
+            string baseName = isPatch ? Path.GetFileNameWithoutExtension(fileName) : fileName;
+
+            index.Entries.Add(new PatchFileEntry(createRef(path), relDir, baseName, isPatch ? PatchFileKind.BinaryPatch : PatchFileKind.Overwrite));
+        }
+
+        return index;
+    }
+
     public static PatchFileIndex BuildTopLevelOnly(string dir)
     {
         var index = new PatchFileIndex();

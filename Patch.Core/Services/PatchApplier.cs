@@ -24,9 +24,12 @@ public static class PatchApplier
         return ApplyPatchesAsync(path, plan, original, log, ct).GetAwaiter().GetResult().Data;
     }
 
-    public static async Task<(byte[] Data, bool Applied)> ApplyPatchesAsync(string path, PatchPlan plan, byte[] original, Action<string, LogLevel>? log, CancellationToken ct)
+    public static Task<(byte[] Data, bool Applied)> ApplyPatchesAsync(string path, PatchPlan plan, byte[] original, Action<string, LogLevel>? log, CancellationToken ct)
+        => ApplyPatchesAsync(path, plan.GetPatches(path), original, log, ct);
+
+    public static async Task<(byte[] Data, bool Applied)> ApplyPatchesAsync(string path, IReadOnlyList<PlannedPatch> patches, byte[] original, Action<string, LogLevel>? log, CancellationToken ct)
     {
-        foreach (var patch in plan.GetPatches(path))
+        foreach (var patch in patches)
         {
             ct.ThrowIfCancellationRequested();
 

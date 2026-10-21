@@ -1,4 +1,6 @@
-﻿namespace Vita.Core.Models;
+﻿using Patch.Core.Services;
+
+namespace Vita.Core.Models;
 
 public sealed class PatchTarget
 {
@@ -8,7 +10,11 @@ public sealed class PatchTarget
 
     public PatchAppEntry? Source { get; init; }
 
-    public required string PatchFileRel { get; init; }
+    public PatchFileRef? OverwriteFile { get; init; }
+
+    public IReadOnlyList<PlannedPatch> Patches { get; init; } = [];
 
     public required long EstimatedSize { get; init; }
+
+    public bool IsStrict => Kind == PatchTargetKind.Overwrite || Patches.Any(p => p.Strict);
 }

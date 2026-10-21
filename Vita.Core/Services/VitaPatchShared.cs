@@ -1,5 +1,5 @@
 using Common;
-using Patch.Core;
+using Patch.Core.Services;
 using System.IO.Compression;
 using Vita.Core.Models;
 
@@ -8,8 +8,6 @@ namespace Vita.Core.Services;
 internal static class VitaPatchShared
 {
     private const int ProgressChunkSize = 4 * 1024 * 1024;
-
-    public static readonly HashSet<string> PatchExtensions = new(StringComparer.OrdinalIgnoreCase) { ".xdelta", ".xdelta3", ".ips", ".ups", ".bps", ".ppf", ".aps" };
 
     public static async Task<T> RunWithItemsAsync<T>(List<BatchSourceEntry> entries, Action<string, LogLevel> log, Func<List<SourceItem>, Task<T>> run)
     {
@@ -70,12 +68,9 @@ internal static class VitaPatchShared
                         log($"[patch] {entry.Probe.TitleId}: app의 라이선스를 그대로 공유해서 적용함", LogLevel.Info);
                     }
                     else
-                    {
                         accessor = new PkgSourceAccessor(entry.Path, entry.License);
-                    }
 
                     ownedAccessors.Add(accessor);
-
                     AddItem(entry.Probe.Category, entry.Probe.TitleId, entry.Probe.ContentIdSuffix, string.Empty, accessor, entry.PatchPath);
                 }
                 else
@@ -103,7 +98,6 @@ internal static class VitaPatchShared
         {
             foreach (var owned in ownedAccessors)
                 owned.Dispose();
-
             throw;
         }
 
@@ -140,7 +134,7 @@ internal static class VitaPatchShared
 
             string patchPackagePath = (patchItem?.PatchPathOverride ?? appItem?.PatchPathOverride) ?? defaultPatchPath;
 
-            groups.Add(CreateGroup(ContentCategory.App, titleId, null, patchPackagePath, BuildPatchAppIndex(appOwner, patchOwner), owners, patchContexts, log));
+            groups.Add(CreateGroup(ContentCategory.App, titleId, null, patchPackagePath, BuildPatchAppIndex(appOwner, patchOwner), owners, patchContexts));
         }
 
         foreach (var addcontItem in addcontItems)
@@ -154,21 +148,20 @@ internal static class VitaPatchShared
 
             string patchPackagePath = addcontItem.PatchPathOverride ?? defaultPatchPath;
 
-            groups.Add(CreateGroup(ContentCategory.Addcont, addcontItem.TitleId, addcontItem.ContentIdSuffix, patchPackagePath, BuildPatchAppIndex(owner, null), [owner], patchContexts, log));
+            groups.Add(CreateGroup(ContentCategory.Addcont, addcontItem.TitleId, addcontItem.ContentIdSuffix, patchPackagePath, BuildPatchAppIndex(owner, null), [owner], patchContexts));
         }
 
         return groups;
     }
 
-    private static MergeGroup CreateGroup(ContentCategory category, string titleId, string? contentIdSuffix, string patchPackagePath, Dictionary<string, PatchAppEntry> index, List<OwnerContext> owners, Dictionary<string, PatchContext> patchContexts, Action<string, LogLevel> log)
+    private static MergeGroup CreateGroup(ContentCategory category, string titleId, string? contentIdSuffix, string patchPackagePath, Dictionary<string, PatchAppEntry> index, List<OwnerContext> owners, Dictionary<string, PatchContext> patchContexts)
     {
-        var patchCtx = GetPatchContext(patchContexts, patchPackagePath, log);
+        var patchCtx = GetPatchContext(patchContexts, patchPackagePath);
         var targets = BuildTargets(index, patchCtx);
         return new MergeGroup { Category = category, TitleId = titleId, ContentIdSuffix = contentIdSuffix, PatchCtx = patchCtx, Index = index, Targets = targets, Owners = owners };
     }
 
-    public static string BuildEntryPath(string prefix, MergeGroup group, string relativePath) =>
-        group.Category == ContentCategory.Addcont ? ToSafeEntryPath($"{prefix}/{group.TitleId}/{group.ContentIdSuffix}/{relativePath}") : ToSafeEntryPath($"{prefix}/{group.TitleId}/{relativePath}");
+    public static string BuildEntryPath(string prefix, MergeGroup group, string relativePath) => group.Category == ContentCategory.Addcont ? ToSafeEntryPath($"{prefix}/{group.TitleId}/{group.ContentIdSuffix}/{relativePath}") : ToSafeEntryPath($"{prefix}/{group.TitleId}/{relativePath}");
 
     private static string ToSafeEntryPath(string path)
     {
@@ -193,42 +186,18 @@ internal static class VitaPatchShared
         };
     }
 
-    public static PatchContext GetPatchContext(Dictionary<string, PatchContext> cache, string patchPath, Action<string, LogLevel> log)
+    public static PatchContext GetPatchContext(Dictionary<string, PatchContext> cache, string patchPath)
     {
         if (cache.TryGetValue(patchPath, out var existing))
             return existing;
 
         var accessor = VitaSourceAccessorFactory.Open(patchPath);
-        var allPatchFiles = accessor.EnumerateAllFiles().ToList();
-        var patchFiles = BuildPatchFileMap(allPatchFiles, log);
-        var rawOverwriteFiles = allPatchFiles
-            .Where(f => !PatchExtensions.Contains(Path.GetExtension(f)))
-            .ToList();
-        var ctx = new PatchContext { Accessor = accessor, PatchFiles = patchFiles, RawOverwriteFiles = rawOverwriteFiles };
+        var index = PatchFileIndex.Build(accessor.EnumerateAllFiles(), rel => PatchFileRef.FromStream(() => new MemoryStream(accessor.ReadAllBytes(rel), writable: false), accessor.GetFileSize(rel), Path.GetFileName(rel)));
+        var ctx = new PatchContext { Accessor = accessor, Index = index };
 
         cache[patchPath] = ctx;
 
         return ctx;
-    }
-
-    private static Dictionary<string, string> BuildPatchFileMap(List<string> allPatchFiles, Action<string, LogLevel> log)
-    {
-        var groups = allPatchFiles
-            .Where(f => PatchExtensions.Contains(Path.GetExtension(f)))
-            .GroupBy(f => Path.GetFileNameWithoutExtension(f)!, StringComparer.OrdinalIgnoreCase);
-        var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var group in groups)
-        {
-            var list = group.ToList();
-
-            if (list.Count > 1)
-                log($"패치 대상 '{group.Key}'에 대한 패치 파일이 {list.Count}개 중복됨: {string.Join(", ", list)} - 첫 번째({list[0]})만 사용함", LogLevel.Highlight);
-
-            map[group.Key] = list[0];
-        }
-
-        return map;
     }
 
     public static (IVitaSourceAccessor Accessor, string Rel)? ResolveWorkBin(IVitaSourceAccessor source, SourceItem item, (IVitaSourceAccessor Accessor, string Rel)? fallback)
@@ -346,68 +315,59 @@ internal static class VitaPatchShared
 
     public static List<PatchTarget> BuildTargets(Dictionary<string, PatchAppEntry> patchAppIndex, PatchContext patchCtx)
     {
+        var plan = PatchPlan.Build(patchCtx.Index, patchAppIndex.Keys, StringComparer.OrdinalIgnoreCase);
         var targets = new List<PatchTarget>();
-        var claimed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var (relativePath, appEntry) in patchAppIndex)
         {
-            string baseName = Path.GetFileName(relativePath);
-
-            if (!patchCtx.PatchFiles.TryGetValue(baseName, out var patchFileRel))
-                continue;
-
-            targets.Add(new PatchTarget
+            if (plan.TryGetOverwrite(relativePath, out var overwrite))
             {
-                RelativePath = relativePath,
-                Kind = PatchTargetKind.Xdelta,
-                Source = appEntry,
-                PatchFileRel = patchFileRel,
-                EstimatedSize = appEntry.FileEntry.Size
-            });
+                if (appEntry.Owner.Item.Category == ContentCategory.Addcont)
+                    continue;
 
-            claimed.Add(relativePath);
-        }
-
-        foreach (var rawRel in patchCtx.RawOverwriteFiles)
-        {
-            string normalizedRawRel = NormalizePath(rawRel);
-
-            if (claimed.Contains(normalizedRawRel))
-                continue;
-
-            if (!patchAppIndex.TryGetValue(normalizedRawRel, out var appEntry))
-                continue;
-
-            if (appEntry.Owner.Item.Category == ContentCategory.Addcont)
-                continue;
-
-            targets.Add(new PatchTarget
+                targets.Add(new PatchTarget
+                {
+                    RelativePath = relativePath,
+                    Kind = PatchTargetKind.Overwrite,
+                    Source = appEntry,
+                    OverwriteFile = overwrite,
+                    EstimatedSize = overwrite.Length
+                });
+            }
+            else if (plan.IsPatched(relativePath))
             {
-                RelativePath = normalizedRawRel,
-                Kind = PatchTargetKind.Raw,
-                Source = appEntry,
-                PatchFileRel = rawRel,
-                EstimatedSize = patchCtx.Accessor.GetFileSize(rawRel)
-            });
-
-            claimed.Add(normalizedRawRel);
+                targets.Add(new PatchTarget
+                {
+                    RelativePath = relativePath,
+                    Kind = PatchTargetKind.Patch,
+                    Source = appEntry,
+                    Patches = plan.GetPatches(relativePath),
+                    EstimatedSize = appEntry.FileEntry.Size
+                });
+            }
         }
 
         return targets;
     }
 
-    public static async Task<byte[]> ResolveTargetBytesAsync(PatchTarget target, PatchContext patchCtx, CancellationToken ct)
+    public static async Task<byte[]?> ResolveTargetBytesAsync(PatchTarget target, Action<string, LogLevel> log, CancellationToken ct)
     {
-        if (target.Kind == PatchTargetKind.Raw)
-            return patchCtx.Accessor.ReadAllBytes(target.PatchFileRel);
+        if (target.Kind == PatchTargetKind.Overwrite)
+            return await (target.OverwriteFile ?? throw new InvalidOperationException("교체 대상에 파일 정보가 없습니다.")).ReadSmallFileBytesAsync(ct);
 
-        var appEntry = target.Source ?? throw new InvalidOperationException("xdelta 대상에 원본 정보가 없습니다.");
+        var appEntry = target.Source ?? throw new InvalidOperationException("패치 대상에 원본 정보가 없습니다.");
         var owner = appEntry.Owner;
         var entry = appEntry.FileEntry;
         byte[] sourceBytes = VitaNoNpDrmDecryptor.DecryptEntry(owner.Item.Accessor!, owner.Item.SourcePath, owner.License.Klicensee, entry, owner.Table.UnicvEntries[appEntry.EntryIndex], owner.Table.FilesSalt);
-        byte[] patchBytes = patchCtx.Accessor.ReadAllBytes(target.PatchFileRel);
 
-        return await UniversalPatcher.ApplyPatchAsync(sourceBytes, patchBytes, ct: ct);
+        return await ApplyTargetAsync(target, sourceBytes, log, ct);
+    }
+
+    internal static async Task<byte[]?> ApplyTargetAsync(PatchTarget target, byte[] sourceBytes, Action<string, LogLevel> log, CancellationToken ct)
+    {
+        var (data, applied) = await PatchApplier.ApplyPatchesAsync(target.RelativePath, target.Patches, sourceBytes, log, ct);
+
+        return applied ? data : null;
     }
 
     public static async Task WriteEntryWithProgressAsync(ZipArchiveEntry zipEntry, byte[] data, long estimatedSize, ProgressReporter reporter, CancellationToken ct)

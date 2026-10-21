@@ -5,7 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Patch.Core.Services;
 
-public sealed record PlannedPatch(PatchFileRef File, PatchFormat Format, bool Strict);
+public sealed record PlannedPatch(PatchFileRef File, bool Strict);
 
 public sealed class PatchPlan
 {
@@ -47,7 +47,7 @@ public sealed class PatchPlan
         var plan = new PatchPlan(comparer);
         var targets = targetPaths.ToList();
         var targetSet = new HashSet<string>(targets, comparer);
-        var binaryEntries = new List<(PatchFileEntry Entry, string Key, PatchFormat Format)>();
+        var binaryEntries = new List<(PatchFileEntry Entry, string Key)>();
 
         foreach (var entry in index.Entries)
         {
@@ -64,33 +64,35 @@ public sealed class PatchPlan
                 continue;
             }
 
-            binaryEntries.Add((entry, key, DetectFormat(entry.File)));
+            binaryEntries.Add((entry, key));
         }
 
         var exactKeys = new HashSet<string>(comparer);
 
-        foreach (var (entry, key, format) in binaryEntries)
+        foreach (var (entry, key) in binaryEntries)
         {
-            if (!targetSet.Contains(key) || plan._overwrites.ContainsKey(key))
+            if (!targetSet.Contains(key) || plan._overwrites.ContainsKey(key) || !exactKeys.Add(key))
                 continue;
 
-            plan._patches[key] = [new PlannedPatch(entry.File, format, true)];
-            exactKeys.Add(key);
+            plan._patches[key] = [new PlannedPatch(entry.File, true)];
         }
 
-        foreach (var (entry, _, format) in binaryEntries)
+        foreach (var (entry, _) in binaryEntries)
         {
-            if (entry.BaseName.Length == 0 || !PatchMatchPolicy.AllowsLooseNameMatch(format))
+            if (entry.BaseName.Length == 0)
                 continue;
 
-            var candidates = targets.Where(t => !plan._overwrites.ContainsKey(t) && !exactKeys.Contains(t) && NameMatches(FileNameOf(t), entry.BaseName));
+            var candidates = targets.Where(t => !plan._overwrites.ContainsKey(t) && !exactKeys.Contains(t) && NameMatches(FileNameOf(t), entry.BaseName)).ToList();
+
+            if (candidates.Count == 0 || !PatchMatchPolicy.AllowsLooseNameMatch(DetectFormat(entry.File)))
+                continue;
 
             foreach (string candidate in candidates)
             {
                 if (!plan._patches.TryGetValue(candidate, out var list))
                     plan._patches[candidate] = list = [];
 
-                list.Add(new PlannedPatch(entry.File, format, false));
+                list.Add(new PlannedPatch(entry.File, false));
             }
         }
 
@@ -125,11 +127,11 @@ public sealed class PatchPlan
         byte[] header = new byte[8];
         using var stream = file.OpenRead();
         int read = stream.ReadAtLeast(header, header.Length, throwOnEndOfStream: false);
+
         return UniversalPatcher.DetectFormat(header.AsSpan(0, read));
     }
 
-    private static bool NameMatches(string targetFileName, string patchBaseName)
-        => targetFileName.Contains(patchBaseName, StringComparison.OrdinalIgnoreCase) || patchBaseName.Contains(targetFileName, StringComparison.OrdinalIgnoreCase);
+    private static bool NameMatches(string targetFileName, string patchBaseName) => targetFileName.Contains(patchBaseName, StringComparison.OrdinalIgnoreCase) || patchBaseName.Contains(targetFileName, StringComparison.OrdinalIgnoreCase);
 
     private static string FileNameOf(string path)
     {

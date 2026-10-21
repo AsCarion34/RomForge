@@ -1,4 +1,5 @@
 ﻿using Patch.Core.Interfaces;
+using Patch.Core.Models;
 
 namespace Patch.Core.Services;
 

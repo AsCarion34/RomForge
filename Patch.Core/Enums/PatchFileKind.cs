@@ -1,8 +1,8 @@
 ﻿namespace Patch.Core.Enums;
 
-public enum PatchFileKind
+public enum PatchFileKind 
 { 
-    Overwrite, 
+    Overwrite,
 
-    BinaryPatch
+    BinaryPatch 
 }
