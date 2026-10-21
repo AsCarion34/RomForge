@@ -15,7 +15,7 @@
                         <TextBlock Text="리팩" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <local:RepackTab Margin="0,-5,0,0"/>
+                <local:RepackTab Margin="0,-5,0,0" DataContext="{Binding RepackVM}"/>
             </TabItem>
         </TabControl>
     </Grid>

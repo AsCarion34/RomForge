@@ -50,7 +50,7 @@
                         <ControlTemplate TargetType="TabControl">
                             <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="10" Background="{TemplateBinding Background}" ClipToBounds="True">
                                 <DockPanel>
-                                    <ScrollViewer DockPanel.Dock="Top" Background="#252526" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" CanContentScroll="False">
+                                    <ScrollViewer DockPanel.Dock="Top" Background="#252526" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" CanContentScroll="False" Padding="{TemplateBinding Padding}">
                                         <ItemsPresenter/>
                                     </ScrollViewer>
                                     <ContentPresenter ContentSource="SelectedContent"/>

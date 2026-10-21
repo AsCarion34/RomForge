@@ -1,4 +1,5 @@
-﻿using System.Buffers;
+﻿using RomForge.Core.Models.Patch;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Runtime.ExceptionServices;

@@ -14,14 +14,14 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Border Background="#12FFFFFF" BorderBrush="#30FFFFFF" BorderThickness="1" CornerRadius="8" Grid.Row="0" IsEnabled="{Binding PatchVM.IsIdle}" Margin="5">
+        <Border Background="#12FFFFFF" BorderBrush="#30FFFFFF" BorderThickness="1" CornerRadius="8" Grid.Row="0" IsEnabled="{Binding IsIdle}" Margin="5">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="50"/>
                 </Grid.ColumnDefinitions>
                 <Grid Grid.Column="0">
-                    <ListView AllowDrop="True" Background="Transparent" BorderThickness="0" ContextMenuOpening="LvPkg_ContextMenuOpening" ItemsSource="{Binding PatchVM.VitaVM.SourceRows}" Margin="5" SelectedItem="{Binding PatchVM.VitaVM.SelectedRow}"
+                    <ListView AllowDrop="True" Background="Transparent" BorderThickness="0" ContextMenuOpening="LvPkg_ContextMenuOpening" ItemsSource="{Binding SourceRows}" Margin="5" SelectedItem="{Binding SelectedRow}"
                               KeyUp="LvPkg_KeyUp" DragEnter="Root_DragEnter" Drop="Root_Drop">
                         <ListView.ContextMenu>
                             <ContextMenu>
@@ -31,12 +31,12 @@
                                     </MenuItem.Icon>
                                 </MenuItem>
                                 <Separator/>
-                                <MenuItem Header="선택 삭제" Command="{Binding PatchVM.VitaVM.RemoveSelectedCommand}">
+                                <MenuItem Header="선택 삭제" Command="{Binding RemoveSelectedCommand}">
                                     <MenuItem.Icon>
                                         <Image Source="/Assets/Images/Delete.png" Width="20" Height="20"/>
                                     </MenuItem.Icon>
                                 </MenuItem>
-                                <MenuItem Header="전체 삭제" Command="{Binding PatchVM.VitaVM.RemoveAllCommand}">
+                                <MenuItem Header="전체 삭제" Command="{Binding RemoveAllCommand}">
                                     <MenuItem.Icon>
                                         <Image Source="/Assets/Images/Clear.png" Width="20" Height="20"/>
                                     </MenuItem.Icon>
@@ -165,7 +165,7 @@
                         </ListView.View>
                     </ListView>
 
-                    <Border BorderBrush="#333337" BorderThickness="1" CornerRadius="6" IsEnabled="{Binding PatchVM.IsIdle}" IsHitTestVisible="False" Margin="15,55,15,15" Visibility="{Binding PatchVM.VitaVM.EntriesHintVisibility}">
+                    <Border BorderBrush="#333337" BorderThickness="1" CornerRadius="6" IsEnabled="{Binding IsIdle}" IsHitTestVisible="False" Margin="15,55,15,15" Visibility="{Binding EntriesHintVisibility}">
                         <Border.Background>
                             <SolidColorBrush Color="#181818" Opacity="0.95"/>
                         </Border.Background>
@@ -179,10 +179,10 @@
                 </Grid>
 
                 <StackPanel Grid.Column="1" Margin="5" VerticalAlignment="Top">
-                    <Button BorderThickness="1" Command="{Binding PatchVM.VitaVM.RemoveSelectedCommand}" Height="30" Margin="0,0,0,8" Padding="0" Style="{StaticResource GrayButton}" Width="30">
+                    <Button BorderThickness="1" Command="{Binding RemoveSelectedCommand}" Height="30" Margin="0,0,0,8" Padding="0" Style="{StaticResource GrayButton}" Width="30">
                         <Image Height="30" RenderOptions.BitmapScalingMode="HighQuality" Source="/Assets/Images/Delete.png" ToolTip="선택 삭제" Width="30"/>
                     </Button>
-                    <Button BorderThickness="1" Command="{Binding PatchVM.VitaVM.RemoveAllCommand}" Height="30" Margin="0,0,0,8" Padding="0" Style="{StaticResource GrayButton}" Width="30">
+                    <Button BorderThickness="1" Command="{Binding RemoveAllCommand}" Height="30" Margin="0,0,0,8" Padding="0" Style="{StaticResource GrayButton}" Width="30">
                         <Image Height="30" RenderOptions.BitmapScalingMode="HighQuality" Source="/Assets/Images/Clear.png" ToolTip="모두 삭제" Width="30"/>
                     </Button>
                 </StackPanel>
@@ -197,14 +197,14 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="White" Margin="0,0,10,0" Text="출력 포맷:" VerticalAlignment="Center"/>
-                    <RadioButton Content="에뮬 (app, addcont)" FontSize="12" Foreground="White" GroupName="VitaOutputTargetGroup" IsChecked="{Binding PatchVM.VitaVM.BuildEmu}" IsEnabled="{Binding PatchVM.IsIdle}" Margin="0,0,15,0" VerticalAlignment="Center"/>
-                    <RadioButton Content="실기 (rePatch, reAddcont)" FontSize="12" Foreground="White" GroupName="VitaOutputTargetGroup" IsChecked="{Binding PatchVM.VitaVM.BuildRetail}" IsEnabled="{Binding PatchVM.IsIdle}" VerticalAlignment="Center"/>
+                    <RadioButton Content="에뮬 (app, addcont)" FontSize="12" Foreground="White" GroupName="VitaOutputTargetGroup" IsChecked="{Binding BuildEmu}" IsEnabled="{Binding IsIdle}" Margin="0,0,15,0" VerticalAlignment="Center"/>
+                    <RadioButton Content="실기 (rePatch, reAddcont)" FontSize="12" Foreground="White" GroupName="VitaOutputTargetGroup" IsChecked="{Binding BuildRetail}" IsEnabled="{Binding IsIdle}" VerticalAlignment="Center"/>
                 </StackPanel>
             </Grid>
 
-            <ToggleButton Height="30" IsChecked="{Binding PatchVM.VitaVM.MergePatchIntoGame}" IsEnabled="{Binding PatchVM.IsIdle}" Margin="0,2,0,0" Style="{StaticResource ToggleStyle}">
+            <ToggleButton Height="30" IsChecked="{Binding MergePatchIntoGame}" IsEnabled="{Binding IsIdle}" Margin="0,2,0,0" Style="{StaticResource ToggleStyle}">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Image Margin="0,0,5,0" Source="{Binding PatchVM.VitaVM.MergePatchIntoGame, Converter={StaticResource BoolToImageConverter}}" VerticalAlignment="Center" Width="18"/>
+                    <Image Margin="0,0,5,0" Source="{Binding MergePatchIntoGame, Converter={StaticResource BoolToImageConverter}}" VerticalAlignment="Center" Width="18"/>
                     <TextBlock FontWeight="Bold" Foreground="#FFFFFF" Margin="0,0,12,0" Text="게임에 패치 병합" VerticalAlignment="Center"/>
                     <TextBlock FontSize="11" Foreground="#D4AF37" Text="에뮬: 복호화 후 app/addcont 덮어씌우기 / 실기: rePatch/reAddcont 추가" VerticalAlignment="Center"/>
                 </StackPanel>
@@ -218,27 +218,17 @@
             </Grid.ColumnDefinitions>
             <Border Background="#12FFFFFF" BorderBrush="#30FFFFFF" BorderThickness="1" CornerRadius="6" Grid.Column="0" Height="36">
                 <Grid>
-                    <TextBox Background="Transparent" BorderThickness="0" FontSize="11" Foreground="#DCDCDC" IsEnabled="{Binding PatchVM.IsIdle}" Padding="10,0" Text="{Binding PatchVM.VitaVM.OutputPath, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center"
+                    <TextBox Background="Transparent" BorderThickness="0" FontSize="11" Foreground="#DCDCDC" IsEnabled="{Binding IsIdle}" Padding="10,0" Text="{Binding OutputPath, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center"
                      AllowDrop="True" PreviewDragOver="TxtOutputPath_PreviewDragOver" Drop="TxtOutputPath_Drop"/>
-                    <TextBlock FontSize="11" Foreground="#50FFFFFF" IsHitTestVisible="False" Margin="10,0,0,0" Text="작업 폴더를 드래그하거나 선택하세요" VerticalAlignment="Center" Visibility="{Binding PatchVM.VitaVM.OutputHintVisibility}"/>
+                    <TextBlock FontSize="11" Foreground="#50FFFFFF" IsHitTestVisible="False" Margin="10,0,0,0" Text="작업 폴더를 드래그하거나 선택하세요" VerticalAlignment="Center" Visibility="{Binding OutputHintVisibility}"/>
                 </Grid>
             </Border>
-            <Button BorderThickness="1" Command="{Binding PatchVM.VitaVM.BrowseOutputCommand}" Grid.Column="1" Height="30" IsEnabled="{Binding PatchVM.IsIdle}" Margin="5,0,0,0" Padding="0" Style="{StaticResource GrayButton}" Width="30">
+            <Button BorderThickness="1" Command="{Binding BrowseOutputCommand}" Grid.Column="1" Height="30" IsEnabled="{Binding IsIdle}" Margin="5,0,0,0" Padding="0" Style="{StaticResource GrayButton}" Width="30">
                 <Image Height="30" RenderOptions.BitmapScalingMode="HighQuality" Source="/Common.WPF;component/Assets/Images/AddFolder.png" Width="30"/>
             </Button>
         </Grid>
 
-        <Grid Grid.Row="3" Margin="5,0,0,5">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="2*"/>
-            </Grid.ColumnDefinitions>
-
-            <core:IconButton Grid.Column="0" DefaultText="언팩" DefaultIcon="/Assets/Images/Unpack.png" CancelText="취소" CancelIcon="/Assets/Images/Cancel.png" IsRunning="{Binding IsUnpackRunning}" IsEnabled="{Binding UnpackEnabled}" Click="BtnUnpack_Click"/>
-            <core:IconButton Grid.Column="1" Margin="5,0,0,0" DefaultText="리팩 (폴더 기반)" DefaultIcon="/Assets/Images/Repack.png" CancelText="취소" CancelIcon="/Assets/Images/Cancel.png" IsRunning="{Binding IsRebuildRunning}" IsEnabled="{Binding RebuildEnabled}" Click="BtnRebuild_Click"/>
-            <core:IconButton Grid.Column="2" Margin="5,0,5,0" DefaultText="언팩 + 리팩 (Full)" DefaultIcon="/Assets/Images/UnRepack.png" CancelText="취소" CancelIcon="/Assets/Images/Cancel.png" IsRunning="{Binding IsFullRunning}" IsEnabled="{Binding StartEnabled}" Click="BtnStart_Click"/>
-        </Grid>
+        <core:IconButton Grid.Row="3" Margin="5,0,5,5" DefaultText="언팩 + 리팩 (Full)" DefaultIcon="/Assets/Images/UnRepack.png" CancelText="취소" CancelIcon="/Assets/Images/Cancel.png" IsRunning="{Binding IsLocked}" IsEnabled="{Binding StartEnabled}" Click="BtnStart_Click"/>
 
         <Border Background="#12FFFFFF" BorderBrush="#30FFFFFF" BorderThickness="0,1,0,0" CornerRadius="8" Grid.Row="4" Margin="5,0,5,5" Padding="8,0">
             <Grid Height="28">
@@ -249,10 +239,10 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="140"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock FontSize="11" Foreground="#A0A0A0" Grid.Column="0" Text="{Binding PatchVM.VitaVM.ProgressLabel}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#4CAF50" Grid.Column="1" Margin="0,0,10,0" Text="{Binding PatchVM.VitaVM.ProgressPercent}" VerticalAlignment="Center"/>
-                <TextBlock FontSize="11" Foreground="Gray" Grid.Column="2" Margin="0,0,10,0" Text="{Binding PatchVM.VitaVM.ProgressSpeed}" VerticalAlignment="Center"/>
-                <TextBlock FontSize="11" Foreground="#4CAF50" Grid.Column="3" Margin="0,0,10,0" Text="{Binding PatchVM.VitaVM.ProgressTime}" VerticalAlignment="Center"/>
+                <TextBlock FontSize="11" Foreground="#A0A0A0" Grid.Column="0" Text="{Binding ProgressLabel}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#4CAF50" Grid.Column="1" Margin="0,0,10,0" Text="{Binding ProgressPercent}" VerticalAlignment="Center"/>
+                <TextBlock FontSize="11" Foreground="Gray" Grid.Column="2" Margin="0,0,10,0" Text="{Binding ProgressSpeed}" VerticalAlignment="Center"/>
+                <TextBlock FontSize="11" Foreground="#4CAF50" Grid.Column="3" Margin="0,0,10,0" Text="{Binding ProgressTime}" VerticalAlignment="Center"/>
                 <Grid Grid.Column="4" Height="10" VerticalAlignment="Center">
                     <Border Background="#25FFFFFF" CornerRadius="5"/>
                     <Border ClipToBounds="True" CornerRadius="5" x:Name="barTrack">
@@ -260,7 +250,7 @@
                             <Border.Width>
                                 <MultiBinding Converter="{StaticResource ProgressToWidthConverter}">
                                     <Binding ElementName="barTrack" Path="ActualWidth"/>
-                                    <Binding Path="PatchVM.VitaVM.ProgressPct"/>
+                                    <Binding Path="ProgressPct"/>
                                 </MultiBinding>
                             </Border.Width>
                         </Border>

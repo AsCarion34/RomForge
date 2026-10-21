@@ -1,6 +1,5 @@
 ﻿using NSW.WPF.Services;
 using Ookii.Dialogs.Wpf;
-using RomForge.ViewModels;
 using RomForge.ViewModels.PSVita;
 using System.IO;
 using System.Windows;
@@ -11,13 +10,13 @@ namespace RomForge.Controls.PSVita;
 
 public partial class RepackTab : UserControl
 {
-    private MainViewModel ViewModel => (MainViewModel)DataContext;
+    private RepackMainViewModel ViewModel => (RepackMainViewModel)DataContext;
 
     public RepackTab() => InitializeComponent();
 
     private void LvPkg_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
-        var selected = ViewModel?.PatchVM.VitaVM.SelectedRow;
+        var selected = ViewModel?.SelectedRow;
 
         if (selected == null)
             e.Handled = true;
@@ -38,7 +37,7 @@ public partial class RepackTab : UserControl
         if (e.Data.GetDataPresent(DataFormats.FileDrop))
             if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.Length > 0)
                 foreach (var file in files)
-                    ViewModel?.PatchVM.VitaVM?.AddSourceFile(file);
+                    ViewModel?.AddSourceFile(file);
 
         e.Handled = true;
     }
@@ -46,8 +45,8 @@ public partial class RepackTab : UserControl
     private void LvPkg_KeyUp(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Delete)
-            if (ViewModel?.PatchVM.VitaVM?.RemoveSelectedCommand?.CanExecute(null) == true)
-                ViewModel.PatchVM.VitaVM.RemoveSelectedCommand.Execute(null);
+            if (ViewModel?.RemoveSelectedCommand?.CanExecute(null) == true)
+                ViewModel.RemoveSelectedCommand.Execute(null);
     }
 
     private void License_PreviewDragOver(object sender, DragEventArgs e)
@@ -139,14 +138,14 @@ public partial class RepackTab : UserControl
 
     private void MenuItem_OpenFolder_Click(object sender, RoutedEventArgs e)
     {
-        var selected = ViewModel?.PatchVM.VitaVM.SelectedRow;
+        var selected = ViewModel?.SelectedRow;
 
         Path.GetDirectoryName(selected?.Path)?.OpenFolder();
     }
 
     private void MenuItem_RemovePatch_Click(object sender, RoutedEventArgs e)
     {
-        var selected = ViewModel?.PatchVM.VitaVM.SelectedRow;
+        var selected = ViewModel?.SelectedRow;
 
         if (selected != null)
             selected.PatchPath = string.Empty;
@@ -177,11 +176,19 @@ public partial class RepackTab : UserControl
                 string? folderPath = Directory.Exists(droppedPath) ? droppedPath : Path.GetDirectoryName(droppedPath);
 
                 if (!string.IsNullOrEmpty(folderPath) && Directory.Exists(folderPath))
-                    if (ViewModel?.PatchVM?.VitaVM != null)
-                        ViewModel.PatchVM.VitaVM.OutputPath = folderPath;
+                    if (ViewModel != null)
+                        ViewModel.OutputPath = folderPath;
             }
         }
 
         e.Handled = true;
+    }
+
+    private async void BtnStart_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.IsLocked)
+            ViewModel.Cancel();
+        else
+            await ViewModel.RunAsync();
     }
 }
