@@ -50,11 +50,10 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Border Grid.Column="0" Margin="0,0,5,5" Background="#12FFFFFF" BorderBrush="#30FFFFFF" BorderThickness="1" CornerRadius="6" AllowDrop="True" PreviewDrop="Nsp_Drop" PreviewDragOver="OnPreviewDragOver">
+                <Border Grid.Column="0" Margin="0,0,5,5" Background="#12FFFFFF" BorderBrush="#30FFFFFF" BorderThickness="1" CornerRadius="6" AllowDrop="True" PreviewDrop="TxtOutputPath_Drop" PreviewDragOver="TxtOutputPath_PreviewDragOver">
                     <Grid>
-                        <TextBox Text="{Binding WorkPath, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" BorderThickness="0" VerticalContentAlignment="Center" Padding="10,0" IsEnabled="{Binding IsIdle}" AllowDrop="True" 
-                                 PreviewDragOver="TxtOutputPath_PreviewDragOver" Drop="TxtOutputPath_Drop"/>
-                        <TextBlock Text="작업 폴더를 선택하세요" Visibility="{Binding WorkHintVisibility}" Foreground="#50FFFFFF" FontSize="11" VerticalAlignment="Center" Margin="15,0,0,0" IsHitTestVisible="False"/>
+                        <TextBox Text="{Binding WorkPath, UpdateSourceTrigger=PropertyChanged}" Background="Transparent" BorderThickness="0" VerticalContentAlignment="Center" Padding="10,0" IsEnabled="{Binding IsIdle}" />
+                        <TextBlock Text="작업 폴더를 드래그하거나 선택하세요" Visibility="{Binding WorkHintVisibility}" Foreground="#50FFFFFF" FontSize="11" VerticalAlignment="Center" Margin="15,0,0,0" IsHitTestVisible="False"/>
                     </Grid>
                 </Border>
                 <Button Grid.Column="1" Margin="0,0,5,5" Width="30" Height="30" Padding="0" BorderThickness="1" Style="{StaticResource GrayButton}" Command="{Binding BrowseWorkCommand}" IsEnabled="{Binding IsIdle}">

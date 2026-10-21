@@ -44,7 +44,7 @@
                     </ListView.ContextMenu>
                     <ListView.View>
                         <GridView>
-                            <GridViewColumn Width="150">
+                            <GridViewColumn Width="240">
                                 <GridViewColumn.Header>
                                     <GridViewColumnHeader Tag="FileName">
                                         <StackPanel Orientation="Horizontal">
@@ -78,7 +78,7 @@
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
 
-                            <GridViewColumn Width="90">
+                            <GridViewColumn Width="80">
                                 <GridViewColumn.Header>
                                     <GridViewColumnHeader Tag="GameId"/>
                                 </GridViewColumn.Header>
@@ -86,13 +86,13 @@
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                             <Image Source="/Assets/Images/CD.png" Width="24" Height="24" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                            <TextBlock Text="게임ID" Foreground="#BBBBBB" VerticalAlignment="Center"/>
+                                            <TextBlock Text="ID" Foreground="#BBBBBB" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </DataTemplate>
                                 </GridViewColumn.HeaderTemplate>
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding GameId}" FontWeight="Bold" FontSize="11" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding GameId}" FontWeight="Bold" FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

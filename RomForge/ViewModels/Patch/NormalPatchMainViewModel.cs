@@ -53,8 +53,8 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
             CommandManager.InvalidateRequerySuggested();
 
             _lastProcessedPatchPath = null;
-            TriggerPreviewUpdate();
 
+            TriggerPreviewUpdate();
             _ = SourceHash.StartAsync(value);
         }
     }

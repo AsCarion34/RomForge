@@ -31,19 +31,28 @@
             <converters:CdOutputFormatLabelConverter x:Key="CdOutputFormatLabelConverter"/>
             <converters:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
             <converters:StringHasValueConverter x:Key="StringHasValueConverter" />
-            <converters:BoolToPlayStopTextConverter x:Key="BoolToPlayStopTextConverter" />            
+            <converters:BoolToPlayStopTextConverter x:Key="BoolToPlayStopTextConverter" />
 
             <Style TargetType="TabControl">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderThickness" Value="1"/>
                 <Setter Property="BorderBrush" Value="#444444"/>
                 <Setter Property="Padding" Value="5"/>
+                <Setter Property="ItemsPanel">
+                    <Setter.Value>
+                        <ItemsPanelTemplate>
+                            <TabPanel/>
+                        </ItemsPanelTemplate>
+                    </Setter.Value>
+                </Setter>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="TabControl">
                             <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="10" Background="{TemplateBinding Background}" ClipToBounds="True">
                                 <DockPanel>
-                                    <TabPanel DockPanel.Dock="Top" IsItemsHost="True" Background="#252526" Margin="{TemplateBinding Padding}"/>
+                                    <ScrollViewer DockPanel.Dock="Top" Background="#252526" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" CanContentScroll="False">
+                                        <ItemsPresenter/>
+                                    </ScrollViewer>
                                     <ContentPresenter ContentSource="SelectedContent"/>
                                 </DockPanel>
                             </Border>

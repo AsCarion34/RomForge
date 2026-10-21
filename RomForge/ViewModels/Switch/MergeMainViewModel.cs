@@ -77,6 +77,7 @@ public class MergeMainViewModel : ToolTabViewModel
         {
             _outputPath = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(OutputHintVisibility));
             AppConfig.Instance.OutputFolders.SwitchMergeOutputPath = value;
         }
     }
@@ -92,6 +93,8 @@ public class MergeMainViewModel : ToolTabViewModel
         get => _mergeMode;
         set { _mergeMode = value; OnPropertyChanged(); }
     }
+
+    public Visibility OutputHintVisibility => string.IsNullOrEmpty(OutputPath) ? Visibility.Visible : Visibility.Collapsed;
 
     public ICommand OpenWorkSpaceCommand { get; }
 

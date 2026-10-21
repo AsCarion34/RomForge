@@ -119,5 +119,5 @@ public sealed class PatchSource
         return Directory.EnumerateFiles(folder, "*", options).Any(IsPatchMarker);
     }
 
-    private static bool IsPatchMarker(string path) => NspPatchMergeHelper.PatchMarkerExtensions.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
+    private static bool IsPatchMarker(string path) => PatchFileIndex.PatchExtensions.Any(ext => path.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
 }

@@ -85,6 +85,7 @@ public class SplitMainViewModel : ToolTabViewModel
         {
             _outputPath = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(OutputHintVisibility));
             AppConfig.Instance.OutputFolders.SwitchSplitOutputPath = value;
         }
     }
@@ -107,6 +108,8 @@ public class SplitMainViewModel : ToolTabViewModel
             }
         }
     }
+
+    public Visibility OutputHintVisibility => string.IsNullOrEmpty(OutputPath) ? Visibility.Visible : Visibility.Collapsed;
 
     public ICommand OpenWorkSpaceCommand { get; }
 

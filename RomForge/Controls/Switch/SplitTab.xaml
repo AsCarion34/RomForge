@@ -55,19 +55,20 @@
                     <Button.ToolTip>
                         <ToolTip Content="{x:Static l:Resources.ToolTip_OpenWorkSpace}"/>
                     </Button.ToolTip>
-                    <Image RenderOptions.BitmapScalingMode="HighQuality" Source="/Assets/Images/WorkSpace.png" Stretch="Uniform"/>
                 </Button>
-                <TextBlock Grid.Column="1" FontSize="12" FontWeight="Bold" Foreground="White" Margin="10,0,10,0" Text="{x:Static l:Resources.Label_OutputPath}" VerticalAlignment="Center"/>
                 <Border Grid.Column="2" Background="#12FFFFFF" BorderBrush="#30FFFFFF" BorderThickness="1" CornerRadius="6">
-                    <TextBox Background="Transparent" BorderThickness="0" FontSize="11" Foreground="#DCDCDC" Height="30" IsEnabled="{Binding IsIdle}" Text="{Binding OutputPath, Mode=TwoWay}" VerticalContentAlignment="Center" x:Name="txtOutput" AllowDrop="True" 
+                    <Grid>
+                        <TextBox Background="Transparent" BorderThickness="0" FontSize="11" Foreground="#DCDCDC" Height="30" IsEnabled="{Binding IsIdle}" Text="{Binding OutputPath, Mode=TwoWay}" VerticalContentAlignment="Center" x:Name="txtOutput" AllowDrop="True" 
                              PreviewDragOver="TxtOutputPath_PreviewDragOver" Drop="TxtOutputPath_Drop"/>
+                        <TextBlock Text="출력 폴더를 드래그하거나 선택하세요" Visibility="{Binding OutputHintVisibility}" Foreground="#50FFFFFF" FontSize="11" VerticalAlignment="Center" IsHitTestVisible="False" Margin="5,0,0,0"/>
+                    </Grid>
                 </Border>
                 <Button Grid.Column="3" x:Name="btnBrowseOutput" Background="Transparent" BorderThickness="0" HorizontalContentAlignment="Center" IsEnabled="{Binding IsIdle}" Margin="5,0,5,0" Padding="0" Style="{StaticResource GrayButton}" VerticalContentAlignment="Center"
                         Click="BtnBrowseOutput_Click">
                     <Button.ToolTip>
                         <ToolTip Content="{x:Static l:Resources.ToolTip_BrowseOutput}"/>
                     </Button.ToolTip>
-                    <Image RenderOptions.BitmapScalingMode="HighQuality" Source="/Assets/Images/OpenFolder.png" Stretch="Uniform"/>
+                    <Image RenderOptions.BitmapScalingMode="HighQuality" Source="/Common.WPF;component/Assets/Images/AddFolder.png" Stretch="Uniform"/>
                 </Button>
             </Grid>
 
