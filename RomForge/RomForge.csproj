@@ -46,6 +46,7 @@
     <None Remove="Assets\Images\OpenFolder.png" />
     <None Remove="Assets\Images\PC98.png" />
     <None Remove="Assets\Images\Pin.png" />
+    <None Remove="Assets\Images\PS3.png" />
     <None Remove="Assets\Images\PSP.png" />
     <None Remove="Assets\Images\Recover.png" />
     <None Remove="Assets\Images\Region.png" />
@@ -77,6 +78,7 @@
     <Content Include="icon.ico" />
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Assets\Images\PS3.png" />
     <Resource Include="Assets\Images\Rename.png" />
     <Resource Include="Assets\Images\UnRepack.png" />
   </ItemGroup>

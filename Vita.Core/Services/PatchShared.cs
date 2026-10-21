@@ -74,9 +74,7 @@ internal static class PatchShared
                         log($"[patch] {entry.Probe.TitleId}: app의 라이선스를 그대로 공유해서 적용함", LogLevel.Info);
                     }
                     else
-                    {
                         accessor = new PkgSourceAccessor(entry.Path, entry.License);
-                    }
 
                     ownedAccessors.Add(accessor);
 
@@ -107,14 +105,13 @@ internal static class PatchShared
         {
             foreach (var owned in ownedAccessors)
                 owned.Dispose();
-
             throw;
         }
 
         return (items, ownedAccessors);
     }
 
-    public static List<MergeGroup> BuildGroups(List<SourceItem> items, string defaultPatchPath, Dictionary<string, PatchContext> patchContexts, Action<string, LogLevel> log, CancellationToken ct)
+    public static List<MergeGroup> BuildGroups(List<SourceItem> items, string defaultPatchPath, Dictionary<string, PatchContext> patchContexts, OutputTarget target, Action<string, LogLevel> log, CancellationToken ct)
     {
         var appByTitle = items.Where(i => i.Category == ContentCategory.App).ToDictionary(i => i.TitleId, StringComparer.OrdinalIgnoreCase);
         var patchByTitle = items.Where(i => i.Category == ContentCategory.Patch).ToDictionary(i => i.TitleId, StringComparer.OrdinalIgnoreCase);
@@ -144,7 +141,7 @@ internal static class PatchShared
 
             string patchPackagePath = (patchItem?.PatchPathOverride ?? appItem?.PatchPathOverride) ?? defaultPatchPath;
 
-            groups.Add(CreateGroup(ContentCategory.App, titleId, null, patchPackagePath, BuildPatchAppIndex(appOwner, patchOwner), owners, patchContexts));
+            groups.Add(CreateGroup(ContentCategory.App, titleId, null, patchPackagePath, BuildPatchAppIndex(appOwner, patchOwner), owners, patchContexts, target));
         }
 
         foreach (var addcontItem in addcontItems)
@@ -158,16 +155,16 @@ internal static class PatchShared
 
             string patchPackagePath = addcontItem.PatchPathOverride ?? defaultPatchPath;
 
-            groups.Add(CreateGroup(ContentCategory.Addcont, addcontItem.TitleId, addcontItem.ContentIdSuffix, patchPackagePath, BuildPatchAppIndex(owner, null), [owner], patchContexts));
+            groups.Add(CreateGroup(ContentCategory.Addcont, addcontItem.TitleId, addcontItem.ContentIdSuffix, patchPackagePath, BuildPatchAppIndex(owner, null), [owner], patchContexts, target));
         }
 
         return groups;
     }
 
-    private static MergeGroup CreateGroup(ContentCategory category, string titleId, string? contentIdSuffix, string patchPackagePath, Dictionary<string, PatchAppEntry> index, List<OwnerContext> owners, Dictionary<string, PatchContext> patchContexts)
+    private static MergeGroup CreateGroup(ContentCategory category, string titleId, string? contentIdSuffix, string patchPackagePath, Dictionary<string, PatchAppEntry> index, List<OwnerContext> owners, Dictionary<string, PatchContext> patchContexts, OutputTarget target)
     {
         var patchCtx = GetPatchContext(patchContexts, patchPackagePath);
-        var targets = BuildTargets(index, patchCtx, category, titleId, contentIdSuffix);
+        var targets = BuildTargets(index, patchCtx, category, titleId, contentIdSuffix, target);
 
         return new MergeGroup { Category = category, TitleId = titleId, ContentIdSuffix = contentIdSuffix, PatchCtx = patchCtx, Index = index, Targets = targets, Owners = owners };
     }
@@ -211,10 +208,10 @@ internal static class PatchShared
         return ctx;
     }
 
-    private static PatchFileIndex BuildPatchIndex(PatchContext ctx, ContentCategory category, string titleId, string? contentIdSuffix)
+    private static PatchFileIndex BuildPatchIndex(PatchContext ctx, ContentCategory category, string titleId, string? contentIdSuffix, OutputTarget target)
     {
         bool isAddcont = category == ContentCategory.Addcont;
-        string? layoutRoot = FindLayoutRoot(ctx.Files, isAddcont ? AddcontLayoutDirs : AppLayoutDirs, titleId, isAddcont ? contentIdSuffix : null);
+        string? layoutRoot = FindLayoutRoot(ctx.Files, GetLayoutDirs(isAddcont, target), titleId, isAddcont ? contentIdSuffix : null);
         var rawByRelative = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         if (layoutRoot != null)
@@ -236,6 +233,13 @@ internal static class PatchShared
         }
 
         return PatchFileIndex.Build(rawByRelative.Keys, relative => CreatePatchFileRef(ctx.Accessor, rawByRelative[relative]));
+    }
+
+    private static string[] GetLayoutDirs(bool isAddcont, OutputTarget target)
+    {
+        string[] dirs = isAddcont ? AddcontLayoutDirs : AppLayoutDirs;
+
+        return target == OutputTarget.Retail ? [dirs[1], dirs[0]] : dirs;
     }
 
     private static string? FindLayoutRoot(IReadOnlyList<PatchContainerFile> files, string[] layoutDirs, string titleId, string? contentIdSuffix)
@@ -338,7 +342,6 @@ internal static class PatchShared
         {
             var license = WorkBinReader.Read(workBin.Value.Accessor, workBin.Value.Rel);
             var table = NoNpDrmDecryptor.ParseFileTable(accessor, item.SourcePath);
-
             return new OwnerContext { Item = item, Table = table, License = license, WorkBinAccessor = workBin.Value.Accessor, WorkBinRelativePath = workBin.Value.Rel };
         }
         catch (Exception ex)
@@ -411,9 +414,9 @@ internal static class PatchShared
         }
     }
 
-    public static List<PatchTarget> BuildTargets(Dictionary<string, PatchAppEntry> patchAppIndex, PatchContext patchCtx, ContentCategory category, string titleId, string? contentIdSuffix)
+    public static List<PatchTarget> BuildTargets(Dictionary<string, PatchAppEntry> patchAppIndex, PatchContext patchCtx, ContentCategory category, string titleId, string? contentIdSuffix, OutputTarget target)
     {
-        var plan = PatchPlan.Build(BuildPatchIndex(patchCtx, category, titleId, contentIdSuffix), patchAppIndex.Keys, StringComparer.OrdinalIgnoreCase);
+        var plan = PatchPlan.Build(BuildPatchIndex(patchCtx, category, titleId, contentIdSuffix, target), patchAppIndex.Keys, StringComparer.OrdinalIgnoreCase);
         var targets = new List<PatchTarget>();
 
         foreach (var (relativePath, appEntry) in patchAppIndex)
@@ -461,7 +464,6 @@ internal static class PatchShared
     internal static async Task<byte[]?> ApplyTargetAsync(PatchTarget target, byte[] sourceBytes, Action<string, LogLevel> log, CancellationToken ct)
     {
         var (data, applied) = await PatchApplier.ApplyPatchesAsync(target.RelativePath, target.Patches, sourceBytes, log, ct);
-
         return applied ? data : null;
     }
 

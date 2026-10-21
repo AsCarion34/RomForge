@@ -4,7 +4,7 @@ using Vita.Core.Models;
 
 namespace Vita.Core.Services;
 
-public static class PatchOnlyBuilder
+public static class VitaPatchOnlyBuilder
 {
     public static Task<PatchOnlyResult> BuildFromEntriesAsync(List<BatchSourceEntry> entries, string defaultPatchPath, string outputZipPath, OutputTarget target, Action<string, LogLevel> log, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
         => PatchShared.RunWithItemsAsync(entries, log, items => BuildCoreAsync(items, defaultPatchPath, outputZipPath, target, log, progress, ct));
@@ -15,7 +15,7 @@ public static class PatchOnlyBuilder
 
         try
         {
-            var groups = PatchShared.BuildGroups(items, defaultPatchPath, patchContexts, log, ct);
+            var groups = PatchShared.BuildGroups(items, defaultPatchPath, patchContexts, target, log, ct);
             return await WriteAsync(groups, outputZipPath, target, log, progress, ct);
         }
         finally
