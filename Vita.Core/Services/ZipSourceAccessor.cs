@@ -2,7 +2,7 @@
 
 namespace Vita.Core.Services;
 
-public sealed class ZipSourceAccessor : IVitaSourceAccessor
+public sealed class ZipSourceAccessor : ISourceAccessor
 {
     private readonly FileStream _stream;
     private readonly ZipArchive _zip;

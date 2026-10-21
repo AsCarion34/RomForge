@@ -3,7 +3,7 @@ using Vita.Core.Models;
 
 namespace Vita.Core.Services;
 
-public sealed class PkgSourceAccessor : IVitaSourceAccessor
+public sealed class PkgSourceAccessor : ISourceAccessor
 {
     private const string WorkBinRelativePath = "sce_sys/package/work.bin";
     private const string HeadBinRelativePath = "sce_sys/package/head.bin";

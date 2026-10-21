@@ -1,11 +1,10 @@
-﻿using Patch.Core.Services;
-using Vita.Core.Services;
+﻿using Vita.Core.Services;
 
 namespace Vita.Core.Models;
 
 public sealed class PatchContext
 {
-    public required IVitaSourceAccessor Accessor { get; init; }
+    public required ISourceAccessor Accessor { get; init; }
 
-    public required PatchFileIndex Index { get; init; }
+    public required IReadOnlyList<PatchContainerFile> Files { get; init; }
 }

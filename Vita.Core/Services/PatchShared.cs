@@ -9,6 +9,12 @@ internal static class PatchShared
 {
     private const int ProgressChunkSize = 4 * 1024 * 1024;
 
+    private static readonly string[] AppLayoutDirs = ["app", "rePatch"];
+
+    private static readonly string[] AddcontLayoutDirs = ["addcont", "reAddcont"];
+
+    private const int MaxLayoutWrapperDepth = 2;
+
     public static async Task<T> RunWithItemsAsync<T>(List<BatchSourceEntry> entries, Action<string, LogLevel> log, Func<List<SourceItem>, Task<T>> run)
     {
         var (items, ownedAccessors) = LoadItems(entries, log);
@@ -24,14 +30,14 @@ internal static class PatchShared
         }
     }
 
-    public static (List<SourceItem> Items, List<IVitaSourceAccessor> OwnedAccessors) LoadItems(List<BatchSourceEntry> entries, Action<string, LogLevel> log)
+    public static (List<SourceItem> Items, List<ISourceAccessor> OwnedAccessors) LoadItems(List<BatchSourceEntry> entries, Action<string, LogLevel> log)
     {
-        var ownedAccessors = new List<IVitaSourceAccessor>();
+        var ownedAccessors = new List<ISourceAccessor>();
         var items = new List<SourceItem>();
-        var appSourceByTitle = new Dictionary<string, (IVitaSourceAccessor Accessor, string SourcePath)>(StringComparer.OrdinalIgnoreCase);
+        var appSourceByTitle = new Dictionary<string, (ISourceAccessor Accessor, string SourcePath)>(StringComparer.OrdinalIgnoreCase);
         var orderedEntries = entries.OrderBy(GetEntrySortRank).ToList();
 
-        void AddItem(ContentCategory category, string titleId, string? contentIdSuffix, string sourcePath, IVitaSourceAccessor accessor, string? patchPath)
+        void AddItem(ContentCategory category, string titleId, string? contentIdSuffix, string sourcePath, ISourceAccessor accessor, string? patchPath)
         {
             items.Add(new SourceItem
             {
@@ -56,7 +62,7 @@ internal static class PatchShared
                     if (entry.Probe is null)
                         throw new InvalidOperationException($"PKG 항목에 Probe 정보가 없습니다: {entry.Path}");
 
-                    IVitaSourceAccessor accessor;
+                    ISourceAccessor accessor;
 
                     if (entry.Probe.Category == ContentCategory.Patch && string.IsNullOrWhiteSpace(entry.License) && appSourceByTitle.TryGetValue(entry.Probe.TitleId, out var appSource))
                     {
@@ -68,9 +74,12 @@ internal static class PatchShared
                         log($"[patch] {entry.Probe.TitleId}: app의 라이선스를 그대로 공유해서 적용함", LogLevel.Info);
                     }
                     else
+                    {
                         accessor = new PkgSourceAccessor(entry.Path, entry.License);
+                    }
 
                     ownedAccessors.Add(accessor);
+
                     AddItem(entry.Probe.Category, entry.Probe.TitleId, entry.Probe.ContentIdSuffix, string.Empty, accessor, entry.PatchPath);
                 }
                 else
@@ -98,6 +107,7 @@ internal static class PatchShared
         {
             foreach (var owned in ownedAccessors)
                 owned.Dispose();
+
             throw;
         }
 
@@ -118,7 +128,7 @@ internal static class PatchShared
             appByTitle.TryGetValue(titleId, out var appItem);
             patchByTitle.TryGetValue(titleId, out var patchItem);
 
-            (IVitaSourceAccessor Accessor, string Rel)? appWorkBinFallback = appItem?.Accessor != null ? (appItem.Accessor, $"{appItem.SourcePath}/sce_sys/package/work.bin") : null;
+            (ISourceAccessor Accessor, string Rel)? appWorkBinFallback = appItem?.Accessor != null ? (appItem.Accessor, $"{appItem.SourcePath}/sce_sys/package/work.bin") : null;
             var appOwner = appItem != null ? BuildOwnerContext(appItem, null, log) : null;
             var patchOwner = patchItem != null ? BuildOwnerContext(patchItem, appWorkBinFallback, log) : null;
             var owners = new List<OwnerContext>();
@@ -157,11 +167,13 @@ internal static class PatchShared
     private static MergeGroup CreateGroup(ContentCategory category, string titleId, string? contentIdSuffix, string patchPackagePath, Dictionary<string, PatchAppEntry> index, List<OwnerContext> owners, Dictionary<string, PatchContext> patchContexts)
     {
         var patchCtx = GetPatchContext(patchContexts, patchPackagePath);
-        var targets = BuildTargets(index, patchCtx);
+        var targets = BuildTargets(index, patchCtx, category, titleId, contentIdSuffix);
+
         return new MergeGroup { Category = category, TitleId = titleId, ContentIdSuffix = contentIdSuffix, PatchCtx = patchCtx, Index = index, Targets = targets, Owners = owners };
     }
 
-    public static string BuildEntryPath(string prefix, MergeGroup group, string relativePath) => group.Category == ContentCategory.Addcont ? ToSafeEntryPath($"{prefix}/{group.TitleId}/{group.ContentIdSuffix}/{relativePath}") : ToSafeEntryPath($"{prefix}/{group.TitleId}/{relativePath}");
+    public static string BuildEntryPath(string prefix, MergeGroup group, string relativePath) =>
+        group.Category == ContentCategory.Addcont ? ToSafeEntryPath($"{prefix}/{group.TitleId}/{group.ContentIdSuffix}/{relativePath}") : ToSafeEntryPath($"{prefix}/{group.TitleId}/{relativePath}");
 
     private static string ToSafeEntryPath(string path)
     {
@@ -192,15 +204,101 @@ internal static class PatchShared
             return existing;
 
         var accessor = SourceAccessorFactory.Open(patchPath);
-        var index = PatchFileIndex.Build(accessor.EnumerateAllFiles(), rel => PatchFileRef.FromStream(() => new MemoryStream(accessor.ReadAllBytes(rel), writable: false), accessor.GetFileSize(rel), Path.GetFileName(rel)));
-        var ctx = new PatchContext { Accessor = accessor, Index = index };
+        var ctx = new PatchContext { Accessor = accessor, Files = [.. accessor.EnumerateAllFiles().Select(raw => new PatchContainerFile(NormalizeZipPath(raw), raw))] };
 
         cache[patchPath] = ctx;
 
         return ctx;
     }
 
-    public static (IVitaSourceAccessor Accessor, string Rel)? ResolveWorkBin(IVitaSourceAccessor source, SourceItem item, (IVitaSourceAccessor Accessor, string Rel)? fallback)
+    private static PatchFileIndex BuildPatchIndex(PatchContext ctx, ContentCategory category, string titleId, string? contentIdSuffix)
+    {
+        bool isAddcont = category == ContentCategory.Addcont;
+        string? layoutRoot = FindLayoutRoot(ctx.Files, isAddcont ? AddcontLayoutDirs : AppLayoutDirs, titleId, isAddcont ? contentIdSuffix : null);
+        var rawByRelative = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        if (layoutRoot != null)
+        {
+            foreach (var file in ctx.Files)
+            {
+                if (file.Path.StartsWith(layoutRoot, StringComparison.OrdinalIgnoreCase))
+                    rawByRelative.TryAdd(file.Path[layoutRoot.Length..], file.Raw);
+            }
+        }
+
+        if (!isAddcont)
+        {
+            foreach (var file in ctx.Files)
+            {
+                if (!IsLayoutPath(file.Path))
+                    rawByRelative.TryAdd(file.Path, file.Raw);
+            }
+        }
+
+        return PatchFileIndex.Build(rawByRelative.Keys, relative => CreatePatchFileRef(ctx.Accessor, rawByRelative[relative]));
+    }
+
+    private static string? FindLayoutRoot(IReadOnlyList<PatchContainerFile> files, string[] layoutDirs, string titleId, string? contentIdSuffix)
+    {
+        string tail = string.IsNullOrEmpty(contentIdSuffix) ? titleId : $"{titleId}/{contentIdSuffix}";
+
+        foreach (string layoutDir in layoutDirs)
+        {
+            string pattern = $"{layoutDir}/{tail}/";
+            string? best = null;
+            int bestDepth = int.MaxValue;
+
+            foreach (var file in files)
+            {
+                for (int i = 0; i < file.Path.Length; i++)
+                {
+                    if (i > 0 && file.Path[i - 1] != '/')
+                        continue;
+
+                    if (!string.Equals(file.Path.AsSpan(i, Math.Min(pattern.Length, file.Path.Length - i)).ToString(), pattern, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    int depth = file.Path.Take(i).Count(c => c == '/');
+
+                    if (depth > MaxLayoutWrapperDepth)
+                        break;
+
+                    string candidate = file.Path[..(i + pattern.Length)];
+
+                    if (depth < bestDepth || (depth == bestDepth && string.CompareOrdinal(candidate, best) < 0))
+                    {
+                        bestDepth = depth;
+                        best = candidate;
+                    }
+
+                    break;
+                }
+            }
+
+            if (best != null)
+                return best;
+        }
+
+        return null;
+    }
+
+    private static bool IsLayoutPath(string path)
+    {
+        string[] segments = path.Split('/');
+
+        for (int i = 0; i <= MaxLayoutWrapperDepth && i + 2 < segments.Length; i++)
+        {
+            if (AppLayoutDirs.Concat(AddcontLayoutDirs).Contains(segments[i], StringComparer.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static PatchFileRef CreatePatchFileRef(ISourceAccessor accessor, string rawPath)
+        => PatchFileRef.FromStream(() => new MemoryStream(accessor.ReadAllBytes(rawPath), writable: false), accessor.GetFileSize(rawPath), Path.GetFileName(NormalizePath(rawPath)));
+
+    public static (ISourceAccessor Accessor, string Rel)? ResolveWorkBin(ISourceAccessor source, SourceItem item, (ISourceAccessor Accessor, string Rel)? fallback)
     {
         string workBinRel = $"{item.SourcePath}/sce_sys/package/work.bin";
 
@@ -225,7 +323,7 @@ internal static class PatchShared
         return normalized.Trim('/');
     }
 
-    public static OwnerContext? BuildOwnerContext(SourceItem item, (IVitaSourceAccessor Accessor, string Rel)? fallbackWorkBin, Action<string, LogLevel> log)
+    public static OwnerContext? BuildOwnerContext(SourceItem item, (ISourceAccessor Accessor, string Rel)? fallbackWorkBin, Action<string, LogLevel> log)
     {
         var accessor = item.Accessor ?? throw new InvalidOperationException("소스 accessor가 없습니다.");
         var workBin = ResolveWorkBin(accessor, item, fallbackWorkBin);
@@ -313,18 +411,15 @@ internal static class PatchShared
         }
     }
 
-    public static List<PatchTarget> BuildTargets(Dictionary<string, PatchAppEntry> patchAppIndex, PatchContext patchCtx)
+    public static List<PatchTarget> BuildTargets(Dictionary<string, PatchAppEntry> patchAppIndex, PatchContext patchCtx, ContentCategory category, string titleId, string? contentIdSuffix)
     {
-        var plan = PatchPlan.Build(patchCtx.Index, patchAppIndex.Keys, StringComparer.OrdinalIgnoreCase);
+        var plan = PatchPlan.Build(BuildPatchIndex(patchCtx, category, titleId, contentIdSuffix), patchAppIndex.Keys, StringComparer.OrdinalIgnoreCase);
         var targets = new List<PatchTarget>();
 
         foreach (var (relativePath, appEntry) in patchAppIndex)
         {
             if (plan.TryGetOverwrite(relativePath, out var overwrite))
             {
-                if (appEntry.Owner.Item.Category == ContentCategory.Addcont)
-                    continue;
-
                 targets.Add(new PatchTarget
                 {
                     RelativePath = relativePath,

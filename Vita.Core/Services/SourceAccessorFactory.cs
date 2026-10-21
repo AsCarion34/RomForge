@@ -2,7 +2,7 @@
 
 public static class SourceAccessorFactory
 {
-    public static IVitaSourceAccessor Open(string path)
+    public static ISourceAccessor Open(string path)
     {
         if (Directory.Exists(path))
             return new FolderSourceAccessor(path);

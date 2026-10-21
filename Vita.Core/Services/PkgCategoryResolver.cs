@@ -4,7 +4,7 @@ namespace Vita.Core.Services;
 
 public static class PkgCategoryResolver
 {
-    public static ContentCategory ResolveAppOrPatch(IVitaSourceAccessor source)
+    public static ContentCategory ResolveAppOrPatch(ISourceAccessor source)
     {
         try
         {

@@ -12,7 +12,7 @@ public sealed class SourceItem
 
     public required string SourcePath { get; init; }
 
-    public IVitaSourceAccessor? Accessor { get; init; }
+    public ISourceAccessor? Accessor { get; init; }
 
     public string? PatchPathOverride { get; init; }
 }

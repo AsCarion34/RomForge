@@ -1,6 +1,6 @@
 ﻿namespace Vita.Core.Services;
 
-public interface IVitaSourceAccessor : IDisposable
+public interface ISourceAccessor : IDisposable
 {
     bool DirectoryExists(string relativePath);
 

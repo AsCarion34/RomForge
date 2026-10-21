@@ -6,7 +6,7 @@ public static class SourcePreparer
 {
     private const int MaxSearchDepth = 8;
 
-    public static List<SourceItem> DiscoverItems(IVitaSourceAccessor accessor)
+    public static List<SourceItem> DiscoverItems(ISourceAccessor accessor)
     {
         var contentRoots = new List<string>();
 
@@ -25,7 +25,7 @@ public static class SourcePreparer
         return items;
     }
 
-    private static void FindContentRoots(IVitaSourceAccessor accessor, string path, List<string> results, int depth)
+    private static void FindContentRoots(ISourceAccessor accessor, string path, List<string> results, int depth)
     {
         if (depth > MaxSearchDepth)
             return;
@@ -44,7 +44,7 @@ public static class SourcePreparer
         }
     }
 
-    private static bool IsContentRoot(IVitaSourceAccessor accessor, string path)
+    private static bool IsContentRoot(ISourceAccessor accessor, string path)
     {
         if (string.IsNullOrEmpty(path))
             return false;
@@ -52,7 +52,7 @@ public static class SourcePreparer
         return accessor.DirectoryExists($"{path}/sce_pfs") && accessor.DirectoryExists($"{path}/sce_sys");
     }
 
-    private static SourceItem? ClassifyContentRoot(IVitaSourceAccessor accessor, string contentRootPath)
+    private static SourceItem? ClassifyContentRoot(ISourceAccessor accessor, string contentRootPath)
     {
         string sfoPath = $"{contentRootPath}/sce_sys/param.sfo";
         Dictionary<string, byte[]>? sfo = null;
