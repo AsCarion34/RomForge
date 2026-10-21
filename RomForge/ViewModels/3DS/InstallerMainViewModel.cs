@@ -427,7 +427,7 @@ public class InstallerMainViewModel : ToolTabViewModel
                 await SoundPlayer.PlayCompleteAsync();
                 AppendLog($"3DS에서 [홈브루 런처]를 이용해, 3ds 폴더 내부의 'custom-install-finalize'를 실행해야 게임 아이콘이 생성됩니다.", LogLevel.Highlight);
 
-                if (selected.ForcedLanguage != Locale3dsLanguage.None)
+                if (selected.ForcedLanguage != LocaleLanguage.None)
                 {
                     if (selected.LocaleRegionCode == LocaleRegion.None)
                         AppendLog("제품 코드에서 지역을 판별할 수 없어 로케일 고정을 건너뜁니다.", LogLevel.Error);

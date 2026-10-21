@@ -30,7 +30,7 @@ public class ConverterViewModel : ToolTabViewModel
     #region Collections
 
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
-    public ObservableCollection<PspFileItem> FileItems { get; } = [];
+    public ObservableCollection<FileItem> FileItems { get; } = [];
 
     #endregion
 
@@ -52,7 +52,7 @@ public class ConverterViewModel : ToolTabViewModel
 
     #endregion
 
-    public event Action<PspFileItem>? ScrollToItemRequested;
+    public event Action<FileItem>? ScrollToItemRequested;
 
     #region Constructor
 
@@ -78,7 +78,7 @@ public class ConverterViewModel : ToolTabViewModel
             if (!existing.Add(path))
                 continue;
 
-            var item = new PspFileItem(path);
+            var item = new FileItem(path);
 
             FileItems.Add(item);
 
@@ -90,7 +90,7 @@ public class ConverterViewModel : ToolTabViewModel
         CommandManager.InvalidateRequerySuggested();
     }
 
-    public void RemoveItems(IEnumerable<PspFileItem> items)
+    public void RemoveItems(IEnumerable<FileItem> items)
     {
         foreach (var item in items.ToList())
             FileItems.Remove(item);

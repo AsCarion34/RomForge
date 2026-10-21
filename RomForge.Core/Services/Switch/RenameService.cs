@@ -27,13 +27,13 @@ public static class RenameService
             "titlename" => source.TitleName ?? string.Empty,
             "titleid" => (source.TitleId ?? string.Empty).ToUpperInvariant(),
             "tag" => source.Tag ?? string.Empty,
-            "displayversion" => NspNameBuilder.NormalizeVersion(source.DisplayVersion ?? string.Empty),
+            "displayversion" => NameBuilder.NormalizeVersion(source.DisplayVersion ?? string.Empty),
             _ => source.Version ?? string.Empty
         });
 
         result = SpacesRegex.Replace(result, " ");
 
-        return NspNameBuilder.SafeFileName(result).TrimEnd('.', ' ');
+        return NameBuilder.SafeFileName(result).TrimEnd('.', ' ');
     }
 
     public static List<RenamePlan> BuildPlans(IEnumerable<RenameSource> sources, string format, Func<string, bool>? fileExists = null)

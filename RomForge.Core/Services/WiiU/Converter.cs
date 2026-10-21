@@ -37,7 +37,7 @@ public static class Converter
 
     public static string BuildOutputName(ITitleSource source, string? titleName)
     {
-        string safeName = NspNameBuilder.SafeFileName(titleName ?? source.TitleIdHex);
+        string safeName = NameBuilder.SafeFileName(titleName ?? source.TitleIdHex);
         return $"{safeName} [{source.TitleIdHex}_v{source.TitleVersion}]";
     }
 }

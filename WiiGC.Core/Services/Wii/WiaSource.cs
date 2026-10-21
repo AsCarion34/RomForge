@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using WiiGC.Core.Enums;
 using WiiGC.Core.Interfaces;
 using WiiGC.Core.Models;
+using WiiGC.Core.Models.Wii;
 
 namespace WiiGC.Core.Services.Wii;
 
@@ -164,7 +165,7 @@ internal sealed class WiaSource : IRvzInputSource, IWiiPartitionSource
         long remaining = length;
         int position = 0;
 
-        _groups.ReadFromGroups(context, ref readOffset, ref remaining, context.Output, ref position, _file.ChunkSize, WiiLayout.BlockTotalSize, entry.DataOffset, entry.DataSize, entry.GroupIndex, entry.GroupCount, 0, null);
+        _groups.ReadFromGroups(context, ref readOffset, ref remaining, context.Output, ref position, _file.ChunkSize, Layout.BlockTotalSize, entry.DataOffset, entry.DataSize, entry.GroupIndex, entry.GroupCount, 0, null);
 
         if (remaining != 0)
             throw new InvalidDataException("WIA 원본 데이터 그룹이 부족합니다.");
@@ -177,12 +178,12 @@ internal sealed class WiaSource : IRvzInputSource, IWiiPartitionSource
     private int ReadPartition(Context context, RvzRegion region, long offset, Span<byte> destination)
     {
         var partition = _file.Partitions[region.PartitionIndex];
-        long partitionStart = (long)partition.FirstSector * WiiLayout.BlockTotalSize;
+        long partitionStart = (long)partition.FirstSector * Layout.BlockTotalSize;
         long relative = offset - partitionStart;
-        long hashGroupIndex = relative / WiiLayout.GroupTotalSize;
-        long hashGroupStart = hashGroupIndex * WiiLayout.GroupTotalSize;
-        long groupStartSector = hashGroupIndex * WiiLayout.BlocksPerGroup;
-        int validSectors = (int)Math.Min(WiiLayout.BlocksPerGroup, partition.TotalSectors - groupStartSector);
+        long hashGroupIndex = relative / Layout.GroupTotalSize;
+        long hashGroupStart = hashGroupIndex * Layout.GroupTotalSize;
+        long groupStartSector = hashGroupIndex * Layout.BlocksPerGroup;
+        int validSectors = (int)Math.Min(Layout.BlocksPerGroup, partition.TotalSectors - groupStartSector);
 
         if (validSectors <= 0)
             throw new InvalidDataException("WIA 파티션 섹터 범위가 올바르지 않습니다.");
@@ -197,7 +198,7 @@ internal sealed class WiaSource : IRvzInputSource, IWiiPartitionSource
         }
 
         int offsetInGroup = (int)(offset - (partitionStart + hashGroupStart));
-        int length = (int)Math.Min(WiiLayout.GroupTotalSize - offsetInGroup, Math.Min(region.End - offset, destination.Length));
+        int length = (int)Math.Min(Layout.GroupTotalSize - offsetInGroup, Math.Min(region.End - offset, destination.Length));
 
         context.Encrypted.AsSpan(offsetInGroup, length).CopyTo(destination);
 
@@ -224,16 +225,16 @@ internal sealed class WiaSource : IRvzInputSource, IWiiPartitionSource
             return false;
 
         var partition = _file.Partitions[region.PartitionIndex];
-        long partitionStart = (long)partition.FirstSector * WiiLayout.BlockTotalSize;
+        long partitionStart = (long)partition.FirstSector * Layout.BlockTotalSize;
         long relative = readOffset - partitionStart;
 
-        if (relative < 0 || relative % WiiLayout.GroupTotalSize != 0)
+        if (relative < 0 || relative % Layout.GroupTotalSize != 0)
             return false;
 
-        long groupStartSector = relative / WiiLayout.BlockTotalSize;
-        int validSectors = (int)Math.Min(WiiLayout.BlocksPerGroup, partition.TotalSectors - groupStartSector);
+        long groupStartSector = relative / Layout.BlockTotalSize;
+        int validSectors = (int)Math.Min(Layout.BlocksPerGroup, partition.TotalSectors - groupStartSector);
 
-        if (validSectors != blocksInThisGroup || decrypted.Length < WiiLayout.GroupDataSize)
+        if (validSectors != blocksInThisGroup || decrypted.Length < Layout.GroupDataSize)
             return false;
 
         var context = RentContext();
@@ -241,7 +242,7 @@ internal sealed class WiaSource : IRvzInputSource, IWiiPartitionSource
         try
         {
             _groups.ReadDecryptedGroup(context, partition, groupStartSector, validSectors);
-            context.Decrypted.AsSpan(0, WiiLayout.GroupDataSize).CopyTo(decrypted);
+            context.Decrypted.AsSpan(0, Layout.GroupDataSize).CopyTo(decrypted);
             exceptions.Clear();
             exceptions.AddRange(context.Exceptions);
 
@@ -260,7 +261,7 @@ internal sealed class WiaSource : IRvzInputSource, IWiiPartitionSource
 
         RvzChunk result;
 
-        if (exceptionLists > 0 && dataSize <= WiiLayout.GroupDataSize)
+        if (exceptionLists > 0 && dataSize <= Layout.GroupDataSize)
         {
             var decoded = _groups.DecodeChunk(context, group, dataSize, exceptionLists, junkOffset);
 

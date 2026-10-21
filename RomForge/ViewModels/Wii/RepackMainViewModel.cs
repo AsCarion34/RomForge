@@ -18,7 +18,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using WiiGC.Core.Enums;
-using WiiGC.Core.Models;
+using WiiGC.Core.Models.Wii;
 using WiiGC.Core.Services.Wii;
 
 namespace RomForge.ViewModels.Wii;
@@ -38,7 +38,7 @@ public class RepackMainViewModel : ToolTabViewModel
     private bool _patchLoading;
     private RiivolutionWorkspace? _workspace;
     private RiivolutionPatchSet? _patch;
-    private WiiDiscInfo? _disc;
+    private DiscInfo? _disc;
     private GameDisplay? _gameInfo;
     private ImageSource? _gameIcon;
     private PatchDisplay? _patchInfo;
@@ -51,11 +51,11 @@ public class RepackMainViewModel : ToolTabViewModel
     private string _progressLabel = "대기 중...";
     private string _progressPercent = string.Empty;
     private string _progressTime = "00:00 경과";
-    private WiiOutputFormat _outputFormat = WiiOutputFormat.Iso;
+    private OutputFormat _outputFormat = OutputFormat.Iso;
 
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
-    public WiiOutputFormat OutputFormat
+    public OutputFormat OutputFormat
     {
         get => _outputFormat;
         set
@@ -71,31 +71,31 @@ public class RepackMainViewModel : ToolTabViewModel
 
     public bool IsIsoFormat
     {
-        get => OutputFormat == WiiOutputFormat.Iso;
+        get => OutputFormat == OutputFormat.Iso;
         set
         {
             if (value)
-                OutputFormat = WiiOutputFormat.Iso;
+                OutputFormat = OutputFormat.Iso;
         }
     }
 
     public bool IsWbfsFormat
     {
-        get => OutputFormat == WiiOutputFormat.Wbfs;
+        get => OutputFormat == OutputFormat.Wbfs;
         set
         {
             if (value)
-                OutputFormat = WiiOutputFormat.Wbfs;
+                OutputFormat = OutputFormat.Wbfs;
         }
     }
 
     public bool IsRvzFormat
     {
-        get => OutputFormat == WiiOutputFormat.Rvz;
+        get => OutputFormat == OutputFormat.Rvz;
         set
         {
             if (value)
-                OutputFormat = WiiOutputFormat.Rvz;
+                OutputFormat = OutputFormat.Rvz;
         }
     }
 
@@ -322,7 +322,7 @@ public class RepackMainViewModel : ToolTabViewModel
 
                 Log($"언팩을 시작합니다. → {unpackedPath}", LogLevel.Highlight);
 
-                int count = await Task.Run(() => WiiIsoUnpacker.Unpack(source, unpackedPath, progress, ct), ct);
+                int count = await Task.Run(() => IsoUnpacker.Unpack(source, unpackedPath, progress, ct), ct);
 
                 Log($"파일 {count:N0}개를 풀었습니다.", LogLevel.Ok);
             }
@@ -378,7 +378,7 @@ public class RepackMainViewModel : ToolTabViewModel
         }
         else
         {
-            var folderInfo = WiiFolderInfo.TryRead(unpackedPath);
+            var folderInfo = FolderInfo.TryRead(unpackedPath);
             title = folderInfo?.Title?.Trim() ?? string.Empty;
             gameId = folderInfo?.GameId?.Trim() ?? string.Empty;
         }
@@ -400,11 +400,11 @@ public class RepackMainViewModel : ToolTabViewModel
         string prepareLabel = overlay != null ? $"패치 적용 중: {target}" : $"파티션 해시 계산 중: {target}";
         string convertLabel = format switch
         {
-            WiiOutputFormat.Wbfs => $"WBFS 압축 중: {target}",
-            WiiOutputFormat.Rvz => $"RVZ 압축 중: {target}",
+            OutputFormat.Wbfs => $"WBFS 압축 중: {target}",
+            OutputFormat.Rvz => $"RVZ 압축 중: {target}",
             _ => $"ISO 생성 중: {target}"
         };
-        WiiPatchResult result;
+        PatchResult result;
 
         void prepareProgress(double value) => SetProgress(value, prepareLabel, sw);
         void convertProgress(double value) => SetProgress(value, convertLabel, sw);
@@ -421,9 +421,9 @@ public class RepackMainViewModel : ToolTabViewModel
             {
                 return format switch
                 {
-                    WiiOutputFormat.Wbfs => WiiIsoStreamConverter.RepackFolderToWbfs(unpackedPath, finalPath, overlay, prepareProgress, convertProgress, LogPatchEntry, ct),
-                    WiiOutputFormat.Rvz => WiiIsoStreamConverter.RepackFolderToRvz(unpackedPath, finalPath, overlay, RvzCompressionLevel, RvzChunkSize, prepareProgress, convertProgress, LogPatchEntry, ct),
-                    _ => WiiIsoStreamConverter.RepackFolderToIso(unpackedPath, finalPath, overlay, prepareProgress, convertProgress, LogPatchEntry, ct),
+                    OutputFormat.Wbfs => IsoStreamConverter.RepackFolderToWbfs(unpackedPath, finalPath, overlay, prepareProgress, convertProgress, LogPatchEntry, ct),
+                    OutputFormat.Rvz => IsoStreamConverter.RepackFolderToRvz(unpackedPath, finalPath, overlay, RvzCompressionLevel, RvzChunkSize, prepareProgress, convertProgress, LogPatchEntry, ct),
+                    _ => IsoStreamConverter.RepackFolderToIso(unpackedPath, finalPath, overlay, prepareProgress, convertProgress, LogPatchEntry, ct),
                 };
             }, ct);
         }
@@ -434,17 +434,17 @@ public class RepackMainViewModel : ToolTabViewModel
             string source = InputPath;
             IReadOnlyDictionary<string, string> replacements = overlay ?? new Dictionary<string, string>();
 
-            if (format == WiiOutputFormat.Iso)
+            if (format == OutputFormat.Iso)
             {
                 void rebuildProgress(double value) => SetProgress(value, $"리팩 중: {Path.GetFileName(source)}", sw);
 
-                result = await Task.Run(() => WiiIsoRebuilder.RebuildWithReplacements(source, finalPath, replacements, rebuildProgress, LogPatchEntry, ct), ct);
+                result = await Task.Run(() => IsoRebuilder.RebuildWithReplacements(source, finalPath, replacements, rebuildProgress, LogPatchEntry, ct), ct);
             }
             else
             {
-                result = await Task.Run(() => format == WiiOutputFormat.Wbfs
-                    ? WiiIsoStreamConverter.RebuildToWbfs(source, finalPath, replacements, prepareProgress, convertProgress, LogPatchEntry, ct)
-                    : WiiIsoStreamConverter.RebuildToRvz(source, finalPath, replacements, RvzCompressionLevel, RvzChunkSize, prepareProgress, convertProgress, LogPatchEntry, ct), ct);
+                result = await Task.Run(() => format == OutputFormat.Wbfs
+                    ? IsoStreamConverter.RebuildToWbfs(source, finalPath, replacements, prepareProgress, convertProgress, LogPatchEntry, ct)
+                    : IsoStreamConverter.RebuildToRvz(source, finalPath, replacements, RvzCompressionLevel, RvzChunkSize, prepareProgress, convertProgress, LogPatchEntry, ct), ct);
             }
         }
 
@@ -457,7 +457,7 @@ public class RepackMainViewModel : ToolTabViewModel
         }
     }
 
-    private void LogPatchEntry(WiiPatchEntry entry)
+    private void LogPatchEntry(PatchEntry entry)
     {
         if (entry.Applied)
             Log($"교체: {entry.Path}", LogLevel.Info);
@@ -465,7 +465,7 @@ public class RepackMainViewModel : ToolTabViewModel
             Log($"디스크에 없음: {entry.Path}", LogLevel.Error);
     }
 
-    private void LogPatchResult(WiiPatchResult result)
+    private void LogPatchResult(PatchResult result)
     {
         if (result.Total == 0)
             return;
@@ -479,13 +479,13 @@ public class RepackMainViewModel : ToolTabViewModel
     {
         int version = ++_discVersion;
         string path = InputPath;
-        WiiDiscInfo? info = null;
+        DiscInfo? info = null;
 
         if (File.Exists(path))
         {
             try
             {
-                info = await Task.Run(() => WiiDiscInfoReader.Read(path));
+                info = await Task.Run(() => DiscInfoReader.Read(path));
             }
             catch (Exception ex)
             {
@@ -726,7 +726,7 @@ public class RepackMainViewModel : ToolTabViewModel
                 return false;
             }
 
-            var folderInfo = WiiFolderInfo.TryRead(unpackedPath);
+            var folderInfo = FolderInfo.TryRead(unpackedPath);
 
             if (folderInfo == null)
             {
@@ -793,11 +793,11 @@ public class RepackMainViewModel : ToolTabViewModel
             return;
         }
 
-        WiiFolderInfo? folderInfo = null;
+        FolderInfo? folderInfo = null;
 
         try
         {
-            folderInfo = await Task.Run(() => WiiFolderInfo.TryRead(unpackedPath));
+            folderInfo = await Task.Run(() => FolderInfo.TryRead(unpackedPath));
         }
         catch (Exception ex)
         {
@@ -808,7 +808,7 @@ public class RepackMainViewModel : ToolTabViewModel
         if (version != _discVersion || folderInfo == null)
             return;
 
-        _disc = new WiiDiscInfo(folderInfo.GameId, folderInfo.Title, 0, folderInfo.Version, DiscContainerFormat.PlainDisc, 0, 0);
+        _disc = new DiscInfo(folderInfo.GameId, folderInfo.Title, 0, folderInfo.Version, DiscContainerFormat.PlainDisc, 0, 0);
 
         GameInfo = GameDisplay.From(_disc);
         GameIcon = null;
@@ -819,10 +819,10 @@ public class RepackMainViewModel : ToolTabViewModel
             _ = LoadIconAsync(folderInfo.GameId, version);
     }
 
-    private static string GetExtension(WiiOutputFormat format) => format switch
+    private static string GetExtension(OutputFormat format) => format switch
     {
-        WiiOutputFormat.Wbfs => ".wbfs",
-        WiiOutputFormat.Rvz => ".rvz",
+        OutputFormat.Wbfs => ".wbfs",
+        OutputFormat.Rvz => ".rvz",
         _ => ".iso"
     };
 

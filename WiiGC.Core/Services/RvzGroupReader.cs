@@ -1,5 +1,6 @@
 ﻿using Microsoft.Win32.SafeHandles;
 using WiiGC.Core.Models;
+using WiiGC.Core.Models.Wii;
 
 namespace WiiGC.Core.Services;
 
@@ -16,8 +17,8 @@ internal sealed class RvzGroupReader<TContext> where TContext : RvzWorkerContext
         _file = file;
         _handle = handle;
         _getChunk = getChunk;
-        _partitionChunkSize = (long)file.ChunkSize * WiiLayout.BlockDataSize / WiiLayout.BlockTotalSize;
-        _partitionExceptionLists = (int)Math.Max(1, _partitionChunkSize / WiiLayout.GroupDataSize);
+        _partitionChunkSize = (long)file.ChunkSize * Layout.BlockDataSize / Layout.BlockTotalSize;
+        _partitionExceptionLists = (int)Math.Max(1, _partitionChunkSize / Layout.GroupDataSize);
     }
 
     public RvzRegion[] BuildRegions()
@@ -41,8 +42,8 @@ internal sealed class RvzGroupReader<TContext> where TContext : RvzWorkerContext
                 if (entries[d].SectorCount == 0)
                     continue;
 
-                long start = (long)entries[d].FirstSector * WiiLayout.BlockTotalSize;
-                long end = start + (long)entries[d].SectorCount * WiiLayout.BlockTotalSize;
+                long start = (long)entries[d].FirstSector * Layout.BlockTotalSize;
+                long end = start + (long)entries[d].SectorCount * Layout.BlockTotalSize;
 
                 regions.Add(new RvzRegion(start, end, -1, p, d));
             }
@@ -57,8 +58,8 @@ internal sealed class RvzGroupReader<TContext> where TContext : RvzWorkerContext
     {
         context.Exceptions.Clear();
 
-        long offset = groupStartSector * WiiLayout.BlockDataSize;
-        long remaining = (long)validSectors * WiiLayout.BlockDataSize;
+        long offset = groupStartSector * Layout.BlockDataSize;
+        long remaining = (long)validSectors * Layout.BlockDataSize;
         int position = 0;
         int startEntry = FindPartitionDataEntry(partition, groupStartSector);
 
@@ -72,8 +73,8 @@ internal sealed class RvzGroupReader<TContext> where TContext : RvzWorkerContext
             if (entry.SectorCount == 0)
                 continue;
 
-            long dataOffset = ((long)entry.FirstSector - partition.FirstSector) * WiiLayout.BlockDataSize;
-            long dataSize = (long)entry.SectorCount * WiiLayout.BlockDataSize;
+            long dataOffset = ((long)entry.FirstSector - partition.FirstSector) * Layout.BlockDataSize;
+            long dataSize = (long)entry.SectorCount * Layout.BlockDataSize;
 
             if (dataOffset + dataSize <= offset)
                 continue;
@@ -81,7 +82,7 @@ internal sealed class RvzGroupReader<TContext> where TContext : RvzWorkerContext
             if (dataOffset > offset)
                 throw new InvalidDataException("RVZ/WIA 데이터 영역 사이에 빈 구간이 있습니다.");
 
-            ReadFromGroups(context, ref offset, ref remaining, context.Decrypted, ref position, _partitionChunkSize, WiiLayout.BlockDataSize, dataOffset, dataSize, entry.GroupIndex, entry.GroupCount, _partitionExceptionLists, context.Exceptions);
+            ReadFromGroups(context, ref offset, ref remaining, context.Decrypted, ref position, _partitionChunkSize, Layout.BlockDataSize, dataOffset, dataSize, entry.GroupIndex, entry.GroupCount, _partitionExceptionLists, context.Exceptions);
         }
 
         if (remaining != 0)
@@ -160,8 +161,8 @@ internal sealed class RvzGroupReader<TContext> where TContext : RvzWorkerContext
 
                 if (exceptions != null && exceptionLists > 0)
                 {
-                    int listIndex = (int)(offsetInGroup / WiiLayout.GroupDataSize);
-                    int additional = (int)(groupOffsetInData % WiiLayout.GroupDataSize / WiiLayout.BlockDataSize * WiiLayout.BlockHeaderSize);
+                    int listIndex = (int)(offsetInGroup / Layout.GroupDataSize);
+                    int additional = (int)(groupOffsetInData % Layout.GroupDataSize / Layout.BlockDataSize * Layout.BlockHeaderSize);
 
                     if ((uint)listIndex >= (uint)chunk.ExceptionLists.Length)
                         throw new InvalidDataException("RVZ/WIA 해시 예외 목록 인덱스가 올바르지 않습니다.");

@@ -306,7 +306,7 @@ public class RepackMainViewModel : ToolTabViewModel
                 case BuildMode.RebuildOnly:
                     producedPath = await Task.Run(() => _service.RepackAsync(unpackedPath, OutputPath, _romInfo?.ShortDescription, RomInfo?.ShortDescriptionChanged == true ? RomInfo.ShortDescription : null, RomInfo?.PublisherChanged == true ? RomInfo.Publisher : null, keyStore, OutputFormat, reporter.CreateAction(), progress, TrackOutput, ct), ct); break;
                 case BuildMode.FullProcess:
-                    string safeName = NspNameBuilder.SafeFileName(_romInfo?.ShortDescription ?? string.Empty);
+                    string safeName = NameBuilder.SafeFileName(_romInfo?.ShortDescription ?? string.Empty);
                     string fileName = string.IsNullOrEmpty(safeName) ? inputFileName : safeName;
                     string? titleId = _romInfo?.TitleId;
                     string namePart = string.IsNullOrEmpty(titleId) ? fileName : $"{fileName} [{titleId}]";

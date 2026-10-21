@@ -85,7 +85,7 @@ public static class XciCompressService
 
             finalPath = Utils.GetUniqueFilePath(Utils.ResolveOutputFilePath(inputPath, outputExt, outputDir));
 
-            string displayName = $"{(isCompressMode ? Res.Log_StatusCompressing : Res.Log_StatusDecompressing)} {NspNameBuilder.CompressDisplayNameBuild(meta.KrTitle, meta.TitleId, meta.DisplayVersion)}";
+            string displayName = $"{(isCompressMode ? Res.Log_StatusCompressing : Res.Log_StatusDecompressing)} {NameBuilder.CompressDisplayNameBuild(meta.KrTitle, meta.TitleId, meta.DisplayVersion)}";
             var rootEntries = rootPartition.EnumerateEntries("/", "*").ToList();
 
             if (isCompressMode)

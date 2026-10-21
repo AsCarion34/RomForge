@@ -4,6 +4,7 @@ using WiiGC.Core.Models;
 using WiiGC.Core.Services.Wii;
 using WiiGC.Core.Enums;
 using WiiGC.Core.Interfaces;
+using WiiGC.Core.Models.Wii;
 
 namespace WiiGC.Core.Services.GameCube;
 
@@ -59,7 +60,7 @@ internal sealed class RvzGcWriter
         long groupTableBytes = groupCount * 12;
         long upperBound = EstimateUpperBound(0, groupTableBytes);
 
-        upperBound = (upperBound + WiiLayout.BlockTotalSize - 1) / WiiLayout.BlockTotalSize * WiiLayout.BlockTotalSize;
+        upperBound = (upperBound + Layout.BlockTotalSize - 1) / Layout.BlockTotalSize * Layout.BlockTotalSize;
 
         var groups = new GroupEntry[groupCount];
         var reusable = new Dictionary<(long Size, int Value), GroupEntry>();

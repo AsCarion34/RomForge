@@ -1,5 +1,5 @@
 ﻿using System.Buffers.Binary;
-using WiiGC.Core.Models;
+using WiiGC.Core.Models.Wii;
 
 namespace WiiGC.Core.Services;
 
@@ -34,7 +34,7 @@ internal static class RvzPackDecoder
 
                 inputPosition += LaggedFibonacciGenerator.SeedBytes;
 
-                generator.Forward((dataOffset + outputPosition) % WiiLayout.LfgBlockSize);
+                generator.Forward((dataOffset + outputPosition) % Layout.LfgBlockSize);
                 generator.GetBytes(destination.Slice(outputPosition, size));
             }
             else

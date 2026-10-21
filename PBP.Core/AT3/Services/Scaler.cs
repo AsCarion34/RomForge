@@ -1,4 +1,3 @@
-using PBP.Core.AT3.Helpers;
 using PBP.Core.AT3.Models;
 
 namespace PBP.Core.AT3.Services;
@@ -22,7 +21,7 @@ public static class Scaler
         if (maxAbsSpec > MaxScale)
             maxAbsSpec = MaxScale;
 
-        float[] table = At3CodecInfo.ScaleTable;
+        float[] table = CodecInfo.ScaleTable;
         int idx = LowerBound(table, maxAbsSpec);
         float scaleFactor = table[idx];
         var res = new ScaledBlock
@@ -50,14 +49,14 @@ public static class Scaler
 
     public static List<ScaledBlock> ScaleFrame(ReadOnlySpan<float> specs)
     {
-        var blocks = new List<ScaledBlock>(At3CodecInfo.MaxBfus);
+        var blocks = new List<ScaledBlock>(CodecInfo.MaxBfus);
 
-        for (int band = 0; band < At3CodecInfo.NumQmf; ++band)
+        for (int band = 0; band < CodecInfo.NumQmf; ++band)
         {
-            for (int block = At3CodecInfo.BlocksPerBand[band]; block < At3CodecInfo.BlocksPerBand[band + 1]; ++block)
+            for (int block = CodecInfo.BlocksPerBand[band]; block < CodecInfo.BlocksPerBand[band + 1]; ++block)
             {
-                int start = At3CodecInfo.BlockSizeTab[block];
-                int len = At3CodecInfo.SpecsPerBlock[block];
+                int start = CodecInfo.BlockSizeTab[block];
+                int len = CodecInfo.SpecsPerBlock[block];
 
                 blocks.Add(Scale(specs.Slice(start, len)));
             }

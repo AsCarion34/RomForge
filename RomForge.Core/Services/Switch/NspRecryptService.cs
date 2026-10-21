@@ -164,7 +164,7 @@ public class NspRecryptService : BaseSwitchService
                 fileEntries.Add((entryName, async (s, onRead) => await NcaRecryptService.RecryptAsync(capStorage.AsStream(), s, forceKeyGen0 ? 0 : keyGeneration, keySet, onRead, ct), size, $"{label} [Recrypting]"));
             }
 
-            string displayName = $"Recrypt {NspNameBuilder.CompressDisplayNameBuild(meta.KrTitle, meta.TitleId, meta.DisplayVersion)}";
+            string displayName = $"Recrypt {NameBuilder.CompressDisplayNameBuild(meta.KrTitle, meta.TitleId, meta.DisplayVersion)}";
 
             if (inputExt is ".xci" or ".xcz")
             {

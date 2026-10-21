@@ -144,7 +144,7 @@ public class SourceRowViewModel : ViewModelBase
 
     public static SourceRowViewModel FromPkg(string pkgPath)
     {
-        var result = VitaPkgProbe.Probe(pkgPath);
+        var result = PkgProbe.Probe(pkgPath);
         return new SourceRowViewModel(pkgPath, SourceKind.Pkg, null, result.TitleId, result.Category, result.ContentIdSuffix);
     }
 
@@ -152,8 +152,8 @@ public class SourceRowViewModel : ViewModelBase
 
     public static List<SourceRowViewModel> DiscoverFromContainer(string containerPath)
     {
-        using var accessor = VitaSourceAccessorFactory.Open(containerPath);
-        var items = VitaSourcePreparer.DiscoverItems(accessor);
+        using var accessor = SourceAccessorFactory.Open(containerPath);
+        var items = SourcePreparer.DiscoverItems(accessor);
 
         if (items.Count == 0)
             throw new InvalidDataException("app/patch/addcont 폴더를 찾을 수 없습니다.");
@@ -176,7 +176,7 @@ public class SourceRowViewModel : ViewModelBase
                 if (Kind == SourceKind.Pkg)
                     return new FileInfo(Path).Length;
 
-                using var accessor = VitaSourceAccessorFactory.Open(Path);
+                using var accessor = SourceAccessorFactory.Open(Path);
                 string prefix = string.IsNullOrEmpty(ItemSourcePath) ? string.Empty : ItemSourcePath.Replace('\\', '/').Trim('/') + "/";
                 long total = 0;
 
@@ -208,15 +208,15 @@ public class SourceRowViewModel : ViewModelBase
                 if (Kind == SourceKind.Pkg)
                 {
                     using var accessor = new PkgSourceAccessor(Path);
-                    string? pkgTitle = accessor.FileExists("sce_sys/param.sfo") ? VitaSfoParser.GetString(VitaSfoParser.Parse(accessor.ReadAllBytes("sce_sys/param.sfo")), "TITLE") : null;
+                    string? pkgTitle = accessor.FileExists("sce_sys/param.sfo") ? SfoParser.GetString(SfoParser.Parse(accessor.ReadAllBytes("sce_sys/param.sfo")), "TITLE") : null;
                     byte[]? pkgIcon = null;
 
                     if (Category == ContentCategory.App && !string.IsNullOrWhiteSpace(License))
                     {
                         try
                         {
-                            byte[] klicensee = VitaPkgLicenseResolver.ResolveKlicensee(License, accessor.Header.ContentId);
-                            var pkgTable = VitaNoNpDrmDecryptor.ParseFileTable(accessor, string.Empty);
+                            byte[] klicensee = PkgLicenseResolver.ResolveKlicensee(License, accessor.Header.ContentId);
+                            var pkgTable = NoNpDrmDecryptor.ParseFileTable(accessor, string.Empty);
 
                             for (int i = 0; i < pkgTable.Entries.Count; i++)
                             {
@@ -230,7 +230,7 @@ public class SourceRowViewModel : ViewModelBase
                                 if (!relativePath.Equals("sce_sys/icon0.png", StringComparison.OrdinalIgnoreCase))
                                     continue;
 
-                                pkgIcon = VitaNoNpDrmDecryptor.DecryptEntry(accessor, string.Empty, klicensee, entry, pkgTable.UnicvEntries[i], pkgTable.FilesSalt);
+                                pkgIcon = NoNpDrmDecryptor.DecryptEntry(accessor, string.Empty, klicensee, entry, pkgTable.UnicvEntries[i], pkgTable.FilesSalt);
                                 break;
                             }
                         }
@@ -240,9 +240,9 @@ public class SourceRowViewModel : ViewModelBase
                     return (pkgIcon, pkgTitle);
                 }
 
-                using var containerAccessor = VitaSourceAccessorFactory.Open(Path);
+                using var containerAccessor = SourceAccessorFactory.Open(Path);
                 string sfoRel = $"{ItemSourcePath}/sce_sys/param.sfo";
-                string? title = containerAccessor.FileExists(sfoRel) ? VitaSfoParser.GetString(VitaSfoParser.Parse(containerAccessor.ReadAllBytes(sfoRel)), "TITLE") : null;
+                string? title = containerAccessor.FileExists(sfoRel) ? SfoParser.GetString(SfoParser.Parse(containerAccessor.ReadAllBytes(sfoRel)), "TITLE") : null;
                 byte[]? icon = null;
 
                 if (Category == ContentCategory.App)
@@ -252,7 +252,7 @@ public class SourceRowViewModel : ViewModelBase
                     if (containerAccessor.FileExists(workBinRel))
                     {
                         var license = WorkBinReader.Read(containerAccessor, workBinRel);
-                        var table = VitaNoNpDrmDecryptor.ParseFileTable(containerAccessor, ItemSourcePath!);
+                        var table = NoNpDrmDecryptor.ParseFileTable(containerAccessor, ItemSourcePath!);
 
                         for (int i = 0; i < table.Entries.Count; i++)
                         {
@@ -268,7 +268,7 @@ public class SourceRowViewModel : ViewModelBase
 
                             try
                             {
-                                icon = VitaNoNpDrmDecryptor.DecryptEntry(containerAccessor, ItemSourcePath!, license.Klicensee, entry, table.UnicvEntries[i], table.FilesSalt);
+                                icon = NoNpDrmDecryptor.DecryptEntry(containerAccessor, ItemSourcePath!, license.Klicensee, entry, table.UnicvEntries[i], table.FilesSalt);
                             }
                             catch { }
 

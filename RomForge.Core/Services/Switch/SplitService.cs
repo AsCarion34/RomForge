@@ -11,6 +11,7 @@ using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.NcaUtils;
 using LibHac.Tools.Ncm;
 using NSW.Core;
+using NSW.Core.Enums;
 using NSW.Core.Models;
 using NSW.Core.Utils;
 using System.IO;
@@ -238,12 +239,12 @@ public class SplitService : BaseSwitchService
                 fileEntries.Add((result.Value.FinalName, result.Value.Writer, result.Value.Size, result.Value.Label));
             }
 
-            NswContainerFormat format = outputAsXci ? (useCompression ? NswContainerFormat.Xcz : NswContainerFormat.Xci) : (useCompression ? NswContainerFormat.Nsz : NswContainerFormat.Nsp);
-            string outName = NspNameBuilder.SplitFileNameBuild(meta.KrTitle, meta.EnTitle, meta.TitleId, meta.GetEffectiveDisplayVersion(), typeTag, format);
+            ContainerFormat format = outputAsXci ? (useCompression ? ContainerFormat.Xcz : ContainerFormat.Xci) : (useCompression ? ContainerFormat.Nsz : ContainerFormat.Nsp);
+            string outName = NameBuilder.SplitFileNameBuild(meta.KrTitle, meta.EnTitle, meta.TitleId, meta.GetEffectiveDisplayVersion(), typeTag, format);
 
             finalPath = Utils.GetUniqueFilePath(Path.Combine(outputDir, outName));
 
-            string displayName = NspNameBuilder.DisplayNameBuild(meta.EnTitle, meta.TitleId, meta.DisplayVersion, meta.DlcCount, format);            
+            string displayName = NameBuilder.DisplayNameBuild(meta.EnTitle, meta.TitleId, meta.DisplayVersion, meta.DlcCount, format);            
             using var fout = File.Open(finalPath, FileMode.Create, FileAccess.ReadWrite);
 
             if (outputAsXci)

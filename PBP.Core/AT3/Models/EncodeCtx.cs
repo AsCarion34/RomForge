@@ -1,5 +1,3 @@
-using PBP.Core.AT3.Helpers;
-
 namespace PBP.Core.AT3.Models;
 
 internal sealed class EncodeCtx
@@ -24,5 +22,5 @@ internal sealed class EncodeCtx
 
     public float[] EnergyErr = new float[1];
 
-    public int[] Mantissas = new int[At3CodecInfo.MaxSpecs];
+    public int[] Mantissas = new int[CodecInfo.MaxSpecs];
 }

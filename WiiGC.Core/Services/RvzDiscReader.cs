@@ -1,6 +1,7 @@
 using Microsoft.Win32.SafeHandles;
 using WiiGC.Core.Interfaces;
 using WiiGC.Core.Models;
+using WiiGC.Core.Models.Wii;
 
 namespace WiiGC.Core.Services;
 
@@ -69,7 +70,7 @@ internal sealed class RvzDiscReader : IDisposable
         var items = new List<WorkItem>();
         long chunkSize = _file.ChunkSize;
         long rawItemBytes = chunkSize >= RawItemTargetBytes ? chunkSize : RawItemTargetBytes / chunkSize * chunkSize;
-        long unitSectors = Math.Max(WiiLayout.BlocksPerGroup, chunkSize / WiiLayout.BlockTotalSize);
+        long unitSectors = Math.Max(Layout.BlocksPerGroup, chunkSize / Layout.BlockTotalSize);
         long cursor = headerLength;
 
         foreach (var region in _groups.BuildRegions())
@@ -94,7 +95,7 @@ internal sealed class RvzDiscReader : IDisposable
     private void AddRawItems(List<WorkItem> items, int entryIndex, long itemBytes)
     {
         var entry = _file.RawEntries[entryIndex];
-        long alignedStart = entry.DataOffset - entry.DataOffset % WiiLayout.BlockTotalSize;
+        long alignedStart = entry.DataOffset - entry.DataOffset % Layout.BlockTotalSize;
         long end = entry.DataOffset + entry.DataSize;
         long position = entry.DataOffset;
 
@@ -185,7 +186,7 @@ internal sealed class RvzDiscReader : IDisposable
         long remaining = size;
         int position = 0;
 
-        _groups.ReadFromGroups(context, ref offset, ref remaining, context.Output, ref position, _file.ChunkSize, WiiLayout.BlockTotalSize, entry.DataOffset, entry.DataSize, entry.GroupIndex, entry.GroupCount, 0, null);
+        _groups.ReadFromGroups(context, ref offset, ref remaining, context.Output, ref position, _file.ChunkSize, Layout.BlockTotalSize, entry.DataOffset, entry.DataSize, entry.GroupIndex, entry.GroupCount, 0, null);
 
         if (remaining != 0)
             throw new InvalidDataException("RVZ 원본 데이터 그룹이 부족합니다.");
@@ -199,14 +200,14 @@ internal sealed class RvzDiscReader : IDisposable
         long partitionSectors = partition.TotalSectors;
         long itemStart = item.Start;
         long itemEnd = item.Start + item.Length;
-        int totalBytes = checked((int)(item.Length * WiiLayout.BlockTotalSize));
+        int totalBytes = checked((int)(item.Length * Layout.BlockTotalSize));
 
         context.EnsureOutput(totalBytes);
 
-        for (long group = itemStart / WiiLayout.BlocksPerGroup; group * WiiLayout.BlocksPerGroup < itemEnd; group++)
+        for (long group = itemStart / Layout.BlocksPerGroup; group * Layout.BlocksPerGroup < itemEnd; group++)
         {
-            long groupStart = group * WiiLayout.BlocksPerGroup;
-            int validSectors = (int)Math.Min(WiiLayout.BlocksPerGroup, partitionSectors - groupStart);
+            long groupStart = group * Layout.BlocksPerGroup;
+            int validSectors = (int)Math.Min(Layout.BlocksPerGroup, partitionSectors - groupStart);
 
             if (validSectors <= 0)
                 throw new InvalidDataException("RVZ 파티션 섹터 범위가 올바르지 않습니다.");
@@ -215,12 +216,12 @@ internal sealed class RvzDiscReader : IDisposable
             context.Encryptor.Encrypt(partition.Key, context.Decrypted, context.Exceptions, context.Encrypted);
 
             long emitFrom = Math.Max(groupStart, itemStart);
-            long emitTo = Math.Min(groupStart + WiiLayout.BlocksPerGroup, itemEnd);
+            long emitTo = Math.Min(groupStart + Layout.BlocksPerGroup, itemEnd);
 
-            Buffer.BlockCopy(context.Encrypted, (int)((emitFrom - groupStart) * WiiLayout.BlockTotalSize), context.Output, (int)((emitFrom - itemStart) * WiiLayout.BlockTotalSize), (int)((emitTo - emitFrom) * WiiLayout.BlockTotalSize));
+            Buffer.BlockCopy(context.Encrypted, (int)((emitFrom - groupStart) * Layout.BlockTotalSize), context.Output, (int)((emitFrom - itemStart) * Layout.BlockTotalSize), (int)((emitTo - emitFrom) * Layout.BlockTotalSize));
         }
 
-        return new WorkResult(context.Output, totalBytes, ((long)partition.FirstSector + itemStart) * WiiLayout.BlockTotalSize);
+        return new WorkResult(context.Output, totalBytes, ((long)partition.FirstSector + itemStart) * Layout.BlockTotalSize);
     }
 
     private RvzChunk GetChunk(RvzWorkerContext context, long totalGroupIndex, GroupEntry group, int dataSize, int exceptionLists, long junkOffset)

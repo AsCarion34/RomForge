@@ -116,7 +116,7 @@ public class Pc98PatchMainViewModel : ToolTabViewModel, IPatchViewModel
         {
             Directory.CreateDirectory(outputDir);
 
-            var result = await Pc98PatchService.ApplyAsync(SourcePath, PatchPath, outputPath, Log, progress, ct);
+            var result = await global::Patch.Core.Formats.PC98.PatchService.ApplyAsync(SourcePath, PatchPath, outputPath, Log, progress, ct);
 
             if (result.MissingFiles.Count > 0)
                 Log($"HDI에서 찾지 못한 파일 {result.MissingFiles.Count}개는 건너뛰었습니다.", LogLevel.Error);

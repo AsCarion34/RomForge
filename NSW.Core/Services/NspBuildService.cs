@@ -332,7 +332,7 @@ public static class NspBuildService
 
         string suffix = req.HasPatch ? "Patched_Repack.nsp" : "Repack.nsp";
         string displayVersion = string.IsNullOrWhiteSpace(unpackResult.DisplayVersion) ? "1.0.0" : unpackResult.DisplayVersion;
-        string fileName = NspNameBuilder.FileNameBuild(suffix, unpackResult.KrTitle, unpackResult.EnTitle, unpackResult.TitleIdStr.ToUpper(), displayVersion, unpackResult.GameVersion, unpackResult.DlcCount);
+        string fileName = NameBuilder.FileNameBuild(suffix, unpackResult.KrTitle, unpackResult.EnTitle, unpackResult.TitleIdStr.ToUpper(), displayVersion, unpackResult.GameVersion, unpackResult.DlcCount);
         string finalNsp = Path.Combine(req.OutputDir, fileName);
 
         finalNsp = Common.Utils.GetUniqueFilePath(finalNsp);

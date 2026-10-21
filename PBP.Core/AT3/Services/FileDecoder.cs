@@ -1,5 +1,4 @@
 ﻿using System.Buffers.Binary;
-using PBP.Core.AT3.Helpers;
 using PBP.Core.AT3.Models;
 
 namespace PBP.Core.AT3.Services;
@@ -69,7 +68,7 @@ public static class FileDecoder
         if (!hasFormat || dataStart < 0)
             throw new InvalidDataException("AT3 파일 구조가 올바르지 않습니다.");
 
-        if (sampleRate != At3CodecInfo.SampleRateHz)
+        if (sampleRate != CodecInfo.SampleRateHz)
             throw new NotSupportedException("지원하지 않는 샘플레이트입니다.");
 
         if (frameSize <= 0)
@@ -81,8 +80,8 @@ public static class FileDecoder
             throw new InvalidDataException("AT3에 오디오 데이터가 없습니다.");
 
         var decoder = new Decoder(channels, frameSize, jointStereo);
-        var samples = new float[frames * At3CodecInfo.NumSamples * channels];
-        var frameBuffer = new float[At3CodecInfo.NumSamples * channels];
+        var samples = new float[frames * CodecInfo.NumSamples * channels];
+        var frameBuffer = new float[CodecInfo.NumSamples * channels];
 
         for (long f = 0; f < frames; f++)
         {
@@ -91,8 +90,8 @@ public static class FileDecoder
             progress?.Invoke((double)(f + 1) / frames);
         }
 
-        long skip = Math.Min(skipSamples, frames * At3CodecInfo.NumSamples);
-        long length = frames * At3CodecInfo.NumSamples - skip;
+        long skip = Math.Min(skipSamples, frames * CodecInfo.NumSamples);
+        long length = frames * CodecInfo.NumSamples - skip;
 
         if (factSamples >= 0)
             length = Math.Min(length, factSamples);

@@ -5,7 +5,7 @@ namespace RomForge.Core.Services.Patch;
 public static class NamingFormatPresets
 {
     public static IReadOnlyList<NamingFormatPreset> All { get; } = [
-        new("01. 파일명 원본언어(1)-패치언어(1)_v버전_날짜(6)", PatchVersionInfoExtractor.DefaultNamingFormat),
+        new("01. 파일명 원본언어(1)-패치언어(1)_v버전_날짜(6)", VersionInfoExtractor.DefaultNamingFormat),
         new("02. 파일명 원본언어(1)-패치언어(1)_v버전_날짜(8)", "{fileName} ({Lan1:code1}-{Lan2:code1}_v{Version}_{Date:yyyyMMdd})"),
         new("03. 파일명 원본언어(1)2패치언어(1)_v버전_날짜(6)", "{fileName} ({Lan1:code1}2{Lan2:code1}_v{Version}_{Date:yyMMdd})"),
         new("04. 파일명 원본언어(1)2패치언어(1)_v버전_날짜(8)", "{fileName} ({Lan1:code1}2{Lan2:code1}_v{Version}_{Date:yyyyMMdd})"),

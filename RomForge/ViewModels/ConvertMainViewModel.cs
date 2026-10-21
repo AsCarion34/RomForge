@@ -194,13 +194,13 @@ public class ConvertMainViewModel : ToolTabViewModel
             case "3ds":
             case "cia":
             case "zcci":
-                var ds = new FileItem(path);
+                var ds = new Core.Models._3DS.FileItem(path);
                 return ds.SelectedTargetFormat is "" or "미지원" ? null : ds;
 
             case "wud":
             case "wux":
             case "wua":
-                return new WiiUFileItem(path);
+                return new Core.Models.WiiU.FileItem(path);
 
             case "mds":
             case "ccd":
@@ -226,7 +226,7 @@ public class ConvertMainViewModel : ToolTabViewModel
             default:
                 if (Directory.Exists(path))
                 {
-                    var wiiu = new WiiUFileItem(path);
+                    var wiiu = new Core.Models.WiiU.FileItem(path);
                     return wiiu.SelectedTargetFormat == "미지원" ? null : wiiu;
                 }
 
@@ -240,7 +240,7 @@ public class ConvertMainViewModel : ToolTabViewModel
         {
             switch (item)
             {
-                case FileItem ds:
+                case Core.Models._3DS.FileItem ds:
                     {
                         var result = await Task.Run(() => Core.Services._3DS.Util.ParseFile(ds.FilePath));
 
@@ -259,7 +259,7 @@ public class ConvertMainViewModel : ToolTabViewModel
                     }
                     break;
 
-                case WiiUFileItem wu:
+                case Core.Models.WiiU.FileItem wu:
                     await Task.Run(() =>
                     {
                         if (Directory.Exists(wu.FilePath))
@@ -427,6 +427,7 @@ public class ConvertMainViewModel : ToolTabViewModel
         });
 
         void Log(string msg, LogLevel level, string id = "") => AppendLog(msg, level);
+
         var switchConfig = AppConfig.Instance.Switch;
 
         switch (item)
@@ -477,7 +478,7 @@ public class ConvertMainViewModel : ToolTabViewModel
                 }
                 break;
 
-            case FileItem ds:
+            case Core.Models._3DS.FileItem ds:
                 {
                     KeyStore key = new();
 
@@ -507,7 +508,7 @@ public class ConvertMainViewModel : ToolTabViewModel
                 }
                 break;
 
-            case WiiUFileItem wu:
+            case Core.Models.WiiU.FileItem wu:
                 await Task.Run(() => ConvertWiiUOne(wu, _cts.Token));
                 break;
 
@@ -670,7 +671,7 @@ public class ConvertMainViewModel : ToolTabViewModel
             throw new InvalidOperationException(result.Message);
     }
 
-    private void ConvertWiiUOne(WiiUFileItem item, CancellationToken ct)
+    private void ConvertWiiUOne(Core.Models.WiiU.FileItem item, CancellationToken ct)
     {
         var sources = Converter.OpenSources(item.FilePath, KeysPath);
         var outputRoot = ResolveOutputDir(item.FilePath);

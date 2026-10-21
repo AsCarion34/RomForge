@@ -89,7 +89,7 @@ public partial class ArcadeTab : UserControl
             return;
 
         string path = files[0];
-        var patchEntry = new PatchEntry
+        var patchEntry = new Entry
         {
             DisplayName = Path.GetFileName(path),
             EntryPath = path
@@ -118,7 +118,7 @@ public partial class ArcadeTab : UserControl
         if (combo.Tag is not ArcadeMatchItem item)
             return;
 
-        if (combo.SelectedItem is not PatchEntry entry)
+        if (combo.SelectedItem is not Entry entry)
             return;
 
         if (ReferenceEquals(entry, item.PatchEntry))

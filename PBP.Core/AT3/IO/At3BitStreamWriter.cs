@@ -1,5 +1,4 @@
 using PBP.Core.AT3.Enums;
-using PBP.Core.AT3.Helpers;
 using PBP.Core.AT3.Models;
 using PBP.Core.AT3.Services;
 
@@ -54,17 +53,17 @@ public sealed class At3BitStreamWriter
             if (s_ath != null)
                 return;
 
-            var ath = new List<float>(At3CodecInfo.MaxBfus);
+            var ath = new List<float>(CodecInfo.MaxBfus);
             var athSpec = PsyCommon.CalcAth(1024, 44100);
 
-            for (int bandNum = 0; bandNum < At3CodecInfo.NumQmf; ++bandNum)
+            for (int bandNum = 0; bandNum < CodecInfo.NumQmf; ++bandNum)
             {
-                for (int blockNum = At3CodecInfo.BlocksPerBand[bandNum]; blockNum < At3CodecInfo.BlocksPerBand[bandNum + 1]; ++blockNum)
+                for (int blockNum = CodecInfo.BlocksPerBand[bandNum]; blockNum < CodecInfo.BlocksPerBand[bandNum + 1]; ++blockNum)
                 {
-                    int specNumStart = At3CodecInfo.BlockSizeTab[blockNum];
+                    int specNumStart = CodecInfo.BlockSizeTab[blockNum];
                     float x = 999;
 
-                    for (int line = specNumStart; line < specNumStart + At3CodecInfo.SpecsPerBlock[blockNum]; line++)
+                    for (int line = specNumStart; line < specNumStart + CodecInfo.SpecsPerBlock[blockNum]; line++)
                         x = MathF.Min(x, athSpec[line]);
 
                     x = (float)Math.Pow(10, 0.1f * x);
@@ -79,7 +78,7 @@ public sealed class At3BitStreamWriter
 
     private static uint ClcEnc(uint selector, ReadOnlySpan<int> mantissas, int blockSize, BitStreamWriter? bs)
     {
-        int numBits = At3CodecInfo.ClcLengthTab[selector];
+        int numBits = CodecInfo.ClcLengthTab[selector];
         uint bitsUsed = (selector > 1) ? (uint)(numBits * blockSize) : (uint)(numBits * blockSize / 2);
 
         if (bs == null)
@@ -94,9 +93,9 @@ public sealed class At3BitStreamWriter
         {
             for (int i = 0; i < blockSize / 2; ++i)
             {
-                uint code = At3CodecInfo.MantissaToClcIdx(mantissas[i * 2]) << 2;
+                uint code = CodecInfo.MantissaToClcIdx(mantissas[i * 2]) << 2;
 
-                code |= At3CodecInfo.MantissaToClcIdx(mantissas[i * 2 + 1]);
+                code |= CodecInfo.MantissaToClcIdx(mantissas[i * 2 + 1]);
 
                 bs.Write(code, numBits);
             }
@@ -107,7 +106,7 @@ public sealed class At3BitStreamWriter
 
     private static uint VlcEnc(uint selector, ReadOnlySpan<int> mantissas, int blockSize, BitStreamWriter? bs)
     {
-        var table = At3CodecInfo.HuffTables[selector - 1];
+        var table = CodecInfo.HuffTables[selector - 1];
         uint bitsUsed = 0;
 
         if (selector > 1)
@@ -132,7 +131,7 @@ public sealed class At3BitStreamWriter
         {
             for (int i = 0; i < blockSize / 2; ++i)
             {
-                uint huffS = At3CodecInfo.MantissasToVlcIndex(mantissas[i * 2], mantissas[i * 2 + 1]);
+                uint huffS = CodecInfo.MantissasToVlcIndex(mantissas[i * 2], mantissas[i * 2 + 1]);
 
                 bitsUsed += table[huffS].Bits;
 
@@ -177,10 +176,10 @@ public sealed class At3BitStreamWriter
         private static SpecUnit Provide(int bfu, uint wordlen, float[] values)
         {
             var u = new SpecUnit();
-            int first = At3CodecInfo.BlockSizeTab[bfu];
-            int last = At3CodecInfo.BlockSizeTab[bfu + 1];
+            int first = CodecInfo.BlockSizeTab[bfu];
+            int last = CodecInfo.BlockSizeTab[bfu + 1];
             int blockSize = last - first;
-            float mul = At3CodecInfo.MaxQuant[Math.Min(wordlen, 7u)];
+            float mul = CodecInfo.MaxQuant[Math.Min(wordlen, 7u)];
 
             u.Mantisas = new int[blockSize];
             u.EnergyErr = MantissaQuantizer.QuantMantisas(values, 0, blockSize, mul, bfu > LosyNaqStart, u.Mantisas);
@@ -206,8 +205,8 @@ public sealed class At3BitStreamWriter
 
             bitsUsed += 6;
 
-            int first = At3CodecInfo.BlockSizeTab[i];
-            int last = At3CodecInfo.BlockSizeTab[i + 1];
+            int first = CodecInfo.BlockSizeTab[i];
+            int last = CodecInfo.BlockSizeTab[i + 1];
             int blockSize = last - first;
             var unit = cache.GetOrCompute(i, precision[i], scaledBlocks[i].Values);
 
@@ -273,9 +272,9 @@ public sealed class At3BitStreamWriter
         {
             int bfuBand = 0;
 
-            for (int b = 1; b < At3CodecInfo.NumQmf; ++b)
+            for (int b = 1; b < CodecInfo.NumQmf; ++b)
             {
-                if (i >= At3CodecInfo.BlocksPerBand[b])
+                if (i >= CodecInfo.BlocksPerBand[b])
                     bfuBand = b;
             }
 
@@ -479,7 +478,7 @@ public sealed class At3BitStreamWriter
 
                         bs?.Write((uint)relPos, 6);
 
-                        float mul = At3CodecInfo.MaxQuant[Math.Min((uint)(i >> 3), 7u)];
+                        float mul = CodecInfo.MaxQuant[Math.Min((uint)(i >> 3), 7u)];
 
                         for (int z = 0; z < block.ScaledBlock.Values.Length; ++z)
                             mantisas[z] = MantissaQuantizer.ToInt(block.ScaledBlock.Values[z] * mul);
@@ -522,8 +521,8 @@ public sealed class At3BitStreamWriter
             if (precision[i] == 0)
                 continue;
 
-            int first = At3CodecInfo.BlockSizeTab[i];
-            int last = At3CodecInfo.BlockSizeTab[i + 1];
+            int first = CodecInfo.BlockSizeTab[i];
+            int last = CodecInfo.BlockSizeTab[i + 1];
             int blockSize = last - first;
 
             if (codingMode == 1)

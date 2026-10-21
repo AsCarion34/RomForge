@@ -1,5 +1,4 @@
-﻿using PBP.Core.AT3.Helpers;
-using PBP.Core.AT3.IO;
+﻿using PBP.Core.AT3.IO;
 using PBP.Core.AT3.Models;
 
 namespace PBP.Core.AT3.Services;
@@ -19,7 +18,7 @@ public sealed class Decoder
     private readonly Midct _midct = new();
     private readonly float[] _imdct = new float[Midct.OutputSize];
     private readonly float[] _band = new float[BandSamples];
-    private readonly int[] _mantissas = new int[At3CodecInfo.MaxSpecs];
+    private readonly int[] _mantissas = new int[CodecInfo.MaxSpecs];
     private readonly byte[] _reversed;
 
     public Decoder(int channels, int frameSize, bool jointStereo)
@@ -44,7 +43,7 @@ public sealed class Decoder
             _states[c] = new ChannelState();
             _units[c] = new ChannelUnit();
             _sub[c] = new float[Bands][];
-            _pcm[c] = new float[At3CodecInfo.NumSamples];
+            _pcm[c] = new float[CodecInfo.NumSamples];
 
             for (int b = 0; b < Bands; b++)
                 _sub[c][b] = new float[BandSamples];
@@ -55,7 +54,7 @@ public sealed class Decoder
 
     public void DecodeFrame(byte[] data, int offset, Span<float> output)
     {
-        if (output.Length < At3CodecInfo.NumSamples * _channels)
+        if (output.Length < CodecInfo.NumSamples * _channels)
             throw new ArgumentException("출력 버퍼가 작습니다.", nameof(output));
 
         if (_channels == 1)
@@ -106,7 +105,7 @@ public sealed class Decoder
         for (int c = 0; c < _channels; c++)
             _states[c].Synthesis.Synthesis(_sub[c][0], _sub[c][1], _sub[c][2], _sub[c][3], _pcm[c]);
 
-        for (int i = 0; i < At3CodecInfo.NumSamples; i++)
+        for (int i = 0; i < CodecInfo.NumSamples; i++)
         {
             for (int c = 0; c < _channels; c++)
                 output[i * _channels + c] = _pcm[c][i];
@@ -204,14 +203,14 @@ public sealed class Decoder
                 {
                     int scaleIndex = (int)br.Read(6);
                     int pos = b * 64 + (int)br.Read(6);
-                    int count = Math.Min(codedValues, At3CodecInfo.NumSpecs - pos);
+                    int count = Math.Min(codedValues, CodecInfo.NumSpecs - pos);
 
                     if (count <= 0)
                         throw new InvalidDataException("톤 성분 위치가 올바르지 않습니다.");
 
                     MantissaReader.Read(br, quant, constantLength, count, _mantissas);
 
-                    float factor = At3CodecInfo.ScaleTable[scaleIndex] / At3CodecInfo.MaxQuant[quant];
+                    float factor = CodecInfo.ScaleTable[scaleIndex] / CodecInfo.MaxQuant[quant];
                     var coefs = new float[count];
 
                     for (int m = 0; m < count; m++)
@@ -227,8 +226,8 @@ public sealed class Decoder
     {
         int numBlocks = (int)br.Read(5) + 1;
         bool constantLength = br.ReadBit() != 0;
-        Span<int> precision = stackalloc int[At3CodecInfo.MaxBfus];
-        Span<int> scaleIndex = stackalloc int[At3CodecInfo.MaxBfus];
+        Span<int> precision = stackalloc int[CodecInfo.MaxBfus];
+        Span<int> scaleIndex = stackalloc int[CodecInfo.MaxBfus];
 
         for (int i = 0; i < numBlocks; i++)
             precision[i] = (int)br.Read(3);
@@ -244,12 +243,12 @@ public sealed class Decoder
             if (precision[i] == 0)
                 continue;
 
-            int first = At3CodecInfo.BlockSizeTab[i];
-            int size = At3CodecInfo.BlockSizeTab[i + 1] - first;
+            int first = CodecInfo.BlockSizeTab[i];
+            int size = CodecInfo.BlockSizeTab[i + 1] - first;
 
             MantissaReader.Read(br, precision[i], constantLength, size, _mantissas);
 
-            float factor = At3CodecInfo.ScaleTable[scaleIndex[i]] / At3CodecInfo.MaxQuant[precision[i]];
+            float factor = CodecInfo.ScaleTable[scaleIndex[i]] / CodecInfo.MaxQuant[precision[i]];
 
             for (int j = 0; j < size; j++)
                 unit.Spectrum[first + j] = _mantissas[j] * factor;
@@ -272,8 +271,8 @@ public sealed class Decoder
 
             for (int i = 0; i < BandSamples; i++)
             {
-                _imdct[i] *= At3CodecInfo.DecodeWindow[i];
-                _imdct[BandSamples + i] *= At3CodecInfo.DecodeWindow[BandSamples - 1 - i];
+                _imdct[i] *= CodecInfo.DecodeWindow[i];
+                _imdct[BandSamples + i] *= CodecInfo.DecodeWindow[BandSamples - 1 - i];
             }
 
             ApplyGain(_imdct, state.Overlap[band], state.Gain[band], unit.Gain[band], _sub[channel][band]);
@@ -284,7 +283,7 @@ public sealed class Decoder
 
     private static void ApplyGain(float[] input, float[] overlap, List<GainPoint> now, List<GainPoint> next, float[] output)
     {
-        float scale = next.Count > 0 ? At3CodecInfo.GainLevel[next[0].Level] : 1.0f;
+        float scale = next.Count > 0 ? CodecInfo.GainLevel[next[0].Level] : 1.0f;
 
         if (now.Count == 0)
         {
@@ -297,15 +296,15 @@ public sealed class Decoder
 
             for (int i = 0; i < now.Count; i++)
             {
-                int lastPos = (int)(now[i].Location << At3CodecInfo.LocScale);
-                float level = At3CodecInfo.GainLevel[now[i].Level];
-                int nextLevel = i + 1 < now.Count ? (int)now[i + 1].Level : At3CodecInfo.ExponentOffset;
-                float inc = At3CodecInfo.GainInterpolation[nextLevel - (int)now[i].Level + At3CodecInfo.GainInterpolationPosShift];
+                int lastPos = (int)(now[i].Location << CodecInfo.LocScale);
+                float level = CodecInfo.GainLevel[now[i].Level];
+                int nextLevel = i + 1 < now.Count ? (int)now[i + 1].Level : CodecInfo.ExponentOffset;
+                float inc = CodecInfo.GainInterpolation[nextLevel - (int)now[i].Level + CodecInfo.GainInterpolationPosShift];
 
                 for (; pos < lastPos && pos < BandSamples; pos++)
                     output[pos] = (input[pos] * scale + overlap[pos]) * level;
 
-                for (; pos < lastPos + At3CodecInfo.LocSz && pos < BandSamples; pos++)
+                for (; pos < lastPos + CodecInfo.LocSz && pos < BandSamples; pos++)
                 {
                     output[pos] = (input[pos] * scale + overlap[pos]) * level;
                     level *= inc;
@@ -327,7 +326,7 @@ public sealed class Decoder
 
         public readonly List<(int Pos, float[] Coefs)> Tonals = [];
 
-        public readonly float[] Spectrum = new float[At3CodecInfo.NumSpecs];
+        public readonly float[] Spectrum = new float[CodecInfo.NumSpecs];
     }
 
     private sealed class ChannelState

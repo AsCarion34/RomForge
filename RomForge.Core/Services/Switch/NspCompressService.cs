@@ -154,7 +154,7 @@ public static class NspCompressService
                 }
             }
 
-            string displayName = $"{(isCompressMode ? Res.Log_StatusCompressing : Res.Log_StatusDecompressing)} {NspNameBuilder.CompressDisplayNameBuild(meta.KrTitle, meta.TitleId, meta.DisplayVersion)}";
+            string displayName = $"{(isCompressMode ? Res.Log_StatusCompressing : Res.Log_StatusDecompressing)} {NameBuilder.CompressDisplayNameBuild(meta.KrTitle, meta.TitleId, meta.DisplayVersion)}";
             var fout = File.Open(finalPath, FileMode.Create, FileAccess.ReadWrite);
 
             disposables.Add(fout);

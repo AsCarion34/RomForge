@@ -33,7 +33,7 @@ public class ConverterMainViewModel : ToolTabViewModel
 
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
-    public ObservableCollection<WiiUFileItem> FileItems { get; } = [];
+    public ObservableCollection<FileItem> FileItems { get; } = [];
 
     #endregion
 
@@ -71,7 +71,7 @@ public class ConverterMainViewModel : ToolTabViewModel
 
     #endregion
 
-    public event Action<WiiUFileItem>? ScrollToItemRequested;
+    public event Action<FileItem>? ScrollToItemRequested;
 
     #region Constructor
 
@@ -121,7 +121,7 @@ public class ConverterMainViewModel : ToolTabViewModel
             if (!existing.Add(path))
                 continue;
 
-            var item = new WiiUFileItem(path);
+            var item = new FileItem(path);
 
             if (item.SelectedTargetFormat == "미지원")
                 continue;
@@ -178,7 +178,7 @@ public class ConverterMainViewModel : ToolTabViewModel
         }
     }
 
-    public void RemoveItems(IEnumerable<WiiUFileItem> items)
+    public void RemoveItems(IEnumerable<FileItem> items)
     {
         foreach (var item in items.ToList())
             FileItems.Remove(item);
@@ -199,7 +199,7 @@ public class ConverterMainViewModel : ToolTabViewModel
 
     #region Private Methods
 
-    private static async Task LoadMetadataAsync(WiiUFileItem item)
+    private static async Task LoadMetadataAsync(FileItem item)
     {
         try
         {
@@ -244,7 +244,7 @@ public class ConverterMainViewModel : ToolTabViewModel
         catch { }
     }
 
-    private static void ApplyMetadata(WiiUFileItem item, ExtractorMetadata? meta)
+    private static void ApplyMetadata(FileItem item, ExtractorMetadata? meta)
     {
         if (meta is null)
             return;
@@ -378,7 +378,7 @@ public class ConverterMainViewModel : ToolTabViewModel
         }
     }
 
-    private void ConvertOne(WiiUFileItem item, CancellationToken ct)
+    private void ConvertOne(FileItem item, CancellationToken ct)
     {
         var sources = Converter.OpenSources(item.FilePath, KeysPath);
 

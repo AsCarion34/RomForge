@@ -1,6 +1,6 @@
 ﻿using System.Buffers.Binary;
 using WiiGC.Core.Interfaces;
-using WiiGC.Core.Models;
+using WiiGC.Core.Models.Wii;
 
 namespace WiiGC.Core.Services.Wii;
 
@@ -13,7 +13,7 @@ public static class IsoToWbfsConverter
     private const int WiiSectorSize = 0x8000;
     private const int SectorsPerBlock = WbfsSectorSize / WiiSectorSize;
     private const int DiscHeaderSize = 256;
-    private const int BlocksPerDisc = (int)(WiiLayout.DiscSectorCount >> (WbfsSectorShift - 15));
+    private const int BlocksPerDisc = (int)(Layout.DiscSectorCount >> (WbfsSectorShift - 15));
     private const int FreeBlockTableOffset = WbfsSectorSize - 1024;
     private const int FreeBlockTableWords = 128;
     private const int FreeBlockTableBlocks = 8191;
@@ -47,7 +47,7 @@ public static class IsoToWbfsConverter
             if (blockCount > BlocksPerDisc)
                 throw new InvalidDataException("Wii 디스크 최대 크기를 초과했습니다.");
 
-            bool[]? usage = WiiUsageScanner.Scan(input);
+            bool[]? usage = UsageScanner.Scan(input);
             using var output = File.OpenHandle(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, FileOptions.None);
             var wlbaTable = new ushort[BlocksPerDisc];
             byte[] buffer = new byte[WbfsSectorSize];

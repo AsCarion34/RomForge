@@ -1,5 +1,5 @@
-﻿using PBP.Core.AT3.Helpers;
-using PBP.Core.AT3.IO;
+﻿using PBP.Core.AT3.IO;
+using PBP.Core.AT3.Models;
 
 namespace PBP.Core.AT3.Services;
 
@@ -13,13 +13,13 @@ internal static class MantissaReader
     static MantissaReader()
     {
         for (int m = -2; m <= 1; m++)
-            ClcInverse[At3CodecInfo.MantissaToClcIdx(m)] = m;
+            ClcInverse[CodecInfo.MantissaToClcIdx(m)] = m;
 
         for (int a = -1; a <= 1; a++)
         {
             for (int b = -1; b <= 1; b++)
             {
-                int idx = (int)At3CodecInfo.MantissasToVlcIndex(a, b);
+                int idx = (int)CodecInfo.MantissasToVlcIndex(a, b);
 
                 VlcPairFirst[idx] = a;
                 VlcPairSecond[idx] = b;
@@ -29,7 +29,7 @@ internal static class MantissaReader
 
     private static short[][] BuildHuffLut()
     {
-        var tables = At3CodecInfo.HuffTables;
+        var tables = CodecInfo.HuffTables;
         var result = new short[tables.Length][];
 
         for (int t = 0; t < tables.Length; t++)
@@ -68,7 +68,7 @@ internal static class MantissaReader
     {
         if (constantLength)
         {
-            int numBits = At3CodecInfo.ClcLengthTab[selector];
+            int numBits = CodecInfo.ClcLengthTab[selector];
 
             if (selector > 1)
             {

@@ -1,0 +1,237 @@
+﻿using WiiGC.Core.Interfaces;
+using WiiGC.Core.Models.Wii;
+
+namespace WiiGC.Core.Services.Wii;
+
+internal sealed class RebuiltIsoSource : IRvzInputSource
+{
+    private const int MaxCachedGroups = 32;
+
+    private readonly IRvzInputSource _input;
+    private readonly List<PartitionReader> _readers = [];
+    private readonly List<WiiRebuildTarget> _targets = [];
+    private readonly List<(long Offset, byte[] Data)> _patches = [];
+    private readonly Dictionary<(int Partition, long Group), byte[]> _cache = [];
+    private readonly Queue<(int Partition, long Group)> _order = new();
+    private readonly PartitionEncoder _encoder = new();
+    private readonly byte[] _scratch = new byte[Layout.HashSize];
+    private readonly object _gate = new();
+    private readonly bool _ownsInput;
+
+    private RebuiltIsoSource(IRvzInputSource input, bool ownsInput = false)
+    {
+        _input = input;
+        _ownsInput = ownsInput;
+    }
+
+    public long Length => _input.Length;
+
+    public PatchResult Result { get; private set; } = PatchResult.Empty;
+
+    public static RebuiltIsoSource Create(IRvzInputSource input, IReadOnlyDictionary<string, string> replacements, Action<double>? progress, Action<PatchEntry>? entryLog, CancellationToken ct)
+    {
+        if (replacements.Count == 0)
+            throw new InvalidDataException("교체할 파일이 없습니다.");
+
+        var source = new RebuiltIsoSource(input);
+
+        try
+        {
+            source.Plan(replacements);
+
+            source.Result = new PatchResult(source._targets[0].Plan.Entries);
+
+            source.Prepare(progress, entryLog, ct);
+
+            return source;
+        }
+        catch
+        {
+            source.Dispose();
+            throw;
+        }
+    }
+
+    public static RebuiltIsoSource CreateFromFolder(string folder, IReadOnlyDictionary<string, string>? overlay, Action<double>? progress, Action<PatchEntry>? entryLog, CancellationToken ct)
+    {
+        var info = FolderInfo.Read(folder);
+        var plan = FolderPlanner.Plan(folder, overlay);
+        FolderBaseSource? baseSource = null;
+        RebuiltIsoSource? source = null;
+
+        try
+        {
+            baseSource = FolderBaseSource.Create(folder, info, plan.DataSize);
+            source = new RebuiltIsoSource(baseSource, true);
+
+            source._targets.Add(new WiiRebuildTarget(0, baseSource.CreateSpec(plan.DataSize), plan));
+
+            source.Result = new PatchResult(plan.Entries);
+
+            source.Prepare(progress, entryLog, ct);
+
+            return source;
+        }
+        catch
+        {
+            if (source != null)
+                source.Dispose();
+            else
+            {
+                plan.Data.Dispose();
+                baseSource?.Dispose();
+            }
+
+            throw;
+        }
+    }
+
+    public void Read(long offset, Span<byte> destination)
+    {
+        long end = offset + destination.Length;
+        long position = offset;
+
+        while (position < end)
+        {
+            var target = FindTarget(position, out long nextStart);
+            int done = (int)(position - offset);
+
+            if (target != null)
+            {
+                long stop = Math.Min(end, target.Spec.DataStart + target.Spec.DataSize);
+
+                ReadPartition(target, position, destination.Slice(done, (int)(stop - position)));
+
+                position = stop;
+            }
+            else
+            {
+                long stop = Math.Min(end, nextStart);
+
+                _input.Read(position, destination.Slice(done, (int)(stop - position)));
+
+                position = stop;
+            }
+        }
+
+        ApplyPatches(offset, destination);
+    }
+
+    public void Dispose()
+    {
+        _encoder.Dispose();
+
+        foreach (var target in _targets)
+            target.Plan.Data.Dispose();
+
+        foreach (var reader in _readers)
+            reader.Dispose();
+
+        if (_ownsInput)
+            _input.Dispose();
+    }
+
+    private void Plan(IReadOnlyDictionary<string, string> replacements) => IsoRebuilder.PlanTargets(_input, replacements, _readers, _targets);
+
+    private void Prepare(Action<double>? progress, Action<PatchEntry>? entryLog, CancellationToken ct)
+    {
+        var reporter = new ProgressReporter(_targets.Sum(t => PartitionEncoder.GetGroupCount(t.Plan.Data)), progress);
+
+        foreach (var target in _targets)
+        {
+            byte[] h3 = IsoRebuilder.EncodePartition(_encoder, target, null, entryLog, _ => reporter.Add(1), ct);
+
+            _patches.AddRange(IsoRebuilder.BuildHeaderPatches(_input, target.Spec, h3, target.Plan.DataSize));
+        }
+
+        progress?.Invoke(1);
+    }
+
+    private WiiRebuildTarget? FindTarget(long position, out long nextStart)
+    {
+        nextStart = long.MaxValue;
+
+        foreach (var target in _targets)
+        {
+            if (position < target.Spec.DataStart)
+            {
+                nextStart = target.Spec.DataStart;
+                return null;
+            }
+
+            if (position < target.Spec.DataStart + target.Spec.DataSize)
+                return target;
+        }
+
+        return null;
+    }
+
+    private void ReadPartition(WiiRebuildTarget target, long position, Span<byte> destination)
+    {
+        long relative = position - target.Spec.DataStart;
+        long encodedSize = target.Plan.DataSize;
+        int written = 0;
+
+        while (written < destination.Length)
+        {
+            long current = relative + written;
+            int remaining = destination.Length - written;
+
+            if (current >= encodedSize)
+            {
+                destination[written..].Clear();
+                return;
+            }
+
+            long group = current / Layout.GroupTotalSize;
+            int within = (int)(current - group * Layout.GroupTotalSize);
+            int take = (int)Math.Min(remaining, Math.Min(Layout.GroupTotalSize - within, encodedSize - current));
+            byte[] data = GetGroup(target, group);
+            int copy = Math.Clamp(data.Length - within, 0, take);
+
+            if (copy > 0)
+                data.AsSpan(within, copy).CopyTo(destination[written..]);
+
+            if (copy < take)
+                destination.Slice(written + copy, take - copy).Clear();
+
+            written += take;
+        }
+    }
+
+    private byte[] GetGroup(WiiRebuildTarget target, long group)
+    {
+        var key = (target.Index, group);
+
+        lock (_gate)
+        {
+            if (_cache.TryGetValue(key, out var cached))
+                return cached;
+
+            int length = _encoder.EncodeGroup(target.Spec.Key, target.Plan.Data, group, _scratch);
+            byte[] encoded = _encoder.Encrypted[..length].ToArray();
+
+            _cache[key] = encoded;
+            _order.Enqueue(key);
+
+            while (_order.Count > MaxCachedGroups)
+                _cache.Remove(_order.Dequeue());
+
+            return encoded;
+        }
+    }
+
+    private void ApplyPatches(long offset, Span<byte> destination)
+    {
+        long end = offset + destination.Length;
+
+        foreach (var (patchOffset, data) in _patches)
+        {
+            long from = Math.Max(offset, patchOffset);
+            long to = Math.Min(end, patchOffset + data.Length);
+
+            if (to > from)
+                data.AsSpan((int)(from - patchOffset), (int)(to - from)).CopyTo(destination[(int)(from - offset)..]);
+        }
+    }
+}

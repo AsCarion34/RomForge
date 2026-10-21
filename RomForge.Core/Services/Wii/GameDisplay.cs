@@ -1,5 +1,5 @@
 ﻿using System.Text;
-using WiiGC.Core.Models;
+using WiiGC.Core.Models.Wii;
 
 namespace RomForge.Core.Services.Wii;
 
@@ -33,7 +33,7 @@ public sealed record GameDisplay(string Title, string Publisher, string GameId, 
 
     public string IdText => $"{GameId} · {TitleId}";
 
-    public static GameDisplay From(WiiDiscInfo info)
+    public static GameDisplay From(DiscInfo info)
     {
         string gameId = info.GameId;
         string title = string.IsNullOrWhiteSpace(info.Title) ? gameId : info.Title;

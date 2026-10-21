@@ -313,8 +313,8 @@ public class RenameMainViewModel : ToolTabViewModel
     private static RenameSource ToSource(GameFile file)
     {
         var naming = file.Naming;
-        string tag = NspNameBuilder.BuildTagPart(file.FileType.Contains('B'), file.FileType.Contains('U'), naming?.DlcCount ?? 0);
-        string name = naming is null ? string.Empty : NspNameBuilder.BuildNamePart(naming.KrTitle, naming.EnTitle);
+        string tag = NameBuilder.BuildTagPart(file.FileType.Contains('B'), file.FileType.Contains('U'), naming?.DlcCount ?? 0);
+        string name = naming is null ? string.Empty : NameBuilder.BuildNamePart(naming.KrTitle, naming.EnTitle);
 
         return new RenameSource(file.FilePath, name, naming?.KoreanTitle, naming?.DefaultTitle, file.TitleID, tag, naming?.DisplayVersion ?? file.Version, naming?.TitleVersion.ToString(), HasMetadata(file));
     }

@@ -18,5 +18,5 @@ public class SmdhInfo
 
     public int IconHeight { get; init; }
 
-    public IReadOnlyList<Locale3dsLanguage> AvailableLanguages { get; init; } = [];
+    public IReadOnlyList<LocaleLanguage> AvailableLanguages { get; init; } = [];
 }

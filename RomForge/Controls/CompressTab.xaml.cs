@@ -1,7 +1,6 @@
 ﻿using Common.WPF;
 using Microsoft.Win32;
 using NSW.WPF.Services;
-using RomForge.Core.Models._3DS;
 using RomForge.Core.Models.Compression;
 using RomForge.ViewModels;
 using System.IO;
@@ -33,7 +32,7 @@ public partial class CompressTab : UserControl
         }
     }
 
-    private void OnScrollToItemRequested(CompressFileItem item) => Dispatcher.InvokeAsync(() => lvFiles.ScrollIntoView(item), DispatcherPriority.Background);
+    private void OnScrollToItemRequested(Core.Models.Compression.FileItem item) => Dispatcher.InvokeAsync(() => lvFiles.ScrollIntoView(item), DispatcherPriority.Background);
 
     private void LvFiles_DragOver(object sender, DragEventArgs e)
     {
@@ -52,7 +51,7 @@ public partial class CompressTab : UserControl
         if (e.Key != Key.Delete)
             return;
 
-        var selected = lvFiles.SelectedItems.Cast<CompressFileItem>().ToList();
+        var selected = lvFiles.SelectedItems.Cast<FileItem>().ToList();
 
         ViewModel.CompressVM.RemoveItems(selected);
     }
@@ -83,7 +82,7 @@ public partial class CompressTab : UserControl
 
     private void BtnRemove_Click(object sender, RoutedEventArgs e)
     {
-        var selected = lvFiles.SelectedItems.Cast<CompressFileItem>().ToList();
+        var selected = lvFiles.SelectedItems.Cast<FileItem>().ToList();
 
         ViewModel.CompressVM.RemoveItems(selected);
     }
@@ -100,7 +99,7 @@ public partial class CompressTab : UserControl
 
     private void MenuItem_OpenFolder_Click(object sender, RoutedEventArgs e)
     {
-        var selected = lvFiles.SelectedItems.Cast<CompressFileItem>().ToList();
+        var selected = lvFiles.SelectedItems.Cast<FileItem>().ToList();
 
         if (selected.Count == 0)
             return;

@@ -29,7 +29,7 @@ public partial class ConverterTab : UserControl
             newVm.ScrollToItemRequested += OnScrollToItemRequested;
     }
 
-    private void OnScrollToItemRequested(PspFileItem item) => Dispatcher.InvokeAsync(() => lvFiles.ScrollIntoView(item), DispatcherPriority.Background);
+    private void OnScrollToItemRequested(FileItem item) => Dispatcher.InvokeAsync(() => lvFiles.ScrollIntoView(item), DispatcherPriority.Background);
 
     private void LvFiles_DragOver(object sender, DragEventArgs e)
     {
@@ -53,7 +53,7 @@ public partial class ConverterTab : UserControl
         if (e.Key != Key.Delete)
             return;
 
-        var selected = lvFiles.SelectedItems.Cast<PspFileItem>().ToList();
+        var selected = lvFiles.SelectedItems.Cast<FileItem>().ToList();
 
         ViewModel?.RemoveItems(selected);
     }
@@ -95,7 +95,7 @@ public partial class ConverterTab : UserControl
 
     private void BtnRemove_Click(object sender, RoutedEventArgs e)
     {
-        var selected = lvFiles.SelectedItems.Cast<PspFileItem>().ToList();
+        var selected = lvFiles.SelectedItems.Cast<FileItem>().ToList();
 
         ViewModel?.RemoveItems(selected);
     }
@@ -110,7 +110,7 @@ public partial class ConverterTab : UserControl
 
     private void MenuItem_OpenFolder_Click(object sender, RoutedEventArgs e)
     {
-        var selected = lvFiles.SelectedItems.Cast<PspFileItem>().ToList();
+        var selected = lvFiles.SelectedItems.Cast<FileItem>().ToList();
 
         if (selected.Count == 0) 
             return;

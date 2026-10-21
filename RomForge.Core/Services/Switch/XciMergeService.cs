@@ -10,6 +10,7 @@ using LibHac.Tools.Fs;
 using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.NcaUtils;
 using NSW.Core;
+using NSW.Core.Enums;
 using NSW.Core.Models;
 using NSW.Core.Utils;
 using System.IO;
@@ -316,11 +317,11 @@ public class XciMergeService : BaseSwitchService
 
             log?.Invoke(string.Format(Res.Log_FinalId, meta.TitleId, meta.DisplayVersion), LogLevel.Ok, req.TargetBaseTitleId);
 
-            string finalFileName = NspNameBuilder.FileNameBuild("Merged", meta.KrTitle, meta.EnTitle, meta.TitleId, meta.DisplayVersion, meta.TitleVersion, meta.DlcCount, hasBase, hasUpdate, req.UseCompression ? NswContainerFormat.Xcz : NswContainerFormat.Xci);
+            string finalFileName = NameBuilder.FileNameBuild("Merged", meta.KrTitle, meta.EnTitle, meta.TitleId, meta.DisplayVersion, meta.TitleVersion, meta.DlcCount, hasBase, hasUpdate, req.UseCompression ? ContainerFormat.Xcz : ContainerFormat.Xci);
 
             finalPath = Utils.GetUniqueFilePath(Path.Combine(req.OutputDir, finalFileName));
 
-            string displayName = NspNameBuilder.DisplayNameBuild(meta.EnTitle, meta.TitleId, meta.DisplayVersion, meta.DlcCount, hasBase, hasUpdate, req.UseCompression ? NswContainerFormat.Xcz : NswContainerFormat.Xci);
+            string displayName = NameBuilder.DisplayNameBuild(meta.EnTitle, meta.TitleId, meta.DisplayVersion, meta.DlcCount, hasBase, hasUpdate, req.UseCompression ? ContainerFormat.Xcz : ContainerFormat.Xci);
 
             LocalStorage? baseStorage = xciBasePath != null ? new LocalStorage(xciBasePath, FileAccess.Read) : null;
 

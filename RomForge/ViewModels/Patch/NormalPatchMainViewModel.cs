@@ -177,7 +177,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
             {
                 _lastProcessedPatchPath = namingPatchPath;
 
-                var (v, d, l) = PatchVersionInfoExtractor.GetPatchMetadata(namingPatchPath);
+                var (v, d, l) = VersionInfoExtractor.GetPatchMetadata(namingPatchPath);
 
                 _cachedPatchVersion = v;
                 _cachedPatchDate = d;
@@ -187,7 +187,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
             string version = _cachedPatchVersion ?? "1.0";
             string date = _cachedPatchDate ?? DateTime.Now.ToString("yyMMdd");
             string? language = _cachedPatchLanguage;
-            string result = PatchVersionInfoExtractor.ApplyFormat(baseFileName, version, date, language, NamingFormat, AppConfig.Instance.Common.Language);
+            string result = VersionInfoExtractor.ApplyFormat(baseFileName, version, date, language, NamingFormat, AppConfig.Instance.Common.Language);
 
             NamingPreview = result;
 
@@ -386,12 +386,12 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         string outputDir = ResolveOutputDir(SourcePath);
         string? extractDir = null;
         string? outputPath = null;
-        var orchestrator = new PatchOrchestrator(Log, BuildProgressReporter(), AutoCompress, AppConfig.Instance.WiiGC.CompressLevel);
+        var orchestrator = new Orchestrator(Log, BuildProgressReporter(), AutoCompress, AppConfig.Instance.WiiGC.CompressLevel);
         var stopwatch = Stopwatch.StartNew();
 
         try
         {
-            PatchChain.Validate(patchPaths);
+            Chain.Validate(patchPaths);
             Directory.CreateDirectory(outputDir);
 
             string actualSourcePath = SourcePath;
@@ -425,14 +425,14 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
 
             if ((Path.GetExtension(actualSourcePath).Equals(".chd", StringComparison.OrdinalIgnoreCase) || Path.GetExtension(actualSourcePath).Equals(".rvz", StringComparison.OrdinalIgnoreCase)) && patchPaths.All(XdeltaAppHeaderReader.TargetsCompressedContainer))
             {
-                string directOutputName = PatchVersionInfoExtractor.ApplySuffix(Path.GetFileName(actualSourcePath), namingPatchPath, AppConfig.Instance.Patch.NamingEnabled, AppConfig.Instance.Patch.NamingFormat, AppConfig.Instance.Common.Language);
+                string directOutputName = VersionInfoExtractor.ApplySuffix(Path.GetFileName(actualSourcePath), namingPatchPath, AppConfig.Instance.Patch.NamingEnabled, AppConfig.Instance.Patch.NamingFormat, AppConfig.Instance.Common.Language);
                 string directOutputPath = Utils.GetUniqueFilePath(Path.Combine(outputDir, directOutputName));
 
                 Log("압축된 원본에 바로 패치를 시도합니다...", LogLevel.Highlight);
 
                 try
                 {
-                    await PatchChain.ApplyAsync(actualSourcePath, patchPaths, directOutputPath, outputDir, Log, BuildProgressReporter(), ct);
+                    await Chain.ApplyAsync(actualSourcePath, patchPaths, directOutputPath, outputDir, Log, BuildProgressReporter(), ct);
                     stopwatch.Stop();
 
                     outputPath = directOutputPath;
@@ -461,7 +461,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
 
             bool sourceIsTemporary = Path.GetFullPath(Path.GetDirectoryName(actualSourcePath)!)
                 .Equals(Path.GetFullPath(extractDir), StringComparison.OrdinalIgnoreCase);
-            string outputFileName = PatchVersionInfoExtractor.ApplySuffix(ResolveOutputBaseFileName(actualSourcePath), namingPatchPath, AppConfig.Instance.Patch.NamingEnabled, AppConfig.Instance.Patch.NamingFormat, AppConfig.Instance.Common.Language);
+            string outputFileName = VersionInfoExtractor.ApplySuffix(ResolveOutputBaseFileName(actualSourcePath), namingPatchPath, AppConfig.Instance.Patch.NamingEnabled, AppConfig.Instance.Patch.NamingFormat, AppConfig.Instance.Common.Language);
 
             outputPath = Path.Combine(outputDir, outputFileName);
             outputPath = Utils.GetUniqueFilePath(outputPath);

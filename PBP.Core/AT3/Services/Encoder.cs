@@ -1,5 +1,4 @@
 using PBP.Core.AT3.Enums;
-using PBP.Core.AT3.Helpers;
 using PBP.Core.AT3.IO;
 using PBP.Core.AT3.Models;
 
@@ -12,7 +11,7 @@ public sealed class Encoder
     private readonly At3BitStreamWriter _bitStreamWriter;
     private readonly ContainerParams _containerParams;
     private readonly int _channels;
-    private readonly float[] _loudnessCurve = PsyCommon.CreateLoudnessCurve(At3CodecInfo.NumSamples);
+    private readonly float[] _loudnessCurve = PsyCommon.CreateLoudnessCurve(CodecInfo.NumSamples);
 
     private readonly float[][] _pcmBuffer = NewArrays(8, 512);
     private readonly float[][] _prevPeak = NewArrays(2, 4);
@@ -82,14 +81,14 @@ public sealed class Encoder
     private static void Modulate(List<GainPoint> giCur, Span<float> bufCur, float[] bufNext, int nextOffset)
     {
         uint pos = 0;
-        float scale = At3CodecInfo.GainLevel[giCur[0].Level];
+        float scale = CodecInfo.GainLevel[giCur[0].Level];
 
         for (int i = 0; i < giCur.Count; ++i)
         {
-            uint lastPos = giCur[i].Location << At3CodecInfo.LocScale;
-            float level = At3CodecInfo.GainLevel[giCur[i].Level];
-            int incPos = unchecked((int)(((i + 1) < giCur.Count ? giCur[i + 1].Level : (uint)At3CodecInfo.ExponentOffset) - giCur[i].Level + (uint)At3CodecInfo.GainInterpolationPosShift));
-            float gainInc = At3CodecInfo.GainInterpolation[incPos];
+            uint lastPos = giCur[i].Location << CodecInfo.LocScale;
+            float level = CodecInfo.GainLevel[giCur[i].Level];
+            int incPos = unchecked((int)(((i + 1) < giCur.Count ? giCur[i + 1].Level : (uint)CodecInfo.ExponentOffset) - giCur[i].Level + (uint)CodecInfo.GainInterpolationPosShift));
+            float gainInc = CodecInfo.GainInterpolation[incPos];
 
             for (; pos < lastPos; pos++)
             {
@@ -97,7 +96,7 @@ public sealed class Encoder
                 bufNext[nextOffset + (int)pos] /= level;
             }
 
-            for (; pos < lastPos + At3CodecInfo.LocSz; pos++)
+            for (; pos < lastPos + CodecInfo.LocSz; pos++)
             {
                 bufCur[(int)pos] /= scale;
                 bufNext[nextOffset + (int)pos] /= level;
@@ -105,7 +104,7 @@ public sealed class Encoder
             }
         }
 
-        for (; pos < At3CodecInfo.MdctSize / 2; pos++)
+        for (; pos < CodecInfo.MdctSize / 2; pos++)
             bufCur[(int)pos] /= scale;
     }
 
@@ -134,8 +133,8 @@ public sealed class Encoder
             for (int i = 0; i < 256; i++)
             {
                 max = MathF.Max(max, MathF.Abs(srcBuff[256 + i]));
-                srcBuff[i] = At3CodecInfo.EncodeWindow[i] * srcBuff[256 + i];
-                tmp[256 + i] = At3CodecInfo.EncodeWindow[255 - i] * srcBuff[256 + i];
+                srcBuff[i] = CodecInfo.EncodeWindow[i] * srcBuff[256 + i];
+                tmp[256 + i] = CodecInfo.EncodeWindow[255 - i] * srcBuff[256 + i];
             }
 
             _mdct.Transform(tmp, sp);
@@ -164,8 +163,8 @@ public sealed class Encoder
             if (flatness >= flatnessThreshold)
                 continue;
 
-            int specNumStart = At3CodecInfo.BlockSizeTab[blockNum];
-            int blockLen = At3CodecInfo.SpecsPerBlock[blockNum];
+            int specNumStart = CodecInfo.BlockSizeTab[blockNum];
+            int blockLen = CodecInfo.SpecsPerBlock[blockNum];
             int specNumEnd = specNumStart + blockLen;
 
             if (specNumStart >= specNumEnd)
@@ -256,15 +255,15 @@ public sealed class Encoder
 
         for (int i = 0; i < pts.Count; ++i)
         {
-            uint lastPos = pts[i].Location << At3CodecInfo.LocScale;
-            float level = At3CodecInfo.GainLevel[pts[i].Level];
-            int incPos = unchecked((int)(((i + 1) < pts.Count ? pts[i + 1].Level : (uint)At3CodecInfo.ExponentOffset) - pts[i].Level + (uint)At3CodecInfo.GainInterpolationPosShift));
-            float gainInc = At3CodecInfo.GainInterpolation[incPos];
+            uint lastPos = pts[i].Location << CodecInfo.LocScale;
+            float level = CodecInfo.GainLevel[pts[i].Level];
+            int incPos = unchecked((int)(((i + 1) < pts.Count ? pts[i + 1].Level : (uint)CodecInfo.ExponentOffset) - pts[i].Level + (uint)CodecInfo.GainInterpolationPosShift));
+            float gainInc = CodecInfo.GainInterpolation[incPos];
 
             for (; pos < lastPos && pos < 256; ++pos)
                 outDiv[(int)pos] = level;
 
-            for (; pos < lastPos + At3CodecInfo.LocSz && pos < 256; ++pos)
+            for (; pos < lastPos + CodecInfo.LocSz && pos < 256; ++pos)
             {
                 outDiv[(int)pos] = level;
                 level *= gainInc;
@@ -277,7 +276,7 @@ public sealed class Encoder
         if (!float.IsFinite(prevOverlapScale) || prevOverlapScale <= 0.0f)
             prevOverlapScale = 1.0f;
 
-        float prevDiv = gainPoints.Count == 0 ? 1.0f : At3CodecInfo.GainLevel[gainPoints[0].Level];
+        float prevDiv = gainPoints.Count == 0 ? 1.0f : CodecInfo.GainLevel[gainPoints[0].Level];
         float prevStoredEnergy = 0.0f;
 
         for (int i = 0; i < 256; ++i)
@@ -298,8 +297,8 @@ public sealed class Encoder
         {
             float cur = curInput[i];
             float mod = cur / sampleDiv[i];
-            float winCur = At3CodecInfo.EncodeWindow[255 - i];
-            float winNext = At3CodecInfo.EncodeWindow[i];
+            float winCur = CodecInfo.EncodeWindow[255 - i];
+            float winNext = CodecInfo.EncodeWindow[i];
             float curWin = cur * winCur;
             float modCurWin = mod * winCur;
             float nextWin = cur * winNext;
@@ -325,15 +324,15 @@ public sealed class Encoder
 
     public ProcessResult ProcessFrame(ReadOnlySpan<float> data)
     {
-        if (data.Length < At3CodecInfo.NumSamples * _channels)
+        if (data.Length < CodecInfo.NumSamples * _channels)
             throw new ArgumentException("Not enough samples for a frame", nameof(data));
 
         int qmfOffset = _lookAheadPending ? 128 : 384;
-        Span<float> src = stackalloc float[At3CodecInfo.NumSamples];
+        Span<float> src = stackalloc float[CodecInfo.NumSamples];
 
         for (int channel = 0; channel < _channels; channel++)
         {
-            for (int i = 0; i < At3CodecInfo.NumSamples; ++i)
+            for (int i = 0; i < CodecInfo.NumSamples; ++i)
                 src[i] = (float)(data[i * _channels + channel] / 4.0);
 
             var la = _lookAheadBuf[channel];
@@ -403,7 +402,7 @@ public sealed class Encoder
             _gainControl.Analyze(upAll, _channels);
         }
 
-        var specs = new float[At3CodecInfo.NumSamples];
+        var specs = new float[CodecInfo.NumSamples];
 
         for (int channel = 0; channel < _channels; channel++)
         {
@@ -417,7 +416,7 @@ public sealed class Encoder
 
             _gainControl?.CreateSubbandInfo(channel, sce.SubbandInfo);
 
-            for (int band = 0; band < At3CodecInfo.NumQmf; ++band)
+            for (int band = 0; band < CodecInfo.NumQmf; ++band)
             {
                 int qmfIdx = channel + band * 2;
                 var analysis = CalcGainEnergyScale(_pcmBuffer[qmfIdx].AsSpan(0, 256), _pcmBuffer[qmfIdx].AsSpan(256, 256), sce.SubbandInfo.GetGainPoints(band), _prevOverlapGainScale[channel][band]);
@@ -447,7 +446,7 @@ public sealed class Encoder
                 for (int i = 0; i < specs.Length; i++)
                     energy[i] = specs[i] * specs[i];
 
-                var flatnessPerBfu = PsyCommon.CalcSpectralFlatnessPerBfu(energy, At3CodecInfo.BlockSizeTab, At3CodecInfo.SpecsPerBlock, At3CodecInfo.MaxBfus);
+                var flatnessPerBfu = PsyCommon.CalcSpectralFlatnessPerBfu(energy, CodecInfo.BlockSizeTab, CodecInfo.SpecsPerBlock, CodecInfo.MaxBfus);
                 var tonals = ExtractTonalComponents(specs, flatnessPerBfu);
 
                 sce.TonalBlocks.Clear();

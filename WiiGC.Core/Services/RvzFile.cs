@@ -3,6 +3,7 @@ using System.Buffers.Binary;
 using System.Security.Cryptography;
 using WiiGC.Core.Enums;
 using WiiGC.Core.Models;
+using WiiGC.Core.Models.Wii;
 
 namespace WiiGC.Core.Services;
 
@@ -48,7 +49,7 @@ internal sealed class RvzFile
 
         bool powerOfTwo = (chunkSize & (chunkSize - 1)) == 0;
 
-        return (powerOfTwo && chunkSize >= WiiLayout.BlockTotalSize) || chunkSize % WiiLayout.GroupTotalSize == 0;
+        return (powerOfTwo && chunkSize >= Layout.BlockTotalSize) || chunkSize % Layout.GroupTotalSize == 0;
     }
 
     public bool IsGroupCompressed(GroupEntry group) => IsRvz ? group.IsCompressed : Compression != RvzCompressionType.None;

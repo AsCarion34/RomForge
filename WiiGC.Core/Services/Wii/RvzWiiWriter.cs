@@ -4,6 +4,7 @@ using System.Buffers.Binary;
 using System.Security.Cryptography;
 using WiiGC.Core.Models;
 using WiiGC.Core.Interfaces;
+using WiiGC.Core.Models.Wii;
 
 namespace WiiGC.Core.Services.Wii;
 
@@ -43,15 +44,15 @@ internal sealed class RvzWiiWriter
 
         bool powerOfTwo = chunkSize > 0 && (chunkSize & (chunkSize - 1)) == 0;
 
-        if (!powerOfTwo || chunkSize < WiiLayout.BlockTotalSize || chunkSize > WiiLayout.GroupTotalSize)
+        if (!powerOfTwo || chunkSize < Layout.BlockTotalSize || chunkSize > Layout.GroupTotalSize)
             throw new ArgumentOutOfRangeException(nameof(chunkSize), "Wii 압축은 32KiB에서 2MiB 사이의 2의 거듭제곱 청크 크기만 지원합니다.");
 
         _input = input;
         _output = output;
         _compressionLevel = compressionLevel;
         _chunkSize = chunkSize;
-        _blocksPerChunk = chunkSize / WiiLayout.BlockTotalSize;
-        _chunksPerHashGroup = WiiLayout.GroupTotalSize / chunkSize;
+        _blocksPerChunk = chunkSize / Layout.BlockTotalSize;
+        _chunksPerHashGroup = Layout.GroupTotalSize / chunkSize;
     }
 
     public void Write(Action<double>? progress, CancellationToken ct)
@@ -65,10 +66,10 @@ internal sealed class RvzWiiWriter
 
         _input.Read(0, discHeader);
 
-        var partitions = WiiPartitionTable.Read(_input, isoSize);
+        var partitions = PartitionTable.Read(_input, isoSize);
         var rawRegions = new List<RawRegion>();
         var regionGroupInfo = new List<(uint GroupIndex, uint GroupCount)>();
-        var partitionEntries = new List<(WiiPartitionSpec Spec, uint GroupIndex, uint GroupCount)>();
+        var partitionEntries = new List<(PartitionSpec Spec, uint GroupIndex, uint GroupCount)>();
         uint totalGroups = 0;
         long lastEnd = 0;
 
@@ -82,7 +83,7 @@ internal sealed class RvzWiiWriter
             if (size <= 0)
                 return;
 
-            long blockSkip = offset % WiiLayout.BlockTotalSize;
+            long blockSkip = offset % Layout.BlockTotalSize;
             long rewoundBase = offset - blockSkip;
             long extendedSize = size + blockSkip;
             uint groups = (uint)((extendedSize + _chunkSize - 1) / _chunkSize);
@@ -101,7 +102,7 @@ internal sealed class RvzWiiWriter
             AddRaw(lastEnd, spec.ContainerOffset - lastEnd);
             AddRaw(spec.ContainerOffset, spec.DataStart - spec.ContainerOffset);
 
-            long alignedBlocks = spec.DataSize / WiiLayout.BlockTotalSize;
+            long alignedBlocks = spec.DataSize / Layout.BlockTotalSize;
             uint groupCount = (uint)((alignedBlocks + _blocksPerChunk - 1) / _blocksPerChunk);
 
             partitionEntries.Add((spec, totalGroups, groupCount));
@@ -117,7 +118,7 @@ internal sealed class RvzWiiWriter
         long partitionTableBytes = (long)partitionEntries.Count * PartitionEntrySize;
         long upperBound = EstimateUpperBound(partitionTableBytes, groupTableBytes);
 
-        upperBound = (upperBound + WiiLayout.BlockTotalSize - 1) / WiiLayout.BlockTotalSize * WiiLayout.BlockTotalSize;
+        upperBound = (upperBound + Layout.BlockTotalSize - 1) / Layout.BlockTotalSize * Layout.BlockTotalSize;
 
         long bytesWritten = upperBound;
         long totalWork = isoSize;
@@ -126,7 +127,7 @@ internal sealed class RvzWiiWriter
 
         if (_input is WiaSource wiaSource)
         {
-            int groupsPerChunk = (int)Math.Ceiling(wiaSource.ChunkSize / (double)WiiLayout.GroupDataSize);
+            int groupsPerChunk = (int)Math.Ceiling(wiaSource.ChunkSize / (double)Layout.GroupDataSize);
 
             window = Math.Clamp(Environment.ProcessorCount * groupsPerChunk, window, 512);
         }
@@ -184,15 +185,15 @@ internal sealed class RvzWiiWriter
 
             foreach (var (spec, groupIndex, groupCount) in partitionEntries)
             {
-                long totalBlocks = spec.DataSize / WiiLayout.BlockTotalSize;
-                long numHashGroups = (totalBlocks + WiiLayout.BlocksPerGroup - 1) / WiiLayout.BlocksPerGroup;
+                long totalBlocks = spec.DataSize / Layout.BlockTotalSize;
+                long numHashGroups = (totalBlocks + Layout.BlocksPerGroup - 1) / Layout.BlocksPerGroup;
 
                 for (long hg = 0; hg < numHashGroups; hg++)
                 {
-                    long hashGroupBlockStart = hg * WiiLayout.BlocksPerGroup;
-                    int blocksInThisGroup = (int)Math.Min(WiiLayout.BlocksPerGroup, totalBlocks - hashGroupBlockStart);
-                    long readOffset = spec.DataStart + hashGroupBlockStart * WiiLayout.BlockTotalSize;
-                    long weight = (long)blocksInThisGroup * WiiLayout.BlockTotalSize;
+                    long hashGroupBlockStart = hg * Layout.BlocksPerGroup;
+                    int blocksInThisGroup = (int)Math.Min(Layout.BlocksPerGroup, totalBlocks - hashGroupBlockStart);
+                    long readOffset = spec.DataStart + hashGroupBlockStart * Layout.BlockTotalSize;
+                    long weight = (long)blocksInThisGroup * Layout.BlockTotalSize;
                     var specRef = spec;
                     var groupIndexRef = groupIndex;
                     var groupCountRef = groupCount;
@@ -259,10 +260,10 @@ internal sealed class RvzWiiWriter
         return Compress(context, compressor, main, packedSize);
     }
 
-    private (uint, GroupResult)[] ProcessPartitionHashGroup(Context context, ZstdSharp.Compressor compressor, WiiPartitionSpec spec, long readOffset, long hashGroupBlockStart, int blocksInThisGroup, long totalBlocks, uint groupIndex, uint groupCount)
+    private (uint, GroupResult)[] ProcessPartitionHashGroup(Context context, ZstdSharp.Compressor compressor, PartitionSpec spec, long readOffset, long hashGroupBlockStart, int blocksInThisGroup, long totalBlocks, uint groupIndex, uint groupCount)
     {
-        if (context.Decrypted.Length < WiiLayout.GroupDataSize)
-            context.Decrypted = new byte[WiiLayout.GroupDataSize];
+        if (context.Decrypted.Length < Layout.GroupDataSize)
+            context.Decrypted = new byte[Layout.GroupDataSize];
 
         var exceptionsPerChunk = new List<HashException>[_chunksPerHashGroup];
 
@@ -270,13 +271,13 @@ internal sealed class RvzWiiWriter
         {
             foreach (var exception in context.Exceptions)
             {
-                int globalBlock = exception.Offset / WiiLayout.BlockHeaderSize;
-                int slot = exception.Offset - globalBlock * WiiLayout.BlockHeaderSize;
+                int globalBlock = exception.Offset / Layout.BlockHeaderSize;
+                int slot = exception.Offset - globalBlock * Layout.BlockHeaderSize;
                 int chunkLocal = globalBlock / _blocksPerChunk;
                 int blockInChunk = globalBlock % _blocksPerChunk;
                 var list = exceptionsPerChunk[chunkLocal] ??= [];
 
-                list.Add(new HashException((ushort)(blockInChunk * WiiLayout.BlockHeaderSize + slot), exception.Hash));
+                list.Add(new HashException((ushort)(blockInChunk * Layout.BlockHeaderSize + slot), exception.Hash));
             }
 
             for (int c = 0; c < _chunksPerHashGroup; c++)
@@ -284,16 +285,16 @@ internal sealed class RvzWiiWriter
         }
         else
         {
-            if (context.Raw.Length < WiiLayout.GroupTotalSize)
-                context.Raw = new byte[WiiLayout.GroupTotalSize];
+            if (context.Raw.Length < Layout.GroupTotalSize)
+                context.Raw = new byte[Layout.GroupTotalSize];
 
-            if (context.Hashes.Length < WiiLayout.GroupHeaderSize)
-                context.Hashes = new byte[WiiLayout.GroupHeaderSize];
+            if (context.Hashes.Length < Layout.GroupHeaderSize)
+                context.Hashes = new byte[Layout.GroupHeaderSize];
 
-            if (context.Fresh.Length < WiiLayout.GroupHeaderSize)
-                context.Fresh = new byte[WiiLayout.GroupHeaderSize];
+            if (context.Fresh.Length < Layout.GroupHeaderSize)
+                context.Fresh = new byte[Layout.GroupHeaderSize];
 
-            int rawLength = blocksInThisGroup * WiiLayout.BlockTotalSize;
+            int rawLength = blocksInThisGroup * Layout.BlockTotalSize;
 
             _input.Read(readOffset, context.Raw.AsSpan(0, rawLength));
 
@@ -301,44 +302,44 @@ internal sealed class RvzWiiWriter
             aes.Key = spec.Key;
             Span<byte> zeroIv = stackalloc byte[16];
 
-            Array.Clear(context.Decrypted, 0, WiiLayout.GroupDataSize);
+            Array.Clear(context.Decrypted, 0, Layout.GroupDataSize);
 
             for (int j = 0; j < blocksInThisGroup; j++)
             {
-                var block = context.Raw.AsSpan(j * WiiLayout.BlockTotalSize, WiiLayout.BlockTotalSize);
-                var iv = block.Slice(WiiLayout.IvOffset, 16);
+                var block = context.Raw.AsSpan(j * Layout.BlockTotalSize, Layout.BlockTotalSize);
+                var iv = block.Slice(Layout.IvOffset, 16);
 
-                aes.DecryptCbc(block[WiiLayout.BlockHeaderSize..], iv, context.Decrypted.AsSpan(j * WiiLayout.BlockDataSize, WiiLayout.BlockDataSize), System.Security.Cryptography.PaddingMode.None);
-                aes.DecryptCbc(block[..WiiLayout.BlockHeaderSize], zeroIv, context.Hashes.AsSpan(j * WiiLayout.BlockHeaderSize, WiiLayout.BlockHeaderSize), System.Security.Cryptography.PaddingMode.None);
+                aes.DecryptCbc(block[Layout.BlockHeaderSize..], iv, context.Decrypted.AsSpan(j * Layout.BlockDataSize, Layout.BlockDataSize), System.Security.Cryptography.PaddingMode.None);
+                aes.DecryptCbc(block[..Layout.BlockHeaderSize], zeroIv, context.Hashes.AsSpan(j * Layout.BlockHeaderSize, Layout.BlockHeaderSize), System.Security.Cryptography.PaddingMode.None);
             }
 
-            WiiHashTree.ComputeHashes(context.Decrypted, context.Fresh);
+            HashTree.ComputeHashes(context.Decrypted, context.Fresh);
 
             for (int j = 0; j < blocksInThisGroup; j++)
             {
                 int chunkLocal = j / _blocksPerChunk;
                 int blockInChunk = j % _blocksPerChunk;
-                var desired = context.Hashes.AsSpan(j * WiiLayout.BlockHeaderSize, WiiLayout.BlockHeaderSize);
-                var computed = context.Fresh.AsSpan(j * WiiLayout.BlockHeaderSize, WiiLayout.BlockHeaderSize);
+                var desired = context.Hashes.AsSpan(j * Layout.BlockHeaderSize, Layout.BlockHeaderSize);
+                var computed = context.Fresh.AsSpan(j * Layout.BlockHeaderSize, Layout.BlockHeaderSize);
 
-                foreach (int slot in WiiHashTree.CompareSlots())
+                foreach (int slot in HashTree.CompareSlots())
                 {
-                    var a = desired.Slice(slot, WiiLayout.HashSize);
-                    var b = computed.Slice(slot, WiiLayout.HashSize);
+                    var a = desired.Slice(slot, Layout.HashSize);
+                    var b = computed.Slice(slot, Layout.HashSize);
 
                     if (a.SequenceEqual(b))
                         continue;
 
                     var list = exceptionsPerChunk[chunkLocal] ??= [];
-                    int offset = blockInChunk * WiiLayout.BlockHeaderSize + slot;
+                    int offset = blockInChunk * Layout.BlockHeaderSize + slot;
 
                     list.Add(new HashException((ushort)offset, a.ToArray()));
                 }
             }
         }
 
-        long totalDecryptedBytes = totalBlocks * WiiLayout.BlockDataSize;
-        long chunkBytesEach = (long)_blocksPerChunk * WiiLayout.BlockDataSize;
+        long totalDecryptedBytes = totalBlocks * Layout.BlockDataSize;
+        long chunkBytesEach = (long)_blocksPerChunk * Layout.BlockDataSize;
         var output = new List<(uint, GroupResult)>(_chunksPerHashGroup);
 
         for (int c = 0; c < _chunksPerHashGroup; c++)
@@ -423,7 +424,7 @@ internal sealed class RvzWiiWriter
         return bytes;
     }
 
-    private void FinishHeaders(byte[] discHeader, long isoSize, GroupEntry[] groups, List<RawRegion> rawRegions, List<(uint GroupIndex, uint GroupCount)> regionGroupInfo, List<(WiiPartitionSpec Spec, uint GroupIndex, uint GroupCount)> partitionEntries, long upperBound, CancellationToken ct)
+    private void FinishHeaders(byte[] discHeader, long isoSize, GroupEntry[] groups, List<RawRegion> rawRegions, List<(uint GroupIndex, uint GroupCount)> regionGroupInfo, List<(PartitionSpec Spec, uint GroupIndex, uint GroupCount)> partitionEntries, long upperBound, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
 
@@ -440,8 +441,8 @@ internal sealed class RvzWiiWriter
             var span = partitionTable.AsSpan(i * PartitionEntrySize, PartitionEntrySize);
 
             spec.Key.CopyTo(span);
-            BinaryPrimitives.WriteUInt32BigEndian(span[16..], (uint)(spec.DataStart / WiiLayout.BlockTotalSize));
-            BinaryPrimitives.WriteUInt32BigEndian(span[20..], (uint)(spec.DataSize / WiiLayout.BlockTotalSize));
+            BinaryPrimitives.WriteUInt32BigEndian(span[16..], (uint)(spec.DataStart / Layout.BlockTotalSize));
+            BinaryPrimitives.WriteUInt32BigEndian(span[20..], (uint)(spec.DataSize / Layout.BlockTotalSize));
             BinaryPrimitives.WriteUInt32BigEndian(span[24..], groupIndex);
             BinaryPrimitives.WriteUInt32BigEndian(span[28..], groupCount);
             BinaryPrimitives.WriteUInt32BigEndian(span[32..], 0);

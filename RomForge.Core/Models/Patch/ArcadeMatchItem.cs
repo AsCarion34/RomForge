@@ -19,8 +19,8 @@ public class ArcadeMatchItem : ViewModelBase
         }
     }
 
-    private PatchEntry? _patchEntry;
-    public PatchEntry? PatchEntry
+    private Entry? _patchEntry;
+    public Entry? PatchEntry
     {
         get => _patchEntry;
         set { _patchEntry = value; OnPropertyChanged(); }

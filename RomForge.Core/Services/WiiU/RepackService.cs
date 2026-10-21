@@ -360,7 +360,7 @@ public sealed class RepackService()
             parts.Add(dlcCount > 1 ? $"{dlcCount}D" : "D");
 
         string comp = string.Join("+", parts);
-        string safeName = NspNameBuilder.SafeFileName(titleName);
+        string safeName = NameBuilder.SafeFileName(titleName);
 
         return $"{safeName} [{titleIdHex}] ({comp})";
     }
@@ -434,7 +434,7 @@ public sealed class RepackService()
 
     private static string BuildWupFolderName(TitleInputEntry entry)
     {
-        string safeName = NspNameBuilder.SafeFileName(entry.TitleName ?? entry.DisplayName);
+        string safeName = NameBuilder.SafeFileName(entry.TitleName ?? entry.DisplayName);
         string titleIdHex = entry.TitleIdHex.ToUpper();
         string roleTag = entry.Role switch
         {

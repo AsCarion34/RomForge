@@ -20,12 +20,12 @@ public static class NspPatchApplier
         {
             using var archive = ArchivePatchSourceFactory.Open(patchPath, patchPassword);
 
-            matchedCount += ApplyIndex(SwitchPatchIndex.FromArchive(archive), exefsDir, romfsDir, progress, log, "한글패치");
+            matchedCount += ApplyIndex(PatchIndex.FromArchive(archive), exefsDir, romfsDir, progress, log, "한글패치");
             matchedCount += NspExefsPatchApplier.ApplyArchiveExefsPatches(archive, exefsDir, progress, log);
         }
         else if (Directory.Exists(patchPath))
         {
-            matchedCount += ApplyIndex(SwitchPatchIndex.FromFolder(patchPath), exefsDir, romfsDir, progress, log, "한글패치");
+            matchedCount += ApplyIndex(PatchIndex.FromFolder(patchPath), exefsDir, romfsDir, progress, log, "한글패치");
             matchedCount += NspExefsPatchApplier.ApplyFolderExefsPatches(patchPath, exefsDir, progress, log);
         }
 
@@ -78,14 +78,14 @@ public static class NspPatchApplier
         {
             using var archive = ArchivePatchSourceFactory.Open(patchPath, patchPassword);
 
-            matchedCount += ApplyIndex(SwitchPatchIndex.FromArchive(archive), string.Empty, romfsDir, progress, log, label);
+            matchedCount += ApplyIndex(PatchIndex.FromArchive(archive), string.Empty, romfsDir, progress, log, label);
         }
         else
         {
             if (!Directory.Exists(patchPath))
                 return;
 
-            matchedCount += ApplyIndex(SwitchPatchIndex.FromFolder(patchPath), string.Empty, romfsDir, progress, log, label);
+            matchedCount += ApplyIndex(PatchIndex.FromFolder(patchPath), string.Empty, romfsDir, progress, log, label);
         }
 
         if (matchedCount == 0)
@@ -97,10 +97,10 @@ public static class NspPatchApplier
         var dirs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         if (exefsDir.Length > 0 && Directory.Exists(exefsDir))
-            dirs[SwitchPatchIndex.ExefsPrefix] = exefsDir;
+            dirs[PatchIndex.ExefsPrefix] = exefsDir;
 
         if (romfsDir.Length > 0 && Directory.Exists(romfsDir))
-            dirs[SwitchPatchIndex.RomfsPrefix] = romfsDir;
+            dirs[PatchIndex.RomfsPrefix] = romfsDir;
 
         if (dirs.Count == 0)
             return 0;

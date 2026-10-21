@@ -14,7 +14,7 @@ public sealed class PkgSourceAccessor : IVitaSourceAccessor
     private const int StatBinSize = 768;
 
     private readonly FileStream _stream;
-    private readonly VitaAes128Ctr _ctr;
+    private readonly Aes128Ctr _ctr;
     private readonly Dictionary<string, PkgItem> _items;
     private readonly byte[]? _workBinBytes;
     private readonly byte[] _headBinBytes;
@@ -30,13 +30,13 @@ public sealed class PkgSourceAccessor : IVitaSourceAccessor
     private PkgSourceAccessor(string pkgPath, string? license, byte[]? klicensee)
     {
         _stream = new FileStream(pkgPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        Header = VitaPkgDecryptor.ReadHeader(_stream);
-        _ctr = VitaPkgDecryptor.CreateCipher(Header);
+        Header = PkgDecryptor.ReadHeader(_stream);
+        _ctr = PkgDecryptor.CreateCipher(Header);
 
-        var items = VitaPkgDecryptor.ReadItemTable(_stream, Header, _ctr);
+        var items = PkgDecryptor.ReadItemTable(_stream, Header, _ctr);
 
         _items = items
-            .Where(i => !VitaPkgDecryptor.IsDirectory(i))
+            .Where(i => !PkgDecryptor.IsDirectory(i))
             .GroupBy(i => i.Name.Trim('/'), StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
@@ -53,10 +53,10 @@ public sealed class PkgSourceAccessor : IVitaSourceAccessor
 
         _tailBinBytes = ReadRawRange(tailStart, _stream.Length - tailStart);
 
-        byte[]? resolvedKlicensee = klicensee ?? (license != null ? VitaPkgLicenseResolver.ResolveKlicensee(license, Header.ContentId) : null);
+        byte[]? resolvedKlicensee = klicensee ?? (license != null ? PkgLicenseResolver.ResolveKlicensee(license, Header.ContentId) : null);
 
         if (resolvedKlicensee != null)
-            _workBinBytes = VitaPkgLicenseResolver.BuildWorkBin(Header.ContentId, resolvedKlicensee);
+            _workBinBytes = PkgLicenseResolver.BuildWorkBin(Header.ContentId, resolvedKlicensee);
     }
 
     private byte[] ReadRawRange(long offset, long size)
@@ -164,7 +164,7 @@ public sealed class PkgSourceAccessor : IVitaSourceAccessor
         if (!_items.TryGetValue(rel, out var item))
             throw new FileNotFoundException(relativePath);
 
-        return VitaPkgDecryptor.DecryptItemData(_stream, Header, _ctr, item);
+        return PkgDecryptor.DecryptItemData(_stream, Header, _ctr, item);
     }
 
     public long GetFileSize(string relativePath)
@@ -192,7 +192,7 @@ public sealed class PkgSourceAccessor : IVitaSourceAccessor
         return item.DataSize;
     }
 
-    private static string Normalize(string path) => VitaPatchShared.NormalizeZipPath(path);
+    private static string Normalize(string path) => PatchShared.NormalizeZipPath(path);
 
     public void Dispose()
     {

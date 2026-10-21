@@ -10,6 +10,7 @@ using LibHac.Tools.Fs;
 using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.NcaUtils;
 using NSW.Core;
+using NSW.Core.Enums;
 using NSW.Core.Models;
 using NSW.Core.Utils;
 using RomForge.Core.Models.Switch;
@@ -285,7 +286,7 @@ public class NspMergeService : BaseSwitchService
 
             log?.Invoke(string.Format(Res.Log_FinalId, meta.TitleId, meta.DisplayVersion), LogLevel.Ok, req.TargetBaseTitleId);
 
-            string finalFileName = NspNameBuilder.FileNameBuild("Merged", meta.KrTitle, meta.EnTitle, meta.TitleId, meta.DisplayVersion, meta.TitleVersion, meta.DlcCount, hasBase, hasUpdate, req.UseCompression ? NswContainerFormat.Nsz : NswContainerFormat.Nsp);
+            string finalFileName = NameBuilder.FileNameBuild("Merged", meta.KrTitle, meta.EnTitle, meta.TitleId, meta.DisplayVersion, meta.TitleVersion, meta.DlcCount, hasBase, hasUpdate, req.UseCompression ? ContainerFormat.Nsz : ContainerFormat.Nsp);
 
             finalPath = Utils.GetUniqueFilePath(Path.Combine(req.OutputDir, finalFileName));
 
@@ -297,7 +298,7 @@ public class NspMergeService : BaseSwitchService
                 finalPath = Path.Combine(req.OutputDir, nameWithoutExt + "_" + ext);
             }
 
-            string displayName = NspNameBuilder.DisplayNameBuild(meta.EnTitle, meta.TitleId, meta.DisplayVersion, meta.DlcCount, hasBase, hasUpdate, req.UseCompression ? NswContainerFormat.Nsz : NswContainerFormat.Nsp);
+            string displayName = NameBuilder.DisplayNameBuild(meta.EnTitle, meta.TitleId, meta.DisplayVersion, meta.DlcCount, hasBase, hasUpdate, req.UseCompression ? ContainerFormat.Nsz : ContainerFormat.Nsp);
             using var fout = File.Open(finalPath, FileMode.Create, FileAccess.ReadWrite);
 
             await Pfs0Builder.WriteAsync($"{Res.Log_Merging} {displayName}", meta.TitleId, fileEntries, fout, 0x20, progress, ct);

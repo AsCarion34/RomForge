@@ -1,5 +1,4 @@
 using PBP.Core.AT3.Enums;
-using PBP.Core.AT3.Helpers;
 using PBP.Core.AT3.Models;
 
 namespace PBP.Core.AT3.Services;
@@ -108,7 +107,7 @@ public sealed class GainControlAnalyzer
         return a;
     }
 
-    private static float LimitRel(float x) => MathF.Min(MathF.Max(x, At3CodecInfo.GainLevel[15]), At3CodecInfo.GainLevel[0]);
+    private static float LimitRel(float x) => MathF.Min(MathF.Max(x, CodecInfo.GainLevel[15]), CodecInfo.GainLevel[0]);
 
     private static void BuildSubframeDivisors(List<GainCurvePoint> pts, Span<float> outDiv)
     {
@@ -120,15 +119,15 @@ public sealed class GainControlAnalyzer
 
         for (int i = 0; i < pts.Count; ++i)
         {
-            uint lastPos = pts[i].Location << At3CodecInfo.LocScale;
-            float level = At3CodecInfo.GainLevel[pts[i].Level];
-            int incPos = unchecked((int)(((i + 1) < pts.Count ? pts[i + 1].Level : (uint)At3CodecInfo.ExponentOffset) - pts[i].Level + (uint)At3CodecInfo.GainInterpolationPosShift));
-            float gainInc = At3CodecInfo.GainInterpolation[incPos];
+            uint lastPos = pts[i].Location << CodecInfo.LocScale;
+            float level = CodecInfo.GainLevel[pts[i].Level];
+            int incPos = unchecked((int)(((i + 1) < pts.Count ? pts[i + 1].Level : (uint)CodecInfo.ExponentOffset) - pts[i].Level + (uint)CodecInfo.GainInterpolationPosShift));
+            float gainInc = CodecInfo.GainInterpolation[incPos];
 
             for (; pos < lastPos && pos < 256; ++pos)
                 sampleDiv[(int)pos] = level;
 
-            for (; pos < lastPos + At3CodecInfo.LocSz && pos < 256; ++pos)
+            for (; pos < lastPos + CodecInfo.LocSz && pos < 256; ++pos)
             {
                 sampleDiv[(int)pos] = level;
                 level *= gainInc;
@@ -437,7 +436,7 @@ public sealed class GainControlAnalyzer
 
                 if (pitchBoundaryValid)
                 {
-                    float divisor = curvePoints.Count == 0 ? 1.0f : At3CodecInfo.GainLevel[curvePoints[0].Level];
+                    float divisor = curvePoints.Count == 0 ? 1.0f : CodecInfo.GainLevel[curvePoints[0].Level];
 
                     point0PrevReference = previousBoundaryRms;
                     hpfRmsNextMod = currentBoundaryRms / divisor;
@@ -446,7 +445,7 @@ public sealed class GainControlAnalyzer
                 else if (curvePoints.Count != 0 && curvePoints[0].Location > 0)
                 {
                     uint nBefore = curvePoints[0].Location;
-                    float divisor = At3CodecInfo.GainLevel[curvePoints[0].Level];
+                    float divisor = CodecInfo.GainLevel[curvePoints[0].Level];
                     float sum = 0.0f;
 
                     for (int sf = 0; sf < nBefore; ++sf)
@@ -497,10 +496,10 @@ public sealed class GainControlAnalyzer
 
                     if (hpfRmsNextModValid && point0PrevReference > 1e-6f && hpfRmsNextMod > 1e-6f)
                     {
-                        static ushort FirstLevel(List<GainCurvePoint> pts) => pts.Count == 0 ? (ushort)At3CodecInfo.ExponentOffset : (ushort)pts[0].Level;
+                        static ushort FirstLevel(List<GainCurvePoint> pts) => pts.Count == 0 ? (ushort)CodecInfo.ExponentOffset : (ushort)pts[0].Level;
                         float desiredScale = LimitRel(point0PrevReference / hpfRmsNextMod);
-                        float scaleBefore = At3CodecInfo.GainLevel[FirstLevel(curveBeforePoint0)];
-                        float scaleAfter = At3CodecInfo.GainLevel[FirstLevel(curvePoints)];
+                        float scaleBefore = CodecInfo.GainLevel[FirstLevel(curveBeforePoint0)];
+                        float scaleAfter = CodecInfo.GainLevel[FirstLevel(curvePoints)];
                         const float eps = 1e-9f;
                         float boundaryErrBefore = MathF.Abs(MathF.Log2(MathF.Max(scaleBefore, eps) / MathF.Max(desiredScale, eps)));
                         float boundaryErrAfter = MathF.Abs(MathF.Log2(MathF.Max(scaleAfter, eps) / MathF.Max(desiredScale, eps)));

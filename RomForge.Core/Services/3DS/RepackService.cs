@@ -219,7 +219,7 @@ public class RepackService(Action<string, LogLevel> log, Func<string?> getPatchP
         if (repackedNcchs.Count == 0)
             throw new InvalidOperationException("언팩된 파티션이 없습니다.");
 
-        string safeFileName = NspNameBuilder.SafeFileName(displayName);
+        string safeFileName = NameBuilder.SafeFileName(displayName);
         string fileName = string.IsNullOrEmpty(safeFileName) ? "output" : safeFileName;
         string namePart = string.IsNullOrEmpty(titleId) ? fileName : $"{fileName} [{titleId.ToUpperInvariant()}]";
         string outputBasePath = Path.Combine(outputPath, namePart + "_Repack");

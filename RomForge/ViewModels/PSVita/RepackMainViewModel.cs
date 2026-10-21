@@ -448,14 +448,14 @@ public class RepackMainViewModel : ToolTabViewModel
                     return;
 
                 string suffix = MergePatchIntoGame ? $"_{label.ToLower()}_merged.zip" : $"_{label.ToLower()}.zip";
-                string fileName = PatchVersionInfoExtractor.ApplySuffix($"{baseName}{suffix}", defaultPatchPath);
+                string fileName = VersionInfoExtractor.ApplySuffix($"{baseName}{suffix}", defaultPatchPath);
                 zipFileName = Utils.GetUniqueFilePath(Path.Combine(OutputPath!, fileName));
 
                 if (MergePatchIntoGame)
                 {
                     Log($"{label}용 게임+패치 병합 중...", LogLevel.Highlight);
 
-                    var result = await VitaPatchOutputBuilder.BuildMergedFromEntriesAsync(entries, defaultPatchPath, zipFileName, target, Log, BuildProgressReporter(), _cts.Token);
+                    var result = await PatchOutputBuilder.BuildMergedFromEntriesAsync(entries, defaultPatchPath, zipFileName, target, Log, BuildProgressReporter(), _cts.Token);
 
                     Log($"{label}용 완료: 총 {result.TotalFiles}개 파일 (패치 {result.PatchedSuccessfully}/{result.PatchCandidates}개 적용) -> {zipFileName}", LogLevel.Ok);
                 }
@@ -463,7 +463,7 @@ public class RepackMainViewModel : ToolTabViewModel
                 {
                     Log($"{label}용 패치 생성 중...", LogLevel.Highlight);
 
-                    var result = await VitaPatchOnlyBuilder.BuildFromEntriesAsync(entries, defaultPatchPath, zipFileName, target, Log, BuildProgressReporter(), _cts.Token);
+                    var result = await PatchOnlyBuilder.BuildFromEntriesAsync(entries, defaultPatchPath, zipFileName, target, Log, BuildProgressReporter(), _cts.Token);
 
                     Log($"{label}용 완료: 매칭 {result.MatchedCandidates}개 중 {result.PatchedSuccessfully}개 성공 -> {zipFileName}", LogLevel.Ok);
                 }

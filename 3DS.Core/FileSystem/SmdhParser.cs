@@ -10,9 +10,9 @@ public class SmdhParser
     private const int TitleStructSize = 0x200;
     private const int IconLargeOffset = 0x24C0;
 
-    private static readonly Locale3dsLanguage[] SlotLanguages =
+    private static readonly LocaleLanguage[] SlotLanguages =
     [
-        Locale3dsLanguage.JP, Locale3dsLanguage.EN, Locale3dsLanguage.FR, Locale3dsLanguage.DE, Locale3dsLanguage.IT, Locale3dsLanguage.ES, Locale3dsLanguage.ZH, Locale3dsLanguage.KO, Locale3dsLanguage.NL, Locale3dsLanguage.PT, Locale3dsLanguage.RU, Locale3dsLanguage.TW,
+        LocaleLanguage.JP, LocaleLanguage.EN, LocaleLanguage.FR, LocaleLanguage.DE, LocaleLanguage.IT, LocaleLanguage.ES, LocaleLanguage.ZH, LocaleLanguage.KO, LocaleLanguage.NL, LocaleLanguage.PT, LocaleLanguage.RU, LocaleLanguage.TW,
     ];
 
     public static SmdhInfo? TryParse(byte[] data)
@@ -36,7 +36,7 @@ public class SmdhParser
 
         SmdhTitle title = titles[1].ShortDesc.Length > 0 ? titles[1] : titles[0].ShortDesc.Length > 0 ? titles[0] : titles.FirstOrDefault(t => t.ShortDesc.Length > 0);
         byte[]? iconPixels = TryDecodeIconToBytes(data, IconLargeOffset, 48, 48);
-        var availableLanguages = new List<Locale3dsLanguage>();
+        var availableLanguages = new List<LocaleLanguage>();
 
         for (int i = 0; i < SlotLanguages.Length; i++)
         {

@@ -1,5 +1,6 @@
 using WiiGC.Core.Enums;
 using WiiGC.Core.Models;
+using WiiGC.Core.Models.Wii;
 using WiiGC.Core.Services.Wii;
 
 namespace WiiGC.Core.Services;
@@ -8,7 +9,7 @@ internal class RvzWorkerContext(RvzCompressionType compression, byte[] compresso
 {
     private byte[]? _decrypted;
     private byte[]? _encrypted;
-    private WiiGroupEncryptor? _encryptor;
+    private GroupEncryptor? _encryptor;
 
     public RvzChunkDecoder Decoder { get; } = new(compression, compressorData);
 
@@ -18,11 +19,11 @@ internal class RvzWorkerContext(RvzCompressionType compression, byte[] compresso
 
     public byte[] Output { get; private set; } = [];
 
-    public byte[] Decrypted => _decrypted ??= new byte[WiiLayout.GroupDataSize];
+    public byte[] Decrypted => _decrypted ??= new byte[Layout.GroupDataSize];
 
-    public byte[] Encrypted => _encrypted ??= new byte[WiiLayout.GroupTotalSize];
+    public byte[] Encrypted => _encrypted ??= new byte[Layout.GroupTotalSize];
 
-    public WiiGroupEncryptor Encryptor => _encryptor ??= new WiiGroupEncryptor();
+    public GroupEncryptor Encryptor => _encryptor ??= new GroupEncryptor();
 
     public long CachedGroupIndex { get; set; } = -1;
 

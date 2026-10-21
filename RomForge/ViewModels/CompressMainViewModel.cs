@@ -34,7 +34,7 @@ public class CompressMainViewModel : ToolTabViewModel
 
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
-    public ObservableCollection<CompressFileItem> FileItems { get; } = [];
+    public ObservableCollection<FileItem> FileItems { get; } = [];
 
     public Visibility HintVisibility => FileItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
@@ -42,7 +42,7 @@ public class CompressMainViewModel : ToolTabViewModel
 
     public ICommand BrowseOutputCommand { get; }
 
-    public event Action<CompressFileItem>? ScrollToItemRequested;
+    public event Action<FileItem>? ScrollToItemRequested;
 
     public bool UseCustomOutputPath
     {
@@ -94,7 +94,7 @@ public class CompressMainViewModel : ToolTabViewModel
             if (!existing.Add(path))
                 continue;
 
-            var item = new CompressFileItem(path);
+            var item = new FileItem(path);
 
             FileItems.Add(item);
 
@@ -106,7 +106,7 @@ public class CompressMainViewModel : ToolTabViewModel
         CommandManager.InvalidateRequerySuggested();
     }
 
-    public void RemoveItems(IEnumerable<CompressFileItem> items)
+    public void RemoveItems(IEnumerable<FileItem> items)
     {
         foreach (var item in items.ToList())
             FileItems.Remove(item);

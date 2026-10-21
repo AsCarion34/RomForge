@@ -113,7 +113,7 @@ public class NspXciConvertService : BaseSwitchService
 
             finalPath = Utils.GetUniqueFilePath(Utils.ResolveOutputFilePath(inputPath, outputExt, outputDir));
 
-            string displayName = NspNameBuilder.CompressDisplayNameBuild(meta.KrTitle, meta.TitleId, meta.DisplayVersion);
+            string displayName = NameBuilder.CompressDisplayNameBuild(meta.KrTitle, meta.TitleId, meta.DisplayVersion);
             var fileEntries = new List<(string Name, Func<Stream, Action<long>, Task> Writer, long EstimatedSize, string Label)>();
 
             foreach (var entry in secureFs.EnumerateEntries("/", "*"))

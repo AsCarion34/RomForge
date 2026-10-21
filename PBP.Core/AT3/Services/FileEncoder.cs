@@ -1,5 +1,4 @@
 using PBP.Core.AT3.Enums;
-using PBP.Core.AT3.Helpers;
 using PBP.Core.AT3.Models;
 
 namespace PBP.Core.AT3.Services;
@@ -14,9 +13,9 @@ public static class FileEncoder
         if (pcm.FrameCount == 0)
             throw new InvalidDataException("There is no audio data to encode");
 
-        pcm = Resampler.ToRate(pcm, At3CodecInfo.SampleRateHz);
+        pcm = Resampler.ToRate(pcm, CodecInfo.SampleRateHz);
 
-        long minFrames = At3CodecInfo.SampleRateHz * 3 / 2;
+        long minFrames = CodecInfo.SampleRateHz * 3 / 2;
 
         if (pcm.FrameCount < minFrames)
         {
@@ -27,11 +26,11 @@ public static class FileEncoder
             pcm.Samples = padded;
         }
 
-        var containerParams = At3CodecInfo.GetContainerParamsForBitrate(settings.Bitrate);
+        var containerParams = CodecInfo.GetContainerParamsForBitrate(settings.Bitrate);
         long totalSamples = pcm.FrameCount;
         using var writer = new Writer(output, 2, containerParams.FrameSize, containerParams.JointStereo, totalSamples, leaveOpen);
         var encoder = new Encoder(writer, containerParams, pcm.Channels, settings);
-        int frameLen = At3CodecInfo.NumSamples * pcm.Channels;
+        int frameLen = CodecInfo.NumSamples * pcm.Channels;
         var frame = new float[frameLen];
         long processed = 0;
         long pos = 0;
@@ -49,7 +48,7 @@ public static class FileEncoder
 
             if (encoder.ProcessFrame(frame) == ProcessResult.Processed)
             {
-                processed += At3CodecInfo.NumSamples;
+                processed += CodecInfo.NumSamples;
 
                 progress?.Invoke(Math.Min(1.0, (double)processed / totalSamples));
             }
