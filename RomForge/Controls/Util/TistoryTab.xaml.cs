@@ -79,7 +79,7 @@ public partial class TistoryTab : UserControl
             if (e.Data.GetData(DataFormats.FileDrop) is string[] paths && paths.Length > 0)
             {
                 string droppedPath = paths[0];
-                string ? folderPath = Directory.Exists(droppedPath) ? droppedPath : Path.GetDirectoryName(droppedPath);
+                string? folderPath = Directory.Exists(droppedPath) ? droppedPath : Path.GetDirectoryName(droppedPath);
 
                 if (!string.IsNullOrEmpty(folderPath) && Directory.Exists(folderPath))
                     ViewModel?.ChangeSaveDirectory(folderPath);
@@ -128,21 +128,15 @@ public partial class TistoryTab : UserControl
 
     private void GridViewColumnHeader_Click(object sender, RoutedEventArgs e) => _sorter.HandleHeaderClick(e, lvFiles);
 
-    private void ChkAll_Checked(object sender, RoutedEventArgs e)
+    private void HeaderCheckBox_Click(object sender, RoutedEventArgs e)
     {
-        if (lvFiles.ItemsSource is IEnumerable<TistoryDownloadItem> items)
+        if (sender is CheckBox headerCheckBox && lvFiles.ItemsSource is IEnumerable<TistoryDownloadItem> items)
         {
+            bool isChecked = headerCheckBox.IsChecked == true;
             foreach (var item in items)
-                item.IsSelected = true;
-        }
-    }
-
-    private void ChkAll_Unchecked(object sender, RoutedEventArgs e)
-    {
-        if (lvFiles.ItemsSource is IEnumerable<TistoryDownloadItem> items)
-        {
-            foreach (var item in items)
-                item.IsSelected = false;
+            {
+                item.IsSelected = isChecked;
+            }
         }
     }
 }

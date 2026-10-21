@@ -21,7 +21,7 @@
                 <ColumnDefinition Width="400"/>
             </Grid.ColumnDefinitions>
             <Grid Grid.Column="0">
-                <ListView x:Name="lvFiles" Margin="5,0,5,0" ItemsSource="{Binding Files.FileItems}" AllowDrop="True" Drop="LvFiles_Drop" KeyUp="LvFiles_KeyUp" IsEnabled="{Binding IsUnlocked}" ContextMenuOpening="LvFiles_ContextMenuOpening">
+                <ListView x:Name="lvFiles" Margin="5,0,0,0" ItemsSource="{Binding Files.FileItems}" AllowDrop="True" Drop="LvFiles_Drop" KeyUp="LvFiles_KeyUp" IsEnabled="{Binding IsUnlocked}" ContextMenuOpening="LvFiles_ContextMenuOpening">
                     <ListView.ContextMenu>
                         <ContextMenu>
                             <MenuItem Header="폴더 열기" Click="MenuItem_OpenFolder_Click">
@@ -155,7 +155,7 @@
                 </Border>
             </Grid>
 
-            <TabControl Grid.Column="1" IsEnabled="{Binding IsUnlocked}" Background="Transparent" BorderThickness="0">
+            <TabControl Grid.Column="1" Margin="5,0,5,5" IsEnabled="{Binding IsUnlocked}" Background="Transparent" BorderThickness="0">
 
                 <TabItem>
                     <TabItem.Header>

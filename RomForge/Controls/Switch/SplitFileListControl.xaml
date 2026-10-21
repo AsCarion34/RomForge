@@ -6,61 +6,7 @@
              xmlns:l="clr-namespace:NSW.Core.Properties;assembly=NSW.Core"
              mc:Ignorable="d"
              d:DesignHeight="400" d:DesignWidth="800">
-    <UserControl.Resources>
-        <Style x:Key="SplitCheckBoxStyle" TargetType="CheckBox">
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="Focusable" Value="False"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="CheckBox">
-                        <Grid x:Name="root" Width="16" Height="16" Background="Transparent" SnapsToDevicePixels="True">
-                            <Image x:Name="imgOff" Source="/Assets/Images/Unchecked.png" RenderOptions.BitmapScalingMode="HighQuality"/>
-                            <Image x:Name="imgOn" Source="/Assets/Images/Checked.png" RenderOptions.BitmapScalingMode="HighQuality" Visibility="Collapsed"/>
-                            <Border x:Name="dash" Width="10" Height="3" CornerRadius="1.5" Background="#1C97EA" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="imgOff" Property="Visibility" Value="Collapsed"/>
-                                <Setter TargetName="imgOn" Property="Visibility" Value="Visible"/>
-                            </Trigger>
-                            <Trigger Property="IsChecked" Value="{x:Null}">
-                                <Setter TargetName="dash" Property="Visibility" Value="Visible"/>
-                            </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="root" Property="Opacity" Value="0.8"/>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="root" Property="Opacity" Value="0.4"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="SplitExpanderStyle" TargetType="Button">
-            <Setter Property="Width" Value="22"/>
-            <Setter Property="Height" Value="22"/>
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Focusable" Value="False"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="bd" Background="Transparent" CornerRadius="4">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="bd" Property="Background" Value="#26FFFFFF"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-    </UserControl.Resources>
+    
     <Border BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="8" Background="#12FFFFFF" Padding="10">
         <Grid>
             <Grid.ColumnDefinitions>
@@ -139,7 +85,7 @@
                             <GridView>
                                 <GridViewColumn Width="64">
                                     <GridViewColumn.Header>
-                                        <CheckBox Style="{StaticResource SplitCheckBoxStyle}" HorizontalAlignment="Center" VerticalAlignment="Center" ToolTip="전체 선택 / 해제" Click="HeaderCheckBox_Click"/>
+                                        <CheckBox Style="{StaticResource SplitCheckBoxStyle}" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="True" ToolTip="전체 선택 / 해제" Click="HeaderCheckBox_Click"/>
                                     </GridViewColumn.Header>
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate>

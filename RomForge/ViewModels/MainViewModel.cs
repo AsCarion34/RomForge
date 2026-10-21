@@ -150,19 +150,6 @@ public class MainViewModel : ToolTabViewModel
             UtilMainVM.HashVM.RunCommand.Execute(null);
     }
 
-    public async Task NavigateCompressSettings()
-    {
-        SelectedViewModel = Settings;
-        Settings.SelectedViewModel = Settings.Compress;
-    }
-
-    private async Task NavigateSwitchCompressSettings()
-    {
-        SelectedViewModel = Settings;
-        Settings.SelectedViewModel = Settings.Compress;
-        Settings.Compress.SelectedTabIndex = 1;
-    }
-
     private void MainVM_RunNavigateCerts(object? sender, EventArgs e)
     {
         SelectedViewModel = UtilMainVM;

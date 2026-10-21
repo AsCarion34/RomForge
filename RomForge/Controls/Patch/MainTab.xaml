@@ -15,7 +15,7 @@
                         <TextBlock Text="일반" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <controls:NormalTab Margin="0,-5,0,0"/>
+                <controls:NormalTab/>
             </TabItem>
             <TabItem IsEnabled="{Binding IsIdle}">
                 <TabItem.Header>
@@ -24,7 +24,7 @@
                         <TextBlock Text="아케이드" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <controls:ArcadeTab Margin="0,-5,0,0"/>
+                <controls:ArcadeTab/>
             </TabItem>
             <TabItem IsEnabled="{Binding IsIdle}">
                 <TabItem.Header>
@@ -33,7 +33,7 @@
                         <TextBlock Text="PC98" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <controls:Pc98Tab Margin="0,-5,0,0"/>
+                <controls:Pc98Tab/>
             </TabItem>
          </TabControl>
         <Border Grid.Row="1" Margin="5,0,5,5" Background="#252526" Padding="8,6" BorderBrush="#2D2D30" BorderThickness="0,1,0,0" CornerRadius="5">

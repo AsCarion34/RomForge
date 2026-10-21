@@ -15,15 +15,14 @@
         xmlns:vm="clr-namespace:RomForge.ViewModels"
         xmlns:helpers="clr-namespace:RomForge.Core.UI.Helpers;assembly=RomForge.Core"
         Title="{Binding AppVersion}"
-        Height="715" Width="900"
-        MinHeight="480" MinWidth="900"
+        Height="730" Width="900"
+        MinHeight="730" MinWidth="900"
         Background="#1E1E1E"
         AllowDrop="True"
         FontFamily="Segoe UI">
 
     <Window.TaskbarItemInfo>
-        <TaskbarItemInfo ProgressValue="{Binding TaskbarProgressValue}" 
-                         ProgressState="{Binding TaskbarProgressState}" />
+        <TaskbarItemInfo ProgressValue="{Binding TaskbarProgressValue}" ProgressState="{Binding TaskbarProgressState}" />
     </Window.TaskbarItemInfo>
     
     <Grid Cursor="">
@@ -42,7 +41,7 @@
                         <TextBlock Text="패치" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <patch:MainTab Margin="0,-5,0,0"/>
+                <patch:MainTab/>
             </TabItem>
 
             <TabItem IsEnabled="{Binding IsIdle}">
@@ -72,7 +71,7 @@
                         <TextBlock Text="Switch" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <switch:MainTab DataContext="{Binding SwitchMainVM}" Margin="0,-5,0,0"/>
+                <switch:MainTab DataContext="{Binding SwitchMainVM}"/>
             </TabItem>
 
             <TabItem IsEnabled="{Binding IsIdle}">
@@ -82,7 +81,7 @@
                         <TextBlock Text="WiiU" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <wiiu:MainTab DataContext="{Binding WiiUMainVM}" Margin="0,-5,0,0"/>
+                <wiiu:MainTab DataContext="{Binding WiiUMainVM}"/>
             </TabItem>
 
             <TabItem IsEnabled="{Binding IsIdle}">
@@ -92,7 +91,7 @@
                         <TextBlock Text="Wii" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <wii:MainTab DataContext="{Binding WiiMainVM}" Margin="0,-5,0,0"/>
+                <wii:MainTab DataContext="{Binding WiiMainVM}"/>
             </TabItem>
 
             <TabItem IsEnabled="{Binding IsIdle}">
@@ -102,7 +101,7 @@
                         <TextBlock Text="3DS" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <_3ds:MainTab DataContext="{Binding Main3DsVM}" Margin="0,-5,0,0"/>
+                <_3ds:MainTab DataContext="{Binding Main3DsVM}"/>
             </TabItem>
 
             <TabItem IsEnabled="{Binding IsIdle}">
@@ -112,7 +111,7 @@
                         <TextBlock Text="PS Vita" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <psvita:MainTab DataContext="{Binding PSVitaMainVM}" Margin="0,-5,0,0"/>
+                <psvita:MainTab DataContext="{Binding PSVitaMainVM}"/>
             </TabItem>
 
             <TabItem IsEnabled="{Binding IsIdle}">
@@ -122,7 +121,7 @@
                         <TextBlock Text="PSP" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <psp:MainTab DataContext="{Binding PSPMainVM}" Margin="0,-5,0,0"/>
+                <psp:MainTab DataContext="{Binding PSPMainVM}"/>
             </TabItem>        
 
             <TabItem IsEnabled="{Binding IsIdle}">
@@ -132,7 +131,7 @@
                         <TextBlock Text="유틸" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <util:MainTab DataContext="{Binding UtilMainVM}" Margin="0,-5,0,0"/>
+                <util:MainTab DataContext="{Binding UtilMainVM}"/>
             </TabItem>
 
             <TabItem IsEnabled="{Binding IsIdle}">
@@ -142,7 +141,7 @@
                         <TextBlock Text="설정" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <settings:MainTab DataContext="{Binding Settings}"  Margin="0,-5,0,0"/>
+                <settings:MainTab DataContext="{Binding Settings}" />
             </TabItem>
 
         </TabControl>

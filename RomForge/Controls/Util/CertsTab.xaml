@@ -14,7 +14,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Margin="5,5,5,0" Height="150" IsEnabled="{Binding IsLocked, Converter={StaticResource InverseBool}}" Style="{StaticResource DropZone}" AllowDrop="True" Drop="CiaDrop_Drop" MouseLeftButtonDown="CiaDrop_Click">
+        <Border Grid.Row="0" Margin="5,0,5,0" Height="150" IsEnabled="{Binding IsLocked, Converter={StaticResource InverseBool}}" Style="{StaticResource DropZone}" AllowDrop="True" Drop="CiaDrop_Drop" MouseLeftButtonDown="CiaDrop_Click">
             <Grid Margin="14,0" Cursor="">
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding HintVisibility}" Opacity="0.9">
                     <Image Source="/Assets/Images/Info.png" Width="24" Height="24" Margin="0,0,0,6" HorizontalAlignment="Center"/>

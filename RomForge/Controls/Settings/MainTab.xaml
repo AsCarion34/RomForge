@@ -11,7 +11,7 @@
                         <TextBlock Text="일반" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <local:GeneralSettingsTab DataContext="{Binding General}"/>
+                <local:GeneralSettingsTab DataContext="{Binding General}" Margin="5,0,5,5"/>
             </TabItem>
             <TabItem>
                 <TabItem.Header>
@@ -20,7 +20,7 @@
                         <TextBlock Text="패치" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <local:PatchSettingsTab DataContext="{Binding Patch}" Margin="0,-5,0,0"/>
+                <local:PatchSettingsTab DataContext="{Binding Patch}"/>
             </TabItem>
             <TabItem>
                 <TabItem.Header>
@@ -29,7 +29,7 @@
                         <TextBlock Text="압축" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <local:CompressSettingsTab DataContext="{Binding Compress}" Margin="0,-5,0,0"/>
+                <local:CompressSettingsTab DataContext="{Binding Compress}"/>
             </TabItem>
             <TabItem>
                 <TabItem.Header>
@@ -38,7 +38,7 @@
                         <TextBlock Text="PSP" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <local:PSSettingsTab DataContext="{Binding PS1}" Margin="0,-5,0,0"/>
+                <local:PSSettingsTab DataContext="{Binding PS1}"/>
             </TabItem>
         </TabControl>
     </Grid>

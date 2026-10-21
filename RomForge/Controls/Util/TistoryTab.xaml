@@ -12,7 +12,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Margin="5,5,5,0" Background="#252526" Padding="10,10" BorderBrush="#2D2D30" BorderThickness="0,0,0,1" CornerRadius="5">
+        <Border Grid.Row="0" Margin="5,0,5,0" Background="#252526" Padding="10,10" BorderBrush="#2D2D30" BorderThickness="0,0,0,1" CornerRadius="5">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition/>
@@ -36,7 +36,7 @@
                 </Button>
 
                 <TextBlock Grid.Row="1" Grid.Column="0" Text="다운로드 위치" Foreground="#BBBBBB" FontWeight="Bold" FontSize="12" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding SaveDirectory, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Margin="0,0,10,0" Padding="6,4" VerticalContentAlignment="Center" Foreground="#AAAAAA" AllowDrop="True" 
+                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding SaveDirectory, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,10,0" Padding="6,4" VerticalContentAlignment="Center" Foreground="#AAAAAA" AllowDrop="True" 
                          PreviewDragOver="TxtSaveDirectory_PreviewDragOver" Drop="TxtSaveDirectory_Drop" ToolTip="폴더를 이곳에 드래그하여 다운로드 위치를 변경할 수 있습니다."/>
                 <Button Grid.Row="1" Grid.Column="2" Style="{StaticResource GrayButton}" IsEnabled="{Binding IsLocked, Converter={StaticResource InverseBool}}" Click="BtnChangeFolder_Click">
                     <StackPanel Orientation="Horizontal">
@@ -155,16 +155,13 @@
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
 
-                    <GridViewColumn Width="90">
+                    <GridViewColumn Width="64">
                         <GridViewColumn.Header>
-                            <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                <TextBlock Text="전체선택/해제" Foreground="#BBBBBB" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center" Margin="0,0,0,4"/>
-                                <CheckBox IsChecked="True" Checked="ChkAll_Checked" Unchecked="ChkAll_Unchecked" HorizontalAlignment="Center" ToolTip="전체 선택/해제"/>
-                            </StackPanel>
+                            <CheckBox Style="{StaticResource SplitCheckBoxStyle}" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="True" ToolTip="전체 선택 / 해제" Click="HeaderCheckBox_Click"/>
                         </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                <CheckBox Style="{StaticResource SplitCheckBoxStyle}" IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Center" VerticalAlignment="Center" IsThreeState="False"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
@@ -200,8 +197,12 @@
                     </Button>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
-                    <CheckBox Content="압축 자동 해제 (완료 후 원본 삭제)" IsChecked="{Binding AutoExtractAfterDownload}" IsEnabled="{Binding IsLocked, Converter={StaticResource InverseBool}}" Foreground="#BBBBBB" VerticalAlignment="Center" Margin="0,0,20,0"
-                              ToolTip="다운로드한 파일이 압축파일(zip/7z/rar)이면 자동으로 압축을 풀고 원본 압축파일을 삭제합니다"/>
+                    <ToggleButton Style="{StaticResource LeftSlideToggleStyle}" Background="Transparent" BorderThickness="0" IsChecked="{Binding AutoExtractAfterDownload}" IsEnabled="{Binding IsLocked, Converter={StaticResource InverseBool}}" 
+                                  VerticalAlignment="Center" Height="40" Margin="0,0,20,0" ToolTip="다운로드한 파일이 압축파일(zip/7z/rar)이면 자동으로 압축을 풀고 원본 압축파일을 삭제합니다">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="압축 자동 해제 (완료 후 원본 삭제)" VerticalAlignment="Center" Foreground="#BBBBBB" FontWeight="Bold" Margin="0,0,10,0"/>
+                        </StackPanel>
+                    </ToggleButton>
                     <Button Style="{StaticResource GrayButton}" IsEnabled="{Binding IsLocked, Converter={StaticResource InverseBool}}" Click="BtnRemove_Click" Margin="0,0,6,0">
                         <StackPanel Orientation="Horizontal">
                             <Image Source="/Assets/Images/Delete.png" Width="24" Height="24" Margin="0,0,6,0" VerticalAlignment="Center"/>
