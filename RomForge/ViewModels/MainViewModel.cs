@@ -4,7 +4,8 @@ using RomForge.Core;
 using RomForge.Core.Models;
 using RomForge.ViewModels._3DS;
 using RomForge.ViewModels.Patch;
-using RomForge.ViewModels.PS;
+using RomForge.ViewModels.PSP;
+using RomForge.ViewModels.PSVita;
 using RomForge.ViewModels.Settings;
 using RomForge.ViewModels.Switch;
 using RomForge.ViewModels.Util;
@@ -37,9 +38,11 @@ public class MainViewModel : ToolTabViewModel
 
     public WiiMainViewModel WiiMainVM { get; } = new();
 
-    public _3DSMainViewModel Main3DsVM { get; } = new();    
+    public _3DSMainViewModel Main3DsVM { get; } = new();
 
-    public PS1MainViewModel PSMainVM { get; } = new();
+    public PSVitaMainViewModel PSVitaMainVM { get; } = new();
+
+    public PSPMainViewModel PSPMainVM { get; } = new();    
 
     public UtilMainViewModel UtilMainVM { get; } = new();
 
@@ -78,9 +81,10 @@ public class MainViewModel : ToolTabViewModel
         3 => SwitchMainVM.LogEntries,
         4 => WiiUMainVM.LogEntries,
         5 => WiiMainVM.LogEntries,
-        6 => Main3DsVM.LogEntries,        
-        7 => PSMainVM.LogEntries,
-        8 => UtilMainVM.LogEntries,
+        6 => Main3DsVM.LogEntries,
+        7 => PSVitaMainVM.LogEntries,
+        8 => PSPMainVM.LogEntries,
+        9 => UtilMainVM.LogEntries,
         _ => PatchVM.LogEntries
     };
 
@@ -117,7 +121,7 @@ public class MainViewModel : ToolTabViewModel
         PatchVM = new PatchMainViewModel(async (file) => await MapsToHashAndProcess(file));
         Main3DsVM.RunNavigateCerts += MainVM_RunNavigateCerts;
         UnifiedConvertVM.RunNavigateCerts += MainVM_RunNavigateCerts;
-        PSMainVM.RunNavigatePackingSettings += PS1MainVM_RunNavigatePackingSettings;
+        PSPMainVM.RunNavigatePackingSettings += PS1MainVM_RunNavigatePackingSettings;
 
         Tools.Add(PatchVM);
         Tools.Add(CompressVM);
@@ -125,8 +129,9 @@ public class MainViewModel : ToolTabViewModel
         Tools.Add(SwitchMainVM);
         Tools.Add(WiiUMainVM);
         Tools.Add(WiiMainVM);
-        Tools.Add(Main3DsVM);        
-        Tools.Add(PSMainVM);
+        Tools.Add(Main3DsVM);
+        Tools.Add(PSVitaMainVM);
+        Tools.Add(PSPMainVM);
         Tools.Add(UtilMainVM);
         Tools.Add(Settings);
 

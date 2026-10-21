@@ -5,7 +5,7 @@ using PBP.Core.Services;
 using RomForge.Core.Services.PSP;
 using System.Windows.Media.Imaging;
 
-namespace RomForge.ViewModels.PS;
+namespace RomForge.ViewModels.PSP;
 
 public class PackingImagesViewModel : ViewModelBase
 {

@@ -12,9 +12,9 @@ using System.Windows.Input;
 using RomForge.Core.Services;
 using RomForge.Core.Models.PSP;
 
-namespace RomForge.ViewModels.PS;
+namespace RomForge.ViewModels.PSP;
 
-public class PSPConverterViewModel : ToolTabViewModel
+public class ConverterViewModel : ToolTabViewModel
 {
     #region Fields
 
@@ -56,7 +56,7 @@ public class PSPConverterViewModel : ToolTabViewModel
 
     #region Constructor
 
-    public PSPConverterViewModel()
+    public ConverterViewModel()
     {
         RunCommand = new RelayCommand(async _ => await RunAsync(), _ => !IsConverting && FileItems.Count > 0);
         CancelCommand = new RelayCommand(_ => _cts.Cancel(), _ => IsConverting);

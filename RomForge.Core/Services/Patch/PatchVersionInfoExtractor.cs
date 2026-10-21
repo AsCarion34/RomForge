@@ -112,6 +112,7 @@ public static class PatchVersionInfoExtractor
         if (dateMatch.Success)
         {
             string rawDate = dateMatch.Value;
+
             date = rawDate.Length == 8 ? rawDate[2..] : rawDate;
         }
 
@@ -236,7 +237,6 @@ public static class PatchVersionInfoExtractor
         return BracketGroupRegex.Replace(name, match =>
         {
             string content = GetBracketContent(match);
-
             return ExtractLanguageFromGroup(content) is not null ? string.Empty : match.Value;
         }).Trim();
     }

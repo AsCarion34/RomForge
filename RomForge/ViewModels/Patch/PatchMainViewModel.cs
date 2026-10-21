@@ -1,6 +1,7 @@
 ﻿using RomForge.Core.UI.Command;
 using RomForge.Core.Services.Patch;
 using System.Windows.Input;
+using RomForge.ViewModels.PSVita;
 
 namespace RomForge.ViewModels.Patch;
 
@@ -12,7 +13,7 @@ public class PatchMainViewModel : MultiToolTabViewModel
 
     public ArcadePatchMainViewModel ArcadeVM { get; } = new();
 
-    public VitaPatchMainViewModel VitaVM { get; } = new();
+    public RepackMainViewModel VitaVM { get; } = new();
 
     public Pc98PatchMainViewModel Pc98VM { get; } = new();
 

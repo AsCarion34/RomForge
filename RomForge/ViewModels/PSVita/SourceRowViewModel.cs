@@ -6,9 +6,9 @@ using System.Windows.Media.Imaging;
 using Vita.Core.Models;
 using Vita.Core.Services;
 
-namespace RomForge.ViewModels.Patch;
+namespace RomForge.ViewModels.PSVita;
 
-public class VitaSourceRowViewModel : ViewModelBase
+public class SourceRowViewModel : ViewModelBase
 {
     private string _license = string.Empty;
     private string _path = string.Empty;
@@ -132,7 +132,7 @@ public class VitaSourceRowViewModel : ViewModelBase
         _ => new SolidColorBrush(Color.FromRgb(0x6B, 0x72, 0x80)),
     };
 
-    private VitaSourceRowViewModel(string path, SourceKind kind, string? itemSourcePath, string titleId, ContentCategory category, string? contentIdSuffix)
+    private SourceRowViewModel(string path, SourceKind kind, string? itemSourcePath, string titleId, ContentCategory category, string? contentIdSuffix)
     {
         Path = path;
         Kind = kind;
@@ -142,16 +142,16 @@ public class VitaSourceRowViewModel : ViewModelBase
         ContentIdSuffix = contentIdSuffix;
     }
 
-    public static VitaSourceRowViewModel FromPkg(string pkgPath)
+    public static SourceRowViewModel FromPkg(string pkgPath)
     {
         var result = VitaPkgProbe.Probe(pkgPath);
 
-        return new VitaSourceRowViewModel(pkgPath, SourceKind.Pkg, null, result.TitleId, result.Category, result.ContentIdSuffix);
+        return new SourceRowViewModel(pkgPath, SourceKind.Pkg, null, result.TitleId, result.Category, result.ContentIdSuffix);
     }
 
-    public static VitaSourceRowViewModel FromZipItem(string containerPath, SourceItem item) => new(containerPath, SourceKind.ZipOrFolder, item.SourcePath, item.TitleId, item.Category, item.ContentIdSuffix);
+    public static SourceRowViewModel FromZipItem(string containerPath, SourceItem item) => new(containerPath, SourceKind.ZipOrFolder, item.SourcePath, item.TitleId, item.Category, item.ContentIdSuffix);
 
-    public static List<VitaSourceRowViewModel> DiscoverFromContainer(string containerPath)
+    public static List<SourceRowViewModel> DiscoverFromContainer(string containerPath)
     {
         using var accessor = VitaSourceAccessorFactory.Open(containerPath);
         var items = VitaSourcePreparer.DiscoverItems(accessor);

@@ -2,7 +2,7 @@
 using PBP.Core.Services;
 using System.Collections.ObjectModel;
 
-namespace RomForge.ViewModels.PS;
+namespace RomForge.ViewModels.PSP;
 
 public record FmvFixOption(string Label, uint Value);
 

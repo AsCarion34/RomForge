@@ -125,9 +125,7 @@ public sealed class RomHashSink : Stream
             {
                 _queue.CompleteAdding();
             }
-            catch (ObjectDisposedException)
-            {
-            }
+            catch (ObjectDisposedException) { }
 
             _consumer.Wait();
 
@@ -190,9 +188,7 @@ public sealed class RomHashSink : Stream
                 ReportProgress(length);
             }
         }
-        catch (OperationCanceledException)
-        {
-        }
+        catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             _fault = ex;

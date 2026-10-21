@@ -16,9 +16,9 @@ using System.Windows.Input;
 using Vita.Core.Models;
 using Vita.Core.Services;
 
-namespace RomForge.ViewModels.Patch;
+namespace RomForge.ViewModels.PSVita;
 
-public class VitaPatchMainViewModel : ToolTabViewModel, IPatchViewModel
+public class RepackMainViewModel : ToolTabViewModel
 {
     private readonly Stopwatch _totalSw = new();
     private CancellationTokenSource? _cts;
@@ -36,7 +36,7 @@ public class VitaPatchMainViewModel : ToolTabViewModel, IPatchViewModel
 
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
-    public ObservableCollection<VitaSourceRowViewModel> SourceRows { get; } = [];
+    public ObservableCollection<SourceRowViewModel> SourceRows { get; } = [];
 
     public string? OutputPath
     {
@@ -117,19 +117,19 @@ public class VitaPatchMainViewModel : ToolTabViewModel, IPatchViewModel
     public ICommand RemoveAllCommand { get; }
     public ICommand BrowseOutputCommand { get; }
 
-    private VitaSourceRowViewModel? _selectedRow;
-    public VitaSourceRowViewModel? SelectedRow
+    private SourceRowViewModel? _selectedRow;
+    public SourceRowViewModel? SelectedRow
     {
         get => _selectedRow;
         set { _selectedRow = value; OnPropertyChanged(); }
     }
 
-    public VitaPatchMainViewModel()
+    public RepackMainViewModel()
     {
         OutputPath = string.IsNullOrWhiteSpace(AppConfig.Instance.OutputFolders.VitaOutputPath) ? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "output") : AppConfig.Instance.OutputFolders.VitaOutputPath;
 
         RunCommand = new RelayCommand(async _ => await RunAsync(), _ => !IsLocked && CanRun());        
-        RemoveRowCommand = new RelayCommand(o => RemoveRow(o as VitaSourceRowViewModel ?? SelectedRow));
+        RemoveRowCommand = new RelayCommand(o => RemoveRow(o as SourceRowViewModel ?? SelectedRow));
         RemoveSelectedCommand = new RelayCommand(_ => { if (SelectedRow != null) RemoveRow(SelectedRow); }, _ => SelectedRow != null);
         RemoveAllCommand = new RelayCommand(_ => SourceRows.Clear(), _ => SourceRows.Count > 0);
         BrowseOutputCommand = new RelayCommand(_ => BrowseOutput());
@@ -142,13 +142,13 @@ public class VitaPatchMainViewModel : ToolTabViewModel, IPatchViewModel
     {
         if (e.NewItems != null)
         {
-            foreach (VitaSourceRowViewModel row in e.NewItems)
+            foreach (SourceRowViewModel row in e.NewItems)
                 row.PropertyChanged += Row_PropertyChanged;
         }
 
         if (e.OldItems != null)
         {
-            foreach (VitaSourceRowViewModel row in e.OldItems)
+            foreach (SourceRowViewModel row in e.OldItems)
                 row.PropertyChanged -= Row_PropertyChanged;
         }
 
@@ -161,14 +161,14 @@ public class VitaPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         if (_isSyncing)
             return;
 
-        if (sender is not VitaSourceRowViewModel changedRow)
+        if (sender is not SourceRowViewModel changedRow)
             return;
 
         _isSyncing = true;
 
         try
         {
-            if (e.PropertyName == nameof(VitaSourceRowViewModel.PatchPath))
+            if (e.PropertyName == nameof(SourceRowViewModel.PatchPath))
             {
                 foreach (var row in SourceRows)
                 {
@@ -176,7 +176,7 @@ public class VitaPatchMainViewModel : ToolTabViewModel, IPatchViewModel
                         row.PatchPath = changedRow.PatchPath;
                 }
             }
-            else if (e.PropertyName == nameof(VitaSourceRowViewModel.License))
+            else if (e.PropertyName == nameof(SourceRowViewModel.License))
             {
                 if (changedRow.Category != ContentCategory.Addcont)
                 {
@@ -235,11 +235,11 @@ public class VitaPatchMainViewModel : ToolTabViewModel, IPatchViewModel
 
         if (isPkg)
         {
-            VitaSourceRowViewModel row;
+            SourceRowViewModel row;
 
             try
             {
-                row = VitaSourceRowViewModel.FromPkg(path);
+                row = SourceRowViewModel.FromPkg(path);
             }
             catch (Exception ex)
             {
@@ -252,11 +252,11 @@ public class VitaPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         }
         else
         {
-            List<VitaSourceRowViewModel> discoveredRows;
+            List<SourceRowViewModel> discoveredRows;
 
             try
             {
-                discoveredRows = VitaSourceRowViewModel.DiscoverFromContainer(path);
+                discoveredRows = SourceRowViewModel.DiscoverFromContainer(path);
             }
             catch (Exception ex)
             {
@@ -272,7 +272,7 @@ public class VitaPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         }
     }
 
-    private void ApplyDefaultsAndLog(VitaSourceRowViewModel row, string? pkgPathForLicenseTxt)
+    private void ApplyDefaultsAndLog(SourceRowViewModel row, string? pkgPathForLicenseTxt)
     {
         if (row.IsPkg && pkgPathForLicenseTxt != null)
         {
@@ -314,7 +314,7 @@ public class VitaPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         _ = row.LoadMetadataAsync();
     }
 
-    private void AddOrReplaceRow(VitaSourceRowViewModel newRow)
+    private void AddOrReplaceRow(SourceRowViewModel newRow)
     {
         if (newRow.Category is ContentCategory.App or ContentCategory.Patch)
         {
@@ -389,7 +389,7 @@ public class VitaPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         }
     }
 
-    public void RemoveRow(VitaSourceRowViewModel? row)
+    public void RemoveRow(SourceRowViewModel? row)
     {
         if (row != null)
         {

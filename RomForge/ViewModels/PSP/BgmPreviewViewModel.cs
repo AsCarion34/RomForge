@@ -6,7 +6,7 @@ using System.IO;
 using System.Windows.Input;
 using System.Windows.Threading;
 
-namespace RomForge.ViewModels.PS;
+namespace RomForge.ViewModels.PSP;
 
 public class BgmPreviewViewModel : ViewModelBase
 {

@@ -7,7 +7,7 @@ using RomForge.Core.Services.PSP;
 using System.IO;
 using System.Windows;
 
-namespace RomForge.ViewModels.PS;
+namespace RomForge.ViewModels.PSP;
 
 public class BgmViewModel(Action<string, LogLevel> log) : ViewModelBase
 {

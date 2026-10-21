@@ -1,8 +1,6 @@
 ﻿using CHD.Core.Services;
 using Common;
-using Patch.Core;
 using Patch.Core.Formats.DCP.Services;
-using RomForge.Core;
 using RomForge.Core.Models.Compression;
 using System.IO;
 
@@ -64,6 +62,7 @@ public class PatchOrchestrator(Action<string, LogLevel> log, IProgress<ProgressI
                     progress.Report(new ProgressInfo { Label = "CHD 변환 중...", Percent = 0 });
 
                     FileConverter converter = new(AppConfig.Instance.Chdman.Compression);
+
                     converter.LogMessage += (_, e) => log(e.Message, e.Level);
 
                     var chdResult = await converter.ConvertFileAsync(gdiPath, null, progress, null, ct);

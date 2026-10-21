@@ -9,6 +9,7 @@
         xmlns:wii="clr-namespace:RomForge.Controls.Wii"
         xmlns:_3ds="clr-namespace:RomForge.Controls._3DS"        
         xmlns:psp="clr-namespace:RomForge.Controls.PSP"
+        xmlns:psvita="clr-namespace:RomForge.Controls.PSVita"
         xmlns:util="clr-namespace:RomForge.Controls.Util"
         xmlns:settings="clr-namespace:RomForge.Controls.Settings"
         xmlns:vm="clr-namespace:RomForge.ViewModels"
@@ -107,12 +108,22 @@
             <TabItem IsEnabled="{Binding IsIdle}">
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Image Source="/Assets/Images/Vita.png" Width="20" Height="20" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="PS Vita" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </TabItem.Header>
+                <psvita:MainTab DataContext="{Binding PSVitaMainVM}" Margin="0,-5,0,0"/>
+            </TabItem>
+
+            <TabItem IsEnabled="{Binding IsIdle}">
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <Image Source="/Assets/Images/PSP.png" Width="20" Height="20" Margin="0,0,6,0" VerticalAlignment="Center"/>
                         <TextBlock Text="PSP" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <psp:MainTab DataContext="{Binding PSMainVM}" Margin="0,-5,0,0"/>
-            </TabItem>
+                <psp:MainTab DataContext="{Binding PSPMainVM}" Margin="0,-5,0,0"/>
+            </TabItem>        
 
             <TabItem IsEnabled="{Binding IsIdle}">
                 <TabItem.Header>

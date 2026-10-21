@@ -6,7 +6,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Input;
 
-namespace RomForge.ViewModels.PS;
+namespace RomForge.ViewModels.PSP;
 
 public class DiscListViewModel(Action<string, LogLevel> log) : ViewModelBase
 {

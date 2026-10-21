@@ -1,19 +1,19 @@
 ﻿using NSW.WPF.Services;
 using Ookii.Dialogs.Wpf;
 using RomForge.ViewModels;
-using RomForge.ViewModels.Patch;
+using RomForge.ViewModels.PSVita;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace RomForge.Controls.Patch;
+namespace RomForge.Controls.PSVita;
 
-public partial class VitaTab : UserControl
+public partial class RepackTab : UserControl
 {
     private MainViewModel ViewModel => (MainViewModel)DataContext;
 
-    public VitaTab() => InitializeComponent();
+    public RepackTab() => InitializeComponent();
 
     private void LvPkg_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
@@ -64,7 +64,7 @@ public partial class VitaTab : UserControl
     {
         if (e.Data.GetDataPresent(DataFormats.FileDrop))
             if (e.Data.GetData(DataFormats.FileDrop) is string[] files && files.Length > 0)
-                if (sender is TextBox tb && tb.DataContext is VitaSourceRowViewModel row)
+                if (sender is TextBox tb && tb.DataContext is SourceRowViewModel row)
                     row.License = files[0];
 
         e.Handled = true;
@@ -90,7 +90,7 @@ public partial class VitaTab : UserControl
                 string path = files[0];
 
                 if (Directory.Exists(path) || path.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".7z", StringComparison.OrdinalIgnoreCase))
-                    if (sender is FrameworkElement { Tag: VitaSourceRowViewModel row })
+                    if (sender is FrameworkElement { Tag: SourceRowViewModel row })
                         row.PatchPath = path;
             }
 
@@ -109,7 +109,7 @@ public partial class VitaTab : UserControl
 
     private void PatchMenu_SelectFolder_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is MenuItem mi && mi.DataContext is VitaSourceRowViewModel rowVm)
+        if (sender is MenuItem mi && mi.DataContext is SourceRowViewModel rowVm)
         {
             var dlg = new VistaFolderBrowserDialog
             {
@@ -124,7 +124,7 @@ public partial class VitaTab : UserControl
 
     private void PatchMenu_SelectArchive_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is MenuItem mi && mi.DataContext is VitaSourceRowViewModel rowVm)
+        if (sender is MenuItem mi && mi.DataContext is SourceRowViewModel rowVm)
         {
             var dlg = new Microsoft.Win32.OpenFileDialog
             {

@@ -1,7 +1,7 @@
 ﻿using Common.WPF;
 using NSW.WPF.Services;
 using RomForge.Core.Models.PSP;
-using RomForge.ViewModels.PS;
+using RomForge.ViewModels.PSP;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,7 +12,7 @@ namespace RomForge.Controls.PSP;
 
 public partial class ConverterTab : UserControl
 {
-    private PSPConverterViewModel ViewModel => (PSPConverterViewModel)DataContext;
+    private ConverterViewModel ViewModel => (ConverterViewModel)DataContext;
 
     public ConverterTab()
     {
@@ -22,10 +22,10 @@ public partial class ConverterTab : UserControl
 
     private void ConverterTab_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
-        if (e.OldValue is PSPConverterViewModel oldVm)
+        if (e.OldValue is ConverterViewModel oldVm)
             oldVm.ScrollToItemRequested -= OnScrollToItemRequested;
 
-        if (e.NewValue is PSPConverterViewModel newVm)
+        if (e.NewValue is ConverterViewModel newVm)
             newVm.ScrollToItemRequested += OnScrollToItemRequested;
     }
 

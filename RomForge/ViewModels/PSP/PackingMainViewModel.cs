@@ -11,7 +11,7 @@ using NSW.WPF.Services;
 using RomForge.Core.Services;
 using RomForge.Core.Services.PSP;
 
-namespace RomForge.ViewModels.PS;
+namespace RomForge.ViewModels.PSP;
 
 public class PackingMainViewModel : ToolTabViewModel
 {

@@ -1,17 +1,17 @@
-﻿namespace RomForge.ViewModels.PS;
+﻿namespace RomForge.ViewModels.PSP;
 
-public class PS1MainViewModel : MultiToolTabViewModel
+public class PSPMainViewModel : MultiToolTabViewModel
 {
     public PackingMainViewModel PackingVM { get; } = new();
 
     public UnpackingMainViewModel UnPackingVM { get; } = new();
 
-    public PSPConverterViewModel ConverterVM { get; } = new();
+    public ConverterViewModel ConverterVM { get; } = new();
 
 
     public event EventHandler RunNavigatePackingSettings;
 
-    public PS1MainViewModel()
+    public PSPMainViewModel()
     {
         PackingVM.RunNavigateSettings += (sender, e) => RunNavigatePackingSettings?.Invoke(sender, e);
 

@@ -1,6 +1,6 @@
 ﻿using NSW.WPF.Services;
 using RomForge.Core.Models.PSP;
-using RomForge.ViewModels.PS;
+using RomForge.ViewModels.PSP;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
