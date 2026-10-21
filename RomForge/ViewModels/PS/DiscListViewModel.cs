@@ -1,7 +1,7 @@
 ﻿using Common;
 using Common.WPF.ViewModels;
-using RomForge.Core.Models.PS;
-using RomForge.Core.Services.PS;
+using RomForge.Core.Models.PSP;
+using RomForge.Core.Services.PSP;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Input;

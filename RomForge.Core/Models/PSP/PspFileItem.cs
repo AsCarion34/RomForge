@@ -1,7 +1,7 @@
 ﻿using Common.WPF.ViewModels;
 using System.Windows.Media;
 
-namespace RomForge.Core.Models.PS;
+namespace RomForge.Core.Models.PSP;
 
 public class PspFileItem(string filePath) : ConvertibleFileItemBase(filePath, "미지원")
 {

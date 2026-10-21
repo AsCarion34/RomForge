@@ -2,7 +2,7 @@
 using NSW.WPF.Services;
 using PBP.Core.Models;
 using PBP.Core.Services;
-using RomForge.Core.Services.PS;
+using RomForge.Core.Services.PSP;
 using System.Windows.Media.Imaging;
 
 namespace RomForge.ViewModels.PS;

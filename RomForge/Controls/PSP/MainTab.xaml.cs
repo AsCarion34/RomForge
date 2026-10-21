@@ -1,6 +1,6 @@
 ﻿using System.Windows.Controls;
 
-namespace RomForge.Controls.PS;
+namespace RomForge.Controls.PSP;
 
 public partial class MainTab : UserControl
 {

@@ -1,6 +1,6 @@
 ﻿using PBP.Core.AT3.Services;
 
-namespace RomForge.Core.Services.PS
+namespace RomForge.Core.Services.PSP
 {
     public static class At3Decoder
     {

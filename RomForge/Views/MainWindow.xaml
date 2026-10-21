@@ -8,7 +8,7 @@
         xmlns:wiiu="clr-namespace:RomForge.Controls.WiiU"
         xmlns:wii="clr-namespace:RomForge.Controls.Wii"
         xmlns:_3ds="clr-namespace:RomForge.Controls._3DS"        
-        xmlns:ps="clr-namespace:RomForge.Controls.PS"
+        xmlns:psp="clr-namespace:RomForge.Controls.PSP"
         xmlns:util="clr-namespace:RomForge.Controls.Util"
         xmlns:settings="clr-namespace:RomForge.Controls.Settings"
         xmlns:vm="clr-namespace:RomForge.ViewModels"
@@ -111,7 +111,7 @@
                         <TextBlock Text="PSP" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <ps:MainTab DataContext="{Binding PSMainVM}" Margin="0,-5,0,0"/>
+                <psp:MainTab DataContext="{Binding PSMainVM}" Margin="0,-5,0,0"/>
             </TabItem>
 
             <TabItem IsEnabled="{Binding IsIdle}">

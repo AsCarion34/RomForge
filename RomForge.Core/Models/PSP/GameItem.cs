@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace RomForge.Core.Models.PS;
+namespace RomForge.Core.Models.PSP;
 
 public class GameItem
 {

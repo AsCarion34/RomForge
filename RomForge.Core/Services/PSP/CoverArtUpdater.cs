@@ -1,7 +1,7 @@
 ﻿using PBP.Core.Services;
-using RomForge.Core.Models.PS;
+using RomForge.Core.Models.PSP;
 
-namespace RomForge.Core.Services.PS;
+namespace RomForge.Core.Services.PSP;
 
 public class CoverArtUpdater
 {

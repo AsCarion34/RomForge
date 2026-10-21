@@ -1,10 +1,10 @@
 ﻿using Common;
 using PBP.Core.Models;
 using PBP.Core.Services;
-using RomForge.Core.Models.PS;
+using RomForge.Core.Models.PSP;
 using System.IO;
 
-namespace RomForge.Core.Services.PS;
+namespace RomForge.Core.Services.PSP;
 
 public record PackingPlan(string TargetOutputPath, string? GameDirectory);
 

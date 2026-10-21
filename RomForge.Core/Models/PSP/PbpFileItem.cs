@@ -3,7 +3,7 @@ using Common.WPF.ViewModels;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace RomForge.Core.Models.PS;
+namespace RomForge.Core.Models.PSP;
 
 public class PbpFileItem(string filePath) : FileItemBase(filePath), Common.WPF.Interfaces.IConvertible, IExtensionColored
 {

@@ -5,12 +5,12 @@ using PSP.Core.Services;
 using RomForge.Core;
 using RomForge.Core.UI.Command;
 using RomForge.Core.Models;
-using RomForge.Core.Models.PS;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using RomForge.Core.Services;
+using RomForge.Core.Models.PSP;
 
 namespace RomForge.ViewModels.PS;
 

@@ -2,7 +2,7 @@
 using System.IO;
 using System.Windows.Media;
 
-namespace RomForge.Core.Models.PS;
+namespace RomForge.Core.Models.PSP;
 
 public class DiscFileItem(string filePath) : ProcessableItemBase
 {

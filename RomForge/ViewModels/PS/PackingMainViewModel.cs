@@ -2,7 +2,6 @@
 using Common.WPF.ViewModels;
 using RomForge.Core;
 using RomForge.Core.Models;
-using RomForge.Core.Services.PS;
 using RomForge.Core.UI.Command;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -10,6 +9,7 @@ using System.Windows;
 using System.Windows.Input;
 using NSW.WPF.Services;
 using RomForge.Core.Services;
+using RomForge.Core.Services.PSP;
 
 namespace RomForge.ViewModels.PS;
 

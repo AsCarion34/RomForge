@@ -1,11 +1,11 @@
 ﻿using PBP.Core.Services;
-using RomForge.Core.Models.PS;
+using RomForge.Core.Models.PSP;
 using System.IO;
 using System.IO.Compression;
 using System.Net.Http;
 using System.Text.Json;
 
-namespace RomForge.Core.Services.PS;
+namespace RomForge.Core.Services.PSP;
 
 public static class GameMetadataLookup
 {

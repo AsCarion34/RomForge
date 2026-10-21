@@ -1,9 +1,9 @@
-﻿using RomForge.Core.Models.PS;
+﻿using RomForge.Core.Models.PSP;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text.RegularExpressions;
 
-namespace RomForge.Core.Services.PS;
+namespace RomForge.Core.Services.PSP;
 
 public static class DiscListSorter
 {

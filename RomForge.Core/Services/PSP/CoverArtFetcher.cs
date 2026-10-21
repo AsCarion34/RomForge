@@ -1,6 +1,6 @@
 ﻿using System.Net.Http;
 
-namespace RomForge.Core.Services.PS;
+namespace RomForge.Core.Services.PSP;
 
 public static class CoverArtFetcher
 {
