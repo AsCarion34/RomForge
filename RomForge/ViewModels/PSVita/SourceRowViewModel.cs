@@ -145,7 +145,6 @@ public class SourceRowViewModel : ViewModelBase
     public static SourceRowViewModel FromPkg(string pkgPath)
     {
         var result = VitaPkgProbe.Probe(pkgPath);
-
         return new SourceRowViewModel(pkgPath, SourceKind.Pkg, null, result.TitleId, result.Category, result.ContentIdSuffix);
     }
 
@@ -209,10 +208,7 @@ public class SourceRowViewModel : ViewModelBase
                 if (Kind == SourceKind.Pkg)
                 {
                     using var accessor = new PkgSourceAccessor(Path);
-                    string? pkgTitle = accessor.FileExists("sce_sys/param.sfo")
-                        ? VitaSfoParser.GetString(VitaSfoParser.Parse(accessor.ReadAllBytes("sce_sys/param.sfo")), "TITLE")
-                        : null;
-
+                    string? pkgTitle = accessor.FileExists("sce_sys/param.sfo") ? VitaSfoParser.GetString(VitaSfoParser.Parse(accessor.ReadAllBytes("sce_sys/param.sfo")), "TITLE") : null;
                     byte[]? pkgIcon = null;
 
                     if (Category == ContentCategory.App && !string.IsNullOrWhiteSpace(License))
@@ -238,9 +234,7 @@ public class SourceRowViewModel : ViewModelBase
                                 break;
                             }
                         }
-                        catch
-                        {
-                        }
+                        catch { }
                     }
 
                     return (pkgIcon, pkgTitle);

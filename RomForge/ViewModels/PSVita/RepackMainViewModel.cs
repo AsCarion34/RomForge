@@ -47,6 +47,7 @@ public class RepackMainViewModel : ToolTabViewModel
 
             OnPropertyChanged();
             OnPropertyChanged(nameof(OutputHintVisibility));
+            OnPropertyChanged(nameof(IsRun));
 
             AppConfig.Instance.OutputFolders.VitaOutputPath = value;
         }
@@ -59,13 +60,25 @@ public class RepackMainViewModel : ToolTabViewModel
     public bool BuildEmu
     {
         get => _buildEmu;
-        set { _buildEmu = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); }
+        set 
+        {
+            _buildEmu = value; 
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsRun));
+            CommandManager.InvalidateRequerySuggested(); 
+        }
     }
 
     public bool BuildRetail
     {
         get => _buildRetail;
-        set { _buildRetail = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); }
+        set
+        { 
+            _buildRetail = value; 
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsRun));
+            CommandManager.InvalidateRequerySuggested();
+        }
     }
 
     public int ProgressPct
@@ -106,10 +119,17 @@ public class RepackMainViewModel : ToolTabViewModel
     public bool MergePatchIntoGame
     {
         get => _mergePatchIntoGame;
-        set { _mergePatchIntoGame = value; OnPropertyChanged(); }
+        set 
+        { 
+            _mergePatchIntoGame = value; 
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsRun));
+        }
     }
 
     public string? SourcePath => SourceRows.FirstOrDefault()?.Path;
+
+    public bool IsRun => !IsLocked && CanRun();
 
     public ICommand RunCommand { get; }
     public ICommand RemoveRowCommand { get; }
@@ -291,9 +311,7 @@ public class RepackMainViewModel : ToolTabViewModel
                         if (!string.IsNullOrEmpty(txtContent))
                             row.License = txtContent;
                     }
-                    catch
-                    {
-                    }
+                    catch { }
                 }
             }
 
