@@ -4,7 +4,7 @@ using Vita.Core.Models;
 
 namespace Vita.Core.Services;
 
-public static class VitaPatchOutputBuilder
+public static class PatchOutputBuilder
 {
     public static Task<MergeResult> BuildMergedFromEntriesAsync(List<BatchSourceEntry> entries, string defaultPatchPath, string outputZipPath, OutputTarget target, Action<string, LogLevel> log, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
         => PatchShared.RunWithItemsAsync(entries, log, items => BuildCoreAsync(items, defaultPatchPath, outputZipPath, target, log, progress, ct));

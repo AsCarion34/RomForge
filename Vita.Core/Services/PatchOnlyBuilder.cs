@@ -4,7 +4,7 @@ using Vita.Core.Models;
 
 namespace Vita.Core.Services;
 
-public static class VitaPatchOnlyBuilder
+public static class PatchOnlyBuilder
 {
     public static Task<PatchOnlyResult> BuildFromEntriesAsync(List<BatchSourceEntry> entries, string defaultPatchPath, string outputZipPath, OutputTarget target, Action<string, LogLevel> log, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
         => PatchShared.RunWithItemsAsync(entries, log, items => BuildCoreAsync(items, defaultPatchPath, outputZipPath, target, log, progress, ct));

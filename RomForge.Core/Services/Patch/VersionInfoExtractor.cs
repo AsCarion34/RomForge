@@ -10,7 +10,7 @@ public static class VersionInfoExtractor
     private static readonly Regex VersionRegex = new(@"(?<![A-Za-z0-9])(?:v(?<Version>\d+(?:\.\d+)*[A-Za-z]*)|(?<Version>\d+(?:\.\d+)+[A-Za-z]*)(?:v)?)(?![A-Za-z0-9])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex DateRegex = new(@"(?<!\d)(?:\d{4}|(\d{2}))(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])(?!\d)", RegexOptions.Compiled);
     private static readonly Regex BracketGroupRegex = new(@"\((?<Paren>[^()]*)\)|\[(?<Square>[^\[\]]*)\]", RegexOptions.Compiled);
-    private static readonly Regex LanguageSeparatorRegex = new(@"\s*[,;/|+&]\s*", RegexOptions.Compiled);
+    private static readonly Regex LanguageSeparatorRegex = new(@"(?:\s*[,;/|+&]\s*|\s+)", RegexOptions.Compiled);
     private static readonly Regex FileNameTokenRegex = new(@"\{fileName\}", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex VersionTokenRegex = new(@"[ _\-]?\{Version\}[ _\-]?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex DateTokenRegex = new(@"\{Date(?::(?<Format>[^{}]+))?\}", RegexOptions.IgnoreCase | RegexOptions.Compiled);

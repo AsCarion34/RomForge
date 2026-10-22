@@ -1,4 +1,5 @@
 using Common;
+using Patch.Core.Enums;
 using Patch.Core.Services;
 using System.IO.Compression;
 using Vita.Core.Models;
@@ -8,12 +9,10 @@ namespace Vita.Core.Services;
 internal static class PatchShared
 {
     private const int ProgressChunkSize = 4 * 1024 * 1024;
+    private const int MaxLayoutWrapperDepth = 2;
 
     private static readonly string[] AppLayoutDirs = ["app", "rePatch"];
-
     private static readonly string[] AddcontLayoutDirs = ["addcont", "reAddcont"];
-
-    private const int MaxLayoutWrapperDepth = 2;
 
     public static async Task<T> RunWithItemsAsync<T>(List<BatchSourceEntry> entries, Action<string, LogLevel> log, Func<List<SourceItem>, Task<T>> run)
     {
@@ -77,7 +76,6 @@ internal static class PatchShared
                         accessor = new PkgSourceAccessor(entry.Path, entry.License);
 
                     ownedAccessors.Add(accessor);
-
                     AddItem(entry.Probe.Category, entry.Probe.TitleId, entry.Probe.ContentIdSuffix, string.Empty, accessor, entry.PatchPath);
                 }
                 else
@@ -165,12 +163,10 @@ internal static class PatchShared
     {
         var patchCtx = GetPatchContext(patchContexts, patchPackagePath);
         var targets = BuildTargets(index, patchCtx, category, titleId, contentIdSuffix, target);
-
         return new MergeGroup { Category = category, TitleId = titleId, ContentIdSuffix = contentIdSuffix, PatchCtx = patchCtx, Index = index, Targets = targets, Owners = owners };
     }
 
-    public static string BuildEntryPath(string prefix, MergeGroup group, string relativePath) =>
-        group.Category == ContentCategory.Addcont ? ToSafeEntryPath($"{prefix}/{group.TitleId}/{group.ContentIdSuffix}/{relativePath}") : ToSafeEntryPath($"{prefix}/{group.TitleId}/{relativePath}");
+    public static string BuildEntryPath(string prefix, MergeGroup group, string relativePath) => group.Category == ContentCategory.Addcont ? ToSafeEntryPath($"{prefix}/{group.TitleId}/{group.ContentIdSuffix}/{relativePath}") : ToSafeEntryPath($"{prefix}/{group.TitleId}/{relativePath}");
 
     private static string ToSafeEntryPath(string path)
     {
@@ -232,13 +228,26 @@ internal static class PatchShared
             }
         }
 
-        return PatchFileIndex.Build(rawByRelative.Keys, relative => CreatePatchFileRef(ctx.Accessor, rawByRelative[relative]));
+        var index = PatchFileIndex.Build(rawByRelative.Keys, relative => CreatePatchFileRef(ctx.Accessor, rawByRelative[relative]));
+
+        if (isAddcont)
+        {
+            var flatFiles = ctx.Files.Where(f => !IsLayoutPath(f.Path)).ToList();
+            var rawByPath = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var file in flatFiles)
+                rawByPath.TryAdd(file.Path, file.Raw);
+
+            foreach (var entry in PatchFileIndex.Build(rawByPath.Keys, path => CreatePatchFileRef(ctx.Accessor, rawByPath[path])).Entries.Where(e => e.Kind == PatchFileKind.BinaryPatch))
+                index.Entries.Add(entry with { RelativeDir = PatchFileIndex.LooseOnlyDir });
+        }
+
+        return index;
     }
 
     private static string[] GetLayoutDirs(bool isAddcont, OutputTarget target)
     {
         string[] dirs = isAddcont ? AddcontLayoutDirs : AppLayoutDirs;
-
         return target == OutputTarget.Retail ? [dirs[1], dirs[0]] : dirs;
     }
 
@@ -291,16 +300,13 @@ internal static class PatchShared
         string[] segments = path.Split('/');
 
         for (int i = 0; i <= MaxLayoutWrapperDepth && i + 2 < segments.Length; i++)
-        {
             if (AppLayoutDirs.Concat(AddcontLayoutDirs).Contains(segments[i], StringComparer.OrdinalIgnoreCase))
                 return true;
-        }
 
         return false;
     }
 
-    private static PatchFileRef CreatePatchFileRef(ISourceAccessor accessor, string rawPath)
-        => PatchFileRef.FromStream(() => new MemoryStream(accessor.ReadAllBytes(rawPath), writable: false), accessor.GetFileSize(rawPath), Path.GetFileName(NormalizePath(rawPath)));
+    private static PatchFileRef CreatePatchFileRef(ISourceAccessor accessor, string rawPath) => PatchFileRef.FromStream(() => new MemoryStream(accessor.ReadAllBytes(rawPath), writable: false), accessor.GetFileSize(rawPath), Path.GetFileName(NormalizePath(rawPath)));
 
     public static (ISourceAccessor Accessor, string Rel)? ResolveWorkBin(ISourceAccessor source, SourceItem item, (ISourceAccessor Accessor, string Rel)? fallback)
     {

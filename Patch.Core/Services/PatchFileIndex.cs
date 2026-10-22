@@ -8,6 +8,8 @@ public class PatchFileIndex
 {
     public static readonly string[] PatchExtensions = [".xdelta", ".xdelta3", ".ips", ".ups", ".bps", ".ppf", ".aps"];
 
+    public const string LooseOnlyDir = "?loose";
+
     public List<PatchFileEntry> Entries { get; } = [];
 
     public bool HasAnyFile => Entries.Count > 0;
