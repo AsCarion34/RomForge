@@ -18,7 +18,7 @@ namespace RomForge.ViewModels.Util;
 
 public class HashMainViewModel : ToolTabViewModel
 {
-    #region Fields
+    public static string GetFileDialogFilter() => "모든 파일|*.*";
 
     private bool _isConverting;
     private HashAlgorithmType _selectedAlgorithm = HashAlgorithmType.MD5;
@@ -44,16 +44,9 @@ public class HashMainViewModel : ToolTabViewModel
         }
     }
 
-    #endregion
-
-    #region Collections
-
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
+
     public ObservableCollection<HashFileItem> FileItems { get; } = [];
-
-    #endregion
-
-    #region Properties
 
     public bool IsConverting
     {
@@ -76,27 +69,15 @@ public class HashMainViewModel : ToolTabViewModel
 
     public Visibility HintVisibility => FileItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-    #endregion
-
-    #region Commands
-
     public ICommand RunCommand { get; }
 
-    #endregion
-
     public event Action<HashFileItem>? ScrollToItemRequested;
-
-    #region Constructor
 
     public HashMainViewModel()
     {
         RunCommand = new RelayCommand(async _ => await RunAsync(), _ => !IsConverting && FileItems.Count > 0);
         CancelCommand = new RelayCommand(_ => _cts.Cancel(), _ => IsConverting);
     }
-
-    #endregion
-
-    #region Public Methods
 
     public async Task AddPaths(IEnumerable<string> paths)
     {
@@ -135,12 +116,6 @@ public class HashMainViewModel : ToolTabViewModel
         FileItems.Clear();
         OnPropertyChanged(nameof(HintVisibility));
     }
-
-    public static string GetFileDialogFilter() => "모든 파일|*.*";
-
-    #endregion
-
-    #region Private Methods
 
     private async Task RunAsync()
     {
@@ -198,7 +173,6 @@ public class HashMainViewModel : ToolTabViewModel
                         });
 
                         Interlocked.Increment(ref successCount);
-
                         AppendLog($"[완료] {item.FileName} -> {result}");
                     }
                     else
@@ -206,6 +180,7 @@ public class HashMainViewModel : ToolTabViewModel
                         PostUi(() => item.Status = "실패");
 
                         AppendLog($"[실패] {item.FileName} 해시 계산 오류", LogLevel.Error);
+                        await SoundPlayer.PlayErrorAsync();
                         MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
                     }
                 });
@@ -388,7 +363,6 @@ public class HashMainViewModel : ToolTabViewModel
     private void PostUi(Action action)
     {
         _uiQueue.Enqueue(action);
-
         ScheduleFlush();
     }
 
@@ -402,7 +376,6 @@ public class HashMainViewModel : ToolTabViewModel
         if (dispatcher == null)
         {
             Interlocked.Exchange(ref _flushScheduled, 0);
-
             return;
         }
 
@@ -475,6 +448,4 @@ public class HashMainViewModel : ToolTabViewModel
             item.HashResult = FormatHex(item.RawHash);
         }
     }
-
-    #endregion
 }

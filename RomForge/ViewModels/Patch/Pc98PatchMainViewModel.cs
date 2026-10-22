@@ -1,7 +1,6 @@
 using Common;
 using Common.WPF.ViewModels;
 using NSW.WPF.Services;
-using Patch.Core.Formats.PC98;
 using RomForge.Core.Models;
 using RomForge.Core.Services;
 using RomForge.Core.Services.Patch;
@@ -31,6 +30,7 @@ public class Pc98PatchMainViewModel : ToolTabViewModel, IPatchViewModel
         set
         {
             _sourcePath = value;
+
             OnPropertyChanged();
             OnPropertyChanged(nameof(SourceLabel));
             CommandManager.InvalidateRequerySuggested();
@@ -43,6 +43,7 @@ public class Pc98PatchMainViewModel : ToolTabViewModel, IPatchViewModel
         set
         {
             _patchPath = value;
+
             OnPropertyChanged();
             OnPropertyChanged(nameof(PatchLabel));
             CommandManager.InvalidateRequerySuggested();
@@ -59,6 +60,7 @@ public class Pc98PatchMainViewModel : ToolTabViewModel, IPatchViewModel
         set
         {
             _progressPct = value;
+
             MainViewModel.SetTaskbarProgress(_progressPct);
             OnPropertyChanged();            
         }

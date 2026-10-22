@@ -1,4 +1,5 @@
 ﻿using NSW.Core;
+using RomForge.Core.Services;
 using RomForge.ViewModels.Switch;
 using System.IO;
 using System.Windows;
@@ -55,12 +56,14 @@ public partial class SplitTab : UserControl
         if (!ViewModel.HasFiles)
         {
             ViewModel.Log(Res.Main_Err_NoFiles, Common.LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             return;
         }
 
         if (KeySetProvider.Instance.KeySet == null)
         {
             ViewModel.Log(Res.Main_Err_NoKeys, Common.LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             return;
         }
 

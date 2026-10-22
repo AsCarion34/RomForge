@@ -167,6 +167,7 @@ public class RenameMainViewModel : ToolTabViewModel
         if (Items.Count == 0)
         {
             Log(Res.Main_Err_NoFiles, LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             return;
         }
 
@@ -176,6 +177,7 @@ public class RenameMainViewModel : ToolTabViewModel
         if (ready.Count == 0)
         {
             Log("변경할 파일이 없습니다.", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             return;
         }
 

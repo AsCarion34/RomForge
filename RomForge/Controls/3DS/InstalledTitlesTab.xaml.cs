@@ -1,5 +1,6 @@
 ﻿using Microsoft.Win32;
 using RomForge.Core.Models._3DS;
+using RomForge.Core.Services;
 using RomForge.ViewModels._3DS;
 using System.IO;
 using System.Windows;
@@ -37,6 +38,7 @@ public partial class InstalledTitlesTab : UserControl
         catch (Exception ex)
         {
             Vm.AppendLog($"로드 실패: {ex.Message}", Common.LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
         }
     }
 
@@ -49,6 +51,7 @@ public partial class InstalledTitlesTab : UserControl
         catch (Exception ex)
         {
             Vm.AppendLog($"복구 실패: {ex.Message}", Common.LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
         }
     }
 
@@ -112,6 +115,7 @@ public partial class InstalledTitlesTab : UserControl
         catch (Exception ex)
         {
             Vm.AppendLog($"추출 실패: {ex.Message}", Common.LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
         }
     }
 }

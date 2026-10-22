@@ -128,6 +128,7 @@ namespace RomForge.ViewModels.Switch
             if (!TryGetBuildRequest(mode, out var req, out string errorMsg) || req == null)
             {
                 Log(errorMsg, LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 return;
             }
 

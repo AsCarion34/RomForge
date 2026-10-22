@@ -99,14 +99,12 @@ public class BgmPreviewViewModel : ViewModelBase
         SetPosition(0);
     }
 
-    public void BeginSeek()
-    {
-        _isSeeking = true;
-    }
+    public void BeginSeek() => _isSeeking = true;
 
     public void EndSeek()
     {
         _isSeeking = false;
+
         Seek(_positionSeconds);
     }
 
@@ -130,7 +128,9 @@ public class BgmPreviewViewModel : ViewModelBase
         {
             _waveStream = new WaveFileReader(new MemoryStream(_wav));
             _waveOut = new WaveOutEvent();
+
             _waveOut.Init(_waveStream);
+
             _waveOut.PlaybackStopped += OnPlaybackStopped;
 
             return true;
@@ -139,7 +139,6 @@ public class BgmPreviewViewModel : ViewModelBase
         {
             _log($"미리듣기 재생 중 오류: {ex.Message}", LogLevel.Error);
             Release();
-
             return false;
         }
     }
@@ -152,7 +151,9 @@ public class BgmPreviewViewModel : ViewModelBase
         try
         {
             _waveOut!.Play();
+
             IsPlaying = true;
+
             _timer.Start();
         }
         catch (Exception ex)
@@ -166,7 +167,9 @@ public class BgmPreviewViewModel : ViewModelBase
     {
         _waveOut?.Pause();
         _timer.Stop();
+
         IsPlaying = false;
+
         UpdatePosition();
     }
 
@@ -215,12 +218,15 @@ public class BgmPreviewViewModel : ViewModelBase
             if (_waveOut != null)
             {
                 _waveOut.PlaybackStopped -= OnPlaybackStopped;
+
                 _waveOut.Stop();
                 _waveOut.Dispose();
+
                 _waveOut = null;
             }
 
             _waveStream?.Dispose();
+
             _waveStream = null;
         }
         catch { }
@@ -243,7 +249,6 @@ public class BgmPreviewViewModel : ViewModelBase
     private static string FormatTime(double seconds)
     {
         var t = TimeSpan.FromSeconds(Math.Max(0, seconds));
-
         return $"{(int)t.TotalMinutes}:{t.Seconds:00}";
     }
 }

@@ -17,22 +17,12 @@ namespace RomForge.ViewModels.PSP;
 
 public class UnpackingMainViewModel : ToolTabViewModel
 {
-    #region Fields
-
     private bool _isConverting;
     private CancellationTokenSource _cts = new();
-
-    #endregion
-
-    #region Collections
 
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
     public ObservableCollection<PbpFileItem> FileItems { get; } = [];
-
-    #endregion
-
-    #region Properties
 
     public bool IsConverting
     {
@@ -42,27 +32,15 @@ public class UnpackingMainViewModel : ToolTabViewModel
 
     public Visibility HintVisibility => FileItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-    #endregion
-
-    #region Commands
-
     public ICommand RunCommand { get; }
 
-    #endregion
-
     public event Action<PbpFileItem>? ScrollToItemRequested;
-
-    #region Constructor
 
     public UnpackingMainViewModel()
     {
         RunCommand = new RelayCommand(async _ => await RunAsync(), _ => !IsConverting && FileItems.Count > 0);
         CancelCommand = new RelayCommand(_ => _cts.Cancel(), _ => IsConverting);
     }
-
-    #endregion
-
-    #region Public Methods
 
     public async Task AddPaths(IEnumerable<string> paths)
     {
@@ -130,10 +108,6 @@ public class UnpackingMainViewModel : ToolTabViewModel
         FileItems.Clear();
         OnPropertyChanged(nameof(HintVisibility));
     }
-
-    #endregion
-
-    #region Private Methods
 
     private async Task RunAsync()
     {
@@ -259,6 +233,4 @@ public class UnpackingMainViewModel : ToolTabViewModel
 
         Application.Current.Dispatcher.Invoke(() => LogEntries.Clear());
     }
-
-    #endregion
 }

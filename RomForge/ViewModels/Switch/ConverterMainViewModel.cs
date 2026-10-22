@@ -18,47 +18,25 @@ namespace RomForge.ViewModels.Switch;
 
 public class ConverterMainViewModel : ToolTabViewModel
 {
-    #region Fields
-
     private CancellationTokenSource _cts = new();
 
-    private static readonly HashSet<string> SupportedExtensions =
-        new(StringComparer.OrdinalIgnoreCase) { ".nsp", ".xci", ".nsz", ".xcz" };
-
-    #endregion
-
-    #region Collections
+    private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase) { ".nsp", ".xci", ".nsz", ".xcz" };
 
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
+
     public ObservableCollection<ConverterFileItem> FileItems { get; } = [];
-
-    #endregion
-
-    #region Properties
 
     public Visibility HintVisibility => FileItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-    #endregion
-
-    #region Commands
-
     public ICommand RunCommand { get; }
 
-    #endregion
-
     public event Action<ConverterFileItem>? ScrollToItemRequested;
-
-    #region Constructor
 
     public ConverterMainViewModel()
     {
         RunCommand = new RelayCommand(async _ => await RunAsync(), _ => !IsLocked && FileItems.Count > 0);
         CancelCommand = new RelayCommand(_ => _cts.Cancel(), _ => IsLocked);
     }
-
-    #endregion
-
-    #region Public Methods
 
     public async Task AddPathsAsync(IEnumerable<string> paths)
     {
@@ -125,10 +103,6 @@ public class ConverterMainViewModel : ToolTabViewModel
         FileItems.Clear();
         OnPropertyChanged(nameof(HintVisibility));
     }
-
-    #endregion
-
-    #region Private Methods
 
     private async Task RunAsync()
     {
@@ -225,6 +199,7 @@ public class ConverterMainViewModel : ToolTabViewModel
         string source = item.Extension.ToLower();
         string target = item.SelectedTargetFormat.ToLower();
         var config = AppConfig.Instance.Switch;
+
         return (source, target) switch
         {
             ("nsp", "xci") => NspXciConvertService.NspToXciAsync(item.FilePath, progress, log, null, ct),
@@ -258,6 +233,4 @@ public class ConverterMainViewModel : ToolTabViewModel
 
         Application.Current.Dispatcher.Invoke(() => LogEntries.Clear());
     }
-
-    #endregion
 }

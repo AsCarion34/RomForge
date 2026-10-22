@@ -5,6 +5,7 @@ using NSW.Core;
 using NSW.WPF.Services;
 using NSW.WPF.ViewModels;
 using Patch.Core.Services;
+using RomForge.Core.Services;
 using RomForge.Core.Services.Switch;
 using RomForge.ViewModels.Switch;
 using RomForge.Views;
@@ -132,6 +133,7 @@ public partial class TitleListControl : UserControl
         catch (Exception ex)
         {
             _viewModel.Log($"압축파일을 여는 중 오류가 발생했습니다: {ex.Message}", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
         }
     }
 
@@ -293,6 +295,7 @@ public partial class TitleListControl : UserControl
         catch (Exception ex)
         {
             _viewModel.Log($"압축파일을 여는 중 오류가 발생했습니다: {ex.Message}", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             return false;
         }
     }

@@ -1,6 +1,5 @@
 ﻿using Common;
 using Common.WPF.ViewModels;
-using LibHac.Tools.Ncm;
 using NSW.Core.Enums;
 using NSW.WPF.Services;
 using NSW.WPF.UI;
@@ -183,6 +182,7 @@ public class RepackMainViewModel : ToolTabViewModel
                 if (!LooksLikeSupportedFolder(path))
                 {
                     Log($"'{Path.GetFileName(path)}'는 WUP 폴더나 로드라인(code/content/meta) 폴더가 아니라서 자동 추가할 수 없습니다. 언팩 → 패치 → 리팩 흐름을 이용해주세요.", LogLevel.Error);
+                    await SoundPlayer.PlayErrorAsync();
                     return;
                 }
 
@@ -200,12 +200,14 @@ public class RepackMainViewModel : ToolTabViewModel
             if (!isWua && !isWudOrWux)
             {
                 Log($"'{Path.GetFileName(path)}'는 지원하지 않는 형식입니다 (wud/wux/wua/WUP 폴더만 가능).", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 return;
             }
 
             if (!isWua && !File.Exists(KeysPath))
             {
                 Log("keys.txt가 exe 폴더에 없습니다. keys.txt를 exe와 같은 폴더에 넣어주세요 (wud/wux 입력에는 필요합니다).", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 return;
             }
 
@@ -221,6 +223,7 @@ public class RepackMainViewModel : ToolTabViewModel
         catch (Exception ex)
         {
             Log($"'{path}' 추가 실패: {ex.Message}", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
         }
     }
 
@@ -237,6 +240,7 @@ public class RepackMainViewModel : ToolTabViewModel
         if (!Validate(mode, out string error))
         {
             Log(error, LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             return;
         }
 
@@ -285,6 +289,7 @@ public class RepackMainViewModel : ToolTabViewModel
             if (scanned.Count == 0)
             {
                 Log("언팩된 데이터가 없습니다.", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 return;
             }
 
@@ -345,7 +350,11 @@ public class RepackMainViewModel : ToolTabViewModel
         {
             if (!isCompleted && mode == BuildMode.UnpackOnly && Directory.Exists(unpackedRoot))
             {
-                try { Directory.Delete(unpackedRoot, true); } catch { }
+                try 
+                {
+                    Directory.Delete(unpackedRoot, true);
+                } 
+                catch { }
             }
         }
     }

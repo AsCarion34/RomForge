@@ -83,6 +83,7 @@ public class KeygenMainViewModel : ToolTabViewModel
         if (!ValidateAndGetInputs(gameFiles, out var inputPaths, out string errorMsg))
         {
             Log(errorMsg, LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             return;
         }
 

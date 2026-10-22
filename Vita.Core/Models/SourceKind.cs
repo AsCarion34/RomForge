@@ -4,5 +4,7 @@ public enum SourceKind
 {
     Pkg,
 
-    ZipOrFolder
+    ZipOrFolder,
+
+    Unpacked
 }

@@ -6,6 +6,7 @@ using NSW.Core.Enums;
 using NSW.Core.Services;
 using NSW.WPF.Services;
 using RomForge.Core.Models;
+using RomForge.Core.Services;
 using RomForge.Core.Services.Switch;
 using RomForge.Core.UI.Command;
 using System.Collections.ObjectModel;
@@ -280,6 +281,7 @@ namespace RomForge.ViewModels.Switch
             if (!ValidateInputs(out string err))
             {
                 Log(err, LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 return;
             }
 
@@ -294,19 +296,19 @@ namespace RomForge.ViewModels.Switch
                 try
                 {
                     await RunConversionProcess(_cts.Token);
-                    await Core.Services.SoundPlayer.PlayCompleteAsync();
+                    await SoundPlayer.PlayCompleteAsync();
                     Log($"완료! 총 소요: {_totalSw.Elapsed:mm\\:ss}", LogLevel.Ok);                    
                 }
                 catch (OperationCanceledException)
                 {
                     Log($"작업이 취소되었습니다.", LogLevel.Error);
-                    await Core.Services.SoundPlayer.PlayCancelAsync();
+                    await SoundPlayer.PlayCancelAsync();
                     ProgressPct = 0;
                 }
                 catch (Exception ex)
                 {
                     Log($"오류: {ex.Message}", LogLevel.Error);
-                    await Core.Services.SoundPlayer.PlayErrorAsync();
+                    await SoundPlayer.PlayErrorAsync();
                     MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
                 }
                 finally

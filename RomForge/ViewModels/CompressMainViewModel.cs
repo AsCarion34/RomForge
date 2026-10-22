@@ -3,7 +3,6 @@ using CD.Core.Services.Readers;
 using CD.Core.Services.Writers;
 using CHD.Core.Services;
 using Common;
-using Common.WPF;
 using Common.WPF.ViewModels;
 using RomForge.Core;
 using RomForge.Core.Models;
@@ -53,6 +52,7 @@ public class CompressMainViewModel : ToolTabViewModel
                 AppConfig.Instance.OutputFolders.CompressOutputPath = AppDomain.CurrentDomain.BaseDirectory;
 
             AppConfig.Instance.OutputFolders.UseCompressCustomOutputPath = value;
+
             OnPropertyChanged();
             OnPropertyChanged(nameof(OutputPath));
         }
@@ -64,6 +64,7 @@ public class CompressMainViewModel : ToolTabViewModel
         set
         {
             AppConfig.Instance.OutputFolders.CompressOutputPath = value;
+
             OnPropertyChanged();
         }
     }
@@ -284,6 +285,7 @@ public class CompressMainViewModel : ToolTabViewModel
                             item.Status = "미지원";
 
                             AppendLog($"[{item.FileName}] 지원하지 않는 포맷", LogLevel.Error);
+                            await SoundPlayer.PlayErrorAsync();
                             continue;
                     }
 
@@ -303,7 +305,8 @@ public class CompressMainViewModel : ToolTabViewModel
                 {
                     AppendLog($"오류 ([{item.FileName}]): {ex.Message}", LogLevel.Error);
                     await SoundPlayer.PlayErrorAsync();
-                    MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);                    
+                    MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);   
+                    
                     item.Status = "실패";
                 }
             }

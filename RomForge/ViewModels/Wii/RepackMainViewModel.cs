@@ -108,7 +108,6 @@ public class RepackMainViewModel : ToolTabViewModel
 
             OnPropertyChanged();
             OnPropertyChanged(nameof(InputHintVisibility));
-
             _ = RefreshDiscAsync();
         }
     }
@@ -125,7 +124,6 @@ public class RepackMainViewModel : ToolTabViewModel
 
             OnPropertyChanged();
             OnPropertyChanged(nameof(PatchHintVisibility));
-
             _ = RefreshPatchAsync();
         }
     }
@@ -183,6 +181,7 @@ public class RepackMainViewModel : ToolTabViewModel
         set
         {
             _progressPct = value;
+
             MainViewModel.SetTaskbarProgress(_progressPct);
             OnPropertyChanged();
         }
@@ -267,6 +266,7 @@ public class RepackMainViewModel : ToolTabViewModel
         if (!Validate(mode, out string error))
         {
             Log(error, LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             return;
         }
 
@@ -316,10 +316,10 @@ public class RepackMainViewModel : ToolTabViewModel
             if (mode == BuildMode.UnpackOnly)
             {
                 string source = InputPath;
+
                 void progress(double value) => SetProgress(value, $"언팩 중: {Path.GetFileName(source)}", sw);
 
                 SetProgress(0, $"언팩 중: {Path.GetFileName(source)}", sw);
-
                 Log($"언팩을 시작합니다. → {unpackedPath}", LogLevel.Highlight);
 
                 int count = await Task.Run(() => IsoUnpacker.Unpack(source, unpackedPath, progress, ct), ct);
@@ -356,11 +356,19 @@ public class RepackMainViewModel : ToolTabViewModel
                 foreach (string path in tempOutputs.Distinct())
                 {
                     if (File.Exists(path))
-                        try { File.Delete(path); } catch { }
+                        try 
+                        {
+                            File.Delete(path); 
+                        } 
+                        catch { }
                 }
 
                 if (mode == BuildMode.UnpackOnly && Directory.Exists(unpackedPath))
-                    try { Directory.Delete(unpackedPath, true); } catch { }
+                    try 
+                    { 
+                        Directory.Delete(unpackedPath, true);
+                    } 
+                    catch { }
             }
         }
     }
@@ -379,6 +387,7 @@ public class RepackMainViewModel : ToolTabViewModel
         else
         {
             var folderInfo = FolderInfo.TryRead(unpackedPath);
+
             title = folderInfo?.Title?.Trim() ?? string.Empty;
             gameId = folderInfo?.GameId?.Trim() ?? string.Empty;
         }
@@ -410,7 +419,6 @@ public class RepackMainViewModel : ToolTabViewModel
         void convertProgress(double value) => SetProgress(value, convertLabel, sw);
 
         tempOutputs.Add(finalPath);
-
         SetProgress(0, prepareLabel, sw);
         
         if (fromFolder)
@@ -537,8 +545,10 @@ public class RepackMainViewModel : ToolTabViewModel
             var image = new BitmapImage();
 
             image.BeginInit();
+
             image.CacheOption = BitmapCacheOption.OnLoad;
             image.StreamSource = stream;
+
             image.EndInit();
             image.Freeze();
 
@@ -570,6 +580,7 @@ public class RepackMainViewModel : ToolTabViewModel
             PatchInfo = PatchDisplay.Failed("폴더, zip, 7z, xml만 지정할 수 있습니다.");
 
             Log($"'{Path.GetFileName(path)}'는 지원하지 않는 형식입니다 (폴더, zip, 7z, xml만 가능).", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
 
             return;
         }
@@ -625,6 +636,7 @@ public class RepackMainViewModel : ToolTabViewModel
                     ProgressPct = 0;
 
                     Log("패치 읽기가 취소되었습니다.", LogLevel.Error);
+                    await SoundPlayer.PlayCancelAsync();
                 }
             }
             catch (Exception ex)
@@ -637,6 +649,7 @@ public class RepackMainViewModel : ToolTabViewModel
 
                     MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
                     Log($"패치를 읽을 수 없습니다: {ex.Message}", LogLevel.Error);
+                    await SoundPlayer.PlayErrorAsync();
                 }
             }
             finally
@@ -664,7 +677,7 @@ public class RepackMainViewModel : ToolTabViewModel
         if (opened == null)
         {
             Log("비밀번호 입력이 취소되었습니다.", LogLevel.Error);
-
+            await SoundPlayer.PlayCancelAsync();
             return null;
         }
 
@@ -802,14 +815,16 @@ public class RepackMainViewModel : ToolTabViewModel
         catch (Exception ex)
         {
             if (version == _discVersion)
+            {
                 Log($"언팩 폴더 정보를 읽을 수 없습니다: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
+            }
         }
 
         if (version != _discVersion || folderInfo == null)
             return;
 
         _disc = new DiscInfo(folderInfo.GameId, folderInfo.Title, 0, folderInfo.Version, DiscContainerFormat.PlainDisc, 0, 0);
-
         GameInfo = GameDisplay.From(_disc);
         GameIcon = null;
 

@@ -151,12 +151,14 @@ public class PackingMainViewModel : ToolTabViewModel
         if (Files.FileItems.Count == 0)
         {
             AppendLog("추가된 파일이 없습니다.", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             return;
         }
 
         if (Files.FileItems.Any(i => i.GameId is "인식중..." or "인식실패"))
         {
             AppendLog("GameID 인식 오류", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             return;
         }
 
@@ -226,6 +228,7 @@ public class PackingMainViewModel : ToolTabViewModel
         catch (Exception ex)
         {
             AppendLog($"취소/실패 정리 작업 중 예외 발생: {ex.Message}", LogLevel.Error);
+            _= SoundPlayer.PlayErrorAsync();
         }
     }
 

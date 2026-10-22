@@ -19,6 +19,7 @@ public class FileConverter : IDisposable
     public FileConverter(string compression = "zlib")
     {
         _chdman = new ChdmanService();
+
         _chdman.ErrorReceived += (s, msg) => Log(msg, LogLevel.Error);
         _compression = compression;
 
@@ -384,8 +385,8 @@ public class FileConverter : IDisposable
         catch (Exception ex)
         {
             CleanupFiles(chdPath);
-            CurrentOutputPath = null;
 
+            CurrentOutputPath = null;
             return ConversionResult.Fail($"오류: {ex.Message}");
         }
     }
@@ -403,12 +404,10 @@ public class FileConverter : IDisposable
                 return false;
 
             var lines = File.ReadAllLines(cuePath);
-
             var trackLines = lines
                 .Select(l => l.Trim())
                 .Where(l => TrackMode1Regex.IsMatch(l))
                 .ToList();
-
             var totalTrackCount = lines
                 .Select(l => l.Trim())
                 .Count(l => l.StartsWith("TRACK", StringComparison.OrdinalIgnoreCase));

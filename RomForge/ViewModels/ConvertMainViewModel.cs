@@ -13,12 +13,10 @@ using PSP.Core.Models;
 using PSP.Core.Services;
 using RomForge.Core;
 using RomForge.Core.Models;
-using RomForge.Core.Models._3DS;
 using RomForge.Core.Models.CD;
 using RomForge.Core.Models.Compression;
 using RomForge.Core.Models.PSP;
 using RomForge.Core.Models.Switch;
-using RomForge.Core.Models.WiiU;
 using RomForge.Core.Services;
 using RomForge.Core.Services.Compression;
 using RomForge.Core.Services.PSP;
@@ -54,6 +52,7 @@ public class ConvertMainViewModel : ToolTabViewModel
     private static string KeysPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "keys.txt");
 
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
+
     public ObservableCollection<object> FileItems { get; } = [];
 
     public Visibility HintVisibility => FileItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -73,6 +72,7 @@ public class ConvertMainViewModel : ToolTabViewModel
                 AppConfig.Instance.OutputFolders.ConvertOutputPath = AppDomain.CurrentDomain.BaseDirectory;
 
             AppConfig.Instance.OutputFolders.UseConvertCustomOutputPath = value;
+
             OnPropertyChanged();
             OnPropertyChanged(nameof(OutputPath));
         }
@@ -84,6 +84,7 @@ public class ConvertMainViewModel : ToolTabViewModel
         set
         {
             AppConfig.Instance.OutputFolders.ConvertOutputPath = value;
+
             OnPropertyChanged();
         }
     }
@@ -189,26 +190,21 @@ public class ConvertMainViewModel : ToolTabViewModel
             case "xcz":
                 var sw = new ConverterFileItem(path);
                 return sw.SelectedTargetFormat == string.Empty ? null : sw;
-
             case "cci":
             case "3ds":
             case "cia":
             case "zcci":
                 var ds = new Core.Models._3DS.FileItem(path);
                 return ds.SelectedTargetFormat is "" or "미지원" ? null : ds;
-
             case "wud":
             case "wux":
             case "wua":
                 return new Core.Models.WiiU.FileItem(path);
-
             case "mds":
             case "ccd":
                 return new ConvertFileItem(path);
-
             case "pbp":
                 return new PbpFileItem(path);
-
             case "iso":
             case "cue":
             case "gdi":
@@ -222,14 +218,12 @@ public class ConvertMainViewModel : ToolTabViewModel
             case "zso":
                 var disc = new DiscConvertFileItem(path);
                 return disc.AvailableFormats.Count == 0 ? null : disc;
-
             default:
                 if (Directory.Exists(path))
                 {
                     var wiiu = new Core.Models.WiiU.FileItem(path);
                     return wiiu.SelectedTargetFormat == "미지원" ? null : wiiu;
                 }
-
                 return null;
         }
     }
@@ -253,12 +247,13 @@ public class ConvertMainViewModel : ToolTabViewModel
                         if (result.IconPixels is not null)
                         {
                             var bitmap = BitmapSource.Create(48, 48, 96, 96, System.Windows.Media.PixelFormats.Bgr32, null, result.IconPixels, 48 * 4);
+
                             bitmap.Freeze();
+
                             ds.Icon = bitmap;
                         }
                     }
                     break;
-
                 case Core.Models.WiiU.FileItem wu:
                     await Task.Run(() =>
                     {
@@ -285,7 +280,6 @@ public class ConvertMainViewModel : ToolTabViewModel
                     }
 
                     break;
-
                 case ConvertFileItem cd:
                     var trackCount = await Task.Run(() =>
                     {
@@ -295,7 +289,6 @@ public class ConvertMainViewModel : ToolTabViewModel
 
                     cd.TrackCount = trackCount;
                     break;
-
                 case PbpFileItem pbp:
                     await Task.Run(() =>
                     {
@@ -324,15 +317,15 @@ public class ConvertMainViewModel : ToolTabViewModel
                     break;
             }
         }
-        catch
-        {
-        }
+        catch { }
     }
 
     private async Task RunAsync()
     {
         _cts.Dispose();
+
         _cts = new CancellationTokenSource();
+
         ClearLog();
 
         _outputDir = ResolveCustomOutputDir();
@@ -375,6 +368,7 @@ public class ConvertMainViewModel : ToolTabViewModel
                         await SoundPlayer.PlayErrorAsync();
                         MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
                         RunNavigateCerts?.Invoke(this, EventArgs.Empty);
+
                         tracker.Status = "실패";                        
                     }
                     catch (OperationCanceledException)
@@ -386,7 +380,8 @@ public class ConvertMainViewModel : ToolTabViewModel
                         AppendLog($"[{GetDisplayName(item)}] 변환 실패: {ex.Message}", LogLevel.Error);
                         await SoundPlayer.PlayErrorAsync();
                         MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
-                        tracker.Status = "실패";                        
+
+                        tracker.Status = "실패";
                         tracker.Progress = 0;                        
                     }
                 }
@@ -477,7 +472,6 @@ public class ConvertMainViewModel : ToolTabViewModel
                     }
                 }
                 break;
-
             case Core.Models._3DS.FileItem ds:
                 {
                     KeyStore key = new();
@@ -507,19 +501,15 @@ public class ConvertMainViewModel : ToolTabViewModel
                     }
                 }
                 break;
-
             case Core.Models.WiiU.FileItem wu:
                 await Task.Run(() => ConvertWiiUOne(wu, _cts.Token));
                 break;
-
             case ConvertFileItem cd:
                 await ConvertCdOneAsync(cd, progress, _cts.Token);
                 break;
-
             case DiscConvertFileItem disc:
                 await ConvertDiscOneAsync(disc, progress, _cts.Token);
                 break;
-
             case PbpFileItem pbp:
                 {
                     var unpacker = new PbpUnpacker
@@ -584,7 +574,6 @@ public class ConvertMainViewModel : ToolTabViewModel
         if (item.DetectedFormat is RomFormat.Gcm or RomFormat.Wbfs or RomFormat.Gcz or RomFormat.Wia or RomFormat.Rvz or RomFormat.Wii)
         {
             var detected = FormatDetector.Detect(item.FilePath);
-
             DiscImageConverter wiiGCConverter = new();
 
             wiiGCConverter.LogMessage += (_, e) => AppendLog(e.Message, e.Level);
@@ -610,23 +599,19 @@ public class ConvertMainViewModel : ToolTabViewModel
                     await using (var output = File.Create(outPath))
                         await CsoService.DecompressAsync(input, output, progress, ct);
                     break;
-
                 case ("cso", "ZSO"):
                     await using (var input = File.OpenRead(item.FilePath))
                     await using (var output = File.Create(outPath))
                         await CsoService.TranscodeAsync(input, output, targetMagic: CsoHeader.MagicZSO, targetIsLz4: true, progress: progress, ct: ct);
                     break;
-
                 case ("zso", "CSO"):
                     await using (var input = File.OpenRead(item.FilePath))
                     await using (var output = File.Create(outPath))
                         await CsoService.TranscodeAsync(input, output, targetMagic: CsoHeader.MagicCSO, targetIsLz4: false, progress: progress, ct: ct);
                     break;
-
                 case ("cso", "CHD") or ("zso", "CHD"):
                     await csoService.CompressCsoToChdAsync(item.FilePath, outPath, progress, AppConfig.Instance.Chdman.Compression, ct);
                     break;
-
                 default:
                     throw new NotSupportedException($"{ext} → {target}: 지원하지 않는 변환입니다.");
             }
@@ -699,17 +684,14 @@ public class ConvertMainViewModel : ToolTabViewModel
                         var wupFolder = Utils.GetUniqueFolderPath(Path.Combine(outputRoot, $"{outputName} [WUP]"));
                         Converter.ConvertToWup(source, wupFolder, OnFileProgress, ct);
                         break;
-
                     case "Loadiine":
                         var loadiineFolder = Utils.GetUniqueFolderPath(Path.Combine(outputRoot, $"{outputName} [Loadiine]"));
                         Converter.ConvertToLoadiine(source, loadiineFolder, OnFileProgress, ct);
                         break;
-
                     case "WUA":
                         var wuaFile = Utils.GetUniqueFilePath(Path.Combine(outputRoot, $"{outputName}.wua"));
                         Converter.ConvertToWua(source, wuaFile, OnFileProgress, ct);
                         break;
-
                     default:
                         throw new NotSupportedException($"지원하지 않는 출력 포맷입니다: {item.SelectedTargetFormat}");
                 }

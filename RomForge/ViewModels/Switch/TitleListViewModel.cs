@@ -3,6 +3,7 @@ using Common.WPF.ViewModels;
 using NSW.Core;
 using NSW.WPF.ViewModels;
 using RomForge.Core.Models.Switch;
+using RomForge.Core.Services;
 using RomForge.Core.Services.Switch;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -109,6 +110,7 @@ public class TitleListViewModel : ToolTabViewModel
                     : $"[패치 지정 실패] {file.TitleName}: 패치에서 타이틀 ID 폴더나 exefs/romfs/ips/xdelta를 찾지 못했습니다.";
 
                 Log(reason, LogLevel.Error);
+                _= SoundPlayer.PlayErrorAsync();
                 MessageBox.Show(reason, "패치 지정 실패", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
             }
@@ -148,6 +150,7 @@ public class TitleListViewModel : ToolTabViewModel
         if (report.Matched == 0)
         {
             Log($"[일괄 지정 실패] {text}", LogLevel.Error);
+            _= SoundPlayer.PlayErrorAsync();
             MessageBox.Show(text, "일괄 지정 결과", MessageBoxButton.OK, MessageBoxImage.Warning);
         }        
         else

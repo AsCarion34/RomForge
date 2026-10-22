@@ -17,8 +17,6 @@ namespace RomForge.ViewModels.WiiU;
 
 public class ConverterMainViewModel : ToolTabViewModel
 {
-    #region Fields
-
     private bool _isConverting;
     private CancellationTokenSource _cts = new();
     private string _outputPath;
@@ -27,17 +25,9 @@ public class ConverterMainViewModel : ToolTabViewModel
 
     private static string KeysPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "keys.txt");
 
-    #endregion
-
-    #region Collections
-
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
     public ObservableCollection<FileItem> FileItems { get; } = [];
-
-    #endregion
-
-    #region Properties
 
     public bool IsConverting
     {
@@ -61,19 +51,11 @@ public class ConverterMainViewModel : ToolTabViewModel
 
     public Visibility OutputHintVisibility => string.IsNullOrEmpty(OutputPath) ? Visibility.Visible : Visibility.Collapsed;
 
-    #endregion
-
-    #region Commands
-
     public ICommand RunCommand { get; }
 
     public ICommand BrowseOutputCommand { get; }
 
-    #endregion
-
     public event Action<FileItem>? ScrollToItemRequested;
-
-    #region Constructor
 
     public ConverterMainViewModel()
     {
@@ -82,10 +64,6 @@ public class ConverterMainViewModel : ToolTabViewModel
         CancelCommand = new RelayCommand(_ => _cts.Cancel(), _ => IsConverting);
         BrowseOutputCommand = new RelayCommand(async _ => await BrowseOutput());
     }
-
-    #endregion
-
-    #region Public Methods
 
     public async Task AddPaths(IEnumerable<string> paths)
     {
@@ -97,18 +75,12 @@ public class ConverterMainViewModel : ToolTabViewModel
             if (Directory.Exists(path))
             {
                 if (IsGameFolder(path))
-                {
                     resolvedPaths.Add(path);
-                }
                 else
-                {
                     CollectValidPaths(path, resolvedPaths);
-                }
             }
             else if (File.Exists(path))
-            {
                 resolvedPaths.Add(path);
-            }
         }
 
         foreach (var path in resolvedPaths)
@@ -142,9 +114,7 @@ public class ConverterMainViewModel : ToolTabViewModel
     {
         try
         {
-            return Directory.Exists(Path.Combine(dir, "code")) ||
-                   Directory.Exists(Path.Combine(dir, "meta")) ||
-                   Directory.Exists(Path.Combine(dir, "content"));
+            return Directory.Exists(Path.Combine(dir, "code")) || Directory.Exists(Path.Combine(dir, "meta")) || Directory.Exists(Path.Combine(dir, "content"));
         }
         catch
         {
@@ -170,12 +140,8 @@ public class ConverterMainViewModel : ToolTabViewModel
                     CollectValidPaths(subDir, results);
             }
         }
-        catch (UnauthorizedAccessException)
-        {
-        }
-        catch (Exception)
-        {
-        }
+        catch (UnauthorizedAccessException) { }
+        catch (Exception) { }
     }
 
     public void RemoveItems(IEnumerable<FileItem> items)
@@ -194,10 +160,6 @@ public class ConverterMainViewModel : ToolTabViewModel
         FileItems.Clear();
         OnPropertyChanged(nameof(HintVisibility));
     }
-
-    #endregion
-
-    #region Private Methods
 
     private static async Task LoadMetadataAsync(FileItem item)
     {
@@ -283,12 +245,14 @@ public class ConverterMainViewModel : ToolTabViewModel
         if (string.IsNullOrEmpty(OutputPath))
         {
             AppendLog("출력 폴더를 선택하세요.", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             return;
         }
 
         IsConverting = true;
 
         _cts.Dispose();
+
         _cts = new CancellationTokenSource();
 
         ClearLog();
@@ -460,6 +424,4 @@ public class ConverterMainViewModel : ToolTabViewModel
 
         await Task.CompletedTask;
     }
-
-    #endregion
 }

@@ -2,6 +2,7 @@
 using Microsoft.Win32;
 using NSW.WPF.Services;
 using RomForge.Core.Models._3DS;
+using RomForge.Core.Services;
 using RomForge.ViewModels._3DS;
 using System.IO;
 using System.Windows;
@@ -41,6 +42,7 @@ public partial class InstallTab : UserControl
         catch (Exception ex)
         {
             Vm.AppendLog($"오류: {ex.Message}", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
         }
     }
 
@@ -75,6 +77,7 @@ public partial class InstallTab : UserControl
         catch (Exception ex)
         {
             Vm.AppendLog($"오류: {ex.Message}", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
         }
     }
 
@@ -95,6 +98,7 @@ public partial class InstallTab : UserControl
             catch (Exception ex)
             {
                 Vm.AppendLog($"오류: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
             }
         }
     }
@@ -126,6 +130,7 @@ public partial class InstallTab : UserControl
         catch (Exception ex)
         {
             Vm.AppendLog($"오류: {ex.Message}", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
         }
         finally
         {

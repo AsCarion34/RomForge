@@ -156,7 +156,6 @@ public class ConverterMainViewModel : ToolTabViewModel
                                     await c.ConvertAsync(item.FilePath, progressHandler, AppendLog, null, _cts.Token);
                                 }
                                 break;
-
                             case "ZCCI":
                                 {
                                     if (inputExt == "cia")
@@ -165,7 +164,6 @@ public class ConverterMainViewModel : ToolTabViewModel
                                         await Z3dsCompressor.CompressAsync(item.FilePath, 18, progressHandler, AppendLog, null, _cts.Token);
                                 }
                                 break;
-
                             case "CCI":
                                 {
                                     if (inputExt == "zcci")
@@ -179,7 +177,6 @@ public class ConverterMainViewModel : ToolTabViewModel
                                     }
                                 }
                                 break;
-
                             default:
                                 throw new NotSupportedException("잘못된 출력 포맷 설정입니다.");
                         }

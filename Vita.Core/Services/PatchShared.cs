@@ -9,10 +9,12 @@ namespace Vita.Core.Services;
 internal static class PatchShared
 {
     private const int ProgressChunkSize = 4 * 1024 * 1024;
-    private const int MaxLayoutWrapperDepth = 2;
 
     private static readonly string[] AppLayoutDirs = ["app", "rePatch"];
+
     private static readonly string[] AddcontLayoutDirs = ["addcont", "reAddcont"];
+
+    private const int MaxLayoutWrapperDepth = 2;
 
     public static async Task<T> RunWithItemsAsync<T>(List<BatchSourceEntry> entries, Action<string, LogLevel> log, Func<List<SourceItem>, Task<T>> run)
     {
@@ -56,6 +58,9 @@ internal static class PatchShared
         {
             foreach (var entry in orderedEntries)
             {
+                if (entry.Kind == SourceKind.Unpacked)
+                    throw new NotSupportedException($"언팩된 폴더는 리팩(폴더 기반)에서만 사용할 수 있습니다: {entry.Path}");
+
                 if (entry.Kind == SourceKind.Pkg)
                 {
                     if (entry.Probe is null)
@@ -110,12 +115,15 @@ internal static class PatchShared
     }
 
     public static List<MergeGroup> BuildGroups(List<SourceItem> items, string defaultPatchPath, Dictionary<string, PatchContext> patchContexts, OutputTarget target, Action<string, LogLevel> log, CancellationToken ct)
+        => [.. BuildBaseGroups(items, log, ct).Select(g => CreateGroup(g.Category, g.TitleId, g.ContentIdSuffix, g.PatchPathOverride ?? defaultPatchPath, g.Index, g.Owners, patchContexts, target))];
+
+    internal static List<BaseGroup> BuildBaseGroups(List<SourceItem> items, Action<string, LogLevel> log, CancellationToken ct)
     {
         var appByTitle = items.Where(i => i.Category == ContentCategory.App).ToDictionary(i => i.TitleId, StringComparer.OrdinalIgnoreCase);
         var patchByTitle = items.Where(i => i.Category == ContentCategory.Patch).ToDictionary(i => i.TitleId, StringComparer.OrdinalIgnoreCase);
         var addcontItems = items.Where(i => i.Category == ContentCategory.Addcont).ToList();
         var titleIds = appByTitle.Keys.Union(patchByTitle.Keys, StringComparer.OrdinalIgnoreCase).ToList();
-        var groups = new List<MergeGroup>();
+        var groups = new List<BaseGroup>();
 
         foreach (var titleId in titleIds)
         {
@@ -137,9 +145,14 @@ internal static class PatchShared
             if (owners.Count == 0)
                 continue;
 
-            string patchPackagePath = (patchItem?.PatchPathOverride ?? appItem?.PatchPathOverride) ?? defaultPatchPath;
-
-            groups.Add(CreateGroup(ContentCategory.App, titleId, null, patchPackagePath, BuildPatchAppIndex(appOwner, patchOwner), owners, patchContexts, target));
+            groups.Add(new BaseGroup
+            {
+                Category = ContentCategory.App,
+                TitleId = titleId,
+                PatchPathOverride = patchItem?.PatchPathOverride ?? appItem?.PatchPathOverride,
+                Index = BuildPatchAppIndex(appOwner, patchOwner),
+                Owners = owners
+            });
         }
 
         foreach (var addcontItem in addcontItems)
@@ -151,9 +164,15 @@ internal static class PatchShared
             if (owner is null)
                 continue;
 
-            string patchPackagePath = addcontItem.PatchPathOverride ?? defaultPatchPath;
-
-            groups.Add(CreateGroup(ContentCategory.Addcont, addcontItem.TitleId, addcontItem.ContentIdSuffix, patchPackagePath, BuildPatchAppIndex(owner, null), [owner], patchContexts, target));
+            groups.Add(new BaseGroup
+            {
+                Category = ContentCategory.Addcont,
+                TitleId = addcontItem.TitleId,
+                ContentIdSuffix = addcontItem.ContentIdSuffix,
+                PatchPathOverride = addcontItem.PatchPathOverride,
+                Index = BuildPatchAppIndex(owner, null),
+                Owners = [owner]
+            });
         }
 
         return groups;
@@ -166,7 +185,10 @@ internal static class PatchShared
         return new MergeGroup { Category = category, TitleId = titleId, ContentIdSuffix = contentIdSuffix, PatchCtx = patchCtx, Index = index, Targets = targets, Owners = owners };
     }
 
-    public static string BuildEntryPath(string prefix, MergeGroup group, string relativePath) => group.Category == ContentCategory.Addcont ? ToSafeEntryPath($"{prefix}/{group.TitleId}/{group.ContentIdSuffix}/{relativePath}") : ToSafeEntryPath($"{prefix}/{group.TitleId}/{relativePath}");
+    public static string BuildEntryPath(string prefix, MergeGroup group, string relativePath) => BuildEntryPath(prefix, group.Category, group.TitleId, group.ContentIdSuffix, relativePath);
+
+    public static string BuildEntryPath(string prefix, ContentCategory category, string titleId, string? contentIdSuffix, string relativePath)
+        => category == ContentCategory.Addcont ? ToSafeEntryPath($"{prefix}/{titleId}/{contentIdSuffix}/{relativePath}") : ToSafeEntryPath($"{prefix}/{titleId}/{relativePath}");
 
     private static string ToSafeEntryPath(string path)
     {
@@ -300,13 +322,16 @@ internal static class PatchShared
         string[] segments = path.Split('/');
 
         for (int i = 0; i <= MaxLayoutWrapperDepth && i + 2 < segments.Length; i++)
+        {
             if (AppLayoutDirs.Concat(AddcontLayoutDirs).Contains(segments[i], StringComparer.OrdinalIgnoreCase))
                 return true;
+        }
 
         return false;
     }
 
-    private static PatchFileRef CreatePatchFileRef(ISourceAccessor accessor, string rawPath) => PatchFileRef.FromStream(() => new MemoryStream(accessor.ReadAllBytes(rawPath), writable: false), accessor.GetFileSize(rawPath), Path.GetFileName(NormalizePath(rawPath)));
+    private static PatchFileRef CreatePatchFileRef(ISourceAccessor accessor, string rawPath)
+        => PatchFileRef.FromStream(() => new MemoryStream(accessor.ReadAllBytes(rawPath), writable: false), accessor.GetFileSize(rawPath), Path.GetFileName(NormalizePath(rawPath)));
 
     public static (ISourceAccessor Accessor, string Rel)? ResolveWorkBin(ISourceAccessor source, SourceItem item, (ISourceAccessor Accessor, string Rel)? fallback)
     {
@@ -420,9 +445,12 @@ internal static class PatchShared
         }
     }
 
+    internal static PatchPlan BuildPlan(PatchContext patchCtx, ContentCategory category, string titleId, string? contentIdSuffix, OutputTarget target, IEnumerable<string> relativePaths)
+        => PatchPlan.Build(BuildPatchIndex(patchCtx, category, titleId, contentIdSuffix, target), relativePaths, StringComparer.OrdinalIgnoreCase);
+
     public static List<PatchTarget> BuildTargets(Dictionary<string, PatchAppEntry> patchAppIndex, PatchContext patchCtx, ContentCategory category, string titleId, string? contentIdSuffix, OutputTarget target)
     {
-        var plan = PatchPlan.Build(BuildPatchIndex(patchCtx, category, titleId, contentIdSuffix, target), patchAppIndex.Keys, StringComparer.OrdinalIgnoreCase);
+        var plan = BuildPlan(patchCtx, category, titleId, contentIdSuffix, target, patchAppIndex.Keys);
         var targets = new List<PatchTarget>();
 
         foreach (var (relativePath, appEntry) in patchAppIndex)
@@ -477,6 +505,11 @@ internal static class PatchShared
     {
         using var entryStream = zipEntry.Open();
 
+        await WriteStreamWithProgressAsync(entryStream, data, estimatedSize, reporter, ct);
+    }
+
+    public static async Task WriteStreamWithProgressAsync(Stream stream, byte[] data, long estimatedSize, ProgressReporter reporter, CancellationToken ct)
+    {
         if (data.Length == 0)
         {
             reporter.AddProgress(estimatedSize);
@@ -490,7 +523,7 @@ internal static class PatchShared
         {
             int size = Math.Min(ProgressChunkSize, data.Length - offset);
 
-            await entryStream.WriteAsync(data.AsMemory(offset, size), ct);
+            await stream.WriteAsync(data.AsMemory(offset, size), ct);
 
             offset += size;
 
@@ -503,21 +536,26 @@ internal static class PatchShared
         }
     }
 
-    public static void WriteLicenseEntry(ZipArchive zip, HashSet<string> writtenEntries, OwnerContext owner)
+    public static (string EntryPath, byte[] Data)? BuildLicenseEntry(OwnerContext owner)
     {
         if (!WorkBinReader.TryGetTitleIdFromContentId(owner.License.ContentId, out string licenseTitleId))
+            return null;
+
+        return (ToSafeEntryPath($"license/{licenseTitleId}/{owner.License.ContentId}.rif"), owner.WorkBinAccessor.ReadAllBytes(owner.WorkBinRelativePath));
+    }
+
+    public static void WriteLicenseEntry(ZipArchive zip, HashSet<string> writtenEntries, OwnerContext owner)
+    {
+        if (BuildLicenseEntry(owner) is not { } license)
             return;
 
-        string licenseEntryPath = ToSafeEntryPath($"license/{licenseTitleId}/{owner.License.ContentId}.rif");
-
-        if (!writtenEntries.Add(licenseEntryPath))
+        if (!writtenEntries.Add(license.EntryPath))
             return;
 
-        byte[] workBinBytes = owner.WorkBinAccessor.ReadAllBytes(owner.WorkBinRelativePath);
-        var licenseEntry = zip.CreateEntry(licenseEntryPath, CompressionLevel.NoCompression);
+        var licenseEntry = zip.CreateEntry(license.EntryPath, CompressionLevel.NoCompression);
         using var es = licenseEntry.Open();
 
-        es.Write(workBinBytes);
+        es.Write(license.Data);
     }
 
     public static string GetPatchedPrefix(ContentCategory category, OutputTarget target) => (category, target) switch

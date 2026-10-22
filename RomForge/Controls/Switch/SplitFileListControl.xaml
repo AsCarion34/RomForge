@@ -11,7 +11,7 @@
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="40"/>
             </Grid.ColumnDefinitions>
             <Grid Grid.Column="0">
                 <Grid.RowDefinitions>
@@ -210,7 +210,7 @@
                 </Grid>
             </Grid>
 
-            <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Top">
+            <StackPanel Grid.Column="1" Margin="5" VerticalAlignment="Top">
                 <Button Width="30" Height="30" Margin="0,0,0,8" Padding="0" BorderThickness="1" ToolTip="{x:Static l:Resources.ToolTip_AddFile}" Style="{StaticResource GrayButton}" Click="BtnAddFile_Click">
                     <Image Source="/Common.WPF;component/Assets/Images/AddFile.png" Width="30" Height="30" RenderOptions.BitmapScalingMode="HighQuality"/>
                 </Button>

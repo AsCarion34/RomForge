@@ -46,6 +46,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         set
         {
             _sourcePath = value;
+
             OnPropertyChanged();
             OnPropertyChanged(nameof(SourceLabel));
             OnPropertyChanged(nameof(HasSource));
@@ -85,6 +86,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         set
         {
             AppConfig.Instance.Patch.AutoCompress = value;
+
             OnPropertyChanged(nameof(AutoCompress));
             TriggerPreviewUpdate();
         }
@@ -96,6 +98,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         set
         {
             AppConfig.Instance.Patch.NamingEnabled = value;
+
             OnPropertyChanged(nameof(NamingEnabled));
             TriggerPreviewUpdate();
         }
@@ -107,6 +110,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         set
         {
             AppConfig.Instance.Patch.NamingFormat = value;
+
             OnPropertyChanged(nameof(NamingFormat));
             TriggerPreviewUpdate();
         }
@@ -123,6 +127,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
                 return;
 
             _selectedNamingPreset = value;
+
             OnPropertyChanged();
             OnPropertyChanged(nameof(IsNamingFormatReadOnly));
 
@@ -136,6 +141,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
     private void SyncNamingPreset()
     {
         _selectedNamingPreset = NamingFormatPresets.Resolve(AppConfig.Instance.Patch.NamingFormat);
+
         OnPropertyChanged(nameof(SelectedNamingPreset));
         OnPropertyChanged(nameof(IsNamingFormatReadOnly));
     }
@@ -146,6 +152,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         private set
         {
             _namingPreview = value;
+
             OnPropertyChanged();
         }
     }
@@ -234,6 +241,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         set
         {
             _progressPct = value;
+
             MainViewModel.SetTaskbarProgress(_progressPct);
             OnPropertyChanged();
         }
@@ -331,6 +339,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
             if (e.PropertyName == nameof(PatchSlotViewModel.FilePath))
             {
                 _lastProcessedPatchPath = null;
+
                 TriggerPreviewUpdate();
                 CommandManager.InvalidateRequerySuggested();
             }
@@ -346,14 +355,15 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
 
         PatchSlots[0].FilePath = null;
         PatchSlots[0].Title = "패치";
-
         _patchAdded = false;
 
         OnPropertyChanged(nameof(CanAddPatch));
         OnPropertyChanged(nameof(HintsVisible));
         OnPropertyChanged(nameof(IsMultiPatch));
         OnPropertyChanged(nameof(SourceHintVisible));
+
         _lastProcessedPatchPath = null;
+
         TriggerPreviewUpdate();
     }
 
@@ -467,7 +477,6 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
             outputPath = Utils.GetUniqueFilePath(outputPath);
 
             Log($"패치 시작: {Path.GetFileName(actualSourcePath)}", LogLevel.Highlight);
-
             await orchestrator.PatchAsync(actualSourcePath, patchPaths, detected, outputDir, outputPath, sourceIsTemporary, ct);
             stopwatch.Stop();
             Log($"패치 완료: {Path.GetFileName(outputPath)} ({stopwatch.Elapsed:mm\\:ss})", LogLevel.Ok);
@@ -505,6 +514,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
                 catch (Exception ex)
                 {
                     Log($"압축 해제 임시 파일 정리 실패: {ex.Message}", LogLevel.Error);
+                    await SoundPlayer.PlayErrorAsync();
                 }
             }
         }

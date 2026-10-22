@@ -335,6 +335,7 @@ public class SplitMainViewModel : ToolTabViewModel
         if (jobs.Count == 0)
         {
             Log("분리할 타이틀을 선택하세요.", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             return;
         }
 
@@ -343,6 +344,7 @@ public class SplitMainViewModel : ToolTabViewModel
         if (string.IsNullOrEmpty(outputDir))
         {
             Log(Res.Main_Err_NoOutput, LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             return;
         }
 
@@ -375,17 +377,20 @@ public class SplitMainViewModel : ToolTabViewModel
                     Log(Res.Main_Msg_SplitDone);
                     AppConfig.Instance.OutputFolders.SwitchSplitOutputPath?.OpenFolder();
                     await SoundPlayer.PlayCompleteAsync();
+                    outputDir.OpenFolder();
                 }
             }
             catch (OperationCanceledException)
             {
                 Log("분리가 취소되었습니다.", LogLevel.Error);
                 await SoundPlayer.PlayCancelAsync();
+                ProgressPct = 0;
             }
             catch (Exception ex)
             {
                 Log($"{Res.Log_Error}: {ex.Message}", LogLevel.Error);
                 await SoundPlayer.PlayErrorAsync();
+                MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
             }
             finally
             {

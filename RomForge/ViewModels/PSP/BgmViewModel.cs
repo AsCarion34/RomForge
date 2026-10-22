@@ -97,11 +97,7 @@ public class BgmViewModel(Action<string, LogLevel> log) : ViewModelBase
             var (bgm, wav) = await Task.Run(() =>
             {
                 byte[] rawBytes = File.ReadAllBytes(filePath);
-
-                byte[] converted = isAt3
-                    ? rawBytes
-                    : At3Encoder.Convert(rawBytes, ext == ".wav", CreateConverterOptions());
-
+                byte[] converted = isAt3 ? rawBytes : At3Encoder.Convert(rawBytes, ext == ".wav", CreateConverterOptions());
                 byte[]? preview = null;
 
                 try
@@ -117,7 +113,9 @@ public class BgmViewModel(Action<string, LogLevel> log) : ViewModelBase
             });
 
             Bytes = bgm;
-            Preview.Load(wav);            
+
+            Preview.Load(wav);     
+            
             FilePath = filePath;
 
             log($"배경음 {actionName} 완료: {Path.GetFileName(filePath)}", LogLevel.Ok);
@@ -129,15 +127,14 @@ public class BgmViewModel(Action<string, LogLevel> log) : ViewModelBase
         finally
         {
             if (!isAt3)
-            {
                 IsConverting = false;
-            }
         }
     }
 
     private ConverterOptions CreateConverterOptions()
     {
         int lastPct = -1;
+
         return new ConverterOptions
         {
             EnableGain = false,

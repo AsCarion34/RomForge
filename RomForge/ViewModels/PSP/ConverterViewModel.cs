@@ -16,25 +16,15 @@ namespace RomForge.ViewModels.PSP;
 
 public class ConverterViewModel : ToolTabViewModel
 {
-    #region Fields
-
     private bool _isConverting;
     private CancellationTokenSource _cts = new();
     private readonly CsoService _csoService = new();
 
-    private static readonly HashSet<string> SupportedExtensions =
-        [".iso", ".cso", ".zso", ".chd"];
-
-    #endregion
-
-    #region Collections
+    private static readonly HashSet<string> SupportedExtensions = [".iso", ".cso", ".zso", ".chd"];
 
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
+
     public ObservableCollection<FileItem> FileItems { get; } = [];
-
-    #endregion
-
-    #region Properties
 
     public bool IsConverting
     {
@@ -44,27 +34,15 @@ public class ConverterViewModel : ToolTabViewModel
 
     public Visibility HintVisibility => FileItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-    #endregion
-
-    #region Commands
-
     public ICommand RunCommand { get; }
 
-    #endregion
-
     public event Action<FileItem>? ScrollToItemRequested;
-
-    #region Constructor
 
     public ConverterViewModel()
     {
         RunCommand = new RelayCommand(async _ => await RunAsync(), _ => !IsConverting && FileItems.Count > 0);
         CancelCommand = new RelayCommand(_ => _cts.Cancel(), _ => IsConverting);
     }
-
-    #endregion
-
-    #region Public Methods
 
     public void AddPaths(IEnumerable<string> paths)
     {
@@ -106,10 +84,6 @@ public class ConverterViewModel : ToolTabViewModel
         FileItems.Clear();
         OnPropertyChanged(nameof(HintVisibility));
     }
-
-    #endregion
-
-    #region Private Methods
 
     private async Task RunAsync()
     {
@@ -291,6 +265,4 @@ public class ConverterViewModel : ToolTabViewModel
 
         Application.Current.Dispatcher.Invoke(() => LogEntries.Clear());
     }
-
-    #endregion
 }

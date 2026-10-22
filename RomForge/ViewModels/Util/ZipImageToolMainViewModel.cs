@@ -382,11 +382,13 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
         catch (Exception ex)
         {
             AppendLog($"디스크 용량을 확인하는 중 오류가 발생했습니다: {ex.Message}", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
         }
 
         if (freeSpace < (ulong)SelectedDrive.SizeBytes)
         {
             AppendLog("디스크 용량이 부족합니다.", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             return;
         }
 

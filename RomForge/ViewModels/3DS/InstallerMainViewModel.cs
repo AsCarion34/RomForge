@@ -167,13 +167,16 @@ public class InstallerMainViewModel : ToolTabViewModel
         try
         {
             await operation(cts.Token);
+
             StatusMessage = successMsg;
+
             AppendLog(successMsg, LogLevel.Info);
             await SoundPlayer.PlayCompleteAsync();
         }
         catch (OperationCanceledException)
         {
             StatusMessage = "취소되었습니다.";
+
             MainViewModel.SetTaskbarProgress(0);
             AppendLog("추출이 취소되었습니다.", LogLevel.Error);
             await SoundPlayer.PlayCancelAsync();
@@ -181,6 +184,7 @@ public class InstallerMainViewModel : ToolTabViewModel
         catch (Exception ex)
         {
             StatusMessage = $"오류: {ex.Message}";
+
             MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
             AppendLog($"오류: {ex.Message}", LogLevel.Error);
             await SoundPlayer.PlayErrorAsync();
@@ -196,7 +200,9 @@ public class InstallerMainViewModel : ToolTabViewModel
     public async Task LoadTitlesAsync(Action<int, int>? onProgress = null, CancellationToken ct = default)
     {
         SetLoading(true);
+
         StatusMessage = "초기화 중...";
+
         ClearLog();
         AppendLog("3DS 타이틀 스캔을 시작합니다.", LogLevel.Highlight);
         AppendLog($"SD 경로: {SdPath}, Movable 경로: {MovablePath}", LogLevel.Info);
@@ -211,8 +217,11 @@ public class InstallerMainViewModel : ToolTabViewModel
                     (current, total) =>
                     {
                         Progress = (double)current / total * 100;
+
                         MainViewModel.SetTaskbarProgress(Progress);
+
                         ProgressText = $"로딩 중... {current} / {total}";
+
                         onProgress?.Invoke(current, total);
                     }, ct);
 
@@ -221,6 +230,7 @@ public class InstallerMainViewModel : ToolTabViewModel
             catch (Exception ex)
             {
                 StatusMessage = $"오류: {ex.Message}";
+
                 MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
                 AppendLog($"오류: {ex.Message}", LogLevel.Error);
                 await SoundPlayer.PlayErrorAsync();
@@ -238,7 +248,9 @@ public class InstallerMainViewModel : ToolTabViewModel
             return;
 
         SetLoading(true);
+
         StatusMessage = "초기화 중...";
+
         ClearLog();
         AppendLog("title.db 복구를 시작합니다.", LogLevel.Highlight);
         AppendLog($"SD 경로: {SdPath}, Movable 경로: {MovablePath}", LogLevel.Info);
@@ -267,7 +279,8 @@ public class InstallerMainViewModel : ToolTabViewModel
 
                 var (rebuilt, skipped) = await rebuilder.RebuildAsync(Report, ct);
 
-                StatusMessage = $"복구 완료: {rebuilt}개 타이틀";                
+                StatusMessage = $"복구 완료: {rebuilt}개 타이틀";
+                
                 AppendLog($"복구 완료: {rebuilt}개 등록", LogLevel.Ok);
                 await SoundPlayer.PlayCompleteAsync();
 
@@ -301,10 +314,10 @@ public class InstallerMainViewModel : ToolTabViewModel
             EnsureInitialized();
 
             _extractCts = new CancellationTokenSource();
+
             OnPropertyChanged(nameof(CancelButtonVisibility));
 
             var extractor = new TitleExtractor(_keyStore!, _sdCrypto!, _scanner!);
-
             var extractProgress = new Progress<ProgressInfo>(p =>
             {
                 Progress = p.Percent;
@@ -319,7 +332,6 @@ public class InstallerMainViewModel : ToolTabViewModel
             {
                 AppendLog($"타이틀 추출 준비 완료: {selected.ShortDescription} (ID: {selected.TitleId})", LogLevel.Info);
                 AppendLog($"출력 경로: {outputPath} (형식: {(asCci ? "CCI" : "CIA")})", LogLevel.Info);
-
                 await RunOperationAsync(_extractCts, $"추출 시작: {selected.ShortDescription}",
                     async ct =>
                     {
@@ -430,7 +442,10 @@ public class InstallerMainViewModel : ToolTabViewModel
                 if (selected.ForcedLanguage != LocaleLanguage.None)
                 {
                     if (selected.LocaleRegionCode == LocaleRegion.None)
+                    {
                         AppendLog("제품 코드에서 지역을 판별할 수 없어 로케일 고정을 건너뜁니다.", LogLevel.Error);
+                        await SoundPlayer.PlayErrorAsync();
+                    }
                     else
                     {
                         await LocaleTxtWriter.WriteAsync(_scanner!.SdRoot, selected.TitleId, selected.ForcedLanguage, ct);
@@ -441,16 +456,22 @@ public class InstallerMainViewModel : ToolTabViewModel
             catch (OperationCanceledException)
             {
                 StatusMessage = "취소되었습니다.";
+
                 AppendLog("설치가 취소되었습니다.", LogLevel.Error);
                 await SoundPlayer.PlayCancelAsync();
                 MainViewModel.SetTaskbarProgress(0);
                 if (Directory.Exists(titleRoot))
-                    try { Directory.Delete(titleRoot, true); } catch { }
+                    try
+                    { 
+                        Directory.Delete(titleRoot, true);
+                    }
+                    catch { }
                 throw;
             }
             catch (Exception ex)
             {
-                StatusMessage = $"오류: {ex.Message}";                
+                StatusMessage = $"오류: {ex.Message}";
+                
                 MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
                 AppendLog($"오류: {ex.Message}", LogLevel.Error);
                 await SoundPlayer.PlayErrorAsync();
@@ -478,6 +499,7 @@ public class InstallerMainViewModel : ToolTabViewModel
     private void SetLoading(bool loading)
     {
         _isLoading = loading;
+
         OnPropertyChanged(nameof(CanLoad));
         OnPropertyChanged(nameof(ProgressPanelVisibility));
 
@@ -495,9 +517,7 @@ public class InstallerMainViewModel : ToolTabViewModel
         if (Application.Current?.Dispatcher == null)
             return;
 
-        Application.Current.Dispatcher.Invoke(() =>
-            LogEntries.Add(new LogEntry { Message = msg, Level = level })
-        );
+        Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }) );
     }
 
     private void ClearLog()

@@ -19,22 +19,12 @@ namespace RomForge.ViewModels._3DS;
 
 public class DecryptorMainViewModel : ToolTabViewModel
 {
-    #region Fields
-
     private bool _isDecrypting;
     private CancellationTokenSource _cts = new();
-
-    #endregion
-
-    #region Collections
 
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
     public ObservableCollection<DecryptorFileItem> FileItems { get; } = [];
-
-    #endregion
-
-    #region Properties
 
     public bool IsDecrypting
     {
@@ -44,27 +34,15 @@ public class DecryptorMainViewModel : ToolTabViewModel
 
     public Visibility HintVisibility => FileItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-    #endregion
-
-    #region Commands
-
     public ICommand RunCommand { get; }
 
-    #endregion
-
     public event Action<DecryptorFileItem>? ScrollToItemRequested;
-
-    #region Constructor
 
     public DecryptorMainViewModel()
     {
         RunCommand = new RelayCommand(async _ => await RunAsync(), _ => !IsDecrypting && FileItems.Count > 0);
         CancelCommand = new RelayCommand(_ => _cts.Cancel(), _ => IsDecrypting);
     }
-
-    #endregion
-
-    #region Public Methods
 
     public async Task AddPaths(IEnumerable<string> paths)
     {
@@ -95,7 +73,9 @@ public class DecryptorMainViewModel : ToolTabViewModel
                 if (result?.IconPixels is not null)
                 {
                     var bitmap = BitmapSource.Create(48, 48, 96, 96, PixelFormats.Bgr32, null, result.IconPixels, 48 * 4);
+
                     bitmap.Freeze();
+
                     vm.Icon = bitmap;
                 }
 
@@ -132,15 +112,14 @@ public class DecryptorMainViewModel : ToolTabViewModel
         OnPropertyChanged(nameof(HintVisibility));
     }
 
-    #endregion
-
-    #region Private Methods
-
     private async Task RunAsync()
     {
         IsDecrypting = true;
+
         _cts.Dispose();
+
         _cts = new CancellationTokenSource();
+
         ClearLog();
 
         using (BeginWork())
@@ -163,7 +142,9 @@ public class DecryptorMainViewModel : ToolTabViewModel
                     if (!item.Crypto)
                     {
                         AppendLog($"[{item.FileName}] 이미 복호화된 파일입니다.", LogLevel.Info);
+
                         item.Status = "미지원";
+
                         continue;
                     }
 
@@ -267,6 +248,7 @@ public class DecryptorMainViewModel : ToolTabViewModel
             await using var outputStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, useAsync: true);
 
             await outputStream.WriteAsync(ncsdBuf, ct);
+
             written += ncsdBuf.Length;
 
             const int MediaUnit = 0x200;
@@ -337,6 +319,7 @@ public class DecryptorMainViewModel : ToolTabViewModel
 
                     written += bytesRead;
                     item.Progress = totalBytes > 0 ? (int)(written * 100 / totalBytes) : 0;
+
                     MainViewModel.SetTaskbarProgress(item.Progress);
                 }
             }
@@ -361,6 +344,7 @@ public class DecryptorMainViewModel : ToolTabViewModel
                     while (remaining > 0)
                     {
                         ct.ThrowIfCancellationRequested();
+
                         int toRead = (int)Math.Min(buf.Length, remaining);
                         int bytesRead = await contentStream.ReadAsync(buf.AsMemory(0, toRead), ct);
 
@@ -368,9 +352,11 @@ public class DecryptorMainViewModel : ToolTabViewModel
                             break;
 
                         await outputStream.WriteAsync(buf.AsMemory(0, bytesRead), ct);
+
                         written += bytesRead;
                         remaining -= bytesRead;
                         item.Progress = totalBytes > 0 ? (int)(written * 100 / totalBytes) : 0;
+
                         MainViewModel.SetTaskbarProgress(item.Progress);
                     }
                 }
@@ -393,6 +379,4 @@ public class DecryptorMainViewModel : ToolTabViewModel
 
         Application.Current.Dispatcher.Invoke(() => LogEntries.Clear());
     }
-
-    #endregion
 }

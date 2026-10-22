@@ -109,12 +109,14 @@ public class CertsMainViewModel : ToolTabViewModel
         if (!SupportedExtensions.Contains(Path.GetExtension(path)))
         {
             AppendLog($"지원하지 않는 파일 형식입니다: {Path.GetExtension(path)}", LogLevel.Error);
+            _= SoundPlayer.PlayErrorAsync();
             return;
         }
 
         if (!File.Exists(path))
         {
             AppendLog($"파일을 찾을 수 없습니다: {path}", LogLevel.Error);
+            _= SoundPlayer.PlayErrorAsync();
             return;
         }
 
@@ -166,6 +168,7 @@ public class CertsMainViewModel : ToolTabViewModel
         catch (Exception ex)
         {
             AppendLog($"게임 정보 로드 실패: {ex.Message}", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
         }
     }
 
@@ -207,6 +210,7 @@ public class CertsMainViewModel : ToolTabViewModel
                 {
                     SelectedFile.Progress = 0;
                     MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
+                    await SoundPlayer.PlayErrorAsync();
                     if (SelectedFile.Status == "추출중")
                         SelectedFile.Status = "실패";
                 }
@@ -250,7 +254,6 @@ public class CertsMainViewModel : ToolTabViewModel
             {
                 AppendLog($"[실패] 파일 크기가 너무 작습니다. (필요: 0x{CertOffset + CertSize:X}바이트, 실제: 0x{fs.Length:X}바이트)", LogLevel.Error);
                 item.Status = "실패";
-                MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
 
                 return false;
             }
@@ -275,7 +278,6 @@ public class CertsMainViewModel : ToolTabViewModel
             if (totalRead != CertSize)
             {
                 AppendLog($"[실패] 읽기 불완전: 예상 0x{CertSize:X}바이트, 실제 0x{totalRead:X}바이트", LogLevel.Error);
-                MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
                 item.Status = "실패";                
 
                 return false;
@@ -285,6 +287,7 @@ public class CertsMainViewModel : ToolTabViewModel
 
             File.WriteAllBytes(OutputPath, buffer);
             AppendLog($"[성공] {totalRead:N0} bytes → {OutputFileName}");
+            _= SoundPlayer.PlayCompleteAsync();
             MainViewModel.SetTaskbarProgress(100);
 
             return true;
@@ -296,7 +299,6 @@ public class CertsMainViewModel : ToolTabViewModel
         catch (Exception ex)
         {
             AppendLog($"[실패] 추출 중 에러: {ex.Message}", LogLevel.Error);
-            MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
 
             return false;
         }

@@ -109,6 +109,7 @@ public class MergeMainViewModel : ToolTabViewModel
         if (!ValidateMergeInputs(gameFiles, out var inputPaths, out var outputDir, out string errorMsg))
         {
             Log(errorMsg, LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             return;
         }
 

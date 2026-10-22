@@ -19,8 +19,11 @@ public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
     public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
     public ObservableCollection<ArcadeMatchItem> MatchItems { get; } = [];
+
     public ObservableCollection<Entry> AllPatchEntries { get; } = [];
+
     public ObservableCollection<Entry> UnmatchedPatches { get; } = [];
+
     public ObservableCollection<Package> AvailablePatchPackages { get; } = [];
 
     public bool HasPatchPackages => AvailablePatchPackages.Count > 0;
@@ -36,6 +39,7 @@ public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
         set
         {
             _selectedPatchPackage = value;
+
             OnPropertyChanged();
             _ = MatchItemsRebuildAsync();
         }
@@ -48,6 +52,7 @@ public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
         set
         {
             _sourcePath = value;
+
             OnPropertyChanged();
             OnPropertyChanged(nameof(SourceLabel));
             CommandManager.InvalidateRequerySuggested();
@@ -64,6 +69,7 @@ public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
         set
         {
             _patchPath = value;
+
             OnPropertyChanged();
             OnPropertyChanged(nameof(PatchLabel));
             CommandManager.InvalidateRequerySuggested();
@@ -111,6 +117,7 @@ public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
         set
         {
             _mismatchReason = value;
+
             OnPropertyChanged();
             OnPropertyChanged(nameof(MismatchVisibility));
         }
@@ -121,11 +128,7 @@ public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
     public Visibility HintVisibility => MatchItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     public Visibility MismatchVisibility => MismatchReason is not null ? Visibility.Visible : Visibility.Collapsed;
 
-    public void Log(string message, LogLevel level)
-    {
-        Application.Current?.Dispatcher?.Invoke(() =>
-            LogEntries.Add(new LogEntry { Message = message, Level = level }));
-    }
+    public void Log(string message, LogLevel level) => Application.Current?.Dispatcher?.Invoke(() => LogEntries.Add(new LogEntry { Message = message, Level = level }));
 
     public async Task RunAsync()
     {
@@ -137,10 +140,12 @@ public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
         if (MatchItems.Any(x => x.MismatchReason == "CRC 불일치"))
         {
             Log("CRC 불일치 항목이 있어 패치를 진행할 수 없습니다.", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             return;
         }
 
         _runCts = new CancellationTokenSource();
+
         var ct = _runCts.Token;
 
         string outputDir = Path.Combine(Path.GetDirectoryName(SourcePath)!, "output");
@@ -154,6 +159,7 @@ public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
         foreach (var item in matched)
         {
             var entryName = item.SourcePath.Split('|', 2)[1];
+
             itemsByEntryName[entryName] = item;
             patchesByEntryName[entryName] = item.PatchEntry!;
             item.Progress = 0;
@@ -164,6 +170,7 @@ public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
             if (itemsByEntryName.TryGetValue(p.Label, out var item))
             {
                 item.Progress = p.Percent;
+
                 UpdateSummary();
                 UpdateTotalProgress();
             }
@@ -194,10 +201,7 @@ public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
 
     public bool CanRun() => !string.IsNullOrEmpty(SourcePath) && !string.IsNullOrEmpty(PatchPath);
 
-    public void Cancel()
-    {
-        _runCts?.Cancel();
-    }
+    public void Cancel() => _runCts?.Cancel();
 
     private void TryDeleteIncompleteOutput(string outputZipPath)
     {
@@ -254,6 +258,7 @@ public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
     {
         var matchedItems = MatchItems.Where(x => x.IsMatched).ToList();
         int completedCount = matchedItems.Count(x => x.Progress >= 100);
+
         ProgressSummary = $"{completedCount} / {matchedItems.Count} 완료";
     }
 
@@ -383,6 +388,7 @@ public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
             if (ReferenceEquals(_matchCts, cts))
             {
                 _matchCts = null;
+
                 cts.Dispose();
             }
         }
@@ -571,7 +577,6 @@ public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
                 {
                     using var stream = e.Open();
                     using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
-
                     return (e.Name, reader.ReadToEnd());
                 })];
         }

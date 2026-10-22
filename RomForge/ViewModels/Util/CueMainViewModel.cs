@@ -165,6 +165,7 @@ public class CueMainViewModel : ToolTabViewModel
                     {
                         item.Progress = 0;
                         MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
+                        await SoundPlayer.PlayErrorAsync();
                         if (item.Status == "변환중")
                             item.Status = "실패";
                     }
@@ -223,7 +224,6 @@ public class CueMainViewModel : ToolTabViewModel
                 item.Status = "미지원";
 
                 AppendLog($"[패스] 이미 {item.TargetName} 파일이 존재하므로 생성을 건너뜁니다. (덮어쓰기 방지)", LogLevel.Error);
-
                 return false;
             }
 

@@ -108,6 +108,7 @@ public class RepackMainViewModel : ToolTabViewModel
                 return;
 
             _patchPath = value;
+
             OnPropertyChanged();
             OnPropertyChanged(nameof(PatchHintVisibility));
             _ = RefreshPatchAsync();
@@ -137,6 +138,7 @@ public class RepackMainViewModel : ToolTabViewModel
         set
         {
             _progressPct = value;
+
             MainViewModel.SetTaskbarProgress(_progressPct);
             OnPropertyChanged();
         }
@@ -233,6 +235,7 @@ public class RepackMainViewModel : ToolTabViewModel
         if (!Validate(mode, out string error))
         {
             Log(error, LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             return;
         }
 
@@ -345,12 +348,20 @@ public class RepackMainViewModel : ToolTabViewModel
                     foreach (string path in toDelete)
                     {
                         if (File.Exists(path))
-                            try { File.Delete(path); } catch { }
+                            try 
+                            { 
+                                File.Delete(path); 
+                            } 
+                            catch { }
                     }
                 }
 
                 if (mode == BuildMode.UnpackOnly && Directory.Exists(unpackedPath))
-                    try { Directory.Delete(unpackedPath, true); } catch { }
+                    try 
+                    { 
+                        Directory.Delete(unpackedPath, true); 
+                    }
+                    catch { }
             }
         }
     }
