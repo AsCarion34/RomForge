@@ -3,7 +3,7 @@ using Vita.Core.Models;
 
 namespace Vita.Core.Services;
 
-public static class VitaUnpackService
+public static class UnpackService
 {
     public static Task<int> UnpackAsync(List<BatchSourceEntry> entries, string unpackedRoot, Action<string, LogLevel> log, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
         => Task.Run(() => PatchShared.RunWithItemsAsync(entries, log, items => UnpackCoreAsync(items, unpackedRoot, log, progress, ct)), ct);

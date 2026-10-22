@@ -2,7 +2,7 @@ using Patch.Core.Services;
 
 namespace Vita.Core.Services;
 
-public static class VitaPatchInspector
+public static class PatchInspector
 {
     public static (int TotalFiles, int PatchFiles) Inspect(string patchPath)
     {

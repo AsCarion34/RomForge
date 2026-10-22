@@ -187,7 +187,7 @@ public class RepackMainViewModel : ToolTabViewModel
         if (!Directory.Exists(root))
             return;
 
-        var titles = await Task.Run(() => VitaUnpackedScanner.Scan(root));
+        var titles = await Task.Run(() => UnpackedScanner.Scan(root));
 
         if (titles.Count == 0 || SourceRows.Count > 0)
             return;
@@ -207,7 +207,7 @@ public class RepackMainViewModel : ToolTabViewModel
 
         try
         {
-            var (total, patchFiles) = await Task.Run(() => VitaPatchInspector.Inspect(patchPath));
+            var (total, patchFiles) = await Task.Run(() => PatchInspector.Inspect(patchPath));
 
             if (version == _patchLogVersion)
                 Log($"패치 정보를 읽었습니다: {total}개 파일 (패치 {patchFiles}개, 교체 {total - patchFiles}개)");
@@ -589,14 +589,14 @@ public class RepackMainViewModel : ToolTabViewModel
         Directory.CreateDirectory(unpackedRoot);
         Log("언팩 중...", LogLevel.Highlight);
 
-        int count = await VitaUnpackService.UnpackAsync(entries, unpackedRoot, Log, BuildProgressReporter(), ct);
+        int count = await UnpackService.UnpackAsync(entries, unpackedRoot, Log, BuildProgressReporter(), ct);
 
         Log($"언팩 완료: {count}개 파일 -> {unpackedRoot}", LogLevel.Ok);
     }
 
     private bool LoadUnpackedRows(string unpackedRoot)
     {
-        var titles = VitaUnpackedScanner.Scan(unpackedRoot);
+        var titles = UnpackedScanner.Scan(unpackedRoot);
 
         if (titles.Count == 0)
         {

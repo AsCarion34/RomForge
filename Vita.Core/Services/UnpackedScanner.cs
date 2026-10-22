@@ -2,7 +2,7 @@ using Vita.Core.Models;
 
 namespace Vita.Core.Services;
 
-public static class VitaUnpackedScanner
+public static class UnpackedScanner
 {
     public static List<UnpackedTitle> Scan(string unpackedRoot)
     {
