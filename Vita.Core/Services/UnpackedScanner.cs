@@ -26,13 +26,12 @@ public static class UnpackedScanner
 
                 titles.Add(new UnpackedTitle
                 {
-                    TitleId = titleId,                     
+                    TitleId = titleId,
                     Category = ContentCategory.App,
                     FolderPath = unpackedRoot,
                     TitleName = name,
                     IconBytes = icon,
-                    SizeBytes = sizeBytes,
-                    PatchPath = Directory.Exists(patchDir) ? patchDir : null
+                    SizeBytes = sizeBytes
                 });
             }
         }
@@ -134,8 +133,13 @@ public static class UnpackedScanner
                     catch { }
                 }
 
-                if (icon == null && File.Exists(iconPath))
-                    icon = File.ReadAllBytes(iconPath);
+                if (icon == null)
+                {
+                    byte[] raw = File.ReadAllBytes(iconPath);
+
+                    if (raw.Length > 8 && raw[0] == 0x89 && raw[1] == 0x50 && raw[2] == 0x4E && raw[3] == 0x47)
+                        icon = raw;
+                }
             }
         }
         catch { }
