@@ -6,6 +6,7 @@ using RomForge.Core.Models.Patch;
 using SevenZip;
 using SharpCompress.Archives;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace RomForge.Core.Services.Patch;
 
@@ -308,7 +309,27 @@ public static class SourceArchiveExtractor
         var (binEntries, resolvedKey) = SelectCueTracks(cueExtracted[cueEntry.Key], cueEntry, entries);
         var binExtracted = ExtractEntries(session, binEntries, extractDir, progress, ct);
 
+        AlignCueFileName(cueExtracted[cueEntry.Key], binEntries);
+
         return new ArchiveExtractResult { ResolvedPath = binExtracted[resolvedKey] };
+    }
+
+    private static void AlignCueFileName(string cuePath, List<ArchiveEntryInfo> binEntries)
+    {
+        var referencedBins = ConversionSource.ParseBinsFromCue(cuePath);
+
+        if (referencedBins.Count != 1 || binEntries.Count != 1)
+            return;
+
+        string actualName = Path.GetFileName(binEntries[0].Key);
+
+        if (string.Equals(Path.GetFileName(referencedBins[0]), actualName, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        string content = File.ReadAllText(cuePath);
+        string updated = Regex.Replace(content, @"FILE\s+""[^""]+""\s+BINARY", _ => $"FILE \"{actualName}\" BINARY", RegexOptions.IgnoreCase);
+
+        File.WriteAllText(cuePath, updated);
     }
 
     private static (List<ArchiveEntryInfo> Tracks, string ResolvedKey) SelectCueTracks(string cuePath, ArchiveEntryInfo cueEntry, List<ArchiveEntryInfo> entries)
@@ -324,6 +345,14 @@ public static class SourceArchiveExtractor
 
             if (match.Key is not null)
                 binEntries.Add(match);
+        }
+
+        if (binEntries.Count == 0 && referencedBins.Count == 1)
+        {
+            var sameDirBins = entries.Where(e => GetEntryDirectory(e.Key) == cueDir && string.Equals(Path.GetExtension(e.Key), ".bin", StringComparison.OrdinalIgnoreCase)).ToList();
+
+            if (sameDirBins.Count == 1)
+                binEntries.Add(sameDirBins[0]);
         }
 
         if (binEntries.Count == 0)
