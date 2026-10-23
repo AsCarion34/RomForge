@@ -243,6 +243,8 @@ public class ConverterViewModel : ToolTabViewModel
             finally
             {
                 IsConverting = false;
+
+                CleanupTask();
             }
         }
     }

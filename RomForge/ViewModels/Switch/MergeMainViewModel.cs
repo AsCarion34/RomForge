@@ -108,7 +108,6 @@ public class MergeMainViewModel : ToolTabViewModel
             {
                 AppendLog($"병합이 취소되었습니다.", LogLevel.Error);
                 await SoundPlayer.PlayCancelAsync();
-                ProgressPct = 0;
             }
             catch (Exception ex)
             {
@@ -118,12 +117,9 @@ public class MergeMainViewModel : ToolTabViewModel
             }
             finally
             {
-                CancellationTokenSource?.Dispose();
-                CancellationTokenSource = null;
-
+                CleanupTask();
             }
         }
-
     }
 
     private bool ValidateMergeInputs(IList<GameFile> gameFiles, out List<string> inputPaths, out string outputDir, out string errorMsg)

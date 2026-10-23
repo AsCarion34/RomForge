@@ -7,6 +7,7 @@ public class PSVitaMainViewModel : MultiToolTabViewModel
     public PSVitaMainViewModel()
     {
         Tools.Add(RepackVM);
+
         InitializeMultiTools();
     }
 }

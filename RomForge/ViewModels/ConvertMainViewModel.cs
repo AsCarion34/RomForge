@@ -12,7 +12,6 @@ using PBP.Core.Services;
 using PSP.Core.Models;
 using PSP.Core.Services;
 using RomForge.Core;
-using RomForge.Core.Models;
 using RomForge.Core.Models.CD;
 using RomForge.Core.Models.Compression;
 using RomForge.Core.Models.PSP;
@@ -407,7 +406,10 @@ public class ConvertMainViewModel : ToolTabViewModel
                         tracker.Status = "취소";
                 }
             }
-            finally { }
+            finally
+            {
+                CleanupTask();
+            }
         }
     }
 

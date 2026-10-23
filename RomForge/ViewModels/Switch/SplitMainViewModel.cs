@@ -3,7 +3,6 @@ using NSW.Core;
 using NSW.Core.Models;
 using NSW.WPF.Services;
 using RomForge.Core;
-using RomForge.Core.Models;
 using RomForge.Core.Models.Switch;
 using RomForge.Core.Services.Switch;
 using System.Collections.ObjectModel;
@@ -346,7 +345,6 @@ public class SplitMainViewModel : ToolTabViewModel
             {
                 AppendLog("분리가 취소되었습니다.", LogLevel.Error);
                 await SoundPlayer.PlayCancelAsync();
-                ProgressPct = 0;
             }
             catch (Exception ex)
             {
@@ -356,10 +354,7 @@ public class SplitMainViewModel : ToolTabViewModel
             }
             finally
             {
-                CancellationTokenSource?.Dispose();
-
-                CancellationTokenSource = null;
-                ProgressPct = 0;
+                CleanupTask();
             }
         }
     }

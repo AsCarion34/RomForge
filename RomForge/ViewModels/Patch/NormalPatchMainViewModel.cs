@@ -437,8 +437,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         catch (OperationCanceledException)
         {
             AppendLog($"패치 취소: {SourcePath}", LogLevel.Error);
-            await SoundPlayer.PlayCancelAsync();
-            CleanupTask();
+            await SoundPlayer.PlayCancelAsync();            
 
             if (outputPath is not null)
                 orchestrator.Cleanup(outputPath);
@@ -446,8 +445,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         catch (Exception ex)
         {
             AppendLog($"패치 실패: {ex.Message}", LogLevel.Error);
-            await SoundPlayer.PlayErrorAsync();
-            CleanupTask();
+            await SoundPlayer.PlayErrorAsync();            
             MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
 
             if (outputPath is not null)
@@ -455,6 +453,8 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         }
         finally
         {
+            CleanupTask();
+
             if (extractDir is not null && Directory.Exists(extractDir))
             {
                 try

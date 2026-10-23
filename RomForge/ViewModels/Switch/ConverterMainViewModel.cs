@@ -187,6 +187,10 @@ public class ConverterMainViewModel : ToolTabViewModel
                 foreach (var item in FileItems.Where(i => i.Status == "변환중"))
                     item.Status = "실패";
             }
+            finally
+            {
+                CleanupTask();
+            }
         }
     }
 

@@ -25,11 +25,9 @@ public class PatchMainViewModel : MultiToolTabViewModel
     public PatchMainViewModel(Action<string> navigateToHashAction)
     {
         _navigateToHashAction = navigateToHashAction;
-
         RunCommand = new RelayCommand(async _ => await RunAsync(), _=> SelectedPatchVM?.CanRun() ?? false);
         CancelCommand = new RelayCommand(_ => Cancel());
         ClearCommand = new RelayCommand(_ => Clear());
-
         CalculateHashCommand = new RelayCommand(
             execute: _ =>
             {

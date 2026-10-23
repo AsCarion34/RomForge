@@ -1,6 +1,5 @@
 ﻿using Common;
 using RomForge.Core.UI.Command;
-using RomForge.Core.Models;
 using RomForge.Core.Models._3DS;
 using RomForge.Core.Models.Util;
 using System.IO;
@@ -214,6 +213,7 @@ public class CertsMainViewModel : ToolTabViewModel
             {
                 IsExtracting = false;
 
+                CleanupTask();
                 CommandManager.InvalidateRequerySuggested();
             }
         }

@@ -138,7 +138,6 @@ public class PackingMainViewModel : ToolTabViewModel
             {
                 AppendLog("작업이 취소되었습니다.", LogLevel.Error);
                 await SoundPlayer.PlayCancelAsync();
-                CleanupTask();
                 MainViewModel.SetTaskbarProgress(0);
                 TryDeleteFileAndFolder(plan.TargetOutputPath, plan.GameDirectory);
             }
@@ -147,8 +146,11 @@ public class PackingMainViewModel : ToolTabViewModel
                 AppendLog($"오류: [{gameTitle}] {ex.Message}", LogLevel.Error);
                 await SoundPlayer.PlayErrorAsync();
                 MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
-                CleanupTask();
                 TryDeleteFileAndFolder(plan.TargetOutputPath, plan.GameDirectory);
+            }
+            finally
+            {
+                CleanupTask();
             }
         }
     }

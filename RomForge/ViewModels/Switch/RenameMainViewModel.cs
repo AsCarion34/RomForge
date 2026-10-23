@@ -232,6 +232,10 @@ public class RenameMainViewModel : ToolTabViewModel
                 AppendLog($"{Res.Log_Error}: {ex.Message}", LogLevel.Error);
                 await SoundPlayer.PlayErrorAsync();
             }
+            finally
+            {
+                CleanupTask();
+            }
         }
     }
 

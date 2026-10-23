@@ -222,10 +222,10 @@ public class RepackMainViewModel : ToolTabViewModel
                 await ExecuteAsync(mode, CancellationTokenSource.Token);
             }
             finally
-            {
-                ProgressPct = 0;
+            {                
                 _currentMode = null;
 
+                CleanupTask();
                 NotifyButtonStates();
             }
         }
@@ -309,6 +309,8 @@ public class RepackMainViewModel : ToolTabViewModel
         }
         finally
         {
+            CleanupTask();
+
             if (!isCompleted && mode == BuildMode.UnpackOnly && Directory.Exists(unpackedRoot))
             {
                 try 

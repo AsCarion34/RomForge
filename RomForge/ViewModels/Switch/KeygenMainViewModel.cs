@@ -52,8 +52,6 @@ public class KeygenMainViewModel : ToolTabViewModel
             {
                 AppendLog($"작업이 취소되었습니다.", LogLevel.Error);
                 await SoundPlayer.PlayCancelAsync();
-
-                ProgressPct = 0;                
             }
             catch (Exception ex)
             {

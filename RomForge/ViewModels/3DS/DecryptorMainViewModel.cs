@@ -209,6 +209,8 @@ public class DecryptorMainViewModel : ToolTabViewModel
             finally
             {
                 IsDecrypting = false;
+
+                CleanupTask();
             }
         }
     }

@@ -209,9 +209,9 @@ public class RepackMainViewModel : ToolTabViewModel
             }
             finally
             {
-                ProgressPct = 0;
                 _currentMode = null;
-
+                
+                CleanupTask();
                 NotifyButtonStates();
             }
         }
@@ -379,7 +379,6 @@ public class RepackMainViewModel : ToolTabViewModel
                 if (version == _patchVersion)
                 {
                     PatchInfo = PatchDisplay.Failed("취소되었습니다.");
-                    ProgressPct = 0;
 
                     AppendLog("패치 읽기가 취소되었습니다.", LogLevel.Error);
                 }
@@ -397,12 +396,7 @@ public class RepackMainViewModel : ToolTabViewModel
             {
                 _patchLoading = false;
 
-                if (version == _patchVersion)
-                {
-                    ProgressPercent = string.Empty;
-                    ProgressLabel = "대기 중...";
-                }
-
+                CleanupTask();
                 NotifyButtonStates();
             }
         }

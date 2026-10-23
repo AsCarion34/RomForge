@@ -190,6 +190,10 @@ public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
             AppendLog($"패치 실패: {ex.Message}", LogLevel.Error);
             await SoundPlayer.PlayErrorAsync();
         }
+        finally
+        {
+            CleanupTask();
+        }
     }
 
     public bool CanRun() => !string.IsNullOrEmpty(SourcePath) && !string.IsNullOrEmpty(PatchPath);

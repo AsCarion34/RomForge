@@ -1,6 +1,5 @@
 ﻿using Common;
 using RomForge.Core;
-using RomForge.Core.Models;
 using RomForge.Core.Models.WiiU;
 using RomForge.Core.Services;
 using RomForge.Core.Services.WiiU;
@@ -335,6 +334,8 @@ public class ConverterMainViewModel : ToolTabViewModel
             finally
             {
                 IsConverting = false;
+
+                CleanupTask();
             }
         }
     }

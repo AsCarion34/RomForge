@@ -212,6 +212,7 @@ public class HashMainViewModel : ToolTabViewModel
             {
                 IsConverting = false;
 
+                CleanupTask();
                 CommandManager.InvalidateRequerySuggested();
             }
         }

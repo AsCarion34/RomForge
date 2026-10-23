@@ -157,6 +157,7 @@ public class BgmViewModel(Action<string, LogLevel> log) : ViewModelBase
     public void Reset()
     {
         Preview.Clear();
+
         Bytes = null;
         FilePath = null;
     }

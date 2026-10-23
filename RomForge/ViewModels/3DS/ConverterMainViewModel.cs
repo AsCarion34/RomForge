@@ -236,6 +236,8 @@ public class ConverterMainViewModel : ToolTabViewModel
             finally
             {
                 IsConverting = false;
+
+                CleanupTask();
             }
         }
     }

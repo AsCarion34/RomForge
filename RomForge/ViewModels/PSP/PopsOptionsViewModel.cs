@@ -12,10 +12,7 @@ public class PopsOptionsViewModel : ViewModelBase
     private bool _useFmvFix;
     private bool _useCdTimingFix;
 
-    public PopsOptionsViewModel()
-    {
-        _selectedFmvFix = FmvFixPresets[0];
-    }
+    public PopsOptionsViewModel() => _selectedFmvFix = FmvFixPresets[0];
 
     public ObservableCollection<FmvFixOption> FmvFixPresets { get; } = [new("0x04 (다수 게임에서 검증됨)", 0x04), new("0x07 (실험적)", 0x07)];
 

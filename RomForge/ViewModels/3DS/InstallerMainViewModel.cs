@@ -40,6 +40,7 @@ public class InstallerMainViewModel : ToolTabViewModel
         set
         {
             _sdPath = value;
+
             InvalidateSession();
             OnPropertyChanged();
             OnPropertyChanged(nameof(CanLoad));
@@ -53,6 +54,7 @@ public class InstallerMainViewModel : ToolTabViewModel
         set
         {
             _movablePath = value;
+
             InvalidateSession();
             OnPropertyChanged();
             OnPropertyChanged(nameof(CanLoad));
@@ -321,6 +323,7 @@ public class InstallerMainViewModel : ToolTabViewModel
             finally
             {
                 _extractCts = null;
+
                 OnPropertyChanged(nameof(CancelButtonVisibility));
             }
         }
@@ -473,11 +476,6 @@ public class InstallerMainViewModel : ToolTabViewModel
         OnPropertyChanged(nameof(ProgressPanelVisibility));
 
         if (!loading)
-        {
-            ProgressPct = 0;
-            ProgressLabel = string.Empty;
-            ProgressTime = string.Empty;
-            ProgressSpeed = string.Empty;
-        }
+            CleanupTask();
     }
 }

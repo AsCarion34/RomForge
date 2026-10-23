@@ -56,20 +56,11 @@ public class Pc98PatchMainViewModel : ToolTabViewModel, IPatchViewModel
 
         AppendLog($"패치 시작: {Path.GetFileName(SourcePath)}", LogLevel.Highlight);
 
-        var progress = new Progress<ProgressInfo>(info =>
-        {
-            ProgressPct = info.Percent;
-            ProgressLabel = info.Label;
-            ProgressPercent = $"{info.Percent}%";
-            ProgressTime = info.TimeInfo;
-            ProgressSpeed = info.Speed;
-        });
-
         try
         {
             Directory.CreateDirectory(outputDir);
 
-            var result = await global::Patch.Core.Formats.PC98.PatchService.ApplyAsync(SourcePath, PatchPath, outputPath, AppendLog, progress, ct);
+            var result = await global::Patch.Core.Formats.PC98.PatchService.ApplyAsync(SourcePath, PatchPath, outputPath, AppendLog, BuildProgressReporter(), ct);
 
             if (result.MissingFiles.Count > 0)
                 AppendLog($"HDI에서 찾지 못한 파일 {result.MissingFiles.Count}개는 건너뛰었습니다.", LogLevel.Error);
@@ -94,11 +85,7 @@ public class Pc98PatchMainViewModel : ToolTabViewModel, IPatchViewModel
         }
         finally
         {
-            ProgressPct = 0;
-            ProgressLabel = string.Empty;
-            ProgressPercent = string.Empty;
-            ProgressTime = string.Empty;
-            ProgressSpeed = string.Empty;
+            CleanupTask();
         }
     }
 
@@ -111,12 +98,8 @@ public class Pc98PatchMainViewModel : ToolTabViewModel, IPatchViewModel
 
         SourcePath = null;
         PatchPath = null;
-        ProgressPct = 0;
-        ProgressLabel = string.Empty;
-        ProgressPercent = string.Empty;
-        ProgressTime = string.Empty;
-        ProgressSpeed = string.Empty;
 
+        CleanupTask();
         LogEntries.Clear();
     }
 

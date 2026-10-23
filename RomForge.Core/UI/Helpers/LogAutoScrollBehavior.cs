@@ -56,7 +56,7 @@ public static class LogAutoScrollBehavior
 
     private static class LogSubscriptions
     {
-        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ListBox, Subscription> _table = new();
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ListBox, Subscription> _table = [];
 
         public static Subscription? Get(ListBox listBox) => _table.TryGetValue(listBox, out var s) ? s : null;
 

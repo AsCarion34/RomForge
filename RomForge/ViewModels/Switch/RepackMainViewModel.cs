@@ -110,7 +110,7 @@ namespace RomForge.ViewModels.Switch
                 }
                 finally
                 {
-                    ProgressPct = 0;
+                    CleanupTask();
                 }
             }
 
@@ -174,11 +174,6 @@ namespace RomForge.ViewModels.Switch
                     AppendLog($"작업이 취소되었습니다.", LogLevel.Error);
 
                     IsIndeterminate = false;
-                    ProgressPct = 0;
-                    ProgressLabel = string.Empty;
-                    ProgressPercent = string.Empty;
-                    ProgressTime = string.Empty;
-                    ProgressSpeed = string.Empty;
 
                     await SoundPlayer.PlayCancelAsync();
                     MainViewModel.SetTaskbarProgress(0);
@@ -209,9 +204,7 @@ namespace RomForge.ViewModels.Switch
                 }
                 finally
                 {
-                    CancellationTokenSource?.Dispose();
-
-                    CancellationTokenSource = null;
+                    CleanupTask();
                 }
             }, token);
         }

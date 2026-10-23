@@ -3,7 +3,6 @@ using Ionic.Zlib;
 using NSW.WPF.Services;
 using NSW.WPF.UI;
 using RomForge.Core.UI.Command;
-using RomForge.Core.Models;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -22,7 +21,6 @@ namespace RomForge.ViewModels.Util;
 public class ZipImageToolMainViewModel : ToolTabViewModel
 {
     private readonly WmiWatchers _wmiWatchers = new();
-    private CancellationTokenSource? _cts;
 
     public ObservableCollection<DriveInfos> UsbDrives { get; } = [];
 
@@ -102,6 +100,7 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
         set
         {
             _readImagePath = value;
+
             OnPropertyChanged();
             UpdateSegmentOptionsVisibility(value);
         }
@@ -147,8 +146,11 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
     }
 
     public ICommand OpenWriteFileCommand { get; }
+
     public ICommand WriteCommand { get; }
+
     public ICommand OpenReadFileCommand { get; }
+
     public ICommand ReadCommand { get; }
 
     public ZipImageToolMainViewModel()
@@ -159,12 +161,10 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
         {
             AppendLog("이동식 드라이브의 연결이 감지되었습니다.\n드라이브 목록을 갱신합니다.");
         };
-
         _wmiWatchers.USBRemoval += (s, e) =>
         {
             AppendLog("이동식 드라이브의 분리가 감지되었습니다.\n드라이브 목록을 갱신합니다.");
         };
-
         OpenWriteFileCommand = new RelayCommand(_ => OpenWriteFile());
         OpenReadFileCommand = new RelayCommand(_ => OpenReadFile());
         WriteCommand = new ToggleCommand(async _ => await WriteAsync());
@@ -241,7 +241,7 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
     {
         if (IsLocked)
         {
-            _cts?.Cancel();
+            Cancel();
             StatusText1 = "취소중...";
             return;
         }
@@ -256,7 +256,7 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
             return;
 
         WriteButtonText = "취소";
-        _cts = new CancellationTokenSource();
+        CancellationTokenSource = new CancellationTokenSource();
 
         using (BeginWork())
         {
@@ -269,7 +269,7 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
                 imgWriter.WriteEnded += OnWriteEnded;
 
                 AppendLog("굽기가 시작 됩니다.", LogLevel.Highlight);
-                await imgWriter.WriteImageAsync(WriteImagePath, SelectedDrive.DiskNumber, SelectedDrive.SizeBytes, _cts.Token);
+                await imgWriter.WriteImageAsync(WriteImagePath, SelectedDrive.DiskNumber, SelectedDrive.SizeBytes, CancellationTokenSource.Token);
             }
             catch (OperationCanceledException)
             {
@@ -297,9 +297,9 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
             {
                 WriteButtonText = "굽기";
 
-                _cts?.Dispose();
+                CancellationTokenSource?.Dispose();
 
-                _cts = null;
+                CancellationTokenSource = null;
             }
         }
     }
@@ -327,7 +327,7 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
     {
         if (IsLocked)
         {
-            _cts?.Cancel();
+            CancellationTokenSource?.Cancel();
             StatusText1 = "취소중...";
             return;
         }
@@ -364,7 +364,7 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
         }
 
         ReadButtonText = "취소";
-        _cts = new CancellationTokenSource();
+        CancellationTokenSource = new CancellationTokenSource();
 
         using (BeginWork())
         {
@@ -380,7 +380,7 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
                 CompressionLevel compLevel = GetCompressionLevel();
 
                 AppendLog("저장이 시작 됩니다.", LogLevel.Highlight);
-                await Task.Run(() => reader.ReadImageAsync(SelectedDrive.DiskNumber, ReadImagePath, maxSegment, compLevel, _cts.Token));
+                await Task.Run(() => reader.ReadImageAsync(SelectedDrive.DiskNumber, ReadImagePath, maxSegment, compLevel, CancellationTokenSource.Token));
             }
             catch (OperationCanceledException)
             {
@@ -406,9 +406,7 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
             {
                 ReadButtonText = "저장";
 
-                _cts?.Dispose();
-
-                _cts = null;
+                CleanupTask();
             }
         }
     }

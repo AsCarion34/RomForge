@@ -270,7 +270,6 @@ namespace RomForge.ViewModels.Switch
                 {
                     AppendLog($"작업이 취소되었습니다.", LogLevel.Error);
                     await SoundPlayer.PlayCancelAsync();
-                    ProgressPct = 0;
                 }
                 catch (Exception ex)
                 {
@@ -279,11 +278,10 @@ namespace RomForge.ViewModels.Switch
                     MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
                 }
                 finally
-                {
-                    CancellationTokenSource?.Dispose();
+                {   
+                    IsConverting = false;
 
-                    CancellationTokenSource = null;
-                    IsConverting = false;                    
+                    CleanupTask();
                 }
             }
         }

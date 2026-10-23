@@ -536,6 +536,10 @@ public class RepackMainViewModel : ToolTabViewModel
             MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
             DiscardPartialOutput(mode, unpackCompleted, unpackedRoot);
         }
+        finally
+        {
+            CleanupTask();
+        }
     }
 
     private void DiscardPartialOutput(BuildMode mode, bool unpackCompleted, string unpackedRoot)

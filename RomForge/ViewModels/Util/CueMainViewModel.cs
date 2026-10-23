@@ -1,6 +1,4 @@
 ﻿using Common;
-using LibHac.Tools.Ncm;
-using RomForge.Core.Models;
 using RomForge.Core.Models.Util;
 using RomForge.Core.Services;
 using RomForge.Core.UI.Command;
@@ -177,6 +175,7 @@ public class CueMainViewModel : ToolTabViewModel
             {
                 IsConverting = false;
 
+                CleanupTask();
                 CommandManager.InvalidateRequerySuggested();
             }
         }

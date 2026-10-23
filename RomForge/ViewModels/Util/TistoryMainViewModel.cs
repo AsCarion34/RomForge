@@ -1,7 +1,6 @@
 using Common;
 using NSW.WPF.Services;
 using RomForge.Core;
-using RomForge.Core.Models;
 using RomForge.Core.Models.Util;
 using RomForge.Core.Services;
 using RomForge.Core.Services.Util;
@@ -130,9 +129,7 @@ public class TistoryMainViewModel : ToolTabViewModel
                         if (!string.IsNullOrEmpty(ext) && excludedExtensions.Contains(ext))
                             continue;
                     }
-                    catch
-                    {
-                    }
+                    catch { }
 
                     if (!existing.Add(url))
                         continue;
@@ -292,6 +289,8 @@ public class TistoryMainViewModel : ToolTabViewModel
             finally
             {
                 IsBusy = false;
+
+                CleanupTask();
                 CommandManager.InvalidateRequerySuggested();
             }
         }
