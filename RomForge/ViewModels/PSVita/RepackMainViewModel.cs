@@ -5,8 +5,10 @@ using NSW.WPF.Services;
 using NSW.WPF.UI;
 using RomForge.Core;
 using RomForge.Core.Models;
+using RomForge.Core.Models.PSVita;
 using RomForge.Core.Services;
 using RomForge.Core.Services.Patch;
+using RomForge.Core.Services.PSVita;
 using RomForge.Core.UI.Command;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -365,6 +367,18 @@ public class RepackMainViewModel : ToolTabViewModel
                     }
                     catch { }
                 }
+            }
+
+            if (string.IsNullOrEmpty(row.License))
+            {
+                var group = NPSService.Instance.GetGroup(row.TitleId);
+
+                row.License = row.Category switch
+                {
+                    ContentCategory.App => group?.App?.ZRif,
+                    ContentCategory.Addcont => group?.GetDlcLicense(row.ContentIdSuffix),
+                    _ => row.License
+                };
             }
 
             if (row.Category != ContentCategory.Addcont)
