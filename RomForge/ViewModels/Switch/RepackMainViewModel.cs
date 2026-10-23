@@ -1,5 +1,4 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
 using LibHac.Ns;
 using NSW.Core.Enums;
 using NSW.Core.Exceptions;
@@ -10,10 +9,8 @@ using NSW.WPF.Services;
 using NSW.WPF.UI;
 using NSW.WPF.ViewModels;
 using RomForge.Core;
-using RomForge.Core.Models;
 using RomForge.Core.Services;
 using RomForge.Core.UI.Command;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -24,53 +21,10 @@ namespace RomForge.ViewModels.Switch
     public class RepackMainViewModel : ToolTabViewModel
     {
         private readonly Stopwatch _totalSw = new();
-        private CancellationTokenSource? _cts;
 
-        private int _progressPct;
-        private string _progressLabel = "대기 중...";
-        private string _progressPercent = string.Empty;
-        private string _progressTime = "00:00 경과";
-        private string _progressSpeed = string.Empty;
         private bool _isIndeterminate = false;
         private string _outputPath = string.Empty;
         private BuildMode? _currentMode;
-
-        public ObservableCollection<LogEntry> LogEntries { get; } = [];
-
-        public int ProgressPct
-        {
-            get => _progressPct;
-            set 
-            { 
-                _progressPct = value;
-                MainViewModel.SetTaskbarProgress(_progressPct);
-                OnPropertyChanged();
-            }
-        }
-
-        public string ProgressLabel
-        {
-            get => _progressLabel;
-            set { _progressLabel = value; OnPropertyChanged(); }
-        }
-
-        public string ProgressPercent
-        {
-            get => _progressPercent;
-            set { _progressPercent = value; OnPropertyChanged(); }
-        }
-
-        public string ProgressTime
-        {
-            get => _progressTime;
-            set { _progressTime = value; OnPropertyChanged(); }
-        }
-
-        public string ProgressSpeed
-        {
-            get => _progressSpeed;
-            set { _progressSpeed = value; OnPropertyChanged(); }
-        }
 
         public bool IsIndeterminate 
         { 
@@ -85,8 +39,10 @@ namespace RomForge.ViewModels.Switch
             set
             {
                 _outputPath = value;
+
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(OutputHintVisibility));
+
                 AppConfig.Instance.OutputFolders.SwitchRepackOutputPath = value;
             }
         }
@@ -115,7 +71,6 @@ namespace RomForge.ViewModels.Switch
         {
             OutputPath = string.IsNullOrWhiteSpace(AppConfig.Instance.OutputFolders.SwitchRepackOutputPath) ? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "output") : AppConfig.Instance.OutputFolders.SwitchRepackOutputPath;
             BrowseOutputCommand = new RelayCommand(async _ => await BrowseOutput());
-
             PropertyChanged += (_, e) =>
             {
                 if (e.PropertyName == nameof(IsLocked))
@@ -127,7 +82,7 @@ namespace RomForge.ViewModels.Switch
         {
             if (!TryGetBuildRequest(mode, out var req, out string errorMsg) || req == null)
             {
-                Log(errorMsg, LogLevel.Error);
+                AppendLog(errorMsg, LogLevel.Error);
                 await SoundPlayer.PlayErrorAsync();
                 return;
             }
@@ -142,7 +97,9 @@ namespace RomForge.ViewModels.Switch
             }
 
             _totalSw.Restart();
+
             _currentMode = mode;
+
             NotifyButtonStates();
 
             using (BeginWork())
@@ -158,6 +115,7 @@ namespace RomForge.ViewModels.Switch
             }
 
             _currentMode = null;
+
             NotifyButtonStates();
         }
 
@@ -174,16 +132,11 @@ namespace RomForge.ViewModels.Switch
             });
         }
 
-        public void Cancel()
-        {
-            _cts?.Cancel();
-        }
-
         private async Task ExecuteBuildAsync(BuildMode mode, BuildRequest req)
         {
-            _cts = new CancellationTokenSource();
+            CancellationTokenSource = new CancellationTokenSource();
 
-            var token = _cts.Token;
+            var token = CancellationTokenSource.Token;
             var progress = new Progress<ProgressInfo>(p =>
             {
                 bool isIndeterminate = p.Percent < 0;
@@ -210,21 +163,23 @@ namespace RomForge.ViewModels.Switch
                     if (Context?.OverrideTitleId.HasValue == true)
                         req.OverrideTitleId = Context?.OverrideTitleId;
 
-                    string finalResult = await NspBuildService.Run(req, mode, progress, (msg, lvl) => Log(msg, lvl), token);
+                    string finalResult = await NspBuildService.Run(req, mode, progress, (msg, lvl) => AppendLog(msg, lvl), token);
 
-                    Log($"완료! 총 소요: {_totalSw.Elapsed:mm\\:ss}", LogLevel.Ok);
+                    AppendLog($"완료! 총 소요: {_totalSw.Elapsed:mm\\:ss}", LogLevel.Ok);
                     await SoundPlayer.PlayCompleteAsync();
                     req.OutputDir?.OpenFolder();
                 }
                 catch (OperationCanceledException)
                 {
-                    Log($"작업이 취소되었습니다.", LogLevel.Error);
+                    AppendLog($"작업이 취소되었습니다.", LogLevel.Error);
+
                     IsIndeterminate = false;
                     ProgressPct = 0;
                     ProgressLabel = string.Empty;
                     ProgressPercent = string.Empty;
                     ProgressTime = string.Empty;
                     ProgressSpeed = string.Empty;
+
                     await SoundPlayer.PlayCancelAsync();
                     MainViewModel.SetTaskbarProgress(0);
 
@@ -242,20 +197,21 @@ namespace RomForge.ViewModels.Switch
                 }
                 catch (UnpackMetadataNotFoundException bex)
                 {
-                    Log($"실패: {bex.Message}", LogLevel.Error);
+                    AppendLog($"실패: {bex.Message}", LogLevel.Error);
                     await SoundPlayer.PlayErrorAsync();
                     MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
                 }
                 catch (Exception ex)
                 {
-                    Log($"오류: {ex.Message}", LogLevel.Error);
+                    AppendLog($"오류: {ex.Message}", LogLevel.Error);
                     await SoundPlayer.PlayErrorAsync();
                     MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
                 }
                 finally
                 {
-                    _cts?.Dispose();
-                    _cts = null;
+                    CancellationTokenSource?.Dispose();
+
+                    CancellationTokenSource = null;
                 }
             }, token);
         }
@@ -268,7 +224,6 @@ namespace RomForge.ViewModels.Switch
             if (string.IsNullOrEmpty(OutputPath))
             {
                 errorMsg = "작업 폴더를 설정하세요.";
-
                 return false;
             }
 
@@ -279,7 +234,6 @@ namespace RomForge.ViewModels.Switch
                 if (!Directory.Exists(unpackedPath))
                 {
                     errorMsg = "언팩된 데이터가 없습니다.";
-
                     return false;
                 }
 
@@ -298,14 +252,12 @@ namespace RomForge.ViewModels.Switch
             if (gameFiles == null || !gameFiles.Any(f => f.FileType.Contains('B')))
             {
                 errorMsg = "원본 파일(BASE)이 리스트에 없습니다.";
-
                 return false;
             }
 
             if (gameFiles.Any(f => f.IsKeyMissing))
             {
                 errorMsg = NSW.Core.Properties.Resources.Main_Err_NoKeys;
-
                 return false;
             }
 
@@ -347,7 +299,5 @@ namespace RomForge.ViewModels.Switch
             if (dlg.ShowDialog() == true)
                 OutputPath = dlg.FolderName;
         }
-
-        public void Log(string msg, LogLevel level = LogLevel.Info) => Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
     }
 }

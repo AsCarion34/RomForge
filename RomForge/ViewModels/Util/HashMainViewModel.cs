@@ -1,5 +1,4 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
 using RomForge.Core.Models;
 using RomForge.Core.Models.Util;
 using RomForge.Core.Services;
@@ -43,8 +42,6 @@ public class HashMainViewModel : ToolTabViewModel
             ApplyHashCase();
         }
     }
-
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
     public ObservableCollection<HashFileItem> FileItems { get; } = [];
 
@@ -418,22 +415,6 @@ public class HashMainViewModel : ToolTabViewModel
             if (target != null)
                 ScrollToItemRequested?.Invoke(target);
         });
-    }
-
-    private void AppendLog(string msg, LogLevel level = LogLevel.Info)
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, () => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
-    }
-
-    private void ClearLog()
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Clear());
     }
 
     private string FormatHex(string hex) => UseUpperCase ? hex.ToUpperInvariant() : hex.ToLowerInvariant();

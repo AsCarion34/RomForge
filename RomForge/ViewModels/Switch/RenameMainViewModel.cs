@@ -1,5 +1,4 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
 using NSW.Core;
 using NSW.Core.Models;
 using NSW.Core.Utils;
@@ -31,8 +30,6 @@ public class RenameMainViewModel : ToolTabViewModel
     private NamingFormatPreset _selectedNamingPreset = RenamePresets.Default;
     private string _summary = string.Empty;
     private bool _refreshQueued;
-
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
     public ObservableCollection<RenameFileItem> Items { get; } = [];
 
@@ -166,7 +163,7 @@ public class RenameMainViewModel : ToolTabViewModel
 
         if (Items.Count == 0)
         {
-            Log(Res.Main_Err_NoFiles, LogLevel.Error);
+            AppendLog(Res.Main_Err_NoFiles, LogLevel.Error);
             await SoundPlayer.PlayErrorAsync();
             return;
         }
@@ -176,7 +173,7 @@ public class RenameMainViewModel : ToolTabViewModel
 
         if (ready.Count == 0)
         {
-            Log("변경할 파일이 없습니다.", LogLevel.Error);
+            AppendLog("변경할 파일이 없습니다.", LogLevel.Error);
             await SoundPlayer.PlayErrorAsync();
             return;
         }
@@ -184,7 +181,7 @@ public class RenameMainViewModel : ToolTabViewModel
         int skipped = CountSkipped(plans);
 
         if (skipped > 0)
-            Log($"건너뜀 {skipped}개 (정보 없음 / 이름 오류 / 중복 / 대상 파일 존재)");
+            AppendLog($"건너뜀 {skipped}개 (정보 없음 / 이름 오류 / 중복 / 대상 파일 존재)");
 
         _cts.Dispose();
         _cts = new CancellationTokenSource();
@@ -205,40 +202,38 @@ public class RenameMainViewModel : ToolTabViewModel
                     {
                         succeeded++;
                         ReplaceItem(result.Plan);
-                        Log($"{result.Plan.OldName} → {result.Plan.NewName}");
+                        AppendLog($"{result.Plan.OldName} → {result.Plan.NewName}");
                     }
                     else
                     {
                         failed++;
-                        Log($"{result.Plan.OldName}: {result.Error}", LogLevel.Error);
+                        AppendLog($"{result.Plan.OldName}: {result.Error}", LogLevel.Error);
                     }
                 }
 
                 if (token.IsCancellationRequested)
                 {
-                    Log("작업이 취소되었습니다.", LogLevel.Error);
+                    AppendLog("작업이 취소되었습니다.", LogLevel.Error);
                     await SoundPlayer.PlayCancelAsync();
                 }
                 else if (failed == 0)
                 {
-                    Log($"파일명 변경 완료: {succeeded}개", LogLevel.Ok);
+                    AppendLog($"파일명 변경 완료: {succeeded}개", LogLevel.Ok);
                     await SoundPlayer.PlayCompleteAsync();
                 }
                 else
                 {
-                    Log($"파일명 변경 완료: 성공 {succeeded}개 / 실패 {failed}개", LogLevel.Error);
+                    AppendLog($"파일명 변경 완료: 성공 {succeeded}개 / 실패 {failed}개", LogLevel.Error);
                     await SoundPlayer.PlayErrorAsync();
                 }
             }
             catch (Exception ex)
             {
-                Log($"{Res.Log_Error}: {ex.Message}", LogLevel.Error);
+                AppendLog($"{Res.Log_Error}: {ex.Message}", LogLevel.Error);
                 await SoundPlayer.PlayErrorAsync();
             }
         }
     }
-
-    public void Log(string msg, LogLevel level = LogLevel.Info) => Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
 
     private void Items_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {

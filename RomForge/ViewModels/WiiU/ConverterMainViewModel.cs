@@ -1,5 +1,4 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
 using RomForge.Core;
 using RomForge.Core.Models;
 using RomForge.Core.Models.WiiU;
@@ -24,8 +23,6 @@ public class ConverterMainViewModel : ToolTabViewModel
     private static readonly HashSet<string> SupportedExtensions = [".wud", ".wux", ".wua"];
 
     private static string KeysPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "keys.txt");
-
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
     public ObservableCollection<FileItem> FileItems { get; } = [];
 
@@ -397,22 +394,6 @@ public class ConverterMainViewModel : ToolTabViewModel
             foreach (var s in sources)
                 s.Dispose();
         }
-    }
-
-    private void AppendLog(string msg, LogLevel level = LogLevel.Info)
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
-    }
-
-    private void ClearLog()
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Clear());
     }
 
     private async Task BrowseOutput()

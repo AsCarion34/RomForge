@@ -132,7 +132,7 @@ public partial class TitleListControl : UserControl
         }
         catch (Exception ex)
         {
-            _viewModel.Log($"압축파일을 여는 중 오류가 발생했습니다: {ex.Message}", LogLevel.Error);
+            _viewModel.AppendLog($"압축파일을 여는 중 오류가 발생했습니다: {ex.Message}", LogLevel.Error);
             await SoundPlayer.PlayErrorAsync();
         }
     }
@@ -143,7 +143,7 @@ public partial class TitleListControl : UserControl
 
         if (targets.Count == 0)
         {
-            _viewModel.Log("타이틀 정보가 있는 항목이 없습니다.", LogLevel.Info);
+            _viewModel.AppendLog("타이틀 정보가 있는 항목이 없습니다.", LogLevel.Info);
             return null;
         }
 
@@ -294,7 +294,7 @@ public partial class TitleListControl : UserControl
         }
         catch (Exception ex)
         {
-            _viewModel.Log($"압축파일을 여는 중 오류가 발생했습니다: {ex.Message}", LogLevel.Error);
+            _viewModel.AppendLog($"압축파일을 여는 중 오류가 발생했습니다: {ex.Message}", LogLevel.Error);
             await SoundPlayer.PlayErrorAsync();
             return false;
         }

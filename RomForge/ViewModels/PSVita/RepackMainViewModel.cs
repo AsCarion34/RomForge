@@ -1,11 +1,8 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
 using NSW.Core.Enums;
 using NSW.WPF.Services;
 using NSW.WPF.UI;
 using RomForge.Core;
-using RomForge.Core.Models;
-using RomForge.Core.Models.PSVita;
 using RomForge.Core.Services;
 using RomForge.Core.Services.Patch;
 using RomForge.Core.Services.PSVita;
@@ -27,7 +24,6 @@ public class RepackMainViewModel : ToolTabViewModel
     private const string UnpackedFolderName = "unpacked";
 
     private readonly Stopwatch _totalSw = new();
-    private CancellationTokenSource? _cts;
     private BuildMode? _currentMode;
     private string? _pendingZipPath;
     private int _patchLogVersion;
@@ -36,15 +32,8 @@ public class RepackMainViewModel : ToolTabViewModel
     private bool _buildEmu = true;
     private bool _buildRetail;
     private bool _mergePatchIntoGame = false;
-    private int _progressPct;
-    private string _progressLabel = "대기 중...";
-    private string _progressPercent = string.Empty;
-    private string _progressSpeed = string.Empty;
-    private string _progressTime = "00:00 경과";
     private bool _isSyncing;
     private SourceRowViewModel? _selectedRow;
-
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
     public ObservableCollection<SourceRowViewModel> SourceRows { get; } = [];
 
@@ -97,42 +86,6 @@ public class RepackMainViewModel : ToolTabViewModel
 
             OnPropertyChanged();
         }
-    }
-
-    public int ProgressPct
-    {
-        get => _progressPct;
-        set
-        {
-            _progressPct = value;
-
-            MainViewModel.SetTaskbarProgress(_progressPct);
-            OnPropertyChanged();
-        }
-    }
-
-    public string ProgressLabel
-    {
-        get => _progressLabel;
-        set { _progressLabel = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressPercent
-    {
-        get => _progressPercent;
-        set { _progressPercent = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressTime
-    {
-        get => _progressTime;
-        set { _progressTime = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressSpeed
-    {
-        get => _progressSpeed;
-        set { _progressSpeed = value; OnPropertyChanged(); }
     }
 
     public SourceRowViewModel? SelectedRow
@@ -197,7 +150,7 @@ public class RepackMainViewModel : ToolTabViewModel
         foreach (var title in titles)
             SourceRows.Add(SourceRowViewModel.FromUnpacked(title));
 
-        Log($"언팩 폴더에서 {titles.Count}개 타이틀을 불러왔습니다.");
+        AppendLog($"언팩 폴더에서 {titles.Count}개 타이틀을 불러왔습니다.");
     }
 
     private async Task LogPatchInfoAsync(string? patchPath)
@@ -212,12 +165,12 @@ public class RepackMainViewModel : ToolTabViewModel
             var (total, patchFiles) = await Task.Run(() => PatchInspector.Inspect(patchPath));
 
             if (version == _patchLogVersion)
-                Log($"패치 정보를 읽었습니다: {total}개 파일 (패치 {patchFiles}개, 교체 {total - patchFiles}개)");
+                AppendLog($"패치 정보를 읽었습니다: {total}개 파일 (패치 {patchFiles}개, 교체 {total - patchFiles}개)");
         }
         catch (Exception ex)
         {
             if (version == _patchLogVersion)
-                Log($"패치를 읽을 수 없습니다: {ex.Message}", LogLevel.Error);
+                AppendLog($"패치를 읽을 수 없습니다: {ex.Message}", LogLevel.Error);
         }
     }
 
@@ -317,7 +270,7 @@ public class RepackMainViewModel : ToolTabViewModel
             }
             catch (Exception ex)
             {
-                Log($"{Path.GetFileName(path)}: 분석 실패 - {ex.Message}", LogLevel.Error);
+                AppendLog($"{Path.GetFileName(path)}: 분석 실패 - {ex.Message}", LogLevel.Error);
                 return;
             }
 
@@ -334,7 +287,7 @@ public class RepackMainViewModel : ToolTabViewModel
             }
             catch (Exception ex)
             {
-                Log($"{Path.GetFileName(path)}: 분석 실패 - {ex.Message}", LogLevel.Error);
+                AppendLog($"{Path.GetFileName(path)}: 분석 실패 - {ex.Message}", LogLevel.Error);
                 return;
             }
 
@@ -408,7 +361,7 @@ public class RepackMainViewModel : ToolTabViewModel
 
             if (existing != null)
             {
-                Log($"{existing.FileName} -> {newRow.FileName}(으)로 대체됨 (기존 {newRow.Category})");
+                AppendLog($"{existing.FileName} -> {newRow.FileName}(으)로 대체됨 (기존 {newRow.Category})");
                 SourceRows.Remove(existing);
             }
         }
@@ -418,7 +371,7 @@ public class RepackMainViewModel : ToolTabViewModel
 
             if (duplicate != null)
             {
-                Log($"{duplicate.FileName} -> {newRow.FileName}(으)로 대체됨 (같은 DLC)");
+                AppendLog($"{duplicate.FileName} -> {newRow.FileName}(으)로 대체됨 (같은 DLC)");
                 SourceRows.Remove(duplicate);
             }
         }
@@ -436,7 +389,7 @@ public class RepackMainViewModel : ToolTabViewModel
         foreach (var row in unpackedRows)
             SourceRows.Remove(row);
 
-        Log("언팩 폴더 항목을 목록에서 제거했습니다.");
+        AppendLog("언팩 폴더 항목을 목록에서 제거했습니다.");
     }
 
     private int ComputeInsertIndex(ContentCategory category, string? contentIdSuffix)
@@ -498,7 +451,7 @@ public class RepackMainViewModel : ToolTabViewModel
     {
         if (!Validate(mode, out string error))
         {
-            Log(error, LogLevel.Error);
+            AppendLog(error, LogLevel.Error);
             await SoundPlayer.PlayErrorAsync();
             return;
         }
@@ -512,17 +465,19 @@ public class RepackMainViewModel : ToolTabViewModel
         {
             try
             {
-                _cts = new CancellationTokenSource();
+                CancellationTokenSource = new CancellationTokenSource();
 
-                await ExecuteAsync(mode, _cts.Token);
+                await ExecuteAsync(mode, CancellationTokenSource.Token);
             }
             finally
             {
-                _cts?.Dispose();
-                _cts = null;
+                CancellationTokenSource?.Dispose();
+
+                CancellationTokenSource = null;
+
                 _currentMode = null;
 
-                CleanupProgress();
+                CleanupTask();
                 NotifyButtonStates();
             }
         }
@@ -563,20 +518,20 @@ public class RepackMainViewModel : ToolTabViewModel
                     break;
             }
 
-            Log($"전체 완료 ({_totalSw.Elapsed:mm\\:ss})", LogLevel.Ok);
+            AppendLog($"전체 완료 ({_totalSw.Elapsed:mm\\:ss})", LogLevel.Ok);
             await SoundPlayer.PlayCompleteAsync();
             OutputPath?.OpenFolder();
         }
         catch (OperationCanceledException)
         {
-            Log("작업이 취소되었습니다.", LogLevel.Error);
+            AppendLog("작업이 취소되었습니다.", LogLevel.Error);
             await SoundPlayer.PlayCancelAsync();
             MainViewModel.SetTaskbarProgress(0);
             DiscardPartialOutput(mode, unpackCompleted, unpackedRoot);
         }
         catch (Exception ex)
         {
-            Log($"오류: {ex.Message}", LogLevel.Error);
+            AppendLog($"오류: {ex.Message}", LogLevel.Error);
             await SoundPlayer.PlayErrorAsync();
             MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
             DiscardPartialOutput(mode, unpackCompleted, unpackedRoot);
@@ -601,11 +556,11 @@ public class RepackMainViewModel : ToolTabViewModel
         var entries = SourceRows.Select(r => r.ToBatchEntry()).ToList();
 
         Directory.CreateDirectory(unpackedRoot);
-        Log("언팩 중...", LogLevel.Highlight);
+        AppendLog("언팩 중...", LogLevel.Highlight);
 
-        int count = await UnpackService.UnpackAsync(entries, unpackedRoot, Log, BuildProgressReporter(), ct);
+        int count = await UnpackService.UnpackAsync(entries, unpackedRoot, AppendLog, BuildProgressReporter(), ct);
 
-        Log($"언팩 완료: {count}개 파일 -> {unpackedRoot}", LogLevel.Ok);
+        AppendLog($"언팩 완료: {count}개 파일 -> {unpackedRoot}", LogLevel.Ok);
     }
 
     private bool LoadUnpackedRows(string unpackedRoot)
@@ -614,7 +569,7 @@ public class RepackMainViewModel : ToolTabViewModel
 
         if (titles.Count == 0)
         {
-            Log("언팩된 데이터가 없습니다.", LogLevel.Error);
+            AppendLog("언팩된 데이터가 없습니다.", LogLevel.Error);
             return false;
         }
 
@@ -647,11 +602,11 @@ public class RepackMainViewModel : ToolTabViewModel
 
         if (isRebuild)
         {
-            Log($"{label}용 폴더 기반 리팩 중...", LogLevel.Highlight);
+            AppendLog($"{label}용 폴더 기반 리팩 중...", LogLevel.Highlight);
 
-            var rebuilt = await RebuildService.RebuildAsync([.. SourceRows.Select(r => r.ToUnpackedTitle())], zipPath, target, merge, Log, progress, ct);
+            var rebuilt = await RebuildService.RebuildAsync([.. SourceRows.Select(r => r.ToUnpackedTitle())], zipPath, target, merge, AppendLog, progress, ct);
 
-            Log($"{label}용 완료: 총 {rebuilt.TotalFiles}개 파일 (패치 {rebuilt.PatchedSuccessfully}/{rebuilt.PatchCandidates}개 적용) -> {zipPath}", LogLevel.Ok);
+            AppendLog($"{label}용 완료: 총 {rebuilt.TotalFiles}개 파일 (패치 {rebuilt.PatchedSuccessfully}/{rebuilt.PatchCandidates}개 적용) -> {zipPath}", LogLevel.Ok);
 
             return;
         }
@@ -660,19 +615,19 @@ public class RepackMainViewModel : ToolTabViewModel
 
         if (merge)
         {
-            Log($"{label}용 게임+패치 병합 중...", LogLevel.Highlight);
+            AppendLog($"{label}용 게임+패치 병합 중...", LogLevel.Highlight);
 
-            var result = await Task.Run(() => PatchOutputBuilder.BuildMergedFromEntriesAsync(entries, patchPath, zipPath, target, Log, progress, ct), ct);
+            var result = await Task.Run(() => PatchOutputBuilder.BuildMergedFromEntriesAsync(entries, patchPath, zipPath, target, AppendLog, progress, ct), ct);
 
-            Log($"{label}용 완료: 총 {result.TotalFiles}개 파일 (패치 {result.PatchedSuccessfully}/{result.PatchCandidates}개 적용) -> {zipPath}", LogLevel.Ok);
+            AppendLog($"{label}용 완료: 총 {result.TotalFiles}개 파일 (패치 {result.PatchedSuccessfully}/{result.PatchCandidates}개 적용) -> {zipPath}", LogLevel.Ok);
         }
         else
         {
-            Log($"{label}용 패치 생성 중...", LogLevel.Highlight);
+            AppendLog($"{label}용 패치 생성 중...", LogLevel.Highlight);
 
-            var result = await Task.Run(() => PatchOnlyBuilder.BuildFromEntriesAsync(entries, patchPath, zipPath, target, Log, progress, ct), ct);
+            var result = await Task.Run(() => PatchOnlyBuilder.BuildFromEntriesAsync(entries, patchPath, zipPath, target, AppendLog, progress, ct), ct);
 
-            Log($"{label}용 완료: 매칭 {result.MatchedCandidates}개 중 {result.PatchedSuccessfully}개 성공 -> {zipPath}", LogLevel.Ok);
+            AppendLog($"{label}용 완료: 매칭 {result.MatchedCandidates}개 중 {result.PatchedSuccessfully}개 성공 -> {zipPath}", LogLevel.Ok);
         }
     }
 
@@ -777,27 +732,4 @@ public class RepackMainViewModel : ToolTabViewModel
         }
         catch { }
     }
-
-    private Progress<ProgressInfo> BuildProgressReporter() =>
-        new(info =>
-        {
-            ProgressPct = info.Percent;
-            ProgressLabel = info.Label;
-            ProgressPercent = $"{info.Percent}%";
-            ProgressTime = info.TimeInfo;
-            ProgressSpeed = info.Speed;
-        });
-
-    private void CleanupProgress()
-    {
-        ProgressPct = 0;
-        ProgressLabel = string.Empty;
-        ProgressPercent = string.Empty;
-        ProgressTime = string.Empty;
-        ProgressSpeed = string.Empty;
-    }
-
-    public void Cancel() => _cts?.Cancel();
-
-    public void Log(string msg, LogLevel level = LogLevel.Info) => Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
 }

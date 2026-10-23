@@ -3,9 +3,7 @@ using CD.Core.Services.Readers;
 using CD.Core.Services.Writers;
 using CHD.Core.Services;
 using Common;
-using Common.WPF.ViewModels;
 using RomForge.Core;
-using RomForge.Core.Models;
 using RomForge.Core.Models.Compression;
 using RomForge.Core.Services;
 using RomForge.Core.Services.Compression;
@@ -28,10 +26,6 @@ public class CompressMainViewModel : ToolTabViewModel
         ".gcm", ".wbfs", ".gcz", ".wia", ".rvz",
         ".3ds", ".cci", ".cia", ".zcci"
     };
-
-    private CancellationTokenSource _cts = new();
-
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
     public ObservableCollection<FileItem> FileItems { get; } = [];
 
@@ -73,7 +67,7 @@ public class CompressMainViewModel : ToolTabViewModel
     {
         RunCommand = new RelayCommand(async _ => await RunAsync(), _ => !IsLocked && FileItems.Count > 0);
         BrowseOutputCommand = new RelayCommand(_ => BrowseOutput());
-        CancelCommand = new RelayCommand(_ => _cts.Cancel(), _ => IsLocked);
+        CancelCommand = new RelayCommand(_ => CancellationTokenSource?.Cancel(), _ => IsLocked);
     }
 
     public static string GetFileDialogFilter()
@@ -147,9 +141,9 @@ public class CompressMainViewModel : ToolTabViewModel
 
     private async Task RunAsync()
     {
-        _cts.Dispose();
+        CancellationTokenSource?.Dispose();
 
-        _cts = new CancellationTokenSource();
+        CancellationTokenSource = new CancellationTokenSource();
 
         ClearLog();
 
@@ -165,7 +159,7 @@ public class CompressMainViewModel : ToolTabViewModel
 
             foreach (var item in FileItems)
             {
-                if (_cts.Token.IsCancellationRequested)
+                if (CancellationTokenSource.Token.IsCancellationRequested)
                 {
                     CancelRemainingItems();
                     break;
@@ -191,32 +185,32 @@ public class CompressMainViewModel : ToolTabViewModel
                         MainViewModel.SetTaskbarProgress(item.Progress);
                     });
 
-                    void logWrapper(string msg, LogLevel level) => AppendLog(msg, level);
+                    void Log(string msg, LogLevel level, string id) => AppendLog(msg, level);
 
                     var switchConfig = AppConfig.Instance.Switch;
 
                     switch (detected.Format)
                     {
                         case RomFormat.Nsp:
-                            await NspCompressService.CompressAsync(item.FilePath, switchConfig.CompressLevel, switchConfig.VerifyCompress, switchConfig.UseBlockMode, progressHandler, AppendLog, outputDir, _cts.Token);
+                            await NspCompressService.CompressAsync(item.FilePath, switchConfig.CompressLevel, switchConfig.VerifyCompress, switchConfig.UseBlockMode, progressHandler, Log, outputDir, CancellationTokenSource.Token);
                             break;
                         case RomFormat.Xci:
-                            await XciCompressService.CompressAsync(item.FilePath, switchConfig.CompressLevel, switchConfig.VerifyCompress, switchConfig.UseBlockMode, progressHandler, AppendLog, outputDir, _cts.Token);
+                            await XciCompressService.CompressAsync(item.FilePath, switchConfig.CompressLevel, switchConfig.VerifyCompress, switchConfig.UseBlockMode, progressHandler, Log, outputDir, CancellationTokenSource.Token);
                             break;
                         case RomFormat.Nsz:
-                            await NspCompressService.DecompressAsync(item.FilePath, progressHandler, AppendLog, outputDir, _cts.Token);
+                            await NspCompressService.DecompressAsync(item.FilePath, progressHandler, Log, outputDir, CancellationTokenSource.Token);
                             break;
                         case RomFormat.Xcz:
-                            await XciCompressService.DecompressAsync(item.FilePath, progressHandler, AppendLog, outputDir, _cts.Token);
+                            await XciCompressService.DecompressAsync(item.FilePath, progressHandler, Log, outputDir, CancellationTokenSource.Token);
                             break;
                         case RomFormat.Cci:
-                            await Z3dsCompressor.CompressAsync(item.FilePath, AppConfig.Instance.Azahar.CompressLevel, progressHandler, logWrapper, outputDir, _cts.Token);
+                            await Z3dsCompressor.CompressAsync(item.FilePath, AppConfig.Instance.Azahar.CompressLevel, progressHandler, AppendLog, outputDir, CancellationTokenSource.Token);
                             break;
                         case RomFormat.Cia:
-                            await Z3dsCompressor.CompressFromCiaAsync(item.FilePath, AppConfig.Instance.Azahar.CompressLevel, progressHandler, logWrapper, outputDir, _cts.Token);
+                            await Z3dsCompressor.CompressFromCiaAsync(item.FilePath, AppConfig.Instance.Azahar.CompressLevel, progressHandler, AppendLog, outputDir, CancellationTokenSource.Token);
                             break;
                         case RomFormat.ZCci:
-                            await Z3dsDecompressor.DecompressAsync(item.FilePath, progressHandler, logWrapper, outputDir, _cts.Token);
+                            await Z3dsDecompressor.DecompressAsync(item.FilePath, progressHandler, AppendLog, outputDir, CancellationTokenSource.Token);
                             break;
                         case RomFormat.Ccd:
                             {
@@ -224,7 +218,7 @@ public class CompressMainViewModel : ToolTabViewModel
 
                                 var discReader = DiscImageReaderFactory.Resolve(item.FilePath);
                                 var discImage = discReader.Read(item.FilePath);
-                                var tempCuePath = await BinCueWriter.WriteAsync(discImage, outputDir ?? item.Directory, item.FileName, progressHandler, _cts.Token);
+                                var tempCuePath = await BinCueWriter.WriteAsync(discImage, outputDir ?? item.Directory, item.FileName, progressHandler, CancellationTokenSource.Token);
                                 var tempBinPath = Path.ChangeExtension(tempCuePath, ".bin");
 
                                 try
@@ -235,7 +229,7 @@ public class CompressMainViewModel : ToolTabViewModel
 
                                     chdFromCcd.LogMessage += (_, e) => AppendLog(e.Message, e.Level);
 
-                                    var chdFromCcdResult = await chdFromCcd.ConvertFileAsync(tempCuePath, outputDir, progressHandler, null, _cts.Token);
+                                    var chdFromCcdResult = await chdFromCcd.ConvertFileAsync(tempCuePath, outputDir, progressHandler, null, CancellationTokenSource.Token);
 
                                     if (!chdFromCcdResult.Success)
                                         throw new InvalidOperationException(chdFromCcdResult.Message);
@@ -259,7 +253,7 @@ public class CompressMainViewModel : ToolTabViewModel
 
                                 chdConverter.LogMessage += (_, e) => AppendLog(e.Message, e.Level);
 
-                                var chdResult = await chdConverter.ConvertFileAsync(item.FilePath, outputDir, progressHandler, null, _cts.Token);
+                                var chdResult = await chdConverter.ConvertFileAsync(item.FilePath, outputDir, progressHandler, null, CancellationTokenSource.Token);
 
                                 if (!chdResult.Success)
                                     throw new InvalidOperationException(chdResult.Message);
@@ -277,7 +271,7 @@ public class CompressMainViewModel : ToolTabViewModel
                                 converter.LogMessage += (_, e) => AppendLog(e.Message, e.Level);
                                 converter.ProgressChanged += (s, e) => Application.Current.Dispatcher.Invoke(() => item.Progress = e.Progress);
 
-                                await converter.ConvertFileAsync(item.FilePath, detected.Format.ToString(), detected.OutputExtension, AppConfig.Instance.WiiGC.CompressLevel, outputDir, _cts.Token);
+                                await converter.ConvertFileAsync(item.FilePath, detected.Format.ToString(), detected.OutputExtension, AppConfig.Instance.WiiGC.CompressLevel, outputDir, CancellationTokenSource.Token);
                             }
                             break;
                         case RomFormat.Unknown:
@@ -330,8 +324,4 @@ public class CompressMainViewModel : ToolTabViewModel
             remainingItem.Progress = 0;
         }
     }
-
-    private void AppendLog(string msg, LogLevel level = LogLevel.Info, string titleId = "") => Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
-
-    private void ClearLog() => Application.Current.Dispatcher.Invoke(() => LogEntries.Clear());
 }

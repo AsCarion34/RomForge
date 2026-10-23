@@ -1,5 +1,4 @@
 using Common;
-using Common.WPF.ViewModels;
 using NSW.WPF.Services;
 using RomForge.Core;
 using RomForge.Core.Models;
@@ -23,8 +22,6 @@ public class TistoryMainViewModel : ToolTabViewModel
     private bool _isBusy;
     private bool _autoExtractAfterDownload = AppConfig.Instance.Tistory.AutoExtractAfterDownload;
     private CancellationTokenSource _cts = new();
-
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
     public ObservableCollection<TistoryDownloadItem> FileItems { get; } = [];
 
@@ -386,13 +383,5 @@ public class TistoryMainViewModel : ToolTabViewModel
     {
         for (int i = 0; i < FileItems.Count; i++)
             FileItems[i].No = i + 1;
-    }
-
-    private void AppendLog(string msg, LogLevel level = LogLevel.Info)
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
     }
 }

@@ -1,5 +1,4 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
 using RomForge.Core;
 using RomForge.Core.Models;
 using RomForge.ViewModels._3DS;
@@ -195,5 +194,5 @@ public class MainViewModel : ToolTabViewModel
         }
     }
 
-    public void ClearLog() => ActiveLogEntries.Clear();
+    public override void ClearLog() => ActiveLogEntries.Clear();
 }

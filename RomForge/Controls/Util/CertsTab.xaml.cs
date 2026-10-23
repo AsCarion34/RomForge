@@ -30,7 +30,7 @@ public partial class CertsTab : UserControl
     {
         var dlg = new OpenFileDialog
         {
-            Filter = CertsMainViewModel.GetFileDialogFilter(),
+            Filter = CertsMainViewModel.FileDialogFilter,
             Title = "CIA 파일 선택"
         };
 

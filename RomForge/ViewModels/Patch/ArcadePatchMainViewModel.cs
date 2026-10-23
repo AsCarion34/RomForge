@@ -1,7 +1,5 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
 using NSW.WPF.Services;
-using RomForge.Core.Models;
 using RomForge.Core.Models.Patch;
 using RomForge.Core.Services;
 using RomForge.Core.Services.Patch;
@@ -16,8 +14,6 @@ namespace RomForge.ViewModels.Patch;
 
 public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
 {
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
-
     public ObservableCollection<ArcadeMatchItem> MatchItems { get; } = [];
 
     public ObservableCollection<Entry> AllPatchEntries { get; } = [];
@@ -30,7 +26,6 @@ public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
 
     private CancellationTokenSource? _analyzeCts;
     private CancellationTokenSource? _matchCts;
-    private CancellationTokenSource? _runCts;
     private Package? _selectedPatchPackage;
 
     public Package? SelectedPatchPackage
@@ -128,8 +123,6 @@ public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
     public Visibility HintVisibility => MatchItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     public Visibility MismatchVisibility => MismatchReason is not null ? Visibility.Visible : Visibility.Collapsed;
 
-    public void Log(string message, LogLevel level) => Application.Current?.Dispatcher?.Invoke(() => LogEntries.Add(new LogEntry { Message = message, Level = level }));
-
     public async Task RunAsync()
     {
         var matched = MatchItems.Where(x => x.IsMatched).ToList();
@@ -139,19 +132,19 @@ public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
 
         if (MatchItems.Any(x => x.MismatchReason == "CRC 불일치"))
         {
-            Log("CRC 불일치 항목이 있어 패치를 진행할 수 없습니다.", LogLevel.Error);
+            AppendLog("CRC 불일치 항목이 있어 패치를 진행할 수 없습니다.", LogLevel.Error);
             await SoundPlayer.PlayErrorAsync();
             return;
         }
 
-        _runCts = new CancellationTokenSource();
+        CancellationTokenSource = new CancellationTokenSource();
 
-        var ct = _runCts.Token;
+        var ct = CancellationTokenSource.Token;
 
         string outputDir = Path.Combine(Path.GetDirectoryName(SourcePath)!, "output");
         string outputZipPath = Path.Combine(outputDir, Path.GetFileName(SourcePath));
 
-        Log($"패치 시작: {Path.GetFileName(SourcePath)}", LogLevel.Highlight);
+        AppendLog($"패치 시작: {Path.GetFileName(SourcePath)}", LogLevel.Highlight);
 
         var itemsByEntryName = new Dictionary<string, ArcadeMatchItem>();
         var patchesByEntryName = new Dictionary<string, Entry>();
@@ -180,28 +173,26 @@ public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
         {
             await Service.ApplyPatchedZipAsync(SourcePath, outputZipPath, patchesByEntryName, progressReporter, ct);
             outputDir.OpenFolder();
-            Log($"패치 완료: {SourcePath}", LogLevel.Ok);
+            AppendLog($"패치 완료: {SourcePath}", LogLevel.Ok);
             await SoundPlayer.PlayCompleteAsync();
         }
         catch (OperationCanceledException)
         {
             TryDeleteIncompleteOutput(outputZipPath);
             MainViewModel.SetTaskbarProgress(0);
-            Log($"패치 취소: {Path.GetFileName(SourcePath)}", LogLevel.Error);
+            AppendLog($"패치 취소: {Path.GetFileName(SourcePath)}", LogLevel.Error);
             await SoundPlayer.PlayCancelAsync();
         }
         catch (Exception ex)
         {
             TryDeleteIncompleteOutput(outputZipPath);
             MainViewModel.SetTaskbarProgress(TotalProgress, System.Windows.Shell.TaskbarItemProgressState.Error);            
-            Log($"패치 실패: {ex.Message}", LogLevel.Error);
+            AppendLog($"패치 실패: {ex.Message}", LogLevel.Error);
             await SoundPlayer.PlayErrorAsync();
         }
     }
 
     public bool CanRun() => !string.IsNullOrEmpty(SourcePath) && !string.IsNullOrEmpty(PatchPath);
-
-    public void Cancel() => _runCts?.Cancel();
 
     private void TryDeleteIncompleteOutput(string outputZipPath)
     {
@@ -212,7 +203,7 @@ public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
         }
         catch (Exception ex)
         {
-            Log($"중단된 결과 파일 삭제 실패: {ex.Message} (수동으로 확인해주세요: {outputZipPath})", LogLevel.Error);
+            AppendLog($"중단된 결과 파일 삭제 실패: {ex.Message} (수동으로 확인해주세요: {outputZipPath})", LogLevel.Error);
         }
     }
 
@@ -266,7 +257,7 @@ public class ArcadePatchMainViewModel : ToolTabViewModel, IPatchViewModel
     {
         _analyzeCts?.Cancel();
         _matchCts?.Cancel();
-        _runCts?.Cancel();
+        CancellationTokenSource?.Cancel();
 
         SourcePath = null;
         PatchPath = null;

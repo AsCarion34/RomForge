@@ -25,7 +25,7 @@ public partial class RepackTab : UserControl
             return;
 
         if (titleList.DataContext is TitleListViewModel vm)
-            vm.LogAction = (msg, level) => ViewModel.Log(msg, level);
+            vm.LogAction = (msg, level) => ViewModel.AppendLog(msg, level);
 
         titleList.FileListChanged += SyncAll;
 

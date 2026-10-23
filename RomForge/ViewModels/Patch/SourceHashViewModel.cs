@@ -76,6 +76,7 @@ public class SourceHashViewModel : ViewModelBase
     public async Task StartAsync(string? path)
     {
         _cts?.Cancel();
+
         _cts = null;
 
         ClearResult();

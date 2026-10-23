@@ -216,7 +216,7 @@ public sealed class RepackService()
         return (result, patch);
     }
 
-    public static async Task UnpackAsync(IReadOnlyList<TitleInputEntry> entries, string keysTxtPath, string outputPath, Action<ProgressInfo>? progress = null, Action<string, LogLevel>? log = null, CancellationToken ct = default)
+    public static async Task UnpackAsync(IReadOnlyList<TitleInputEntry> entries, string keysTxtPath, string outputPath, IProgress<ProgressInfo>? progress = null, Action<string, LogLevel>? log = null, CancellationToken ct = default)
     {
         await Task.Run(() =>
         {
@@ -256,7 +256,7 @@ public sealed class RepackService()
 
                         long overall = Math.Min(entryOffset + done, grandTotal);
 
-                        progress?.Invoke(new ProgressInfo
+                        progress?.Report(new ProgressInfo
                         {
                             Percent = grandTotal > 0 ? (int)(overall * 100.0 / grandTotal) : 100,
                             Label = $"[{entry.Kind}] {filePath}",
@@ -271,7 +271,7 @@ public sealed class RepackService()
         }, ct);
     }
 
-    public static async Task RepackAsync(IReadOnlyList<TitleInputEntry> entries, string keysTxtPath, string outputPath, RepackOutputFormat format, Action<ProgressInfo>? progress = null, Action<string, LogLevel>? log = null, CancellationToken ct = default)
+    public static async Task RepackAsync(IReadOnlyList<TitleInputEntry> entries, string keysTxtPath, string outputPath, RepackOutputFormat format, IProgress<ProgressInfo>? progress = null, Action<string, LogLevel>? log = null, CancellationToken ct = default)
     {
         if (entries.Count == 0)
             throw new InvalidOperationException("패킹할 타이틀이 없습니다.");
@@ -306,7 +306,7 @@ public sealed class RepackService()
                     WiiURepackService.RepackMultiple(repackEntries, outputWuaPath,
                         onProgress: (done, total, path) =>
                         {
-                            progress?.Invoke(new ProgressInfo
+                            progress?.Report(new ProgressInfo
                             {
                                 Percent = total > 0 ? (int)(done * 100.0 / total) : 100,
                                 Label = path,
@@ -365,7 +365,7 @@ public sealed class RepackService()
         return $"{safeName} [{titleIdHex}] ({comp})";
     }
 
-    private static void RepackToWup(List<RepackEntry> repackEntries, List<ITitleSource> sources, IReadOnlyList<TitleInputEntry> entries, string outputPath, Action<ProgressInfo>? progress, Action<string, LogLevel>? log, CancellationToken ct)
+    private static void RepackToWup(List<RepackEntry> repackEntries, List<ITitleSource> sources, IReadOnlyList<TitleInputEntry> entries, string outputPath, IProgress<ProgressInfo>? progress, Action<string, LogLevel>? log, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
         long grandTotal = entries.Sum(e => e.TotalBytes);
@@ -396,7 +396,7 @@ public sealed class RepackService()
                         double fraction = total > 0 ? (double)done / total : 1.0;
                         long overall = entryOffset + (long)(fraction * entryTotal);
 
-                        progress?.Invoke(new ProgressInfo
+                        progress?.Report(new ProgressInfo
                         {
                             Percent = grandTotal > 0 ? (int)(overall * 100.0 / grandTotal) : 100,
                             Label = $"[{i + 1}/{sources.Count}] {label}",
@@ -421,7 +421,7 @@ public sealed class RepackService()
 
             offset += entryTotal;
 
-            progress?.Invoke(new ProgressInfo
+            progress?.Report(new ProgressInfo
             {
                 Percent = grandTotal > 0 ? (int)(offset * 100.0 / grandTotal) : 100,
                 Label = $"WUP 생성 완료: {titleId:x16}_v{titleVersion}",

@@ -4,7 +4,6 @@ using _3DS.Core.FileSystem;
 using _3DS.Core.Models;
 using _3DS.Core.Services;
 using Common;
-using Common.WPF.ViewModels;
 using NSW.WPF.UI;
 using RomForge.Core.Models;
 using RomForge.Core.Models._3DS;
@@ -21,19 +20,13 @@ public class InstallerMainViewModel : ToolTabViewModel
     private string _sdPath = string.Empty;
     private string _movablePath = string.Empty;
     private string _statusMessage = "SD 카드와 movable.sed를 선택하세요";
-    private double _progress;
     private bool _isLoading;
-    private string _progressText = string.Empty;
-    private string _progressTime = string.Empty;
-    private string _progressSpeed = string.Empty;
     private KeyStore? _keyStore;
     private SdCrypto? _sdCrypto;
     private SdTitleScanner? _scanner;
     private CancellationTokenSource? _extractCts;
 
     private IEnumerable<ToolTabViewModel> AllTabs => [InstalledTitles, Install];
-
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
     private static readonly string[] MovableSearchPaths = [ "movable.sed", @"gm9\out\movable.sed", ];
 
@@ -71,30 +64,6 @@ public class InstallerMainViewModel : ToolTabViewModel
     {
         get => _statusMessage;
         set { _statusMessage = value; OnPropertyChanged(); }
-    }
-
-    public double Progress
-    {
-        get => _progress;
-        set { _progress = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressText
-    {
-        get => _progressText;
-        set { _progressText = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressTime
-    {
-        get => _progressTime;
-        set { _progressTime = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressSpeed
-    {
-        get => _progressSpeed;
-        set { _progressSpeed = value; OnPropertyChanged(); }
     }
 
     public bool IsPathValid => !string.IsNullOrEmpty(SdPath) && !string.IsNullOrEmpty(MovablePath);
@@ -216,11 +185,11 @@ public class InstallerMainViewModel : ToolTabViewModel
                 await InstalledTitles.LoadAsync(_keyStore!, _sdCrypto!, _scanner!,
                     (current, total) =>
                     {
-                        Progress = (double)current / total * 100;
+                        ProgressPct = (int)((double)current / total * 100);
 
-                        MainViewModel.SetTaskbarProgress(Progress);
+                        MainViewModel.SetTaskbarProgress(ProgressPct);
 
-                        ProgressText = $"로딩 중... {current} / {total}";
+                        ProgressLabel = $"로딩 중... {current} / {total}";
 
                         onProgress?.Invoke(current, total);
                     }, ct);
@@ -268,9 +237,9 @@ public class InstallerMainViewModel : ToolTabViewModel
 
                 var scanProgress = new Progress<(int current, int total)>(p =>
                 {
-                    Progress = p.total == 0 ? 0 : (double)p.current / p.total * 100;
-                    ProgressText = $"스캔 중... {p.current} / {p.total}";
-                    MainViewModel.SetTaskbarProgress(Progress);
+                    ProgressPct = p.total == 0 ? 0 : (int)((double)p.current / p.total * 100);
+                    ProgressLabel = $"스캔 중... {p.current} / {p.total}";
+                    MainViewModel.SetTaskbarProgress(ProgressPct);
                 });
 
                 void Report(int current, int total) => ((IProgress<(int, int)>)scanProgress).Report((current, total));
@@ -320,9 +289,9 @@ public class InstallerMainViewModel : ToolTabViewModel
             var extractor = new TitleExtractor(_keyStore!, _sdCrypto!, _scanner!);
             var extractProgress = new Progress<ProgressInfo>(p =>
             {
-                Progress = p.Percent;
-                MainViewModel.SetTaskbarProgress(Progress);
-                ProgressText = $"{p.Percent}%";
+                ProgressPct = p.Percent;
+                MainViewModel.SetTaskbarProgress(ProgressPct);
+                ProgressLabel = $"{p.Percent}%";
                 ProgressTime = p.TimeInfo;
                 ProgressSpeed = p.Speed;
                 StatusMessage = $"추출 중: {selected.ShortDescription} - {p.Label}";
@@ -403,10 +372,10 @@ public class InstallerMainViewModel : ToolTabViewModel
 
                 var installProgress = new Progress<ProgressInfo>(p =>
                 {
-                    Progress = p.Percent;
-                    MainViewModel.SetTaskbarProgress(Progress);
+                    ProgressPct = p.Percent;
+                    MainViewModel.SetTaskbarProgress(ProgressPct);
                     selected.Progress = p.Percent;
-                    ProgressText = $"{p.Percent}%";
+                    ProgressLabel = $"{p.Percent}%";
                     ProgressTime = p.TimeInfo;
                     ProgressSpeed = p.Speed;
                 });
@@ -505,26 +474,10 @@ public class InstallerMainViewModel : ToolTabViewModel
 
         if (!loading)
         {
-            Progress = 0;
-            ProgressText = string.Empty;
+            ProgressPct = 0;
+            ProgressLabel = string.Empty;
             ProgressTime = string.Empty;
             ProgressSpeed = string.Empty;
         }
-    }
-
-    public void AppendLog(string msg, LogLevel level = LogLevel.Info)
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }) );
-    }
-
-    private void ClearLog()
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Clear());
     }
 }

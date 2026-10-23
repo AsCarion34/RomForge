@@ -1,10 +1,8 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
 using RomForge.Core.UI.Command;
 using RomForge.Core.Models;
 using RomForge.Core.Models._3DS;
 using RomForge.Core.Models.Util;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
@@ -21,27 +19,12 @@ public class CertsMainViewModel : ToolTabViewModel
     private const int CertSize = 0xA00;
     private const string OutputFileName = "certs.bin";
 
-    private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".cia"
-    };
-
-    #region Fields
+    private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase) { ".cia" };
 
     private bool _isExtracting;
     private CancellationTokenSource _cts = new();
     private CertsFileItem? _selectedFile;
     private TitleViewModel? _romInfo;
-
-    #endregion
-
-    #region Collections
-
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
-
-    #endregion
-
-    #region Properties
 
     public CertsFileItem? SelectedFile
     {
@@ -49,6 +32,7 @@ public class CertsMainViewModel : ToolTabViewModel
         set
         {
             _selectedFile = value;
+
             OnPropertyChanged();
             OnPropertyChanged(nameof(HintVisibility));
             OnPropertyChanged(nameof(FileInfoVisibility));
@@ -82,16 +66,11 @@ public class CertsMainViewModel : ToolTabViewModel
 
     public string ProgressText => SelectedFile == null ? string.Empty : $"{SelectedFile.Progress}%";
 
-    #endregion
-
-    #region Commands
+    public static string FileDialogFilter => "CIA 파일|*.cia|모든 파일|*.*";
 
     public ICommand RunCommand { get; }
+
     public ICommand ClearFileCommand { get; }
-
-    #endregion
-
-    #region Constructor
 
     public CertsMainViewModel()
     {
@@ -99,10 +78,6 @@ public class CertsMainViewModel : ToolTabViewModel
         CancelCommand = new RelayCommand(_ => _cts.Cancel(), _ => IsExtracting);
         ClearFileCommand = new RelayCommand(_ => ClearFile(), _ => !IsExtracting);
     }
-
-    #endregion
-
-    #region Public Methods
 
     public void SetFile(string path)
     {
@@ -122,6 +97,7 @@ public class CertsMainViewModel : ToolTabViewModel
 
         SelectedFile = new CertsFileItem(path);
         RomInfo = null;
+
         AppendLog($"파일 로드됨: {SelectedFile.FileName}");
         _ = LoadRomInfoAsync(path);
     }
@@ -129,14 +105,9 @@ public class CertsMainViewModel : ToolTabViewModel
     public void ClearFile()
     {
         SelectedFile = null;
+
         ClearLog();
     }
-
-    public static string GetFileDialogFilter() => "CIA 파일|*.cia|모든 파일|*.*";
-
-    #endregion
-
-    #region Private Methods
 
     private async Task LoadRomInfoAsync(string path)
     {
@@ -178,8 +149,11 @@ public class CertsMainViewModel : ToolTabViewModel
             return;
 
         IsExtracting = true;
+
         _cts.Dispose();
+
         _cts = new CancellationTokenSource();
+
         ClearLog();
 
         using (BeginWork())
@@ -188,8 +162,8 @@ public class CertsMainViewModel : ToolTabViewModel
             {
                 SelectedFile.Status = "추출중";
                 SelectedFile.Progress = 0;
-                MainViewModel.SetTaskbarProgress(0);
 
+                MainViewModel.SetTaskbarProgress(0);
                 AppendLog($"certs.bin 추출 시작: {SelectedFile.FileName}", LogLevel.Highlight);
                 AppendLog($"오프셋: 0x{CertOffset:X4} / 크기: 0x{CertSize:X3} bytes");
                 AppendLog($"출력 경로: {OutputPath}");
@@ -199,18 +173,20 @@ public class CertsMainViewModel : ToolTabViewModel
                 if (success)
                 {
                     SelectedFile.Progress = 100;
-                    MainViewModel.SetTaskbarProgress(100);
                     SelectedFile.Status = "완료";
-                    await SoundPlayer.PlayCompleteAsync();
 
+                    MainViewModel.SetTaskbarProgress(100);                    
+                    await SoundPlayer.PlayCompleteAsync();
                     OnPropertyChanged(nameof(ProgressText));
                     AppendLog($"추출 완료: {OutputFileName}", LogLevel.Highlight);
                 }
                 else
                 {
                     SelectedFile.Progress = 0;
+
                     MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
                     await SoundPlayer.PlayErrorAsync();
+
                     if (SelectedFile.Status == "추출중")
                         SelectedFile.Status = "실패";
                 }
@@ -237,6 +213,7 @@ public class CertsMainViewModel : ToolTabViewModel
             finally
             {
                 IsExtracting = false;
+
                 CommandManager.InvalidateRequerySuggested();
             }
         }
@@ -299,28 +276,7 @@ public class CertsMainViewModel : ToolTabViewModel
         catch (Exception ex)
         {
             AppendLog($"[실패] 추출 중 에러: {ex.Message}", LogLevel.Error);
-
             return false;
         }
     }
-
-    private void AppendLog(string msg, LogLevel level = LogLevel.Info)
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() =>
-            LogEntries.Add(new LogEntry { Message = msg, Level = level })
-        );
-    }
-
-    private void ClearLog()
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Clear());
-    }
-
-    #endregion
 }

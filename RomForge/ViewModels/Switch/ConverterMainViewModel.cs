@@ -1,9 +1,7 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
 using NSW.Core;
 using NSW.WPF.Services;
 using RomForge.Core;
-using RomForge.Core.Models;
 using RomForge.Core.Models.Switch;
 using RomForge.Core.Services;
 using RomForge.Core.Services.Switch;
@@ -18,11 +16,7 @@ namespace RomForge.ViewModels.Switch;
 
 public class ConverterMainViewModel : ToolTabViewModel
 {
-    private CancellationTokenSource _cts = new();
-
     private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase) { ".nsp", ".xci", ".nsz", ".xcz" };
-
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
     public ObservableCollection<ConverterFileItem> FileItems { get; } = [];
 
@@ -35,7 +29,7 @@ public class ConverterMainViewModel : ToolTabViewModel
     public ConverterMainViewModel()
     {
         RunCommand = new RelayCommand(async _ => await RunAsync(), _ => !IsLocked && FileItems.Count > 0);
-        CancelCommand = new RelayCommand(_ => _cts.Cancel(), _ => IsLocked);
+        CancelCommand = new RelayCommand(_ => CancellationTokenSource?.Cancel(), _ => IsLocked);
     }
 
     public async Task AddPathsAsync(IEnumerable<string> paths)
@@ -106,8 +100,10 @@ public class ConverterMainViewModel : ToolTabViewModel
 
     private async Task RunAsync()
     {
-        _cts.Dispose();
-        _cts = new CancellationTokenSource();
+        CancellationTokenSource?.Dispose();
+
+        CancellationTokenSource = new CancellationTokenSource();
+
         ClearLog();
 
         using (BeginWork())
@@ -121,7 +117,7 @@ public class ConverterMainViewModel : ToolTabViewModel
 
                 foreach (var item in FileItems)
                 {
-                    _cts.Token.ThrowIfCancellationRequested();
+                    CancellationTokenSource.Token.ThrowIfCancellationRequested();
 
                     if (item.Status == "완료" || item.Status == "미지원")
                         continue;
@@ -143,7 +139,7 @@ public class ConverterMainViewModel : ToolTabViewModel
 
                     try
                     {
-                        await ConvertItemAsync(item, progress, Log, _cts.Token);
+                        await ConvertItemAsync(item, progress, Log, CancellationTokenSource.Token);
                         MainViewModel.SetTaskbarProgress(100);
 
                         item.Progress = 100;
@@ -216,21 +212,5 @@ public class ConverterMainViewModel : ToolTabViewModel
             ("xcz", "nsz") => NspXciConvertService.XczToNszAsync(item.FilePath, config.CompressLevel, config.VerifyCompress, config.UseBlockMode, progress, log, null, ct),
             _ => Task.FromException(new NotSupportedException($"{source} → {target}: 지원하지 않는 변환입니다."))
         };
-    }
-
-    private void AppendLog(string msg, LogLevel level = LogLevel.Info)
-    {
-        if (Application.Current?.Dispatcher == null) 
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
-    }
-
-    private void ClearLog()
-    {
-        if (Application.Current?.Dispatcher == null) 
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Clear());
     }
 }

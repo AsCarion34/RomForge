@@ -1,5 +1,4 @@
-﻿using Common.WPF.ViewModels;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using RomForge.Core;
 using RomForge.Core.Services;
 using RomForge.Core.UI.Command;

@@ -1,11 +1,9 @@
 ﻿using CHD.Core.Services;
 using Common;
-using Common.WPF.ViewModels;
 using NSW.WPF.Services;
 using Patch.Core.Formats;
 using Patch.Core.Formats.DCP.Services;
 using RomForge.Core;
-using RomForge.Core.Models;
 using RomForge.Core.Models.Compression;
 using RomForge.Core.Models.Patch;
 using RomForge.Core.Services;
@@ -13,23 +11,16 @@ using RomForge.Core.Services.Compression;
 using RomForge.Core.Services.Patch;
 using System.Diagnostics;
 using System.IO;
-using System.Windows;
 using System.Windows.Input;
 
 namespace RomForge.ViewModels.Patch;
 
 public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
 {
-    private CancellationTokenSource? _runCts;
     private CancellationTokenSource? _previewCts;
 
     private string? _sourcePath;
     private bool _patchAdded;
-    private int _progressPct;
-    private string _progressLabel = "대기 중...";
-    private string _progressPercent = string.Empty;
-    private string _progressSpeed = string.Empty;
-    private string _progressTime = "00:00 경과";
     private string _namingPreview = string.Empty;
     private NamingFormatPreset _selectedNamingPreset = NamingFormatPresets.Resolve(AppConfig.Instance.Patch.NamingFormat);
 
@@ -37,8 +28,6 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
     private string? _cachedPatchDate;
     private string? _cachedPatchLanguage;
     private string? _lastProcessedPatchPath;
-
-    public System.Collections.ObjectModel.ObservableCollection<LogEntry> LogEntries { get; } = [];
 
     public string? SourcePath
     {
@@ -235,42 +224,6 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
 
     public string SourceLabel => Path.GetFileName(SourcePath) ?? "원본 파일을 드래그하거나 클릭하세요";
 
-    public int ProgressPct
-    {
-        get => _progressPct;
-        set
-        {
-            _progressPct = value;
-
-            MainViewModel.SetTaskbarProgress(_progressPct);
-            OnPropertyChanged();
-        }
-    }
-
-    public string ProgressLabel
-    {
-        get => _progressLabel;
-        set { _progressLabel = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressPercent
-    {
-        get => _progressPercent;
-        set { _progressPercent = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressTime
-    {
-        get => _progressTime;
-        set { _progressTime = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressSpeed
-    {
-        get => _progressSpeed;
-        set { _progressSpeed = value; OnPropertyChanged(); }
-    }
-
     public NormalPatchMainViewModel()
     {
         PatchSlots.Add(CreateSlot());
@@ -367,8 +320,6 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         TriggerPreviewUpdate();
     }
 
-    public void Log(string message, LogLevel level) => Application.Current?.Dispatcher?.Invoke(() => LogEntries.Add(new LogEntry { Message = message, Level = level }));
-
     private static string ResolveOutputDir(string sourcePath)
     {
         var patch = AppConfig.Instance.Patch;
@@ -390,13 +341,13 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
 
         string namingPatchPath = patchPaths.Last();
 
-        _runCts = new CancellationTokenSource();
+        CancellationTokenSource = new CancellationTokenSource();
 
-        var ct = _runCts.Token;
+        var ct = CancellationTokenSource.Token;
         string outputDir = ResolveOutputDir(SourcePath);
         string? extractDir = null;
         string? outputPath = null;
-        var orchestrator = new Orchestrator(Log, BuildProgressReporter(), AutoCompress, AppConfig.Instance.WiiGC.CompressLevel);
+        var orchestrator = new Orchestrator(AppendLog, BuildProgressReporter(), AutoCompress, AppConfig.Instance.WiiGC.CompressLevel);
         var stopwatch = Stopwatch.StartNew();
 
         try
@@ -408,7 +359,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
 
             if (SourceArchiveExtractor.IsArchivePath(SourcePath))
             {
-                Log($"원본 압축 확인 중: {Path.GetFileName(SourcePath)}", LogLevel.Highlight);
+                AppendLog($"원본 압축 확인 중: {Path.GetFileName(SourcePath)}", LogLevel.Highlight);
 
                 extractDir = Path.Combine(outputDir, "_src_" + Path.GetFileNameWithoutExtension(SourcePath)); Directory.CreateDirectory(extractDir);
 
@@ -416,7 +367,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
 
                 if (extractResult.NeedsSelection)
                 {
-                    Log($"압축 안에 패치 대상 후보가 {extractResult.Candidates.Count}개 있습니다. 선택이 필요합니다.", LogLevel.Highlight);
+                    AppendLog($"압축 안에 패치 대상 후보가 {extractResult.Candidates.Count}개 있습니다. 선택이 필요합니다.", LogLevel.Highlight);
 
                     if (RequestSourceSelectionAsync is null)
                         throw new InvalidOperationException("압축 안에 후보가 여러 개인데 선택 UI가 연결되어 있지 않습니다.");
@@ -428,7 +379,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
                 else
                     actualSourcePath = extractResult.ResolvedPath!;
 
-                Log($"원본 압축 해제 완료: {Path.GetFileName(actualSourcePath)}", LogLevel.Ok);
+                AppendLog($"원본 압축 해제 완료: {Path.GetFileName(actualSourcePath)}", LogLevel.Ok);
             }
 
             extractDir ??= Path.Combine(outputDir, "_src_" + Path.GetFileNameWithoutExtension(actualSourcePath));
@@ -438,16 +389,16 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
                 string directOutputName = VersionInfoExtractor.ApplySuffix(Path.GetFileName(actualSourcePath), namingPatchPath, AppConfig.Instance.Patch.NamingEnabled, AppConfig.Instance.Patch.NamingFormat, AppConfig.Instance.Common.Language);
                 string directOutputPath = Utils.GetUniqueFilePath(Path.Combine(outputDir, directOutputName));
 
-                Log("압축된 원본에 바로 패치를 시도합니다...", LogLevel.Highlight);
+                AppendLog("압축된 원본에 바로 패치를 시도합니다...", LogLevel.Highlight);
 
                 try
                 {
-                    await Chain.ApplyAsync(actualSourcePath, patchPaths, directOutputPath, outputDir, Log, BuildProgressReporter(), ct);
+                    await Chain.ApplyAsync(actualSourcePath, patchPaths, directOutputPath, outputDir, AppendLog, BuildProgressReporter(), ct);
                     stopwatch.Stop();
 
                     outputPath = directOutputPath;
 
-                    Log($"패치 완료: {Path.GetFileName(outputPath)} ({stopwatch.Elapsed:mm\\:ss})", LogLevel.Ok);
+                    AppendLog($"패치 완료: {Path.GetFileName(outputPath)} ({stopwatch.Elapsed:mm\\:ss})", LogLevel.Ok);
                     outputDir.OpenFolder();
 
                     return;
@@ -458,14 +409,14 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
                 }
                 catch (InvalidOperationException ex) when (ex.Message.Contains("XD3_INVALID_INPUT") || ex.Message.Contains("미스매치"))
                 {
-                    Log("압축된 원본과 패치가 일치하지 않아 압축을 해제한 뒤 다시 시도합니다.", LogLevel.Highlight);
+                    AppendLog("압축된 원본과 패치가 일치하지 않아 압축을 해제한 뒤 다시 시도합니다.", LogLevel.Highlight);
 
                     if (File.Exists(directOutputPath))
                         File.Delete(directOutputPath);
                 }
             }
 
-            var (resolvedSourcePath, detected) = await CompressedSourceDecompressor.ResolveAsync(actualSourcePath, extractDir, Log, BuildProgressReporter(), ct);
+            var (resolvedSourcePath, detected) = await CompressedSourceDecompressor.ResolveAsync(actualSourcePath, extractDir, AppendLog, BuildProgressReporter(), ct);
 
             actualSourcePath = resolvedSourcePath;
 
@@ -476,16 +427,16 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
             outputPath = Path.Combine(outputDir, outputFileName);
             outputPath = Utils.GetUniqueFilePath(outputPath);
 
-            Log($"패치 시작: {Path.GetFileName(actualSourcePath)}", LogLevel.Highlight);
+            AppendLog($"패치 시작: {Path.GetFileName(actualSourcePath)}", LogLevel.Highlight);
             await orchestrator.PatchAsync(actualSourcePath, patchPaths, detected, outputDir, outputPath, sourceIsTemporary, ct);
             stopwatch.Stop();
-            Log($"패치 완료: {Path.GetFileName(outputPath)} ({stopwatch.Elapsed:mm\\:ss})", LogLevel.Ok);
+            AppendLog($"패치 완료: {Path.GetFileName(outputPath)} ({stopwatch.Elapsed:mm\\:ss})", LogLevel.Ok);
             await SoundPlayer.PlayCompleteAsync();
             outputDir.OpenFolder();
         }
         catch (OperationCanceledException)
         {
-            Log($"패치 취소: {SourcePath}", LogLevel.Error);
+            AppendLog($"패치 취소: {SourcePath}", LogLevel.Error);
             await SoundPlayer.PlayCancelAsync();
             CleanupTask();
 
@@ -494,7 +445,7 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
         }
         catch (Exception ex)
         {
-            Log($"패치 실패: {ex.Message}", LogLevel.Error);
+            AppendLog($"패치 실패: {ex.Message}", LogLevel.Error);
             await SoundPlayer.PlayErrorAsync();
             CleanupTask();
             MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
@@ -509,34 +460,15 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
                 try
                 {
                     Directory.Delete(extractDir, true);
-                    Log("원본 압축 해제 임시 파일 정리 완료", LogLevel.Ok);
+                    AppendLog("원본 압축 해제 임시 파일 정리 완료", LogLevel.Ok);
                 }
                 catch (Exception ex)
                 {
-                    Log($"압축 해제 임시 파일 정리 실패: {ex.Message}", LogLevel.Error);
+                    AppendLog($"압축 해제 임시 파일 정리 실패: {ex.Message}", LogLevel.Error);
                     await SoundPlayer.PlayErrorAsync();
                 }
             }
         }
-    }
-
-    private Progress<ProgressInfo> BuildProgressReporter() =>
-        new(info =>
-        {
-            ProgressPct = info.Percent;
-            ProgressLabel = info.Label;
-            ProgressPercent = $"{info.Percent}%";
-            ProgressTime = info.TimeInfo;
-            ProgressSpeed = info.Speed;
-        });
-
-    private void CleanupTask()
-    {
-        ProgressPct = 0;
-        ProgressLabel = string.Empty;
-        ProgressPercent = "0%";
-        ProgressTime = string.Empty;
-        ProgressSpeed = string.Empty;
     }
 
     private static string ResolveOutputBaseFileName(string actualSourcePath)
@@ -569,11 +501,9 @@ public class NormalPatchMainViewModel : ToolTabViewModel, IPatchViewModel
 
     public bool CanRun() => !string.IsNullOrEmpty(SourcePath) && PatchPaths.Count > 0;
 
-    public void Cancel() => _runCts?.Cancel();
-
     public void Clear()
     {
-        _runCts?.Cancel();
+        CancellationTokenSource?.Cancel();
 
         SourcePath = null;
 

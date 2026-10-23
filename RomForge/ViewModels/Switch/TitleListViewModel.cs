@@ -1,5 +1,4 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
 using NSW.Core;
 using NSW.WPF.ViewModels;
 using RomForge.Core.Models.Switch;
@@ -109,7 +108,7 @@ public class TitleListViewModel : ToolTabViewModel
                     ? $"[패치 지정 실패] {file.TitleName}: 이 게임과 일치하는 타이틀 ID 폴더가 없습니다.\n패치 ID: {string.Join(", ", source.FoundIds)} / 게임 ID: {string.Join(", ", ids)}"
                     : $"[패치 지정 실패] {file.TitleName}: 패치에서 타이틀 ID 폴더나 exefs/romfs/ips/xdelta를 찾지 못했습니다.";
 
-                Log(reason, LogLevel.Error);
+                AppendLog(reason, LogLevel.Error);
                 _= SoundPlayer.PlayErrorAsync();
                 MessageBox.Show(reason, "패치 지정 실패", MessageBoxButton.OK, MessageBoxImage.Error);
                 return false;
@@ -119,9 +118,9 @@ public class TitleListViewModel : ToolTabViewModel
             bool warning = ids.Count > 1;
 
             if (warning)
-                Log($"[패치 지정 경고] {file.TitleName}: 타이틀 ID 폴더가 없는 일반 패치(exefs/romfs)로 지정했습니다. 프로그램이 여러 개인 게임이라 모든 프로그램에 같은 파일이 적용됩니다.", LogLevel.Info);
+                AppendLog($"[패치 지정 경고] {file.TitleName}: 타이틀 ID 폴더가 없는 일반 패치(exefs/romfs)로 지정했습니다. 프로그램이 여러 개인 게임이라 모든 프로그램에 같은 파일이 적용됩니다.", LogLevel.Info);
             else
-                Log($"[패치 지정 안내] {file.TitleName}: 타이틀 ID 폴더가 없는 일반 패치(exefs/romfs)로 지정했습니다.", LogLevel.Ok);
+                AppendLog($"[패치 지정 안내] {file.TitleName}: 타이틀 ID 폴더가 없는 일반 패치(exefs/romfs)로 지정했습니다.", LogLevel.Ok);
         }
         else
         {
@@ -132,7 +131,7 @@ public class TitleListViewModel : ToolTabViewModel
             if (warning)
                 detailMsg += " | 일부 프로그램은 패치가 없어 원본 그대로 빌드됩니다.";
 
-            Log($"[패치 지정 완료] {file.TitleName}\n{detailMsg}", warning ? LogLevel.Info : LogLevel.Ok);
+            AppendLog($"[패치 지정 완료] {file.TitleName}\n{detailMsg}", warning ? LogLevel.Info : LogLevel.Ok);
         }
 
         file.PatchPath = path;
@@ -149,12 +148,12 @@ public class TitleListViewModel : ToolTabViewModel
 
         if (report.Matched == 0)
         {
-            Log($"[일괄 지정 실패] {text}", LogLevel.Error);
+            AppendLog($"[일괄 지정 실패] {text}", LogLevel.Error);
             _= SoundPlayer.PlayErrorAsync();
             MessageBox.Show(text, "일괄 지정 결과", MessageBoxButton.OK, MessageBoxImage.Warning);
         }        
         else
-            Log($"[일괄 지정 완료] {text}", LogLevel.Ok);
+            AppendLog($"[일괄 지정 완료] {text}", LogLevel.Ok);
     }
 
     public void RemoveFile(GameFile item)
@@ -175,6 +174,4 @@ public class TitleListViewModel : ToolTabViewModel
     }
 
     public void ClearPatch(GameFile file) => _patchSync.ClearPatch(file);
-
-    public void Log(string msg, LogLevel level = LogLevel.Info) => LogAction?.Invoke(msg, level);
 }

@@ -1,5 +1,4 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
 using Ionic.Zlib;
 using NSW.WPF.Services;
 using NSW.WPF.UI;
@@ -22,14 +21,8 @@ namespace RomForge.ViewModels.Util;
 
 public class ZipImageToolMainViewModel : ToolTabViewModel
 {
-    #region Fields
-
     private readonly WmiWatchers _wmiWatchers = new();
     private CancellationTokenSource? _cts;
-
-    #endregion
-
-    #region USB
 
     public ObservableCollection<DriveInfos> UsbDrives { get; } = [];
 
@@ -46,10 +39,6 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
             }
         }
     }
-
-    #endregion
-
-    #region Status
 
     private string _statusText1 = string.Empty;
     public string StatusText1
@@ -72,14 +61,11 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
         set 
         { 
             _progress = value; 
+
             MainViewModel.SetTaskbarProgress(value);
             OnPropertyChanged();
         }
     }
-
-    #endregion
-
-    #region Tab
 
     private int _selectedTabIndex;
     public int SelectedTabIndex
@@ -87,10 +73,6 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
         get => _selectedTabIndex;
         set { _selectedTabIndex = value; OnPropertyChanged(); }
     }
-
-    #endregion
-
-    #region Write Tab
 
     private string _writeImagePath = string.Empty;
     public string WriteImagePath
@@ -112,10 +94,6 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
         get => _writeButtonText;
         set { _writeButtonText = value; OnPropertyChanged(); }
     }
-
-    #endregion
-
-    #region Read Tab
 
     private string _readImagePath = string.Empty;
     public string ReadImagePath
@@ -168,18 +146,10 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
         set { _selectedCompressionIndex = value; OnPropertyChanged(); }
     }
 
-    #endregion
-
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
-
-    #region Commands
-
     public ICommand OpenWriteFileCommand { get; }
     public ICommand WriteCommand { get; }
     public ICommand OpenReadFileCommand { get; }
     public ICommand ReadCommand { get; }
-
-    #endregion
 
     public ZipImageToolMainViewModel()
     {
@@ -202,8 +172,6 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
 
         ListRemovableUsbDrives();
     }
-
-    #region Private Methods
 
     private void ListRemovableUsbDrives()
     {        
@@ -307,6 +275,7 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
             {
                 Progress = 0;
                 StatusText1 = "굽기 취소";
+
                 PartitionUtil.RescanDisk(SelectedDrive.DiskNumber);
                 AppendLog("굽기가 취소 되었습니다.", LogLevel.Error);
                 await SoundPlayer.PlayCancelAsync();
@@ -327,7 +296,9 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
             finally
             {
                 WriteButtonText = "굽기";
+
                 _cts?.Dispose();
+
                 _cts = null;
             }
         }
@@ -434,7 +405,9 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
             finally
             {
                 ReadButtonText = "저장";
+
                 _cts?.Dispose();
+
                 _cts = null;
             }
         }
@@ -462,7 +435,6 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
             await SoundPlayer.PlayCompleteAsync();
             PartitionUtil.RescanDisk(SelectedDrive!.DiskNumber);
             PartitionUtil.AssignNextAvailableDriveLetter();
-
             AppendLog("이미지 굽기가 완료되었습니다.", LogLevel.Ok);
         });
     }
@@ -476,7 +448,6 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
 
             await SoundPlayer.PlayCompleteAsync();
             Path.GetDirectoryName(ReadImagePath).OpenFolder();
-
             AppendLog("이미지 저장이 완료되었습니다.", LogLevel.Ok);
         });
     }
@@ -490,6 +461,7 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
         }
 
         string ext = Path.GetExtension(path).TrimStart('.').ToLowerInvariant();
+
         SegmentOptionsVisible = ext == "zip";
     }
 
@@ -535,14 +507,4 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
             Debug.WriteLine($"An unexpected error occurred: {ex.Message}");
         }
     }
-
-    private void AppendLog(string msg, LogLevel level = LogLevel.Info)
-    {
-        if (Application.Current?.Dispatcher == null) 
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
-    }
-
-    #endregion
 }

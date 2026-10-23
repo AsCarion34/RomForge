@@ -8,5 +8,7 @@ public enum LogLevel
 
     Ok,
 
+    Warning,
+
     Error
 }

@@ -55,14 +55,14 @@ public partial class MergeTab : UserControl
 
         if (!fileMgr.GameFiles.Any())
         {
-            ViewModel.Log(Res.Main_Err_NoFiles, Common.LogLevel.Error);
+            ViewModel.AppendLog(Res.Main_Err_NoFiles, Common.LogLevel.Error);
             await SoundPlayer.PlayErrorAsync();
             return;
         }
 
         if (!FileManagerControl.KeyExists())
         {
-            ViewModel.Log(Res.Main_Err_NoKeys, Common.LogLevel.Error);
+            ViewModel.AppendLog(Res.Main_Err_NoKeys, Common.LogLevel.Error);
             await SoundPlayer.PlayErrorAsync();
             return;
         }

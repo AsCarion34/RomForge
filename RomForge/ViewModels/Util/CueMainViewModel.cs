@@ -1,5 +1,4 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
 using LibHac.Tools.Ncm;
 using RomForge.Core.Models;
 using RomForge.Core.Models.Util;
@@ -16,26 +15,12 @@ namespace RomForge.ViewModels.Util;
 
 public class CueMainViewModel : ToolTabViewModel
 {
-    private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".bin"
-    };
-
-    #region Fields
+    private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase) { ".bin" };
 
     private bool _isConverting;
     private CancellationTokenSource _cts = new();
 
-    #endregion
-
-    #region Collections
-
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
     public ObservableCollection<CueFileItem> FileItems { get; } = [];
-
-    #endregion
-
-    #region Properties
 
     public bool IsConverting
     {
@@ -45,27 +30,15 @@ public class CueMainViewModel : ToolTabViewModel
 
     public Visibility HintVisibility => FileItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-    #endregion
-
-    #region Commands
-
     public ICommand RunCommand { get; }
 
-    #endregion
-
     public event Action<CueFileItem>? ScrollToItemRequested;
-
-    #region Constructor
 
     public CueMainViewModel()
     {
         RunCommand = new RelayCommand(async _ => await RunAsync(), _ => !IsConverting && FileItems.Count > 0);
         CancelCommand = new RelayCommand(_ => _cts.Cancel(), _ => IsConverting);
     }
-
-    #endregion
-
-    #region Public Methods
 
     public async Task AddPaths(IEnumerable<string> paths)
     {
@@ -111,13 +84,8 @@ public class CueMainViewModel : ToolTabViewModel
     public static string GetFileDialogFilter()
     {
         string wildcards = string.Join(";", SupportedExtensions.Select(ext => $"*{ext}"));
-
         return $"지원 파일|{wildcards}|모든 파일|*.*";
     }
-
-    #endregion
-
-    #region Private Methods
 
     private async Task RunAsync()
     {
@@ -144,12 +112,11 @@ public class CueMainViewModel : ToolTabViewModel
 
                     if (item.Status == "완료")
                         continue;
-
-                    item.Status = "대기중";
+                                        
                     item.Progress = 0;
-                    MainViewModel.SetTaskbarProgress(0);
                     item.Status = "변환중";
 
+                    MainViewModel.SetTaskbarProgress(0);
                     ScrollToItemRequested?.Invoke(item);
 
                     bool success = await Task.Run(() => ProcessSingleFile(item, _cts.Token));
@@ -157,15 +124,18 @@ public class CueMainViewModel : ToolTabViewModel
                     if (success)
                     {
                         item.Progress = 100;
-                        MainViewModel.SetTaskbarProgress(100);
                         item.Status = "완료";
                         successCount++;
+
+                        MainViewModel.SetTaskbarProgress(100);
                     }
                     else
                     {
                         item.Progress = 0;
+
                         MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
                         await SoundPlayer.PlayErrorAsync();
+
                         if (item.Status == "변환중")
                             item.Status = "실패";
                     }
@@ -206,6 +176,7 @@ public class CueMainViewModel : ToolTabViewModel
             finally
             {
                 IsConverting = false;
+
                 CommandManager.InvalidateRequerySuggested();
             }
         }
@@ -246,7 +217,6 @@ public class CueMainViewModel : ToolTabViewModel
         catch (Exception ex)
         {
             AppendLog($"[실패] {item.FileName} 처리 중 에러: {ex.Message}", LogLevel.Error);
-
             return false;
         }
     }
@@ -280,22 +250,4 @@ public class CueMainViewModel : ToolTabViewModel
             return "MODE1/2352";
         }
     }
-
-    private void AppendLog(string msg, LogLevel level = LogLevel.Info)
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
-    }
-
-    private void ClearLog()
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Clear());
-    }
-
-    #endregion
 }

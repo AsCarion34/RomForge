@@ -2,8 +2,6 @@ using _3DS.Core.Crypto;
 using _3DS.Core.Models;
 using _3DS.Core.Services;
 using Common;
-using Common.WPF.ViewModels;
-using RomForge.Core.Models;
 using RomForge.Core.Models._3DS;
 using RomForge.Core.Services;
 using RomForge.Core.UI.Command;
@@ -20,8 +18,6 @@ public class ConverterMainViewModel : ToolTabViewModel
 {
     private bool _isConverting;
     private CancellationTokenSource _cts = new();
-
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
     public ObservableCollection<FileItem> FileItems { get; } = [];
 
@@ -242,21 +238,5 @@ public class ConverterMainViewModel : ToolTabViewModel
                 IsConverting = false;
             }
         }
-    }
-
-    private void AppendLog(string msg, LogLevel level = LogLevel.Info)
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
-    }
-
-    private void ClearLog()
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Clear());
     }
 }

@@ -135,10 +135,7 @@ public partial class MainWindow : Window
             e.Handled = true;
     }
 
-    private void ClearLog_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel.ClearLog();
-    }
+    private void ClearLog_Click(object sender, RoutedEventArgs e) => ViewModel.ClearLog();
 
     private void CopyLog_Click(object sender, RoutedEventArgs e)
     {

@@ -51,8 +51,6 @@ public class ConvertMainViewModel : ToolTabViewModel
 
     private static string KeysPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "keys.txt");
 
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
-
     public ObservableCollection<object> FileItems { get; } = [];
 
     public Visibility HintVisibility => FileItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -742,8 +740,4 @@ public class ConvertMainViewModel : ToolTabViewModel
     }
 
     private static bool LooksLikeLoadiineFolder(string path) => Directory.Exists(Path.Combine(path, "code")) && Directory.Exists(Path.Combine(path, "content")) && Directory.Exists(Path.Combine(path, "meta"));
-
-    private void AppendLog(string msg, LogLevel level = LogLevel.Info) => Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
-
-    private void ClearLog() => Application.Current.Dispatcher.Invoke(() => LogEntries.Clear());
 }

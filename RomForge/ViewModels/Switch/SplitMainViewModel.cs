@@ -1,5 +1,4 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
 using NSW.Core;
 using NSW.Core.Models;
 using NSW.WPF.Services;
@@ -21,7 +20,6 @@ namespace RomForge.ViewModels.Switch;
 public class SplitMainViewModel : ToolTabViewModel
 {
     private readonly Stopwatch _totalSw = new();
-    private CancellationTokenSource? _cts;
 
     private string _outputPath = string.Empty;
 
@@ -29,54 +27,12 @@ public class SplitMainViewModel : ToolTabViewModel
 
     private readonly List<SplitRowViewModel> _files = [];
 
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
-
     public ObservableCollection<SplitRowViewModel> Rows { get; } = [];
 
     public bool HasFiles => _files.Count > 0;
 
-    private int _progressPct;
-    private string _progressLabel = "대기 중...";
-    private string _progressPercent = string.Empty;
-    private string _progressTime = "00:00 경과";
-    private string _progressSpeed = string.Empty;
     private OutputFormat _outputFormat = OutputFormat.NSP;
     private bool? _allSelected = false;
-
-    public int ProgressPct
-    {
-        get => _progressPct;
-        set
-        {
-            _progressPct = value;
-            MainViewModel.SetTaskbarProgress(_progressPct);
-            OnPropertyChanged();
-        }
-    }
-
-    public string ProgressLabel
-    {
-        get => _progressLabel;
-        set { _progressLabel = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressPercent
-    {
-        get => _progressPercent;
-        set { _progressPercent = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressTime
-    {
-        get => _progressTime;
-        set { _progressTime = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressSpeed
-    {
-        get => _progressSpeed;
-        set { _progressSpeed = value; OnPropertyChanged(); }
-    }
 
     public string OutputPath
     {
@@ -84,8 +40,10 @@ public class SplitMainViewModel : ToolTabViewModel
         set
         {
             _outputPath = value;
+
             OnPropertyChanged();
             OnPropertyChanged(nameof(OutputHintVisibility));
+
             AppConfig.Instance.OutputFolders.SwitchSplitOutputPath = value;
         }
     }
@@ -104,6 +62,7 @@ public class SplitMainViewModel : ToolTabViewModel
             if (_allSelected != value)
             {
                 _allSelected = value;
+
                 OnPropertyChanged();
             }
         }
@@ -249,6 +208,7 @@ public class SplitMainViewModel : ToolTabViewModel
         }
 
         row.Analyzed = true;
+
         row.NotifyStructureChanged();
     }
 
@@ -319,7 +279,7 @@ public class SplitMainViewModel : ToolTabViewModel
             await AnalyzeAsync(row);
 
             if (!row.Analyzed)
-                Log($"{row.Name}: 타이틀 정보를 읽지 못해 건너뜁니다.", LogLevel.Error);
+                AppendLog($"{row.Name}: 타이틀 정보를 읽지 못해 건너뜁니다.", LogLevel.Error);
         }
 
         var jobs = new List<(string FilePath, IReadOnlySet<string> TitleIds)>();
@@ -334,7 +294,7 @@ public class SplitMainViewModel : ToolTabViewModel
 
         if (jobs.Count == 0)
         {
-            Log("분리할 타이틀을 선택하세요.", LogLevel.Error);
+            AppendLog("분리할 타이틀을 선택하세요.", LogLevel.Error);
             await SoundPlayer.PlayErrorAsync();
             return;
         }
@@ -343,7 +303,7 @@ public class SplitMainViewModel : ToolTabViewModel
 
         if (string.IsNullOrEmpty(outputDir))
         {
-            Log(Res.Main_Err_NoOutput, LogLevel.Error);
+            AppendLog(Res.Main_Err_NoOutput, LogLevel.Error);
             await SoundPlayer.PlayErrorAsync();
             return;
         }
@@ -352,29 +312,31 @@ public class SplitMainViewModel : ToolTabViewModel
             Directory.CreateDirectory(outputDir);
 
         _totalSw.Restart();
+
         using (BeginWork())
         {
             try
             {
-                _cts = new CancellationTokenSource();
+                CancellationTokenSource = new CancellationTokenSource();
 
                 int resultCount = 0;
                 var progress = BuildProgressReporter();                
                 var config = AppConfig.Instance.Switch;
                 bool compress = OutputFormat is OutputFormat.NSZ or OutputFormat.XCZ;
                 bool asXci = OutputFormat is OutputFormat.XCI or OutputFormat.XCZ;
+                void Log(string msg, LogLevel level, string id) => AppendLog(msg, level);
 
                 for (int i = 0; i < jobs.Count; i++)
                 {
-                    _cts.Token.ThrowIfCancellationRequested();
-                    resultCount += await SplitService.Split(jobs[i].FilePath, outputDir, compress, config.CompressLevel, config.UseBlockMode, config.VerifyCompress, config.ForceKeyGen0, asXci, i + 1, jobs.Count, progress, Log, jobs[i].TitleIds, _cts.Token);
+                    CancellationTokenSource.Token.ThrowIfCancellationRequested();
+                    resultCount += await SplitService.Split(jobs[i].FilePath, outputDir, compress, config.CompressLevel, config.UseBlockMode, config.VerifyCompress, config.ForceKeyGen0, asXci, i + 1, jobs.Count, progress, Log, jobs[i].TitleIds, CancellationTokenSource.Token);
                 }
 
-                Log(string.Format(Res.Main_Log_AllComplete, _totalSw.Elapsed.ToString(@"mm\:ss")), LogLevel.Ok);
+                AppendLog(string.Format(Res.Main_Log_AllComplete, _totalSw.Elapsed.ToString(@"mm\:ss")), LogLevel.Ok);
 
                 if (resultCount > 0)
                 {
-                    Log(Res.Main_Msg_SplitDone);
+                    AppendLog(Res.Main_Msg_SplitDone);
                     AppConfig.Instance.OutputFolders.SwitchSplitOutputPath?.OpenFolder();
                     await SoundPlayer.PlayCompleteAsync();
                     outputDir.OpenFolder();
@@ -382,36 +344,25 @@ public class SplitMainViewModel : ToolTabViewModel
             }
             catch (OperationCanceledException)
             {
-                Log("분리가 취소되었습니다.", LogLevel.Error);
+                AppendLog("분리가 취소되었습니다.", LogLevel.Error);
                 await SoundPlayer.PlayCancelAsync();
                 ProgressPct = 0;
             }
             catch (Exception ex)
             {
-                Log($"{Res.Log_Error}: {ex.Message}", LogLevel.Error);
+                AppendLog($"{Res.Log_Error}: {ex.Message}", LogLevel.Error);
                 await SoundPlayer.PlayErrorAsync();
                 MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
             }
             finally
             {
-                _cts?.Dispose();
-                _cts = null;
+                CancellationTokenSource?.Dispose();
+
+                CancellationTokenSource = null;
                 ProgressPct = 0;
             }
         }
     }
-
-    public void Cancel() => _cts?.Cancel();
-
-    private Progress<ProgressInfo> BuildProgressReporter() =>
-        new(info => Application.Current.Dispatcher.BeginInvoke(() =>
-        {
-            ProgressPct = info.Percent;
-            ProgressLabel = info.Label;
-            ProgressPercent = $"{info.Percent}%";
-            ProgressTime = info.TimeInfo;
-            ProgressSpeed = info.Speed;
-        }));
 
     private void ExecuteOpenWorkSpace()
     {
@@ -422,6 +373,4 @@ public class SplitMainViewModel : ToolTabViewModel
 
         path.OpenFolder();
     }
-
-    public void Log(string msg, LogLevel level = LogLevel.Info, string titleId = "") => Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
 }

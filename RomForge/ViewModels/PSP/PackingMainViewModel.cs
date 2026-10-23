@@ -1,9 +1,6 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
 using RomForge.Core;
-using RomForge.Core.Models;
 using RomForge.Core.UI.Command;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
@@ -18,12 +15,6 @@ public class PackingMainViewModel : ToolTabViewModel
     private CancellationTokenSource _cts = new();
 
     private string _gameTitle = string.Empty;
-    private int _progressPct;
-    private string _progressLabel = "대기 중...";
-    private string _progressPercent = "0%";
-    private string _progressTime = "00:00 경과";
-
-    private string _progressSpeed = string.Empty;
 
     public PackingMainViewModel()
     {
@@ -64,8 +55,6 @@ public class PackingMainViewModel : ToolTabViewModel
 
     public PopsOptionsViewModel PopsOptions { get; }
 
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
-
     public ICommand RunCommand { get; }
 
     public ICommand SettingsCommand { get; }
@@ -78,41 +67,6 @@ public class PackingMainViewModel : ToolTabViewModel
         set { _gameTitle = value; OnPropertyChanged(); }
     }
 
-    public int ProgressPct
-    {
-        get => _progressPct;
-        set
-        {
-            _progressPct = value;
-            MainViewModel.SetTaskbarProgress(_progressPct);
-            OnPropertyChanged();
-        }
-    }
-
-    public string ProgressLabel
-    {
-        get => _progressLabel;
-        set { _progressLabel = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressPercent
-    {
-        get => _progressPercent;
-        set { _progressPercent = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressTime
-    {
-        get => _progressTime;
-        set { _progressTime = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressSpeed
-    {
-        get => _progressSpeed;
-        set { _progressSpeed = value; OnPropertyChanged(); }
-    }
-
     public bool CanEditPopsConfig => IsUnlocked && !Files.HasPresetConfig;
 
     public bool CanAdd => !IsLocked && Files.FileItems.Count < DiscListViewModel.MaxItems;
@@ -122,7 +76,6 @@ public class PackingMainViewModel : ToolTabViewModel
     private void OnFilesChanged(object? sender, EventArgs e)
     {
         _ = UpdateCoverArtAsync();
-
         OnPropertyChanged(nameof(CanEditPopsConfig));
         CommandManager.InvalidateRequerySuggested();
     }
@@ -131,7 +84,6 @@ public class PackingMainViewModel : ToolTabViewModel
     {
         Images.ResetAll();
         Bgm.Reset();
-
         OnPropertyChanged(nameof(CanEditPopsConfig));
     }
 
@@ -201,24 +153,6 @@ public class PackingMainViewModel : ToolTabViewModel
         }
     }
 
-    private Progress<ProgressInfo> BuildProgressReporter() =>
-        new(info =>
-        {
-            ProgressPct = info.Percent;
-            ProgressLabel = info.Label;
-            ProgressPercent = $"{info.Percent}%";
-            ProgressTime = info.TimeInfo;
-            ProgressSpeed = info.Speed;
-        });
-
-    private void CleanupTask()
-    {
-        ProgressLabel = string.Empty;
-        ProgressPercent = "0%";
-        ProgressTime = string.Empty;
-        ProgressSpeed = string.Empty;
-    }
-
     private void TryDeleteFileAndFolder(string? filePath, string? folderPath)
     {
         try
@@ -230,13 +164,5 @@ public class PackingMainViewModel : ToolTabViewModel
             AppendLog($"취소/실패 정리 작업 중 예외 발생: {ex.Message}", LogLevel.Error);
             _= SoundPlayer.PlayErrorAsync();
         }
-    }
-
-    private void AppendLog(string msg, LogLevel level = LogLevel.Info)
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
     }
 }

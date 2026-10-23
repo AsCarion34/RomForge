@@ -56,7 +56,7 @@ public class PatchMainViewModel : MultiToolTabViewModel
         }
     }
 
-    private void Cancel() => SelectedPatchVM?.Cancel();
+    public override void Cancel() => SelectedPatchVM?.Cancel();
 
     private void Clear() => SelectedPatchVM?.Clear();
 }

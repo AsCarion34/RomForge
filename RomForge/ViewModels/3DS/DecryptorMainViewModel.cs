@@ -2,7 +2,6 @@
 using _3DS.Core.IO;
 using _3DS.Core.Services;
 using Common;
-using Common.WPF.ViewModels;
 using RomForge.Core.UI.Command;
 using RomForge.Core.Models;
 using RomForge.Core.Models._3DS;
@@ -21,8 +20,6 @@ public class DecryptorMainViewModel : ToolTabViewModel
 {
     private bool _isDecrypting;
     private CancellationTokenSource _cts = new();
-
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
     public ObservableCollection<DecryptorFileItem> FileItems { get; } = [];
 
@@ -362,21 +359,5 @@ public class DecryptorMainViewModel : ToolTabViewModel
                 }
             }
         }
-    }
-
-    private void AppendLog(string msg, LogLevel level = LogLevel.Info)
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
-    }
-
-    private void ClearLog()
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Clear());
     }
 }

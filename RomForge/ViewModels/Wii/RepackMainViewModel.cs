@@ -1,16 +1,13 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
 using NSW.Core.Enums;
 using NSW.WPF.Services;
 using NSW.WPF.UI;
 using RomForge.Core;
-using RomForge.Core.Models;
 using RomForge.Core.Models.Wii;
 using RomForge.Core.Services;
 using RomForge.Core.Services.Wii;
 using RomForge.Core.UI.Command;
 using RomForge.Views;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -32,7 +29,6 @@ public class RepackMainViewModel : ToolTabViewModel
     private const int RvzCompressionLevel = 5;
     private const int RvzChunkSize = 131072;
 
-    private CancellationTokenSource _cts = new();
     private CancellationTokenSource _patchCts = new();
     private BuildMode? _currentMode;
     private bool _patchLoading;
@@ -47,13 +43,8 @@ public class RepackMainViewModel : ToolTabViewModel
     private string _inputPath = string.Empty;
     private string _patchPath = string.Empty;
     private string _outputPath = string.Empty;
-    private int _progressPct;
-    private string _progressLabel = "대기 중...";
-    private string _progressPercent = string.Empty;
-    private string _progressTime = "00:00 경과";
-    private OutputFormat _outputFormat = OutputFormat.Iso;
 
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
+    private OutputFormat _outputFormat = OutputFormat.Iso;
 
     public OutputFormat OutputFormat
     {
@@ -175,36 +166,6 @@ public class RepackMainViewModel : ToolTabViewModel
         }
     }
 
-    public int ProgressPct
-    {
-        get => _progressPct;
-        set
-        {
-            _progressPct = value;
-
-            MainViewModel.SetTaskbarProgress(_progressPct);
-            OnPropertyChanged();
-        }
-    }
-
-    public string ProgressLabel
-    {
-        get => _progressLabel;
-        set { _progressLabel = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressPercent
-    {
-        get => _progressPercent;
-        set { _progressPercent = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressTime
-    {
-        get => _progressTime;
-        set { _progressTime = value; OnPropertyChanged(); }
-    }
-
     public Visibility InputHintVisibility => string.IsNullOrEmpty(InputPath) ? Visibility.Visible : Visibility.Collapsed;
 
     public Visibility PatchHintVisibility => string.IsNullOrEmpty(PatchPath) ? Visibility.Visible : Visibility.Collapsed;
@@ -255,9 +216,9 @@ public class RepackMainViewModel : ToolTabViewModel
             _ = RefreshUnpackedFolderAsync();
     }
 
-    public void Cancel()
+    public override void Cancel()
     {
-        _cts.Cancel();
+        base.Cancel();
         _patchCts.Cancel();
     }
 
@@ -265,7 +226,7 @@ public class RepackMainViewModel : ToolTabViewModel
     {
         if (!Validate(mode, out string error))
         {
-            Log(error, LogLevel.Error);
+            AppendLog(error, LogLevel.Error);
             await SoundPlayer.PlayErrorAsync();
             return;
         }
@@ -277,11 +238,11 @@ public class RepackMainViewModel : ToolTabViewModel
         {
             try
             {
-                _cts.Dispose();
+                CancellationTokenSource?.Dispose();
 
-                _cts = new CancellationTokenSource();
+                CancellationTokenSource = new CancellationTokenSource();
 
-                await ExecuteAsync(mode, _cts.Token);
+                await ExecuteAsync(mode, CancellationTokenSource.Token);
             }
             finally
             {
@@ -320,11 +281,11 @@ public class RepackMainViewModel : ToolTabViewModel
                 void progress(double value) => SetProgress(value, $"언팩 중: {Path.GetFileName(source)}", sw);
 
                 SetProgress(0, $"언팩 중: {Path.GetFileName(source)}", sw);
-                Log($"언팩을 시작합니다. → {unpackedPath}", LogLevel.Highlight);
+                AppendLog($"언팩을 시작합니다. → {unpackedPath}", LogLevel.Highlight);
 
                 int count = await Task.Run(() => IsoUnpacker.Unpack(source, unpackedPath, progress, ct), ct);
 
-                Log($"파일 {count:N0}개를 풀었습니다.", LogLevel.Ok);
+                AppendLog($"파일 {count:N0}개를 풀었습니다.", LogLevel.Ok);
             }
             else
                 await ProduceAsync(mode, unpackedPath, sw, tempOutputs, ct);
@@ -333,19 +294,19 @@ public class RepackMainViewModel : ToolTabViewModel
             ProgressPercent = "100%";
             MainViewModel.SetTaskbarProgress(100);
 
-            Log($"완료! 총 소요: {sw.Elapsed:mm\\:ss}", LogLevel.Ok);
+            AppendLog($"완료! 총 소요: {sw.Elapsed:mm\\:ss}", LogLevel.Ok);
             await SoundPlayer.PlayCompleteAsync();
             OutputPath.OpenFolder();
         }
         catch (OperationCanceledException)
         {
-            Log("작업이 취소되었습니다.", LogLevel.Error);
+            AppendLog("작업이 취소되었습니다.", LogLevel.Error);
             await SoundPlayer.PlayCancelAsync();
             MainViewModel.SetTaskbarProgress(0);
         }
         catch (Exception ex)
         {
-            Log($"오류: {ex.Message}", LogLevel.Error);
+            AppendLog($"오류: {ex.Message}", LogLevel.Error);
             await SoundPlayer.PlayErrorAsync();
             MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
         }
@@ -423,7 +384,7 @@ public class RepackMainViewModel : ToolTabViewModel
         
         if (fromFolder)
         {
-            Log($"리팩 시작: {target}", LogLevel.Highlight);
+            AppendLog($"리팩 시작: {target}", LogLevel.Highlight);
 
             result = await Task.Run(() =>
             {
@@ -437,7 +398,7 @@ public class RepackMainViewModel : ToolTabViewModel
         }
         else
         {
-            Log($"스트리밍 기반 리팩 시작: {target}", LogLevel.Highlight);
+            AppendLog($"스트리밍 기반 리팩 시작: {target}", LogLevel.Highlight);
 
             string source = InputPath;
             IReadOnlyDictionary<string, string> replacements = overlay ?? new Dictionary<string, string>();
@@ -461,16 +422,16 @@ public class RepackMainViewModel : ToolTabViewModel
         if (_patch != null)
         {
             foreach (string warning in _patch.Warnings)
-                Log($"경고: {warning}", LogLevel.Error);
+                AppendLog($"경고: {warning}", LogLevel.Error);
         }
     }
 
     private void LogPatchEntry(PatchEntry entry)
     {
         if (entry.Applied)
-            Log($"교체: {entry.Path}", LogLevel.Info);
+            AppendLog($"교체: {entry.Path}", LogLevel.Info);
         else
-            Log($"디스크에 없음: {entry.Path}", LogLevel.Error);
+            AppendLog($"디스크에 없음: {entry.Path}", LogLevel.Error);
     }
 
     private void LogPatchResult(PatchResult result)
@@ -480,7 +441,7 @@ public class RepackMainViewModel : ToolTabViewModel
 
         int failed = result.Total - result.Applied;
 
-        Log($"패치 결과: 총 {result.Total:N0}개 중 {result.Applied:N0}개 완료, {failed:N0}개 실패", failed == 0 ? LogLevel.Ok : LogLevel.Highlight);
+        AppendLog($"패치 결과: 총 {result.Total:N0}개 중 {result.Applied:N0}개 완료, {failed:N0}개 실패", failed == 0 ? LogLevel.Ok : LogLevel.Highlight);
     }
 
     private async Task RefreshDiscAsync()
@@ -498,7 +459,7 @@ public class RepackMainViewModel : ToolTabViewModel
             catch (Exception ex)
             {
                 if (version == _discVersion)
-                    Log($"디스크 정보를 읽을 수 없습니다: {ex.Message}", LogLevel.Error);
+                    AppendLog($"디스크 정보를 읽을 수 없습니다: {ex.Message}", LogLevel.Error);
             }
         }
 
@@ -579,7 +540,7 @@ public class RepackMainViewModel : ToolTabViewModel
         {
             PatchInfo = PatchDisplay.Failed("폴더, zip, 7z, xml만 지정할 수 있습니다.");
 
-            Log($"'{Path.GetFileName(path)}'는 지원하지 않는 형식입니다 (폴더, zip, 7z, xml만 가능).", LogLevel.Error);
+            AppendLog($"'{Path.GetFileName(path)}'는 지원하지 않는 형식입니다 (폴더, zip, 7z, xml만 가능).", LogLevel.Error);
             await SoundPlayer.PlayErrorAsync();
 
             return;
@@ -624,7 +585,7 @@ public class RepackMainViewModel : ToolTabViewModel
                 _patch = patch;
 
                 RebuildPatchDisplay();
-                Log($"패치 정보를 읽었습니다: {patch.Replacements.Count}개 파일 교체, 경고 {patch.Warnings.Count}건", LogLevel.Info);
+                AppendLog($"패치 정보를 읽었습니다: {patch.Replacements.Count}개 파일 교체, 경고 {patch.Warnings.Count}건", LogLevel.Info);
             }
             catch (OperationCanceledException)
             {
@@ -635,7 +596,7 @@ public class RepackMainViewModel : ToolTabViewModel
                     PatchInfo = PatchDisplay.Failed("취소되었습니다.");
                     ProgressPct = 0;
 
-                    Log("패치 읽기가 취소되었습니다.", LogLevel.Error);
+                    AppendLog("패치 읽기가 취소되었습니다.", LogLevel.Error);
                     await SoundPlayer.PlayCancelAsync();
                 }
             }
@@ -648,7 +609,7 @@ public class RepackMainViewModel : ToolTabViewModel
                     PatchInfo = PatchDisplay.Failed(ex.Message);
 
                     MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
-                    Log($"패치를 읽을 수 없습니다: {ex.Message}", LogLevel.Error);
+                    AppendLog($"패치를 읽을 수 없습니다: {ex.Message}", LogLevel.Error);
                     await SoundPlayer.PlayErrorAsync();
                 }
             }
@@ -676,7 +637,7 @@ public class RepackMainViewModel : ToolTabViewModel
 
         if (opened == null)
         {
-            Log("비밀번호 입력이 취소되었습니다.", LogLevel.Error);
+            AppendLog("비밀번호 입력이 취소되었습니다.", LogLevel.Error);
             await SoundPlayer.PlayCancelAsync();
             return null;
         }
@@ -816,7 +777,7 @@ public class RepackMainViewModel : ToolTabViewModel
         {
             if (version == _discVersion)
             {
-                Log($"언팩 폴더 정보를 읽을 수 없습니다: {ex.Message}", LogLevel.Error);
+                AppendLog($"언팩 폴더 정보를 읽을 수 없습니다: {ex.Message}", LogLevel.Error);
                 await SoundPlayer.PlayErrorAsync();
             }
         }
@@ -893,6 +854,4 @@ public class RepackMainViewModel : ToolTabViewModel
         if (dlg.ShowDialog() == true)
             OutputPath = dlg.FolderName;
     }
-
-    private void Log(string msg, LogLevel level = LogLevel.Info) => Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
 }

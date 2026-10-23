@@ -1,5 +1,4 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
 using PBP.Core.Enums;
 using PBP.Core.Services;
 using RomForge.Core.UI.Command;
@@ -19,8 +18,6 @@ public class UnpackingMainViewModel : ToolTabViewModel
 {
     private bool _isConverting;
     private CancellationTokenSource _cts = new();
-
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
     public ObservableCollection<PbpFileItem> FileItems { get; } = [];
 
@@ -214,23 +211,5 @@ public class UnpackingMainViewModel : ToolTabViewModel
                 IsConverting = false;
             }
         }
-    }
-
-    private void AppendLog(string msg, LogLevel level = LogLevel.Info)
-    {
-        if (Application.Current?.Dispatcher == null) 
-            return;
-
-        Application.Current.Dispatcher.Invoke(() =>
-            LogEntries.Add(new LogEntry { Message = msg, Level = level })
-        );
-    }
-
-    private void ClearLog()
-    {
-        if (Application.Current?.Dispatcher == null) 
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Clear());
     }
 }

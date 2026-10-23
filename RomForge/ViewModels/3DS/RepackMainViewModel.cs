@@ -1,17 +1,14 @@
 ﻿using _3DS.Core.Crypto;
 using Common;
-using Common.WPF.ViewModels;
 using NSW.Core.Enums;
 using NSW.Core.Utils;
 using NSW.WPF.Services;
 using NSW.WPF.UI;
 using RomForge.Core;
-using RomForge.Core.Models;
 using RomForge.Core.Models._3DS;
 using RomForge.Core.Services;
 using RomForge.Core.Services._3DS;
 using RomForge.Core.UI.Command;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
@@ -20,7 +17,6 @@ namespace RomForge.ViewModels._3DS;
 
 public class RepackMainViewModel : ToolTabViewModel
 {
-    private CancellationTokenSource _cts = new();
     private CancellationTokenSource _patchCts = new();
     private BuildMode? _currentMode;
     private bool _patchLoading;
@@ -28,16 +24,10 @@ public class RepackMainViewModel : ToolTabViewModel
     private int _patchVersion;
     private readonly RepackService _service;
 
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
-
     private string _inputPath = string.Empty;
     private string _patchPath = string.Empty;
     private string _outputPath = string.Empty;
-    private int _progressPct;
-    private string _progressLabel = "대기 중...";
-    private string _progressPercent = string.Empty;
-    private string _progressTime = "00:00 경과";
-    private string _progressSpeed = string.Empty;
+
     private TitleViewModel? _romInfo;
     private PatchDisplay? _patchInfo;
     private PatchSet? _patch;
@@ -132,42 +122,6 @@ public class RepackMainViewModel : ToolTabViewModel
         }
     }
 
-    public int ProgressPct
-    {
-        get => _progressPct;
-        set
-        {
-            _progressPct = value;
-
-            MainViewModel.SetTaskbarProgress(_progressPct);
-            OnPropertyChanged();
-        }
-    }
-
-    public string ProgressLabel
-    {
-        get => _progressLabel;
-        set { _progressLabel = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressPercent
-    {
-        get => _progressPercent;
-        set { _progressPercent = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressTime
-    {
-        get => _progressTime;
-        set { _progressTime = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressSpeed
-    {
-        get => _progressSpeed;
-        set { _progressSpeed = value; OnPropertyChanged(); }
-    }
-
     public TitleViewModel? RomInfo
     {
         get => _romInfo;
@@ -214,7 +168,7 @@ public class RepackMainViewModel : ToolTabViewModel
 
     public RepackMainViewModel()
     {
-        _service = new RepackService(Log, () => PatchPath);
+        _service = new RepackService(AppendLog, () => PatchPath);
         OutputPath = string.IsNullOrWhiteSpace(AppConfig.Instance.OutputFolders.ThreeDsRepackOutputPath) ? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "output") : AppConfig.Instance.OutputFolders.ThreeDsRepackOutputPath;
         BrowseInputCommand = new RelayCommand(async _ => await BrowseInput());
         BrowsePatchFolderCommand = new RelayCommand(_ => BrowsePatchFolder());
@@ -234,7 +188,7 @@ public class RepackMainViewModel : ToolTabViewModel
     {
         if (!Validate(mode, out string error))
         {
-            Log(error, LogLevel.Error);
+            AppendLog(error, LogLevel.Error);
             await SoundPlayer.PlayErrorAsync();
             return;
         }
@@ -247,11 +201,11 @@ public class RepackMainViewModel : ToolTabViewModel
         {
             try
             {
-                _cts.Dispose();
+                CancellationTokenSource?.Dispose();
 
-                _cts = new CancellationTokenSource();
+                CancellationTokenSource = new CancellationTokenSource();
 
-                await ExecuteAsync(mode, _cts.Token);
+                await ExecuteAsync(mode, CancellationTokenSource.Token);
             }
             finally
             {
@@ -263,9 +217,9 @@ public class RepackMainViewModel : ToolTabViewModel
         }
     }
 
-    public void Cancel()
+    public override void Cancel()
     {
-        _cts.Cancel();
+        base.Cancel();
         _patchCts.Cancel();
     }
 
@@ -321,19 +275,19 @@ public class RepackMainViewModel : ToolTabViewModel
             isCompleted = true;
             ProgressPercent = "100%";
 
-            Log($"완료! 총 소요: {sw.Elapsed:mm\\:ss}", LogLevel.Ok);
+            AppendLog($"완료! 총 소요: {sw.Elapsed:mm\\:ss}", LogLevel.Ok);
             await SoundPlayer.PlayCompleteAsync();
             OutputPath.OpenFolder();
         }
         catch (OperationCanceledException)
         {
-            Log("작업이 취소되었습니다.", LogLevel.Error);
+            AppendLog("작업이 취소되었습니다.", LogLevel.Error);
             await SoundPlayer.PlayCancelAsync();
             MainViewModel.SetTaskbarProgress(0);
         }
         catch (Exception ex)
         {
-            Log($"오류: {ex.Message}", LogLevel.Error);
+            AppendLog($"오류: {ex.Message}", LogLevel.Error);
             await SoundPlayer.PlayErrorAsync();
             MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
         }
@@ -365,16 +319,6 @@ public class RepackMainViewModel : ToolTabViewModel
             }
         }
     }
-
-    private Progress<ProgressInfo> BuildProgressReporter() =>
-        new(info =>
-        {
-            ProgressPct = info.Percent;
-            ProgressLabel = info.Label;
-            ProgressPercent = $"{info.Percent}%";
-            ProgressTime = info.TimeInfo;
-            ProgressSpeed = info.Speed;
-        });
 
     private async Task RefreshRomInfoAsync()
     {
@@ -428,7 +372,7 @@ public class RepackMainViewModel : ToolTabViewModel
                 _patch = patch;
 
                 RebuildPatchDisplay();
-                Log($"패치 정보를 읽었습니다: {patch.FileCount}개 파일", LogLevel.Info);
+                AppendLog($"패치 정보를 읽었습니다: {patch.FileCount}개 파일", LogLevel.Info);
             }
             catch (OperationCanceledException)
             {
@@ -437,7 +381,7 @@ public class RepackMainViewModel : ToolTabViewModel
                     PatchInfo = PatchDisplay.Failed("취소되었습니다.");
                     ProgressPct = 0;
 
-                    Log("패치 읽기가 취소되었습니다.", LogLevel.Error);
+                    AppendLog("패치 읽기가 취소되었습니다.", LogLevel.Error);
                 }
             }
             catch (Exception ex)
@@ -446,7 +390,7 @@ public class RepackMainViewModel : ToolTabViewModel
                 {
                     PatchInfo = PatchDisplay.Failed(ex.Message);
                     MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
-                    Log($"패치를 읽을 수 없습니다: {ex.Message}", LogLevel.Error);
+                    AppendLog($"패치를 읽을 수 없습니다: {ex.Message}", LogLevel.Error);
                 }
             }
             finally
@@ -535,8 +479,6 @@ public class RepackMainViewModel : ToolTabViewModel
             OnPropertyChanged(nameof(StartEnabled));
         });
     }
-
-    private void Log(string msg, LogLevel level = LogLevel.Info) => Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
 
     private async Task BrowseInput()
     {

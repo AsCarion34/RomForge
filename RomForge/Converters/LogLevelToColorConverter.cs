@@ -13,6 +13,7 @@ public class LogLevelToColorConverter : IValueConverter
         {
             LogLevel.Ok => Brushes.LimeGreen,
             LogLevel.Highlight => Brushes.Orange,
+            LogLevel.Warning => Brushes.Gold,
             LogLevel.Error => Brushes.Tomato,
             _ => Brushes.Gray
         } : Brushes.Gray;
