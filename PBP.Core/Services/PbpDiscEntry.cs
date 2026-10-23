@@ -18,6 +18,7 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
     private readonly Stream _stream;
     private readonly long _psarOffset;
     private readonly byte[] _compressionInBuffer;
+    private long _leadOutFrames;
 
     public List<IsoBlock> IsoIndex { get; }
 
@@ -69,22 +70,24 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
         _stream.Seek(_psarOffset + PSAR_TOC_OFFSET, SeekOrigin.Begin);
         _stream.Read(buffer, 0, 0xA);
 
-        if (buffer[2] != 0xA0) 
+        if (buffer[2] != 0xA0)
             throw new Exception("Invalid TOC!");
 
         int startTrack = TocHelper.FromBinaryDecimal(buffer[7]);
 
         _stream.Read(buffer, 0, 0xA);
 
-        if (buffer[2] != 0xA1) 
+        if (buffer[2] != 0xA1)
             throw new Exception("Invalid TOC!");
 
         int endTrack = TocHelper.FromBinaryDecimal(buffer[7]);
 
         _stream.Read(buffer, 0, 0xA);
 
-        if (buffer[2] != 0xA2) 
+        if (buffer[2] != 0xA2)
             throw new Exception("Invalid TOC!");
+
+        _leadOutFrames = (TocHelper.FromBinaryDecimal(buffer[7]) * 60L + TocHelper.FromBinaryDecimal(buffer[8])) * 75 + TocHelper.FromBinaryDecimal(buffer[9]);
 
         for (var c = startTrack; c <= endTrack; c++)
         {
@@ -92,7 +95,7 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
 
             var trackNo = TocHelper.FromBinaryDecimal(buffer[2]);
 
-            if (trackNo != c) 
+            if (trackNo != c)
                 throw new Exception("Invalid TOC!");
 
             entries.Add(new TocEntry
@@ -181,7 +184,39 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
 
         mismatch = pvdSize == 0 || diff > blockTolerance;
 
+        var tocSize = GetTocIsoSize(maxSize);
+
+        if (tocSize > 0 && IsTailZero(tocSize))
+            return tocSize;
+
         return mismatch ? maxSize : pvdSize;
+    }
+
+    private uint GetTocIsoSize(uint maxSize)
+    {
+        long upper = maxSize;
+        long lower = upper - 16 * ISO_BLOCK_SIZE;
+
+        foreach (var frames in new[] { _leadOutFrames, _leadOutFrames - 150 })
+        {
+            var size = frames * ISO_BLOCK_SIZE;
+
+            if (size > lower && size <= upper)
+                return (uint)size;
+        }
+
+        return 0;
+    }
+
+    private bool IsTailZero(uint size)
+    {
+        var lastBlock = IsoIndex.Count - 1;
+        var blockStart = (long)lastBlock * 16 * ISO_BLOCK_SIZE;
+        var buffer = new byte[16 * ISO_BLOCK_SIZE];
+
+        ReadBlock(lastBlock, buffer);
+
+        return !buffer.AsSpan((int)(size - blockStart)).ContainsAnyExcept((byte)0);
     }
 
     public long EndOffset
@@ -227,7 +262,7 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (_stream != null) 
+        if (_stream != null)
             await _stream.DisposeAsync();
 
         GC.SuppressFinalize(this);
