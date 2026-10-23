@@ -16,7 +16,7 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
     public Action<uint>? ProgressEvent { get; set; }
 
     private readonly Stream _stream;
-    private readonly int _psarOffset;
+    private readonly long _psarOffset;
     private readonly byte[] _compressionInBuffer;
 
     public List<IsoBlock> IsoIndex { get; }
@@ -31,7 +31,7 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
 
     public bool IsPvdMismatch { get; }
 
-    public PbpDiscEntry(Stream stream, int psarOffset, int index)
+    public PbpDiscEntry(Stream stream, long psarOffset, int index)
     {
         _stream = stream;
         Index = index;
@@ -115,7 +115,7 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
 
         _stream.Seek(_psarOffset + PSAR_INDEX_OFFSET, SeekOrigin.Begin);
 
-        var thisOffset = (uint)_stream.Position;
+        var thisOffset = _stream.Position;
         var count = 0;
 
         while (thisOffset < _psarOffset + PSAR_ISO_OFFSET)
@@ -125,7 +125,7 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
 
             _stream.Read(dummy, 6);
 
-            thisOffset = (uint)_stream.Position;
+            thisOffset = _stream.Position;
 
             if (offset != 0 || length != 0)
             {

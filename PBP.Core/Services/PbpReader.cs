@@ -86,7 +86,7 @@ public class PbpReader
 
             Discs = [.. isoPositions
                 .Where(x => x > 0)
-                .Select((x, i) => new PbpDiscEntry(stream, psarOffset + (int)x, i + 1))];
+                .Select((x, i) => new PbpDiscEntry(stream, psarOffset + x, i + 1))];
         }
     }
 
