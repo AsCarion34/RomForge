@@ -208,6 +208,9 @@ public static class SourceArchiveExtractor
 
         if (cueEntries.Count == 1)
         {
+            if (FindSingleCueTrack(cueEntries[0], entries) is { } singleTrack)
+                return singleTrack;
+
             string cuePath = ExtractControlFile(session, cueEntries[0], tempDir, ct);
             string key = SelectCueTracks(cuePath, cueEntries[0], entries).ResolvedKey;
 
@@ -303,8 +306,24 @@ public static class SourceArchiveExtractor
         public void Report(double value) => handler(value);
     }
 
+    private static ArchiveEntryInfo? FindSingleCueTrack(ArchiveEntryInfo cueEntry, List<ArchiveEntryInfo> entries)
+    {
+        string cueDir = GetEntryDirectory(cueEntry.Key);
+        var bins = entries.Where(e => GetEntryDirectory(e.Key) == cueDir && string.Equals(Path.GetExtension(e.Key), ".bin", StringComparison.OrdinalIgnoreCase)).ToList();
+        return bins.Count == 1 ? bins[0] : null;
+    }
+
     private static ArchiveExtractResult ResolveCue(IArchiveSession session, ArchiveEntryInfo cueEntry, List<ArchiveEntryInfo> entries, string extractDir, IProgress<ProgressInfo> progress, CancellationToken ct)
     {
+        if (FindSingleCueTrack(cueEntry, entries) is { } singleTrack)
+        {
+            var extracted = ExtractEntries(session, [cueEntry, singleTrack], extractDir, progress, ct);
+
+            AlignCueFileName(extracted[cueEntry.Key], [singleTrack]);
+
+            return new ArchiveExtractResult { ResolvedPath = extracted[singleTrack.Key] };
+        }
+
         var cueExtracted = ExtractEntries(session, [cueEntry], extractDir, progress, ct);
         var (binEntries, resolvedKey) = SelectCueTracks(cueExtracted[cueEntry.Key], cueEntry, entries);
         var binExtracted = ExtractEntries(session, binEntries, extractDir, progress, ct);
@@ -345,14 +364,6 @@ public static class SourceArchiveExtractor
 
             if (match.Key is not null)
                 binEntries.Add(match);
-        }
-
-        if (binEntries.Count == 0 && referencedBins.Count == 1)
-        {
-            var sameDirBins = entries.Where(e => GetEntryDirectory(e.Key) == cueDir && string.Equals(Path.GetExtension(e.Key), ".bin", StringComparison.OrdinalIgnoreCase)).ToList();
-
-            if (sameDirBins.Count == 1)
-                binEntries.Add(sameDirBins[0]);
         }
 
         if (binEntries.Count == 0)
