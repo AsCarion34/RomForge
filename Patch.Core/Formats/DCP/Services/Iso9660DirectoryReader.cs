@@ -16,15 +16,14 @@ public static class Iso9660DirectoryReader
 
         var rootLba = BitConverter.ToUInt32(pvd, 156 + 2);
         var rootSize = BitConverter.ToUInt32(pvd, 156 + 10);
-
         var root = new Iso9660Entry
         {
             Name = string.Empty,
             IsDirectory = true,
             FullPath = string.Empty
         };
-        root.Extents.Add((rootLba, rootSize));
 
+        root.Extents.Add((rootLba, rootSize));
         ReadDirectory(sectorReader, root);
 
         return root;

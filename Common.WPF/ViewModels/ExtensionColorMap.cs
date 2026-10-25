@@ -25,6 +25,7 @@ public static class ExtensionColorMap
         var brush = new SolidColorBrush(color);
 
         brush.Freeze();
+
         Cache[hex] = brush;
 
         return brush;

@@ -1,10 +1,9 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
 using NSW.Core;
 using NSW.WPF.Services;
 using RomForge.Core;
-using RomForge.Core.Models;
 using RomForge.Core.Models.Switch;
+using RomForge.Core.Services;
 using RomForge.Core.Services.Switch;
 using RomForge.Core.UI.Command;
 using System.Collections.ObjectModel;
@@ -17,47 +16,21 @@ namespace RomForge.ViewModels.Switch;
 
 public class ConverterMainViewModel : ToolTabViewModel
 {
-    #region Fields
+    private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase) { ".nsp", ".xci", ".nsz", ".xcz" };
 
-    private CancellationTokenSource _cts = new();
-
-    private static readonly HashSet<string> SupportedExtensions =
-        new(StringComparer.OrdinalIgnoreCase) { ".nsp", ".xci", ".nsz", ".xcz" };
-
-    #endregion
-
-    #region Collections
-
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
     public ObservableCollection<ConverterFileItem> FileItems { get; } = [];
-
-    #endregion
-
-    #region Properties
 
     public Visibility HintVisibility => FileItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-    #endregion
-
-    #region Commands
-
     public ICommand RunCommand { get; }
 
-    #endregion
-
     public event Action<ConverterFileItem>? ScrollToItemRequested;
-
-    #region Constructor
 
     public ConverterMainViewModel()
     {
         RunCommand = new RelayCommand(async _ => await RunAsync(), _ => !IsLocked && FileItems.Count > 0);
-        CancelCommand = new RelayCommand(_ => _cts.Cancel(), _ => IsLocked);
+        CancelCommand = new RelayCommand(_ => CancellationTokenSource?.Cancel(), _ => IsLocked);
     }
-
-    #endregion
-
-    #region Public Methods
 
     public async Task AddPathsAsync(IEnumerable<string> paths)
     {
@@ -125,14 +98,12 @@ public class ConverterMainViewModel : ToolTabViewModel
         OnPropertyChanged(nameof(HintVisibility));
     }
 
-    #endregion
-
-    #region Private Methods
-
     private async Task RunAsync()
     {
-        _cts.Dispose();
-        _cts = new CancellationTokenSource();
+        CancellationTokenSource?.Dispose();
+
+        CancellationTokenSource = new CancellationTokenSource();
+
         ClearLog();
 
         using (BeginWork())
@@ -146,7 +117,7 @@ public class ConverterMainViewModel : ToolTabViewModel
 
                 foreach (var item in FileItems)
                 {
-                    _cts.Token.ThrowIfCancellationRequested();
+                    CancellationTokenSource.Token.ThrowIfCancellationRequested();
 
                     if (item.Status == "완료" || item.Status == "미지원")
                         continue;
@@ -156,12 +127,20 @@ public class ConverterMainViewModel : ToolTabViewModel
 
                     ScrollToItemRequested?.Invoke(item);
 
-                    var progress = new Progress<ProgressInfo>(p => { if (p.Percent > item.Progress) item.Progress = p.Percent; });
+                    var progress = new Progress<ProgressInfo>(p => 
+                    {
+                        if (p.Percent > item.Progress)
+                        {
+                            item.Progress = p.Percent;
+                            MainViewModel.SetTaskbarProgress(item.Progress);
+                        }
+                    });
                     void Log(string msg, LogLevel level, string id) => AppendLog(msg, level);
 
                     try
                     {
-                        await ConvertItemAsync(item, progress, Log, _cts.Token);
+                        await ConvertItemAsync(item, progress, Log, CancellationTokenSource.Token);
+                        MainViewModel.SetTaskbarProgress(100);
 
                         item.Progress = 100;
                         item.Status = "완료";
@@ -174,28 +153,43 @@ public class ConverterMainViewModel : ToolTabViewModel
                     catch (Exception ex)
                     {
                         AppendLog($"[{item.FileName}] 변환 실패: {ex.Message}", LogLevel.Error);
-                        item.Status = "실패";
-                        item.Progress = 0;
+                        await SoundPlayer.PlayErrorAsync();
+                        MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
+                        item.Status = "실패";                        
+                        item.Progress = 0;                        
                     }
                 }
 
-                AppendLog(
-                    cnt > 0
-                        ? $"총 {cnt}개의 작업을 성공적으로 완료했습니다."
-                        : "성공한 작업이 없습니다.",
-                    cnt > 0 ? LogLevel.Ok : LogLevel.Error);
+                if (cnt > 0)
+                {
+                    AppendLog($"총 {cnt}개의 작업을 성공적으로 완료했습니다.", LogLevel.Ok);
+                    await SoundPlayer.PlayCompleteAsync();
+                    MainViewModel.SetTaskbarProgress(100);
+                }
+                else
+                    AppendLog("성공한 작업이 없습니다.", LogLevel.Error);
             }
             catch (OperationCanceledException)
             {
                 AppendLog("작업이 취소되었습니다.", LogLevel.Error);
+                await SoundPlayer.PlayCancelAsync();
+                MainViewModel.SetTaskbarProgress(0);
+
                 foreach (var item in FileItems.Where(i => i.Status == "변환중"))
                     item.Status = "취소";
             }
             catch (Exception ex)
             {
                 AppendLog($"오류: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
+                MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
+
                 foreach (var item in FileItems.Where(i => i.Status == "변환중"))
                     item.Status = "실패";
+            }
+            finally
+            {
+                CleanupTask();
             }
         }
     }
@@ -204,42 +198,23 @@ public class ConverterMainViewModel : ToolTabViewModel
     {
         string source = item.Extension.ToLower();
         string target = item.SelectedTargetFormat.ToLower();
-
-        int compressLevel = AppConfig.Instance.Switch.CompressLevel < 3 ? 3 : AppConfig.Instance.Switch.CompressLevel;
+        var config = AppConfig.Instance.Switch;
 
         return (source, target) switch
         {
             ("nsp", "xci") => NspXciConvertService.NspToXciAsync(item.FilePath, progress, log, null, ct),
-            ("nsp", "nsz") => NspCompressService.CompressAsync(item.FilePath, compressLevel, AppConfig.Instance.Switch.VerifyCompress, AppConfig.Instance.Switch.UseBlockMode, progress, log, null, ct),
-            ("nsp", "xcz") => NspXciConvertService.NspToXczAsync(item.FilePath, compressLevel, AppConfig.Instance.Switch.VerifyCompress, AppConfig.Instance.Switch.UseBlockMode, progress, log, null, ct),
+            ("nsp", "nsz") => NspCompressService.CompressAsync(item.FilePath, config.CompressLevel, config.VerifyCompress, config.UseBlockMode, progress, log, null, ct),
+            ("nsp", "xcz") => NspXciConvertService.NspToXczAsync(item.FilePath, config.CompressLevel, config.VerifyCompress, config.UseBlockMode, progress, log, null, ct),
             ("xci", "nsp") => NspXciConvertService.XciToNspAsync(item.FilePath, progress, log, null, ct),
-            ("xci", "xcz") => XciCompressService.CompressAsync(item.FilePath, compressLevel, AppConfig.Instance.Switch.VerifyCompress, AppConfig.Instance.Switch.UseBlockMode, progress, log, null, ct),
-            ("xci", "nsz") => NspXciConvertService.XciToNszAsync(item.FilePath, compressLevel, AppConfig.Instance.Switch.VerifyCompress, AppConfig.Instance.Switch.UseBlockMode, progress, log, null, ct),
+            ("xci", "xcz") => XciCompressService.CompressAsync(item.FilePath, config.CompressLevel, config.VerifyCompress, config.UseBlockMode, progress, log, null, ct),
+            ("xci", "nsz") => NspXciConvertService.XciToNszAsync(item.FilePath, config.CompressLevel, config.VerifyCompress, config.UseBlockMode, progress, log, null, ct),
             ("nsz", "nsp") => NspCompressService.DecompressAsync(item.FilePath, progress, log, null, ct),
             ("nsz", "xci") => NspXciConvertService.NszToXciAsync(item.FilePath, progress, log, null, ct),
-            ("nsz", "xcz") => NspXciConvertService.NszToXczAsync(item.FilePath, compressLevel, AppConfig.Instance.Switch.VerifyCompress, AppConfig.Instance.Switch.UseBlockMode, progress, log, null, ct),
+            ("nsz", "xcz") => NspXciConvertService.NszToXczAsync(item.FilePath, config.CompressLevel, config.VerifyCompress, config.UseBlockMode, progress, log, null, ct),
             ("xcz", "xci") => XciCompressService.DecompressAsync(item.FilePath, progress, log, null, ct),
             ("xcz", "nsp") => NspXciConvertService.XczToNspAsync(item.FilePath, progress, log, null, ct),
-            ("xcz", "nsz") => NspXciConvertService.XczToNszAsync(item.FilePath, compressLevel, AppConfig.Instance.Switch.VerifyCompress, AppConfig.Instance.Switch.UseBlockMode, progress, log, null, ct),
+            ("xcz", "nsz") => NspXciConvertService.XczToNszAsync(item.FilePath, config.CompressLevel, config.VerifyCompress, config.UseBlockMode, progress, log, null, ct),
             _ => Task.FromException(new NotSupportedException($"{source} → {target}: 지원하지 않는 변환입니다."))
         };
     }
-
-    private void AppendLog(string msg, LogLevel level = LogLevel.Info)
-    {
-        if (Application.Current?.Dispatcher == null) 
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
-    }
-
-    private void ClearLog()
-    {
-        if (Application.Current?.Dispatcher == null) 
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Clear());
-    }
-
-    #endregion
 }

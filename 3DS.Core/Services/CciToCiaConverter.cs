@@ -253,7 +253,6 @@ public class CciToCiaConverter(KeyStore keyStore)
         byte[] meta = BuildMeta(smdhData, exheader);
 
         await output.WriteAsync(meta, ct);
-
         progress?.Report(new ProgressInfo { Percent = 100 });
     }
 
@@ -445,6 +444,7 @@ public class CciToCiaConverter(KeyStore keyStore)
 
                 await output.WriteAsync(buf.AsMemory(0, read), ct);
                 onProgress(read);
+
                 remaining -= read;
             }
         }
@@ -458,7 +458,6 @@ public class CciToCiaConverter(KeyStore keyStore)
         if (exheader != null)
         {
             exheader.AsSpan(0x40, 0x180).CopyTo(buf.AsSpan(0x000));
-
             BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(0x300), BinaryPrimitives.ReadUInt32LittleEndian(exheader.AsSpan(0x320)));
         }
 

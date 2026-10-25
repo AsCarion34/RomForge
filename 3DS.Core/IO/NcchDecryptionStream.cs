@@ -35,7 +35,9 @@ public class NcchDecryptionStream : Stream
         long savedPos = _baseStream.Position;
 
         _baseStream.Position = _ncchOffset;
+
         _baseStream.ReadExactly(headerData, 0, 0x200);
+
         _baseStream.Position = savedPos;
 
         _header = NcchHeader.Parse(headerData, 0);
@@ -62,11 +64,15 @@ public class NcchDecryptionStream : Stream
 
         byte[] exheader = new byte[0x400];
         long savedPos = _baseStream.Position;
+
         _baseStream.Position = _ncchOffset + 0x200;
+
         _baseStream.ReadExactly(exheader, 0, 0x400);
+
         _baseStream.Position = savedPos;
 
         byte[] tempCtr = (byte[])_exheaderCtr.Clone();
+
         AesCtrProcessInPlace(exheader, 0, 0x400, _primaryKey, tempCtr, 0);
 
         byte[] hash = SHA256.HashData(exheader.AsSpan(0, 0x400));
@@ -78,13 +84,16 @@ public class NcchDecryptionStream : Stream
     {
         long exefsStart = (long)_header.ExefsOffset * BlockSize;
         byte[] exefsHeader = new byte[0x200];
-
         long savedPos = _baseStream.Position;
+
         _baseStream.Position = _ncchOffset + exefsStart;
+
         _baseStream.ReadExactly(exefsHeader, 0, 0x200);
+
         _baseStream.Position = savedPos;
 
         byte[] tempCtr = (byte[])_exefsCtr.Clone();
+
         AesCtrProcessInPlace(exefsHeader, 0, 0x200, _primaryKey, tempCtr, 0);
 
         for (int i = 0; i < 8; i++)
@@ -125,6 +134,7 @@ public class NcchDecryptionStream : Stream
             return bytesRead;
 
         DecryptBufferRange(buffer, offset, currentPos, bytesRead);
+
         _position += bytesRead;
 
         return bytesRead;
@@ -136,12 +146,11 @@ public class NcchDecryptionStream : Stream
         int bytesRead;
 
         if (_baseStream is FileStream fs)
-        {
             bytesRead = await RandomAccess.ReadAsync(fs.SafeFileHandle, buffer.AsMemory(offset, count), _ncchOffset + currentPos, ct);
-        }
         else
         {
             lock (_baseStream) { _baseStream.Position = _ncchOffset + currentPos; }
+
             bytesRead = await _baseStream.ReadAsync(buffer.AsMemory(offset, count), ct);
         }
 
@@ -149,6 +158,7 @@ public class NcchDecryptionStream : Stream
             return bytesRead;
 
         DecryptBufferRange(buffer, offset, currentPos, bytesRead);
+
         _position += bytesRead;
 
         return bytesRead;
@@ -181,6 +191,7 @@ public class NcchDecryptionStream : Stream
                 for (int i = 0; i < _exeFsSectionCount; i++)
                 {
                     var section = _exeFsSections[i];
+
                     DecryptSectionIfOverlap(buffer, offset, ncchRelativePos, length, section.StartOffset, section.EndOffset, section.Key, _exefsCtr, section.CtrOffset);
                 }
             }
@@ -199,6 +210,7 @@ public class NcchDecryptionStream : Stream
         if (ncchRelativePos <= cryptoFlagPos && cryptoFlagPos < ncchRelativePos + length)
         {
             int flagOffset = (int)(cryptoFlagPos - ncchRelativePos);
+
             buffer[offset + flagOffset] |= 0x04;
         }
     }
@@ -240,7 +252,8 @@ public class NcchDecryptionStream : Stream
 
         low += (ulong)blocks;
 
-        if (low < oldLow) high++;
+        if (low < oldLow) 
+            high++;
 
         if (BitConverter.IsLittleEndian)
         {
@@ -290,10 +303,8 @@ public class NcchDecryptionStream : Stream
     private static void IncrementCtr(byte[] ctr)
     {
         for (int i = 15; i >= 0; i--)
-        {
             if (++ctr[i] != 0)
                 break;
-        }
     }
 
     private void DeriveKeys(KeyStore keyStore, out byte[] primaryKey, out byte[] secondaryKey)
@@ -308,6 +319,7 @@ public class NcchDecryptionStream : Stream
         byte[] keyYPrimary = new byte[16];
 
         Array.Copy(_header.Signature, 0, keyYPrimary, 0, 16);
+
         primaryKey = keyStore.DeriveNormalKey(0x2C, keyYPrimary);
 
         int secondarySlot = _header.SecondaryKeySlot switch

@@ -1,4 +1,6 @@
 ﻿using System.Buffers.Binary;
+using WiiGC.Core.Interfaces;
+using WiiGC.Core.Models.Wii;
 
 namespace WiiGC.Core.Services.Wii;
 
@@ -11,20 +13,24 @@ public static class IsoToWbfsConverter
     private const int WiiSectorSize = 0x8000;
     private const int SectorsPerBlock = WbfsSectorSize / WiiSectorSize;
     private const int DiscHeaderSize = 256;
-    private const long WiiSectorCount = 143432 * 2;
-    private const int BlocksPerDisc = (int)(WiiSectorCount >> (WbfsSectorShift - 15));
+    private const int BlocksPerDisc = (int)(Layout.DiscSectorCount >> (WbfsSectorShift - 15));
     private const int FreeBlockTableOffset = WbfsSectorSize - 1024;
     private const int FreeBlockTableWords = 128;
     private const int FreeBlockTableBlocks = 8191;
 
     public static void Convert(string inputPath, string outputPath, Action<double>? progress = null, CancellationToken ct = default)
     {
+        using var input = RvzInputSource.Open(inputPath);
+
+        Convert(input, outputPath, progress, ct);
+    }
+
+    internal static void Convert(IRvzInputSource input, string outputPath, Action<double>? progress = null, CancellationToken ct = default)
+    {
         bool succeeded = false;
 
         try
         {
-            using var input = RvzInputSource.Open(inputPath);
-
             Span<byte> header = stackalloc byte[0x20];
 
             if (input is WbfsSource || input.Length < DiscHeaderSize)
@@ -32,7 +38,7 @@ public static class IsoToWbfsConverter
 
             input.Read(0, header);
 
-            if (!RvzWiiWriter.IsWii(header))
+            if (!DiscHeader.IsWii(header))
                 throw new InvalidDataException("Wii ISO 파일이 아닙니다. WBFS는 Wii 디스크만 지원합니다.");
 
             long length = input.Length;
@@ -41,10 +47,8 @@ public static class IsoToWbfsConverter
             if (blockCount > BlocksPerDisc)
                 throw new InvalidDataException("Wii 디스크 최대 크기를 초과했습니다.");
 
-            bool[]? usage = WiiUsageScanner.Scan(input);
-
+            bool[]? usage = UsageScanner.Scan(input);
             using var output = File.OpenHandle(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, FileOptions.None);
-
             var wlbaTable = new ushort[BlocksPerDisc];
             byte[] buffer = new byte[WbfsSectorSize];
             byte[] discHeader = new byte[DiscHeaderSize];
@@ -56,9 +60,7 @@ public static class IsoToWbfsConverter
             {
                 ct.ThrowIfCancellationRequested();
 
-                bool used = usage is null
-                    ? ReadBlock(input, block, length, buffer)
-                    : ReadUsedSectors(input, usage, block, length, buffer);
+                bool used = usage is null ? ReadBlock(input, block, length, buffer) : ReadUsedSectors(input, usage, block, length, buffer);
 
                 if (used)
                 {
@@ -104,22 +106,13 @@ public static class IsoToWbfsConverter
 
             RandomAccess.Write(output, discInfo, HdSectorSize);
             RandomAccess.Write(output, BuildFreeBlockTable(usedBlocks), FreeBlockTableOffset);
-
             progress?.Invoke(1.0);
 
             succeeded = true;
         }
         finally
         {
-            if (!succeeded)
-            {
-                try
-                {
-                    if (File.Exists(outputPath))
-                        File.Delete(outputPath);
-                }
-                catch { }
-            }
+            OutputGuard.DeleteIfFailed(outputPath, succeeded);
         }
     }
 

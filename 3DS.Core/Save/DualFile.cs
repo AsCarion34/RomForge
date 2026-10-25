@@ -86,8 +86,11 @@ public class DualFile : IRandomAccessFile
             var selectBuf = new byte[1];
 
             _selector.Read(0, selectBuf, 0, 1);
+
             selectBuf[0] = (byte)(1 - selectBuf[0]);
+
             _selector.Write(0, selectBuf, 0, 1);
+
             _modified = 0;
         }
     }

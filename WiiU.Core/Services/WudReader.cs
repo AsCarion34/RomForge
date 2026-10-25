@@ -44,14 +44,12 @@ public sealed class WudReader : IDisposable
     {
         var reader = new WudReader(stream, leaveOpen);
         reader.Initialize();
-
         return reader;
     }
 
     private void Initialize()
     {
         long inputFileSize = _stream.Length;
-
         Span<byte> header = stackalloc byte[HeaderSize];
 
         _stream.Position = 0;
@@ -122,7 +120,6 @@ public sealed class WudReader : IDisposable
         {
             _stream.Position = offset;
             totalRead = _stream.ReadAtLeast(buffer[..length], length, false);
-
             return totalRead;
         }
 
@@ -151,23 +148,6 @@ public sealed class WudReader : IDisposable
                 break;
         }
         return totalRead;
-    }
-
-    public void ReadAll(Action<ReadOnlyMemory<byte>, long> onChunk, int chunkSize = 1 * 1024 * 1024)
-    {
-        var buffer = new byte[chunkSize];
-        long offset = 0;
-
-        while (offset < UncompressedSize)
-        {
-            int got = ReadData(buffer, offset);
-
-            if (got <= 0) 
-                break;
-
-            onChunk(buffer.AsMemory(0, got), offset);
-            offset += got;
-        }
     }
 
     public void Dispose()

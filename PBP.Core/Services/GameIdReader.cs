@@ -19,6 +19,7 @@ public static class GameIdReader
         byte[] SectorReader(uint lba)
         {
             var sector = new byte[2048];
+
             stream.Seek(isRaw ? lba * 2352 + 24 : lba * 2048, SeekOrigin.Begin);
             stream.Read(sector, 0, 2048);
 
@@ -38,6 +39,7 @@ public static class GameIdReader
     private static string ReadFromChd(string filePath)
     {
         using var wrapper = new LibChdrWrapper();
+
         wrapper.Open(filePath, ChdrOpenFlags.CHDOPEN_READ);
 
         var fileOffset = GetTrack1FileOffset(wrapper);

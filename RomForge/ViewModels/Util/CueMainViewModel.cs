@@ -1,38 +1,24 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
-using RomForge.Core.UI.Command;
-using RomForge.Core.Models;
 using RomForge.Core.Models.Util;
+using RomForge.Core.Services;
+using RomForge.Core.UI.Command;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Shell;
 
 namespace RomForge.ViewModels.Util;
 
 public class CueMainViewModel : ToolTabViewModel
 {
-    private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".bin"
-    };
-
-    #region Fields
+    private static readonly HashSet<string> SupportedExtensions = new(StringComparer.OrdinalIgnoreCase) { ".bin" };
 
     private bool _isConverting;
     private CancellationTokenSource _cts = new();
 
-    #endregion
-
-    #region Collections
-
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
     public ObservableCollection<CueFileItem> FileItems { get; } = [];
-
-    #endregion
-
-    #region Properties
 
     public bool IsConverting
     {
@@ -42,27 +28,15 @@ public class CueMainViewModel : ToolTabViewModel
 
     public Visibility HintVisibility => FileItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-    #endregion
-
-    #region Commands
-
     public ICommand RunCommand { get; }
 
-    #endregion
-
     public event Action<CueFileItem>? ScrollToItemRequested;
-
-    #region Constructor
 
     public CueMainViewModel()
     {
         RunCommand = new RelayCommand(async _ => await RunAsync(), _ => !IsConverting && FileItems.Count > 0);
         CancelCommand = new RelayCommand(_ => _cts.Cancel(), _ => IsConverting);
     }
-
-    #endregion
-
-    #region Public Methods
 
     public async Task AddPaths(IEnumerable<string> paths)
     {
@@ -108,13 +82,8 @@ public class CueMainViewModel : ToolTabViewModel
     public static string GetFileDialogFilter()
     {
         string wildcards = string.Join(";", SupportedExtensions.Select(ext => $"*{ext}"));
-
         return $"지원 파일|{wildcards}|모든 파일|*.*";
     }
-
-    #endregion
-
-    #region Private Methods
 
     private async Task RunAsync()
     {
@@ -141,11 +110,11 @@ public class CueMainViewModel : ToolTabViewModel
 
                     if (item.Status == "완료")
                         continue;
-
-                    item.Status = "대기중";
+                                        
                     item.Progress = 0;
                     item.Status = "변환중";
 
+                    MainViewModel.SetTaskbarProgress(0);
                     ScrollToItemRequested?.Invoke(item);
 
                     bool success = await Task.Run(() => ProcessSingleFile(item, _cts.Token));
@@ -155,21 +124,37 @@ public class CueMainViewModel : ToolTabViewModel
                         item.Progress = 100;
                         item.Status = "완료";
                         successCount++;
+
+                        MainViewModel.SetTaskbarProgress(100);
                     }
                     else
                     {
                         item.Progress = 0;
+
+                        MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
+                        await SoundPlayer.PlayErrorAsync();
 
                         if (item.Status == "변환중")
                             item.Status = "실패";
                     }
                 }
 
-                AppendLog($"작업 완료 (성공: {successCount} / 전체: {totalCount})", LogLevel.Highlight);
+                if (successCount > 0)
+                {
+                    AppendLog($"작업 완료 (성공: {successCount} / 전체: {totalCount})", LogLevel.Highlight);
+                    await SoundPlayer.PlayCompleteAsync();
+                    MainViewModel.SetTaskbarProgress(100);
+                }
+                else
+                    AppendLog("성공한 작업이 없습니다.", LogLevel.Error);
+
+                MainViewModel.SetTaskbarProgress(100);
             }
             catch (OperationCanceledException)
             {
                 AppendLog("작업이 취소되었습니다.", LogLevel.Error);
+                await SoundPlayer.PlayCancelAsync();
+                MainViewModel.SetTaskbarProgress(0);
 
                 foreach (var item in FileItems.Where(i => i.Status == "대기중" || i.Status == "변환중"))
                 {
@@ -180,6 +165,8 @@ public class CueMainViewModel : ToolTabViewModel
             catch (Exception ex)
             {
                 AppendLog($"오류 발생: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
+                MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
 
                 foreach (var item in FileItems.Where(i => i.Status == "변환중"))
                     item.Status = "실패";
@@ -187,6 +174,8 @@ public class CueMainViewModel : ToolTabViewModel
             finally
             {
                 IsConverting = false;
+
+                CleanupTask();
                 CommandManager.InvalidateRequerySuggested();
             }
         }
@@ -205,7 +194,6 @@ public class CueMainViewModel : ToolTabViewModel
                 item.Status = "미지원";
 
                 AppendLog($"[패스] 이미 {item.TargetName} 파일이 존재하므로 생성을 건너뜁니다. (덮어쓰기 방지)", LogLevel.Error);
-
                 return false;
             }
 
@@ -228,7 +216,6 @@ public class CueMainViewModel : ToolTabViewModel
         catch (Exception ex)
         {
             AppendLog($"[실패] {item.FileName} 처리 중 에러: {ex.Message}", LogLevel.Error);
-
             return false;
         }
     }
@@ -262,22 +249,4 @@ public class CueMainViewModel : ToolTabViewModel
             return "MODE1/2352";
         }
     }
-
-    private void AppendLog(string msg, LogLevel level = LogLevel.Info)
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
-    }
-
-    private void ClearLog()
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Clear());
-    }
-
-    #endregion
 }

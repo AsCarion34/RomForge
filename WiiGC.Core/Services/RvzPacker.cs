@@ -1,5 +1,5 @@
 using System.Buffers.Binary;
-using WiiGC.Core.Models;
+using WiiGC.Core.Models.Wii;
 
 namespace WiiGC.Core.Services;
 
@@ -54,9 +54,9 @@ internal sealed class RvzPacker
             position += zeroes;
             offset += zeroes;
 
-            long alignedNext = (offset + 1 + WiiLayout.BlockTotalSize - 1) / WiiLayout.BlockTotalSize * WiiLayout.BlockTotalSize;
+            long alignedNext = (offset + 1 + Layout.BlockTotalSize - 1) / Layout.BlockTotalSize * Layout.BlockTotalSize;
             int bytesToRead = (int)Math.Min(alignedNext - offset, total - position);
-            int offsetInBlock = (int)(offset % WiiLayout.BlockTotalSize);
+            int offsetInBlock = (int)(offset % Layout.BlockTotalSize);
             int reconstructed = _generator.GetSeed(data.Slice(position, bytesToRead), offsetInBlock, _scratchSeed);
 
             if (reconstructed > 0)

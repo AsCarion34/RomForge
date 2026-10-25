@@ -6,6 +6,7 @@ using RomForge.Core.Models.Patch;
 using SevenZip;
 using SharpCompress.Archives;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace RomForge.Core.Services.Patch;
 
@@ -123,21 +124,18 @@ public static class SourceArchiveExtractor
             if (string.Equals(Path.GetExtension(entry.Key), ".cue", StringComparison.OrdinalIgnoreCase))
             {
                 var cueResult = ResolveCue(session, entry, entries, extractDir, progress, ct);
-
                 return cueResult.ResolvedPath!;
             }
 
             if (string.Equals(Path.GetExtension(entry.Key), ".gdi", StringComparison.OrdinalIgnoreCase))
             {
                 var gdiResult = ResolveGdi(session, entry, entries, extractDir, progress, ct);
-
                 return gdiResult.ResolvedPath!;
             }
 
             if (string.Equals(Path.GetExtension(entry.Key), ".ccd", StringComparison.OrdinalIgnoreCase))
             {
                 var ccdResult = ResolveCcd(session, entry, entries, extractDir, progress, ct);
-
                 return ccdResult.ResolvedPath!;
             }
 
@@ -152,9 +150,7 @@ public static class SourceArchiveExtractor
         Task.Run(() =>
         {
             using var session = OpenSession(archivePath);
-
             var targets = PickHashTargets(session, ct, out int skipped);
-
             long totalBytes = Math.Max(1, targets.Sum(e => e.Size));
             long doneBytes = 0;
 
@@ -164,11 +160,7 @@ public static class SourceArchiveExtractor
 
                 long baseBytes = doneBytes;
                 long entrySize = target.Size;
-
-                var entryProgress = progress is null
-                    ? null
-                    : new DirectProgress(value => progress.Report((baseBytes + value * entrySize) / totalBytes));
-
+                var entryProgress = progress is null ? null : new DirectProgress(value => progress.Report((baseBytes + value * entrySize) / totalBytes));
                 var result = session.ComputeHash(target.Key, entryProgress, ct);
 
                 doneBytes += entrySize;
@@ -216,6 +208,9 @@ public static class SourceArchiveExtractor
 
         if (cueEntries.Count == 1)
         {
+            if (FindSingleCueTrack(cueEntries[0], entries) is { } singleTrack)
+                return singleTrack;
+
             string cuePath = ExtractControlFile(session, cueEntries[0], tempDir, ct);
             string key = SelectCueTracks(cuePath, cueEntries[0], entries).ResolvedKey;
 
@@ -257,7 +252,6 @@ public static class SourceArchiveExtractor
             .Where(e => !IgnoredExtensions.Contains(Path.GetExtension(e.Key), StringComparer.OrdinalIgnoreCase))
             .Where(e => !HashExcludedExtensions.Contains(Path.GetExtension(e.Key), StringComparer.OrdinalIgnoreCase))
             .ToList();
-
         var romLike = dataFiles.Where(e => RomLikeExtensions.Contains(Path.GetExtension(e.Key))).ToList();
         var pool = romLike.Count > 0 ? romLike : dataFiles;
 
@@ -285,13 +279,10 @@ public static class SourceArchiveExtractor
             if (Directory.Exists(path))
                 Directory.Delete(path, true);
         }
-        catch
-        {
-        }
+        catch { }
     }
 
-    private static List<ArchiveEntryInfo> FindByExtension(List<ArchiveEntryInfo> entries, string extension) =>
-        [.. entries.Where(e => string.Equals(Path.GetExtension(e.Key), extension, StringComparison.OrdinalIgnoreCase))];
+    private static List<ArchiveEntryInfo> FindByExtension(List<ArchiveEntryInfo> entries, string extension) => [.. entries.Where(e => string.Equals(Path.GetExtension(e.Key), extension, StringComparison.OrdinalIgnoreCase))];
 
     private static List<ArchiveEntryInfo> SelectCandidates(List<ArchiveEntryInfo> entries)
     {
@@ -315,13 +306,49 @@ public static class SourceArchiveExtractor
         public void Report(double value) => handler(value);
     }
 
+    private static ArchiveEntryInfo? FindSingleCueTrack(ArchiveEntryInfo cueEntry, List<ArchiveEntryInfo> entries)
+    {
+        string cueDir = GetEntryDirectory(cueEntry.Key);
+        var bins = entries.Where(e => GetEntryDirectory(e.Key) == cueDir && string.Equals(Path.GetExtension(e.Key), ".bin", StringComparison.OrdinalIgnoreCase)).ToList();
+        return bins.Count == 1 ? bins[0] : null;
+    }
+
     private static ArchiveExtractResult ResolveCue(IArchiveSession session, ArchiveEntryInfo cueEntry, List<ArchiveEntryInfo> entries, string extractDir, IProgress<ProgressInfo> progress, CancellationToken ct)
     {
+        if (FindSingleCueTrack(cueEntry, entries) is { } singleTrack)
+        {
+            var extracted = ExtractEntries(session, [cueEntry, singleTrack], extractDir, progress, ct);
+
+            AlignCueFileName(extracted[cueEntry.Key], [singleTrack]);
+
+            return new ArchiveExtractResult { ResolvedPath = extracted[singleTrack.Key] };
+        }
+
         var cueExtracted = ExtractEntries(session, [cueEntry], extractDir, progress, ct);
         var (binEntries, resolvedKey) = SelectCueTracks(cueExtracted[cueEntry.Key], cueEntry, entries);
         var binExtracted = ExtractEntries(session, binEntries, extractDir, progress, ct);
 
+        AlignCueFileName(cueExtracted[cueEntry.Key], binEntries);
+
         return new ArchiveExtractResult { ResolvedPath = binExtracted[resolvedKey] };
+    }
+
+    private static void AlignCueFileName(string cuePath, List<ArchiveEntryInfo> binEntries)
+    {
+        var referencedBins = ConversionSource.ParseBinsFromCue(cuePath);
+
+        if (referencedBins.Count != 1 || binEntries.Count != 1)
+            return;
+
+        string actualName = Path.GetFileName(binEntries[0].Key);
+
+        if (string.Equals(Path.GetFileName(referencedBins[0]), actualName, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        string content = File.ReadAllText(cuePath);
+        string updated = Regex.Replace(content, @"FILE\s+""[^""]+""\s+BINARY", _ => $"FILE \"{actualName}\" BINARY", RegexOptions.IgnoreCase);
+
+        File.WriteAllText(cuePath, updated);
     }
 
     private static (List<ArchiveEntryInfo> Tracks, string ResolvedKey) SelectCueTracks(string cuePath, ArchiveEntryInfo cueEntry, List<ArchiveEntryInfo> entries)
@@ -393,11 +420,9 @@ public static class SourceArchiveExtractor
     {
         string ccdDir = GetEntryDirectory(ccdEntry.Key);
         string ccdBaseName = Path.GetFileNameWithoutExtension(ccdEntry.Key);
-
         var companionEntries = entries
             .Where(e => GetEntryDirectory(e.Key) == ccdDir && string.Equals(Path.GetFileNameWithoutExtension(e.Key), ccdBaseName, StringComparison.OrdinalIgnoreCase))
             .ToList();
-
         var imgEntry = companionEntries.FirstOrDefault(e => string.Equals(Path.GetExtension(e.Key), ".img", StringComparison.OrdinalIgnoreCase));
 
         if (imgEntry.Key is null)
@@ -504,7 +529,6 @@ public static class SourceArchiveExtractor
         public RomHashResult ComputeHash(string key, IProgress<double>? progress, CancellationToken ct)
         {
             var entry = _byKey[key];
-
             using var entryStream = entry.OpenEntryStream();
 
             return RomHasher.HashStream(entryStream, entry.Size, progress, ct);
@@ -534,6 +558,7 @@ public static class SourceArchiveExtractor
                 string key = info.FileName.Replace('\\', '/');
 
                 _byKey[key] = info;
+
                 entries.Add(new ArchiveEntryInfo(key, (long)info.Size, info.IsDirectory));
             }
 

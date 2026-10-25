@@ -19,7 +19,6 @@ public partial class TistoryTab : UserControl
     public TistoryTab()
     {
         InitializeComponent();
-
         DataContextChanged += TistoryTab_DataContextChanged;
     }
 
@@ -32,15 +31,7 @@ public partial class TistoryTab : UserControl
         }
     }
 
-    private void OnScrollToItemRequested(object item)
-    {
-        Dispatcher.InvokeAsync(() =>
-        {
-            if (item != null)
-                lvFiles.ScrollIntoView(item);
-
-        }, DispatcherPriority.Background);
-    }
+    private void OnScrollToItemRequested(TistoryDownloadItem item) => Dispatcher.InvokeAsync(() => lvFiles.ScrollIntoView(item), DispatcherPriority.Background);
 
     private void TxtUrl_PreviewKeyDown(object sender, KeyEventArgs e)
     {
@@ -64,6 +55,38 @@ public partial class TistoryTab : UserControl
 
         if (dlg.ShowDialog() == true)
             ViewModel.ChangeSaveDirectory(dlg.SelectedPath);
+    }
+
+    private void TxtSaveDirectory_PreviewDragOver(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            if (e.Data.GetData(DataFormats.FileDrop) is string[] paths && paths.Length > 0 && Directory.Exists(paths[0]))
+                e.Effects = DragDropEffects.Copy;
+            else
+                e.Effects = DragDropEffects.None;
+        }
+        else
+            e.Effects = DragDropEffects.None;
+
+        e.Handled = true;
+    }
+
+    private void TxtSaveDirectory_Drop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            if (e.Data.GetData(DataFormats.FileDrop) is string[] paths && paths.Length > 0)
+            {
+                string droppedPath = paths[0];
+                string? folderPath = Directory.Exists(droppedPath) ? droppedPath : Path.GetDirectoryName(droppedPath);
+
+                if (!string.IsNullOrEmpty(folderPath) && Directory.Exists(folderPath))
+                    ViewModel?.ChangeSaveDirectory(folderPath);
+            }
+        }
+
+        e.Handled = true;
     }
 
     private void LvFiles_KeyUp(object sender, KeyEventArgs e)
@@ -105,21 +128,15 @@ public partial class TistoryTab : UserControl
 
     private void GridViewColumnHeader_Click(object sender, RoutedEventArgs e) => _sorter.HandleHeaderClick(e, lvFiles);
 
-    private void ChkAll_Checked(object sender, RoutedEventArgs e)
+    private void HeaderCheckBox_Click(object sender, RoutedEventArgs e)
     {
-        if (lvFiles.ItemsSource is IEnumerable<TistoryDownloadItem> items)
+        if (sender is CheckBox headerCheckBox && lvFiles.ItemsSource is IEnumerable<TistoryDownloadItem> items)
         {
+            bool isChecked = headerCheckBox.IsChecked == true;
             foreach (var item in items)
-                item.IsSelected = true;
-        }
-    }
-
-    private void ChkAll_Unchecked(object sender, RoutedEventArgs e)
-    {
-        if (lvFiles.ItemsSource is IEnumerable<TistoryDownloadItem> items)
-        {
-            foreach (var item in items)
-                item.IsSelected = false;
+            {
+                item.IsSelected = isChecked;
+            }
         }
     }
 }

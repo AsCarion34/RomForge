@@ -2,9 +2,8 @@ using _3DS.Core.Crypto;
 using _3DS.Core.Models;
 using _3DS.Core.Services;
 using Common;
-using Common.WPF.ViewModels;
-using RomForge.Core.Models;
 using RomForge.Core.Models._3DS;
+using RomForge.Core.Services;
 using RomForge.Core.UI.Command;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -17,22 +16,10 @@ namespace RomForge.ViewModels._3DS;
 
 public class ConverterMainViewModel : ToolTabViewModel
 {
-    #region Fields
-
     private bool _isConverting;
     private CancellationTokenSource _cts = new();
 
-    #endregion
-
-    #region Collections
-
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
-
-    public ObservableCollection<_3DSFileItem> FileItems { get; } = [];
-
-    #endregion
-
-    #region Properties
+    public ObservableCollection<FileItem> FileItems { get; } = [];
 
     public bool IsConverting
     {
@@ -42,28 +29,16 @@ public class ConverterMainViewModel : ToolTabViewModel
 
     public Visibility HintVisibility => FileItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-    #endregion
-
-    #region Commands
-
     public ICommand RunCommand { get; }
 
-    #endregion
-
-    public event Action<_3DSFileItem>? ScrollToItemRequested;
+    public event Action<FileItem>? ScrollToItemRequested;
     public event EventHandler RunNavigateCerts;
-
-    #region Constructor
 
     public ConverterMainViewModel()
     {
         RunCommand = new RelayCommand(async _ => await RunAsync(), _ => !IsConverting && FileItems.Count > 0);
         CancelCommand = new RelayCommand(_ => _cts.Cancel(), _ => IsConverting);
     }
-
-    #endregion
-
-    #region Public Methods
 
     public async Task AddPaths(IEnumerable<string> paths)
     {
@@ -80,7 +55,7 @@ public class ConverterMainViewModel : ToolTabViewModel
             try
             {
                 var result = await Task.Run(() => Core.Services._3DS.Util.ParseFile(path));
-                var vm = new _3DSFileItem(path)
+                var vm = new FileItem(path)
                 {
                     TitleId = result.Title!.TitleId,
                     ProductCode = result.ProductCode,
@@ -101,6 +76,7 @@ public class ConverterMainViewModel : ToolTabViewModel
             catch (Exception ex)
             {
                 AppendLog($"오류: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
             }
         }
 
@@ -111,7 +87,7 @@ public class ConverterMainViewModel : ToolTabViewModel
         CommandManager.InvalidateRequerySuggested();
     }
 
-    public void RemoveItems(IEnumerable<_3DSFileItem> items)
+    public void RemoveItems(IEnumerable<FileItem> items)
     {
         foreach (var item in items.ToList())
             FileItems.Remove(item);
@@ -127,10 +103,6 @@ public class ConverterMainViewModel : ToolTabViewModel
         FileItems.Clear();
         OnPropertyChanged(nameof(HintVisibility));
     }
-
-    #endregion
-
-    #region Private Methods
 
     private async Task RunAsync()
     {
@@ -165,7 +137,7 @@ public class ConverterMainViewModel : ToolTabViewModel
 
                     ScrollToItemRequested?.Invoke(item);
 
-                    var progressHandler = new Progress<ProgressInfo>(p => { item.Progress = p.Percent; });
+                    var progressHandler = new Progress<ProgressInfo>(p => { item.Progress = p.Percent; MainViewModel.SetTaskbarProgress(p.Percent); });
                     string inputExt = item.Extension;
 
                     try
@@ -180,7 +152,6 @@ public class ConverterMainViewModel : ToolTabViewModel
                                     await c.ConvertAsync(item.FilePath, progressHandler, AppendLog, null, _cts.Token);
                                 }
                                 break;
-
                             case "ZCCI":
                                 {
                                     if (inputExt == "cia")
@@ -189,7 +160,6 @@ public class ConverterMainViewModel : ToolTabViewModel
                                         await Z3dsCompressor.CompressAsync(item.FilePath, 18, progressHandler, AppendLog, null, _cts.Token);
                                 }
                                 break;
-
                             case "CCI":
                                 {
                                     if (inputExt == "zcci")
@@ -203,19 +173,22 @@ public class ConverterMainViewModel : ToolTabViewModel
                                     }
                                 }
                                 break;
-
                             default:
                                 throw new NotSupportedException("잘못된 출력 포맷 설정입니다.");
                         }
 
                         item.Progress = 100;
-                        item.Status = "완료";
+                        MainViewModel.SetTaskbarProgress(100);
+
+                        item.Status = "완료";                        
                         cnt++;
                     }
                     catch (CertsBinNotFoundException e)
                     {
                         AppendLog(e.Message, LogLevel.Error);
-                        RunNavigateCerts?.Invoke(this, EventArgs.Empty);
+                        await SoundPlayer.PlayErrorAsync();
+                        MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
+                        RunNavigateCerts?.Invoke(this, EventArgs.Empty);                        
                     }
                     catch (OperationCanceledException)
                     {
@@ -224,18 +197,29 @@ public class ConverterMainViewModel : ToolTabViewModel
                     catch (Exception ex)
                     {
                         AppendLog($"[{item.FileName}.{item.Extension}] 변환 실패: {ex.Message}", LogLevel.Error);
+                        await SoundPlayer.PlayErrorAsync();
+                        MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
 
                         item.Status = "실패";
-                        item.Progress = 0;
+                        item.Progress = 0;                        
                     }
                 }
 
-                AppendLog(cnt > 0 ? $"총 {cnt}개의 작업을 성공적으로 완료했습니다." : "성공한 작업이 없습니다.", cnt > 0 ? LogLevel.Ok : LogLevel.Error);
+                if (cnt > 0)
+                {
+                    AppendLog($"총 {cnt}개의 작업을 성공적으로 완료했습니다.", LogLevel.Ok);
+                    await SoundPlayer.PlayCompleteAsync();
+                    MainViewModel.SetTaskbarProgress(100);
+                }
+                else
+                    AppendLog("성공한 작업이 없습니다.", LogLevel.Error);
 
             }
             catch (OperationCanceledException)
             {
                 AppendLog("작업이 취소되었습니다.", LogLevel.Error);
+                await SoundPlayer.PlayCancelAsync();
+                MainViewModel.SetTaskbarProgress(0);
 
                 foreach (var item in FileItems.Where(i => i.Status == "대기중" || i.Status == "변환중"))
                     item.Status = "취소";
@@ -243,6 +227,8 @@ public class ConverterMainViewModel : ToolTabViewModel
             catch (Exception ex)
             {
                 AppendLog($"오류: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
+                MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
 
                 foreach (var item in FileItems.Where(i => i.Status == "변환중"))
                     item.Status = "실패";
@@ -250,25 +236,9 @@ public class ConverterMainViewModel : ToolTabViewModel
             finally
             {
                 IsConverting = false;
+
+                CleanupTask();
             }
         }
     }
-
-    private void AppendLog(string msg, LogLevel level = LogLevel.Info)
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
-    }
-
-    private void ClearLog()
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Clear());
-    }
-
-    #endregion
 }

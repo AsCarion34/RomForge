@@ -1,9 +1,10 @@
-﻿using Vita.Core.Cryptography;
+﻿using System.Buffers;
+using Vita.Core.Cryptography;
 using Vita.Core.Models;
 
 namespace Vita.Core.Services;
 
-public sealed class PkgSourceAccessor : IVitaSourceAccessor
+public sealed class PkgSourceAccessor : ISourceAccessor
 {
     private const string WorkBinRelativePath = "sce_sys/package/work.bin";
     private const string HeadBinRelativePath = "sce_sys/package/head.bin";
@@ -12,43 +13,39 @@ public sealed class PkgSourceAccessor : IVitaSourceAccessor
     private const string BodyBinRelativePath = "sce_sys/package/body.bin";
     private const string DigsBinRelativePath = "sce_sys/package/digs.bin";
     private const int StatBinSize = 768;
+    private const int CopyChunkSize = 1024 * 1024;
 
     private readonly FileStream _stream;
-    private readonly VitaAes128Ctr _ctr;
-    private readonly Dictionary<string, VitaPkgItem> _items;
+    private readonly Aes128Ctr _ctr;
+    private readonly Dictionary<string, PkgItem> _items;
     private readonly byte[]? _workBinBytes;
     private readonly byte[] _headBinBytes;
     private readonly byte[] _tailBinBytes;
-    private readonly VitaPkgItem? _bodyBinItem;
+    private readonly PkgItem? _bodyBinItem;
 
-    public VitaPkgHeader Header { get; }
+    public PkgHeader Header { get; }
 
-    public PkgSourceAccessor(string pkgPath, string? license = null)
-        : this(pkgPath, license, null)
-    {
-    }
+    public PkgSourceAccessor(string pkgPath, string? license = null) : this(pkgPath, license, null) { }
 
-    public PkgSourceAccessor(string pkgPath, byte[] klicensee)
-        : this(pkgPath, null, klicensee)
-    {
-    }
+    public PkgSourceAccessor(string pkgPath, byte[] klicensee) : this(pkgPath, null, klicensee) { }
 
     private PkgSourceAccessor(string pkgPath, string? license, byte[]? klicensee)
     {
         _stream = new FileStream(pkgPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        Header = VitaPkgDecryptor.ReadHeader(_stream);
-        _ctr = VitaPkgDecryptor.CreateCipher(Header);
+        Header = PkgDecryptor.ReadHeader(_stream);
+        _ctr = PkgDecryptor.CreateCipher(Header);
 
-        var items = VitaPkgDecryptor.ReadItemTable(_stream, Header, _ctr);
+        var items = PkgDecryptor.ReadItemTable(_stream, Header, _ctr);
 
         _items = items
-            .Where(i => !VitaPkgDecryptor.IsDirectory(i))
+            .Where(i => !PkgDecryptor.IsDirectory(i))
             .GroupBy(i => i.Name.Trim('/'), StringComparer.OrdinalIgnoreCase)
             .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
         if (_items.TryGetValue(DigsBinRelativePath, out var digsItem))
         {
             _bodyBinItem = digsItem;
+
             _items.Remove(DigsBinRelativePath);
         }
 
@@ -58,10 +55,10 @@ public sealed class PkgSourceAccessor : IVitaSourceAccessor
 
         _tailBinBytes = ReadRawRange(tailStart, _stream.Length - tailStart);
 
-        byte[]? resolvedKlicensee = klicensee ?? (license != null ? VitaPkgLicenseResolver.ResolveKlicensee(license, Header.ContentId) : null);
+        byte[]? resolvedKlicensee = klicensee ?? (license != null ? PkgLicenseResolver.ResolveKlicensee(license, Header.ContentId) : null);
 
         if (resolvedKlicensee != null)
-            _workBinBytes = VitaPkgLicenseResolver.BuildWorkBin(Header.ContentId, resolvedKlicensee);
+            _workBinBytes = PkgLicenseResolver.BuildWorkBin(Header.ContentId, resolvedKlicensee);
     }
 
     private byte[] ReadRawRange(long offset, long size)
@@ -169,8 +166,53 @@ public sealed class PkgSourceAccessor : IVitaSourceAccessor
         if (!_items.TryGetValue(rel, out var item))
             throw new FileNotFoundException(relativePath);
 
-        return VitaPkgDecryptor.DecryptItemData(_stream, Header, _ctr, item);
+        return PkgDecryptor.DecryptItemData(_stream, Header, _ctr, item);
     }
+
+    public void CopyTo(string relativePath, Stream destination, Action<long>? onProgress = null)
+    {
+        string rel = Normalize(relativePath);
+
+        if (IsVirtualFile(rel) || !_items.TryGetValue(rel, out var item))
+        {
+            byte[] data = ReadAllBytes(relativePath);
+
+            destination.Write(data);
+            onProgress?.Invoke(data.Length);
+            return;
+        }
+
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(CopyChunkSize);
+
+        try
+        {
+            long remaining = item.DataSize;
+            long position = 0;
+
+            _stream.Seek(Header.EncOffset + item.DataOffset, SeekOrigin.Begin);
+
+            while (remaining > 0)
+            {
+                int count = (int)Math.Min(CopyChunkSize, remaining);
+
+                _stream.ReadExactly(buffer, 0, count);
+                _ctr.XorAt(item.DataOffset / 16 + position / 16, buffer.AsSpan(0, count));
+                destination.Write(buffer, 0, count);
+                onProgress?.Invoke(count);
+
+                position += count;
+                remaining -= count;
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
+    private static bool IsVirtualFile(string rel) => rel.Equals(WorkBinRelativePath, StringComparison.OrdinalIgnoreCase) 
+        || rel.Equals(HeadBinRelativePath, StringComparison.OrdinalIgnoreCase) || rel.Equals(TailBinRelativePath, StringComparison.OrdinalIgnoreCase)
+        || rel.Equals(StatBinRelativePath, StringComparison.OrdinalIgnoreCase) || rel.Equals(BodyBinRelativePath, StringComparison.OrdinalIgnoreCase);
 
     public long GetFileSize(string relativePath)
     {
@@ -197,7 +239,7 @@ public sealed class PkgSourceAccessor : IVitaSourceAccessor
         return item.DataSize;
     }
 
-    private static string Normalize(string path) => VitaPatchShared.NormalizeZipPath(path);
+    private static string Normalize(string path) => PatchShared.NormalizeZipPath(path);
 
     public void Dispose()
     {

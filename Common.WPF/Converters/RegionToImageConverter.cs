@@ -44,9 +44,12 @@ namespace Common.WPF.Converters
                 string path = $"pack://application:,,,/Common.WPF;component/Assets/Images/{fileName}";
 
                 var img = new BitmapImage();
+
                 img.BeginInit();
+
                 img.UriSource = new Uri(path, UriKind.Absolute);
                 img.CacheOption = BitmapCacheOption.OnLoad;
+
                 img.EndInit();
                 img.Freeze();
 
@@ -58,7 +61,6 @@ namespace Common.WPF.Converters
             }
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-            => throw new NotImplementedException();
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
     }
 }

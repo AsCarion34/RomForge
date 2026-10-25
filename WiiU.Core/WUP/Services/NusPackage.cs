@@ -5,95 +5,67 @@ namespace WiiU.Core.WUP.Services
 {
     public class NUSPackage
     {
-        private Ticket ticket = null!;
-        private TMD tmd = null!;
-        private FST fst = null!;
+        public Ticket Ticket { get; set; } = null!;
 
-        private string outputdir = "output";
+        public TMD TMD { get; set; } = null!;
 
-        public Ticket GetTicket() => ticket;
+        public FST FST { get; set; } = null!;
 
-        public void SetTicket(Ticket ticket)
-        {
-            this.ticket = ticket;
-        }
+        public string Outputdir { get; set; } = "output";
 
-        public string GetOutputdir() => outputdir;
+        public Contents Contents => FST.Contents;
 
-        public void SetOutputdir(string outputdir)
-        {
-            this.outputdir = outputdir;
-        }
+        public ContentInfos ContentInfos => TMD.ContentInfos;
 
-        public TMD GetTMD() => tmd;
+        public Encryption Encryption => TMD.Encryption;
 
-        public void SetTMD(TMD tmd)
-        {
-            this.tmd = tmd;
-        }
-
-        public FST GetFST() => fst;
-
-        public void SetFST(FST fst)
-        {
-            this.fst = fst;
-        }
-
-        public Contents GetContents() => GetFST().GetContents();
-
-        public ContentInfos GetContentInfos() => GetTMD().GetContentInfos();
-
-        public void PackContents(string outputDir)
-        {
-            PackContents(outputDir, null);
-        }
-
-        public void PackContents(string outputDir, Action<Content>? onContentPacked)
-        {
-            PackContents(outputDir, onContentPacked, null);
-        }
+        public void PackContents(string outputDir, Action<Content>? onContentPacked) => PackContents(outputDir, onContentPacked, null);
 
         public void PackContents(string outputDir, Action<Content>? onContentPacked, Action<Content, string, long, long>? onContentBytesProcessed)
         {
-            if (outputDir != null && outputDir.Length != 0)
-                SetOutputdir(outputDir);
+            if (!string.IsNullOrEmpty(outputDir))
+                Outputdir = outputDir;
 
             try
             {
-                GetFST().GetContents().PackContents(outputDir!, onContentPacked, onContentBytesProcessed);
+                FST.Contents.PackContents(Outputdir, onContentPacked, onContentBytesProcessed);
             }
             catch (IOException e1)
             {
                 Debug.WriteLine(e1);
             }
 
-            Content fstContent = GetContents().GetFSTContent();
+            Content fstContent = Contents.FSTContent;
 
-            fstContent.SetHash(HashUtil.HashSHA1(GetFST().GetAsData()));
-            fstContent.SetEncryptedFileSize(GetFST().GetAsData().Length);
+            fstContent.Hash = HashUtil.HashSHA1(FST.GetAsData());
+            fstContent.EncryptedFileSize = FST.GetAsData().Length;
 
-            ContentInfo contentInfo = GetContentInfos().GetContentInfo(0);
+            ContentInfo contentInfo = ContentInfos[0];
 
-            contentInfo.SetSHA2Hash(HashUtil.HashSHA2(GetContents().GetAsData()));
-            GetTMD().UpdateContentInfoHash();
+            contentInfo.SHA2Hash = HashUtil.HashSHA2(Contents.GetAsData());
+
+            TMD.UpdateContentInfoHash();
 
             try
             {
-                using (FileStream fos = new (GetOutputdir() + "/title.tmd", FileMode.Create, FileAccess.Write))
+                using (FileStream fos = new(Path.Combine(Outputdir, "title.tmd"), FileMode.Create, FileAccess.Write))
                 {
-                    byte[] data = tmd.GetAsData();
+                    byte[] data = TMD.GetAsData();
+
                     fos.Write(data, 0, data.Length);
                 }
 
-                using (FileStream fos = new (GetOutputdir() + "/title.cert", FileMode.Create, FileAccess.Write))
+                using (FileStream fos = new(Path.Combine(Outputdir, "title.cert"), FileMode.Create, FileAccess.Write))
                 {
                     byte[] data = Cert.GetCertAsData();
+
                     fos.Write(data, 0, data.Length);
                 }
 
-                using (FileStream fos = new (GetOutputdir() + "/title.tik", FileMode.Create, FileAccess.Write))
+                using (FileStream fos = new(Path.Combine(Outputdir, "title.tik"), FileMode.Create, FileAccess.Write))
                 {
-                    byte[] data = ticket.GetAsData();
+                    byte[] data = Ticket.GetAsData();
+
                     fos.Write(data, 0, data.Length);
                 }
             }
@@ -102,7 +74,5 @@ namespace WiiU.Core.WUP.Services
                 Debug.WriteLine(e);
             }
         }
-
-        public Encryption GetEncryption() => GetTMD().GetEncryption();
     }
 }

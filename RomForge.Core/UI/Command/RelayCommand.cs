@@ -18,12 +18,14 @@ public class RelayCommand(Func<object?, Task> executeAsync, Func<object?, bool>?
             return;
 
         _isExecuting = true;
+
         CommandManager.InvalidateRequerySuggested();
 
         try { await _executeAsync(parameter); }
         finally
         {
             _isExecuting = false;
+
             CommandManager.InvalidateRequerySuggested();
         }
     }

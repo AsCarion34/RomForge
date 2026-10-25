@@ -6,23 +6,23 @@
         xmlns:patch="clr-namespace:RomForge.Controls.Patch"
         xmlns:switch="clr-namespace:RomForge.Controls.Switch"
         xmlns:wiiu="clr-namespace:RomForge.Controls.WiiU"
-        xmlns:_3ds="clr-namespace:RomForge.Controls._3DS"
         xmlns:wii="clr-namespace:RomForge.Controls.Wii"
-        xmlns:ps="clr-namespace:RomForge.Controls.PS"
+        xmlns:_3ds="clr-namespace:RomForge.Controls._3DS"        
+        xmlns:psp="clr-namespace:RomForge.Controls.PSP"
+        xmlns:psvita="clr-namespace:RomForge.Controls.PSVita"
         xmlns:util="clr-namespace:RomForge.Controls.Util"
         xmlns:settings="clr-namespace:RomForge.Controls.Settings"
         xmlns:vm="clr-namespace:RomForge.ViewModels"
         xmlns:helpers="clr-namespace:RomForge.Core.UI.Helpers;assembly=RomForge.Core"
         Title="{Binding AppVersion}"
-        Height="715" Width="900"
-        MinHeight="480" MinWidth="900"
+        Height="730" Width="900"
+        MinHeight="730" MinWidth="900"
         Background="#1E1E1E"
         AllowDrop="True"
         FontFamily="Segoe UI">
 
     <Window.TaskbarItemInfo>
-        <TaskbarItemInfo ProgressValue="{Binding TaskbarProgressValue}" 
-                         ProgressState="{Binding TaskbarProgressState}" />
+        <TaskbarItemInfo ProgressValue="{Binding TaskbarProgressValue}" ProgressState="{Binding TaskbarProgressState}" />
     </Window.TaskbarItemInfo>
     
     <Grid Cursor="">
@@ -41,7 +41,7 @@
                         <TextBlock Text="패치" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <patch:MainTab Margin="0,-5,0,0"/>
+                <patch:MainTab/>
             </TabItem>
 
             <TabItem IsEnabled="{Binding IsIdle}">
@@ -71,7 +71,7 @@
                         <TextBlock Text="Switch" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <switch:MainTab DataContext="{Binding SwitchMainVM}" Margin="0,-5,0,0"/>
+                <switch:MainTab DataContext="{Binding SwitchMainVM}"/>
             </TabItem>
 
             <TabItem IsEnabled="{Binding IsIdle}">
@@ -81,17 +81,7 @@
                         <TextBlock Text="WiiU" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <wiiu:MainTab DataContext="{Binding WiiUMainVM}" Margin="0,-5,0,0"/>
-            </TabItem>
-
-            <TabItem IsEnabled="{Binding IsIdle}">
-                <TabItem.Header>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <Image Source="/Assets/Images/3DS.png" Width="20" Height="20" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="3DS" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </TabItem.Header>
-                <_3ds:MainTab DataContext="{Binding Main3DsVM}" Margin="0,-5,0,0"/>
+                <wiiu:MainTab DataContext="{Binding WiiUMainVM}"/>
             </TabItem>
 
             <TabItem IsEnabled="{Binding IsIdle}">
@@ -101,18 +91,38 @@
                         <TextBlock Text="Wii" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <wii:MainTab DataContext="{Binding WiiMainVM}" Margin="0,-5,0,0"/>
+                <wii:MainTab DataContext="{Binding WiiMainVM}"/>
             </TabItem>
 
             <TabItem IsEnabled="{Binding IsIdle}">
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <Image Source="/Assets/Images/PS1.png" Width="20" Height="20" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="PS" VerticalAlignment="Center"/>
+                        <Image Source="/Assets/Images/3DS.png" Width="20" Height="20" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="3DS" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <ps:MainTab DataContext="{Binding PSMainVM}" Margin="0,-5,0,0"/>
+                <_3ds:MainTab DataContext="{Binding Main3DsVM}"/>
             </TabItem>
+
+            <TabItem IsEnabled="{Binding IsIdle}">
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Image Source="/Assets/Images/Vita.png" Width="20" Height="20" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="PS Vita" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </TabItem.Header>
+                <psvita:MainTab DataContext="{Binding PSVitaMainVM}"/>
+            </TabItem>
+
+            <TabItem IsEnabled="{Binding IsIdle}">
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Image Source="/Assets/Images/PSP.png" Width="20" Height="20" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                        <TextBlock Text="PSP" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </TabItem.Header>
+                <psp:MainTab DataContext="{Binding PSPMainVM}"/>
+            </TabItem>        
 
             <TabItem IsEnabled="{Binding IsIdle}">
                 <TabItem.Header>
@@ -121,7 +131,7 @@
                         <TextBlock Text="유틸" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <util:MainTab DataContext="{Binding UtilMainVM}" Margin="0,-5,0,0"/>
+                <util:MainTab DataContext="{Binding UtilMainVM}"/>
             </TabItem>
 
             <TabItem IsEnabled="{Binding IsIdle}">
@@ -131,7 +141,7 @@
                         <TextBlock Text="설정" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <settings:MainTab DataContext="{Binding Settings}"  Margin="0,-5,0,0"/>
+                <settings:MainTab DataContext="{Binding Settings}" />
             </TabItem>
 
         </TabControl>
@@ -164,7 +174,12 @@
                 </ListBox.ItemContainerStyle>
                 <ListBox.ContextMenu>
                     <ContextMenu>
-                        <MenuItem Header="복사" Click="CopyLog_Click">
+                        <MenuItem Header="로그 비우기" Click="ClearLog_Click">
+                            <MenuItem.Icon>
+                                <Image Source="/Assets/Images/Clear.png" Width="24" Height="24" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Header="로그 복사" Click="CopyLog_Click">
                             <MenuItem.Icon>
                                 <Image Source="/Assets/Images/Copy.png" Width="24" Height="24" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                             </MenuItem.Icon>

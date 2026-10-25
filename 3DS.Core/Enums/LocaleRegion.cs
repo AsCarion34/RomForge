@@ -3,11 +3,18 @@
 public enum LocaleRegion
 {
     None,
+
     JPN,
+
     USA,
+
     EUR,
+
     AUS,
+
     CHN,
+
     KOR,
+
     TWN,
 }

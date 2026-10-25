@@ -7,11 +7,11 @@ namespace CHD.Core.Services;
 
 public class ChdInfoReader
 {
-    private const uint CDROM_OLD_METADATA = 0x43484344; // 'CHCD'
-    private const uint CDROM_TRACK_METADATA = 0x43485452; // 'CHTR'
-    private const uint CDROM_TRACK_METADATA2 = 0x43485432; // 'CHT2'
-    private const uint GDROM_TRACK_METADATA = 0x43484754; // 'CHGT'
-    private const uint GDROM_OLD_METADATA = 0x43484744; // 'CHGD'
+    private const uint CDROM_OLD_METADATA = 0x43484344;
+    private const uint CDROM_TRACK_METADATA = 0x43485452;
+    private const uint CDROM_TRACK_METADATA2 = 0x43485432;
+    private const uint GDROM_TRACK_METADATA = 0x43484754;
+    private const uint GDROM_OLD_METADATA = 0x43484744;
 
     private const uint DVD_METADATA = 0x44564420;
 
@@ -123,7 +123,6 @@ public class ChdInfoReader
             int padded = (track.Frames + 4 - 1) / 4 * 4;
 
             track.ExtraFrames = padded - track.Frames;
-
             track.LogFrameOfs = 0;
 
             if (track.PgDataSize == 0)

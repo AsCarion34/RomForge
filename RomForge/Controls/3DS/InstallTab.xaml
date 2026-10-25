@@ -11,12 +11,8 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-
         <ListView x:Name="InstallListView" Grid.Row="0" Margin="5,5,5,0" Grid.ColumnSpan="2" SelectionMode="Extended" AllowDrop="True" HorizontalContentAlignment="Stretch" IsEnabled="{Binding Install.IsNotInstalling}" Visibility="{Binding Install.ListVisibility}" 
-                  Drop="InstallList_Drop"
-                  DragOver="InstallList_DragOver"
-                  KeyUp="InstallList_KeyUp"                  
-                  ContextMenuOpening="LvFiles_ContextMenuOpening">
+                  Drop="InstallList_Drop" DragOver="InstallList_DragOver" KeyUp="InstallList_KeyUp" ContextMenuOpening="LvFiles_ContextMenuOpening">
             <ListView.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="폴더 열기" Click="MenuItem_OpenFolder_Click">
@@ -37,22 +33,17 @@
                     </MenuItem>
                 </ContextMenu>
             </ListView.ContextMenu>
-
             <ListView.Template>
                 <ControlTemplate TargetType="ListView">
                     <Grid>
-                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
                             <ScrollViewer Style="{DynamicResource {x:Static GridView.GridViewScrollViewerStyleKey}}">
                                 <ItemsPresenter/>
                             </ScrollViewer>
                         </Border>
-                        <Border x:Name="DropHint" IsHitTestVisible="False"
-                                Margin="15,45,15,15"
-                                Visibility="{Binding Install.HintVisibility}">
-                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.85">
-                                <Image Source="/Assets/Images/drag.png" Width="40" Height="40" Margin="0,0,0,8"/>
+                        <Border x:Name="DropHint" IsHitTestVisible="False" Margin="15,45,15,15" Visibility="{Binding Install.HintVisibility}">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.9">
+                                <Image Source="/Assets/Images/Info.png" Width="40" Height="40" Margin="0,0,0,8"/>
                                 <TextBlock Text="파일 또는 폴더를 여기에 드래그&amp;드롭하세요" Foreground="LightGray" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
                                 <TextBlock Text="3DS 실기에 게임을 설치합니다" Foreground="#D4AF37" FontSize="13" FontWeight="Bold" Margin="0,8,0,0" HorizontalAlignment="Center"/>
                                 <ItemsControl HorizontalAlignment="Center" Margin="0,5,0,0">
@@ -97,19 +88,17 @@
                     </Grid>
                 </ControlTemplate>
             </ListView.Template>
-
             <ListView.View>
                 <GridView>
                     <GridViewColumn Width="220">
-                        <GridViewColumnHeader Tag="FileName"/>
-                        <GridViewColumn.HeaderTemplate>
-                            <DataTemplate>
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="FileName">
                                 <StackPanel Orientation="Horizontal">
-                                    <Image Source="/Common.WPF;component/Assets/Images/Title.png" Width="24" Height="24" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                    <Image Source="/Assets/Images/Cartridge.png" Width="24" Height="24" Margin="0,0,5,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="타이틀" Foreground="#BBBBBB" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
                                 </StackPanel>
-                            </DataTemplate>
-                        </GridViewColumn.HeaderTemplate>
+                            </GridViewColumnHeader>
+                        </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,5">
@@ -120,12 +109,13 @@
                                     </Border>
                                     <StackPanel VerticalAlignment="Center">
                                         <TextBlock Text="{Binding ShortDescription}" Foreground="#E8E8F0" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="260" ToolTip="{Binding FilePath}"/>
-                                        <TextBlock Text="{Binding Publisher}" Foreground="#8888A8" FontSize="11" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" MaxWidth="260"  ToolTip="{Binding FilePath}"/>
+                                        <TextBlock Text="{Binding Publisher}" Foreground="#8888A8" FontSize="11" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" MaxWidth="260" ToolTip="{Binding FilePath}"/>
                                     </StackPanel>
                                 </StackPanel>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
+
                     <GridViewColumn Width="90">
                         <GridViewColumn.Header>
                             <GridViewColumnHeader Tag="TypeLabel">
@@ -143,7 +133,13 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="제품 코드" Width="140">
+
+                    <GridViewColumn Width="140">
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="ProductCode">
+                                <TextBlock Text="제품 코드" Foreground="#BBBBBB" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                            </GridViewColumnHeader>
+                        </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel>
@@ -153,6 +149,7 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
+
                     <GridViewColumn Width="60">
                         <GridViewColumn.Header>
                             <GridViewColumnHeader Tag="RegionSortKey">
@@ -163,18 +160,20 @@
                         </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <Image Width="24" Height="24" Margin="8,0" 
-                                       Source="{Binding ProductCode, Converter={StaticResource RegionToImageConverter}}" ToolTip="{Binding Region}"/>
+                                <Image Width="24" Height="24" Margin="8,0" Source="{Binding ProductCode, Converter={StaticResource RegionToImageConverter}}" ToolTip="{Binding Region}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="언어 고정" Width="100">
+
+                    <GridViewColumn Width="100">
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="ForcedLanguage">
+                                <TextBlock Text="언어 고정" Foreground="#BBBBBB" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                            </GridViewColumnHeader>
+                        </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <ComboBox Margin="4,2"
-                                          ItemsSource="{Binding LanguageCandidates}"
-                                          SelectedItem="{Binding ForcedLanguage, Mode=TwoWay}"
-                                          ToolTip="설치 시 이 언어로 로케일을 고정합니다 (locale.txt 자동 생성). SMDH에 실제로 존재하는 언어만 표시됩니다.">
+                                <ComboBox Margin="4,2" ItemsSource="{Binding LanguageCandidates}" SelectedItem="{Binding ForcedLanguage, Mode=TwoWay}" ToolTip="설치 시 이 언어로 로케일을 고정합니다 (locale.txt 자동 생성). SMDH에 실제로 존재하는 언어만 표시됩니다.">
                                     <ComboBox.ItemTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding Converter={StaticResource LanguageLabelConverter}}" FontSize="11"/>
@@ -184,6 +183,7 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
+
                     <GridViewColumn Width="60">
                         <GridViewColumn.Header>
                             <GridViewColumnHeader Tag="Crypto">
@@ -198,41 +198,36 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
+
                     <GridViewColumn Width="90">
                         <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="FileSizeBytes"/>
-                        </GridViewColumn.Header>
-                        <GridViewColumn.HeaderTemplate>
-                            <DataTemplate>
+                            <GridViewColumnHeader Tag="FileSizeBytes">
                                 <StackPanel Orientation="Horizontal">
                                     <Image Source="/Assets/Images/FileSizeBytes.png" Width="24" Height="24" Margin="0,0,5,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="용량" Foreground="#BBBBBB" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
                                 </StackPanel>
-                            </DataTemplate>
-                        </GridViewColumn.HeaderTemplate>
+                            </GridViewColumnHeader>
+                        </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding SizeText}" Foreground="#8888A8" FontSize="12" Margin="8,0" HorizontalAlignment="Right"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
+
                     <GridViewColumn Width="100">
                         <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="Progress"/>
-                        </GridViewColumn.Header>
-                        <GridViewColumn.HeaderTemplate>
-                            <DataTemplate>
+                            <GridViewColumnHeader Tag="Progress">
                                 <StackPanel Orientation="Horizontal">
                                     <Image Source="/Assets/Images/Progress.png" Width="24" Height="24" Margin="0,0,5,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="진행률" Foreground="#BBBBBB" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
                                 </StackPanel>
-                            </DataTemplate>
-                        </GridViewColumn.HeaderTemplate>
+                            </GridViewColumnHeader>
+                        </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <Grid Margin="8,0">
-                                    <ProgressBar Value="{Binding Progress}" Maximum="100"
-                                                 Style="{StaticResource ProgressBarStyle}" Height="18"/>
+                                    <ProgressBar Value="{Binding Progress}" Maximum="100" Style="{StaticResource ProgressBarStyle}" Height="18"/>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding ProgressText}" Foreground="White" FontSize="11" FontWeight="Bold"/>
                                         <TextBlock Text="%" Foreground="White" FontSize="10" FontWeight="Bold" Margin="1,0,0,0"/>

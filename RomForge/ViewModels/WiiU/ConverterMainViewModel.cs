@@ -1,8 +1,7 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
 using RomForge.Core;
-using RomForge.Core.Models;
 using RomForge.Core.Models.WiiU;
+using RomForge.Core.Services;
 using RomForge.Core.Services.WiiU;
 using RomForge.Core.UI.Command;
 using System.Collections.ObjectModel;
@@ -16,8 +15,6 @@ namespace RomForge.ViewModels.WiiU;
 
 public class ConverterMainViewModel : ToolTabViewModel
 {
-    #region Fields
-
     private bool _isConverting;
     private CancellationTokenSource _cts = new();
     private string _outputPath;
@@ -26,17 +23,7 @@ public class ConverterMainViewModel : ToolTabViewModel
 
     private static string KeysPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "keys.txt");
 
-    #endregion
-
-    #region Collections
-
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
-
-    public ObservableCollection<WiiUFileItem> FileItems { get; } = [];
-
-    #endregion
-
-    #region Properties
+    public ObservableCollection<FileItem> FileItems { get; } = [];
 
     public bool IsConverting
     {
@@ -60,34 +47,19 @@ public class ConverterMainViewModel : ToolTabViewModel
 
     public Visibility OutputHintVisibility => string.IsNullOrEmpty(OutputPath) ? Visibility.Visible : Visibility.Collapsed;
 
-    #endregion
-
-    #region Commands
-
     public ICommand RunCommand { get; }
 
     public ICommand BrowseOutputCommand { get; }
 
-    #endregion
-
-    public event Action<WiiUFileItem>? ScrollToItemRequested;
-
-    #region Constructor
+    public event Action<FileItem>? ScrollToItemRequested;
 
     public ConverterMainViewModel()
     {
-        OutputPath = string.IsNullOrWhiteSpace(AppConfig.Instance.OutputFolders.WiiUConvertOutputPath)
-            ? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "output")
-            : AppConfig.Instance.OutputFolders.WiiUConvertOutputPath;
-
+        OutputPath = string.IsNullOrWhiteSpace(AppConfig.Instance.OutputFolders.WiiUConvertOutputPath) ? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "output") : AppConfig.Instance.OutputFolders.WiiUConvertOutputPath;
         RunCommand = new RelayCommand(async _ => await RunAsync(), _ => !IsConverting && FileItems.Count > 0);
         CancelCommand = new RelayCommand(_ => _cts.Cancel(), _ => IsConverting);
         BrowseOutputCommand = new RelayCommand(async _ => await BrowseOutput());
     }
-
-    #endregion
-
-    #region Public Methods
 
     public async Task AddPaths(IEnumerable<string> paths)
     {
@@ -99,18 +71,12 @@ public class ConverterMainViewModel : ToolTabViewModel
             if (Directory.Exists(path))
             {
                 if (IsGameFolder(path))
-                {
                     resolvedPaths.Add(path);
-                }
                 else
-                {
                     CollectValidPaths(path, resolvedPaths);
-                }
             }
             else if (File.Exists(path))
-            {
                 resolvedPaths.Add(path);
-            }
         }
 
         foreach (var path in resolvedPaths)
@@ -123,7 +89,7 @@ public class ConverterMainViewModel : ToolTabViewModel
             if (!existing.Add(path))
                 continue;
 
-            var item = new WiiUFileItem(path);
+            var item = new FileItem(path);
 
             if (item.SelectedTargetFormat == "미지원")
                 continue;
@@ -140,13 +106,11 @@ public class ConverterMainViewModel : ToolTabViewModel
         CommandManager.InvalidateRequerySuggested();
     }
 
-    private bool IsGameFolder(string dir)
+    private static bool IsGameFolder(string dir)
     {
         try
         {
-            return Directory.Exists(Path.Combine(dir, "code")) ||
-                   Directory.Exists(Path.Combine(dir, "meta")) ||
-                   Directory.Exists(Path.Combine(dir, "content"));
+            return Directory.Exists(Path.Combine(dir, "code")) || Directory.Exists(Path.Combine(dir, "meta")) || Directory.Exists(Path.Combine(dir, "content"));
         }
         catch
         {
@@ -154,39 +118,29 @@ public class ConverterMainViewModel : ToolTabViewModel
         }
     }
 
-    private void CollectValidPaths(string currentDir, List<string> results)
+    private static void CollectValidPaths(string currentDir, List<string> results)
     {
         try
         {
             foreach (var file in Directory.GetFiles(currentDir))
             {
                 if (SupportedExtensions.Contains(Path.GetExtension(file).ToLowerInvariant()))
-                {
                     results.Add(file);
-                }
             }
 
             foreach (var subDir in Directory.GetDirectories(currentDir))
             {
                 if (IsGameFolder(subDir))
-                {
                     results.Add(subDir);
-                }
                 else
-                {
                     CollectValidPaths(subDir, results);
-                }
             }
         }
-        catch (UnauthorizedAccessException)
-        {
-        }
-        catch (Exception)
-        {
-        }
+        catch (UnauthorizedAccessException) { }
+        catch (Exception) { }
     }
 
-    public void RemoveItems(IEnumerable<WiiUFileItem> items)
+    public void RemoveItems(IEnumerable<FileItem> items)
     {
         foreach (var item in items.ToList())
             FileItems.Remove(item);
@@ -203,11 +157,7 @@ public class ConverterMainViewModel : ToolTabViewModel
         OnPropertyChanged(nameof(HintVisibility));
     }
 
-    #endregion
-
-    #region Private Methods
-
-    private static async Task LoadMetadataAsync(WiiUFileItem item)
+    private static async Task LoadMetadataAsync(FileItem item)
     {
         try
         {
@@ -215,29 +165,23 @@ public class ConverterMainViewModel : ToolTabViewModel
             {
                 await Task.Run(() =>
                 {
-                    using ITitleSource source = item.Extension == "wup"
-                        ? new WupTitleSource(item.FilePath)
-                        : new FolderTitleSource(item.FilePath);
-
+                    using ITitleSource source = item.Extension == "wup" ? new WupTitleSource(item.FilePath) : new FolderTitleSource(item.FilePath);
                     item.TitleIdHex = source.TitleIdHex;
                     item.TitleVersion = source.TitleVersion;
-
-                    var meta = item.Extension == "wup"
-                        ? WiiUMetadataExtractor.ExtractFromTitleSource(source)
-                        : WiiUMetadataExtractor.ExtractFromFolder(item.FilePath);
+                    var meta = item.Extension == "wup" ? MetadataExtractor.ExtractFromTitleSource(source) : MetadataExtractor.ExtractFromFolder(item.FilePath);
 
                     ApplyMetadata(item, meta);
                 });
             }
             else
             {
-                var meta = await WiiUMetadataExtractor.Extract(item.FilePath, KeysPath);
+                var meta = await MetadataExtractor.Extract(item.FilePath, KeysPath);
 
                 ApplyMetadata(item, meta);
 
                 await Task.Run(() =>
                 {
-                    var sources = WiiUConverter.OpenSources(item.FilePath, KeysPath);
+                    var sources = Converter.OpenSources(item.FilePath, KeysPath);
 
                     try
                     {
@@ -258,7 +202,7 @@ public class ConverterMainViewModel : ToolTabViewModel
         catch { }
     }
 
-    private static void ApplyMetadata(WiiUFileItem item, ExtractorMetadata? meta)
+    private static void ApplyMetadata(FileItem item, ExtractorMetadata? meta)
     {
         if (meta is null)
             return;
@@ -277,8 +221,10 @@ public class ConverterMainViewModel : ToolTabViewModel
             var bitmap = new BitmapImage();
 
             bitmap.BeginInit();
+
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
             bitmap.StreamSource = ms;
+
             bitmap.EndInit();
             bitmap.Freeze();
 
@@ -295,12 +241,14 @@ public class ConverterMainViewModel : ToolTabViewModel
         if (string.IsNullOrEmpty(OutputPath))
         {
             AppendLog("출력 폴더를 선택하세요.", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             return;
         }
 
         IsConverting = true;
 
         _cts.Dispose();
+
         _cts = new CancellationTokenSource();
 
         ClearLog();
@@ -311,7 +259,7 @@ public class ConverterMainViewModel : ToolTabViewModel
             {
                 Directory.CreateDirectory(OutputPath);
 
-                await Task.Run(() =>
+                await Task.Run(async () =>
                 {
                     int totalCount = FileItems.Count;
 
@@ -328,6 +276,7 @@ public class ConverterMainViewModel : ToolTabViewModel
 
                         item.Status = "대기중";
                         item.Progress = 0;
+                        MainViewModel.SetTaskbarProgress(0);
                         item.Status = "변환중";
 
                         ScrollToItemRequested?.Invoke(item);
@@ -337,6 +286,7 @@ public class ConverterMainViewModel : ToolTabViewModel
                             ConvertOne(item, _cts.Token);
 
                             item.Progress = 100;
+                            MainViewModel.SetTaskbarProgress(100);
                             item.Status = "완료";
                             cnt++;
                         }
@@ -347,25 +297,36 @@ public class ConverterMainViewModel : ToolTabViewModel
                         catch (Exception ex)
                         {
                             AppendLog($"[{item.FileName}] 변환 실패: {ex.Message}", LogLevel.Error);
-
+                            MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
                             item.Status = "실패";
-                            item.Progress = 0;
+                            item.Progress = 0;                            
                         }
                     }
 
-                    AppendLog(cnt > 0 ? $"총 {cnt}개의 작업을 성공적으로 완료했습니다." : "성공한 작업이 없습니다.", cnt > 0 ? LogLevel.Ok : LogLevel.Error);
+                    if (cnt > 0)
+                    {
+                        AppendLog($"총 {cnt}개의 작업을 성공적으로 완료했습니다.", LogLevel.Ok);
+                        await SoundPlayer.PlayCompleteAsync();
+                        MainViewModel.SetTaskbarProgress(100);
+                    }
+                    else
+                        AppendLog("성공한 작업이 없습니다.", LogLevel.Error);
+
                 }, _cts.Token);
             }
             catch (OperationCanceledException)
             {
                 AppendLog("작업이 취소되었습니다.", LogLevel.Error);
-
+                await SoundPlayer.PlayCancelAsync();
+                MainViewModel.SetTaskbarProgress(0);
                 foreach (var item in FileItems.Where(i => i.Status is "대기중" or "변환중"))
                     item.Status = "취소";
             }
             catch (Exception ex)
             {
                 AppendLog($"오류: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
+                MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
 
                 foreach (var item in FileItems.Where(i => i.Status == "변환중"))
                     item.Status = "실패";
@@ -373,13 +334,15 @@ public class ConverterMainViewModel : ToolTabViewModel
             finally
             {
                 IsConverting = false;
+
+                CleanupTask();
             }
         }
     }
 
-    private void ConvertOne(WiiUFileItem item, CancellationToken ct)
+    private void ConvertOne(FileItem item, CancellationToken ct)
     {
-        var sources = WiiUConverter.OpenSources(item.FilePath, KeysPath);
+        var sources = Converter.OpenSources(item.FilePath, KeysPath);
 
         try
         {
@@ -391,7 +354,7 @@ public class ConverterMainViewModel : ToolTabViewModel
                 ct.ThrowIfCancellationRequested();
 
                 var source = sources[i];
-                string outputName = WiiUConverter.BuildOutputName(source, item.TitleName);
+                string outputName = Converter.BuildOutputName(source, item.TitleName);
 
                 void OnFileProgress(int done, int totalFiles, string label)
                 {
@@ -404,21 +367,21 @@ public class ConverterMainViewModel : ToolTabViewModel
                     case "WUP":
                         {
                             string outFolder = Utils.GetUniqueFolderPath(Path.Combine(outputRoot, $"{outputName} [WUP]"));
-                            WiiUConverter.ConvertToWup(source, outFolder, OnFileProgress, ct);
+                            Converter.ConvertToWup(source, outFolder, OnFileProgress, ct);
                             break;
                         }
 
                     case "Loadiine":
                         {
                             string outFolder = Utils.GetUniqueFolderPath(Path.Combine(outputRoot, $"{outputName} [Loadiine]"));
-                            WiiUConverter.ConvertToLoadiine(source, outFolder, OnFileProgress, ct);
+                            Converter.ConvertToLoadiine(source, outFolder, OnFileProgress, ct);
                             break;
                         }
 
                     case "WUA":
                         {
                             string outFile = Utils.GetUniqueFilePath(Path.Combine(outputRoot, $"{outputName}.wua"));
-                            WiiUConverter.ConvertToWua(source, outFile, OnFileProgress, ct);
+                            Converter.ConvertToWua(source, outFile, OnFileProgress, ct);
                             break;
                         }
 
@@ -434,22 +397,6 @@ public class ConverterMainViewModel : ToolTabViewModel
         }
     }
 
-    private void AppendLog(string msg, LogLevel level = LogLevel.Info)
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
-    }
-
-    private void ClearLog()
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Clear());
-    }
-
     private async Task BrowseOutput()
     {
         var dlg = new Microsoft.Win32.OpenFolderDialog { Title = "출력 폴더 선택" };
@@ -459,6 +406,4 @@ public class ConverterMainViewModel : ToolTabViewModel
 
         await Task.CompletedTask;
     }
-
-    #endregion
 }

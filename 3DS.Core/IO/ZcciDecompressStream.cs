@@ -32,6 +32,7 @@ public class ZcciDecompressStream : Stream
         foreach (var e in entries)
         {
             _blocks.Add((offset, (int)e.CompressedSize, (int)e.DecompressedSize));
+
             offset += e.CompressedSize;
         }
 
@@ -65,6 +66,7 @@ public class ZcciDecompressStream : Stream
                     blockIndex = i;
                     break;
                 }
+
                 decompPos += _blocks[i].decompSize;
                 blockIndex = i + 1;
             }
@@ -82,10 +84,15 @@ public class ZcciDecompressStream : Stream
                 {
                     _base.Position = compOffset;
                     _base.ReadExactly(compBuf, 0, compSize);
+
                     using var decompressor = new Decompressor();
+
                     decompressor.Unwrap(compBuf.AsSpan(0, compSize), decompBuf.AsSpan(0, decompSize));
                 }
-                finally { ArrayPool<byte>.Shared.Return(compBuf); }
+                finally 
+                { 
+                    ArrayPool<byte>.Shared.Return(compBuf); 
+                }
 
                 _cachedBlock = decompBuf;
                 _cachedBlockIndex = blockIndex;
@@ -100,6 +107,7 @@ public class ZcciDecompressStream : Stream
             int canRead = Math.Min(count - totalRead, _cachedBlock!.Length - blockOffset);
 
             Buffer.BlockCopy(_cachedBlock, blockOffset, buffer, offset + totalRead, canRead);
+
             totalRead += canRead;
             _position += canRead;
         }

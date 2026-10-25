@@ -1,5 +1,4 @@
-﻿using _3DS.Core.Models;
-using Common;
+﻿using Common;
 using System.Buffers;
 
 namespace _3DS.Core.Services;
@@ -37,12 +36,17 @@ public static class Z3dsDecompressor
                 }, ct);
 
             isCompleted = true;
+
             log?.Invoke($"해제 완료: {outputPath}", LogLevel.Ok);
         }
         finally
         {
             if (!isCompleted && !string.IsNullOrEmpty(outputPath) && File.Exists(outputPath))
-                try { File.Delete(outputPath); } catch { }
+                try 
+                { 
+                    File.Delete(outputPath); 
+                } 
+                catch { }
         }
     }
 
@@ -75,7 +79,6 @@ public static class Z3dsDecompressor
                 int unwrapSize = decompressor.Unwrap(compressedBuf.AsSpan(0, (int)entry.CompressedSize), decompressedBuf.AsSpan(0, (int)entry.DecompressedSize));
 
                 await output.WriteAsync(decompressedBuf.AsMemory(0, unwrapSize), ct);
-
                 onProgress?.Invoke(unwrapSize);
             }
             finally

@@ -2,7 +2,6 @@
 using _3DS.Core.IO;
 using _3DS.Core.Services;
 using Common;
-using Common.WPF.ViewModels;
 using RomForge.Core.UI.Command;
 using RomForge.Core.Models;
 using RomForge.Core.Models._3DS;
@@ -13,27 +12,16 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using RomForge.Core.Services;
 
 namespace RomForge.ViewModels._3DS;
 
 public class DecryptorMainViewModel : ToolTabViewModel
 {
-    #region Fields
-
     private bool _isDecrypting;
     private CancellationTokenSource _cts = new();
 
-    #endregion
-
-    #region Collections
-
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
-
     public ObservableCollection<DecryptorFileItem> FileItems { get; } = [];
-
-    #endregion
-
-    #region Properties
 
     public bool IsDecrypting
     {
@@ -43,17 +31,9 @@ public class DecryptorMainViewModel : ToolTabViewModel
 
     public Visibility HintVisibility => FileItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-    #endregion
-
-    #region Commands
-
     public ICommand RunCommand { get; }
 
-    #endregion
-
     public event Action<DecryptorFileItem>? ScrollToItemRequested;
-
-    #region Constructor
 
     public DecryptorMainViewModel()
     {
@@ -61,15 +41,11 @@ public class DecryptorMainViewModel : ToolTabViewModel
         CancelCommand = new RelayCommand(_ => _cts.Cancel(), _ => IsDecrypting);
     }
 
-    #endregion
-
-    #region Public Methods
-
     public async Task AddPaths(IEnumerable<string> paths)
     {
         var existing = FileItems.Select(f => f.FilePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var path in Common.Utils.ExpandPaths(paths))
+        foreach (var path in Utils.ExpandPaths(paths))
         {
             string ext = Path.GetExtension(path).TrimStart('.').ToLowerInvariant();
 
@@ -94,7 +70,9 @@ public class DecryptorMainViewModel : ToolTabViewModel
                 if (result?.IconPixels is not null)
                 {
                     var bitmap = BitmapSource.Create(48, 48, 96, 96, PixelFormats.Bgr32, null, result.IconPixels, 48 * 4);
+
                     bitmap.Freeze();
+
                     vm.Icon = bitmap;
                 }
 
@@ -106,6 +84,7 @@ public class DecryptorMainViewModel : ToolTabViewModel
             catch (Exception ex)
             {
                 AppendLog($"오류: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
             }
         }
 
@@ -130,15 +109,14 @@ public class DecryptorMainViewModel : ToolTabViewModel
         OnPropertyChanged(nameof(HintVisibility));
     }
 
-    #endregion
-
-    #region Private Methods
-
     private async Task RunAsync()
     {
         IsDecrypting = true;
+
         _cts.Dispose();
+
         _cts = new CancellationTokenSource();
+
         ClearLog();
 
         using (BeginWork())
@@ -161,7 +139,9 @@ public class DecryptorMainViewModel : ToolTabViewModel
                     if (!item.Crypto)
                     {
                         AppendLog($"[{item.FileName}] 이미 복호화된 파일입니다.", LogLevel.Info);
+
                         item.Status = "미지원";
+
                         continue;
                     }
 
@@ -176,6 +156,7 @@ public class DecryptorMainViewModel : ToolTabViewModel
                     try
                     {
                         await DecryptAsync(item, outputPath, _cts.Token);
+                        MainViewModel.SetTaskbarProgress(100);
 
                         item.Progress = 100;
                         item.Status = "완료";
@@ -184,14 +165,16 @@ public class DecryptorMainViewModel : ToolTabViewModel
                     catch (OperationCanceledException)
                     {
                         DeletePartialOutput(outputPath);
-
+                        MainViewModel.SetTaskbarProgress(0);
                         throw;
                     }
                     catch (Exception ex)
                     {
                         AppendLog($"[{item.FileName}] 복호화 실패: {ex.Message}", LogLevel.Error);
+                        await SoundPlayer.PlayErrorAsync();
+                        MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
 
-                        item.Status = "실패";
+                        item.Status = "실패";                        
                         item.Progress = 0;
 
                         DeletePartialOutput(outputPath);
@@ -199,13 +182,18 @@ public class DecryptorMainViewModel : ToolTabViewModel
                 }
 
                 if (cnt > 0)
+                {
                     AppendLog($"총 {cnt}개의 작업을 성공적으로 완료했습니다.", LogLevel.Ok);
+                    await SoundPlayer.PlayCompleteAsync();
+                    MainViewModel.SetTaskbarProgress(100);
+                }
                 else
                     AppendLog("성공한 작업이 없습니다.", LogLevel.Error);
             }
             catch (OperationCanceledException)
             {
                 AppendLog("작업이 취소되었습니다.", LogLevel.Error);
+                await SoundPlayer.PlayCancelAsync();
 
                 foreach (var item in FileItems.Where(i => i.Status is "대기중" or "복호화중"))
                     item.Status = "취소";
@@ -213,6 +201,7 @@ public class DecryptorMainViewModel : ToolTabViewModel
             catch (Exception ex)
             {
                 AppendLog($"오류: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
 
                 foreach (var item in FileItems.Where(i => i.Status == "복호화중"))
                     item.Status = "실패";
@@ -220,6 +209,8 @@ public class DecryptorMainViewModel : ToolTabViewModel
             finally
             {
                 IsDecrypting = false;
+
+                CleanupTask();
             }
         }
     }
@@ -256,6 +247,7 @@ public class DecryptorMainViewModel : ToolTabViewModel
             await using var outputStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, useAsync: true);
 
             await outputStream.WriteAsync(ncsdBuf, ct);
+
             written += ncsdBuf.Length;
 
             const int MediaUnit = 0x200;
@@ -310,6 +302,7 @@ public class DecryptorMainViewModel : ToolTabViewModel
                         remaining -= toRead;
                         written += toRead;
                         item.Progress = totalBytes > 0 ? (int)(written * 100 / totalBytes) : 0;
+                        MainViewModel.SetTaskbarProgress(item.Progress);
                     }
                 }
 
@@ -325,6 +318,8 @@ public class DecryptorMainViewModel : ToolTabViewModel
 
                     written += bytesRead;
                     item.Progress = totalBytes > 0 ? (int)(written * 100 / totalBytes) : 0;
+
+                    MainViewModel.SetTaskbarProgress(item.Progress);
                 }
             }
         }
@@ -348,6 +343,7 @@ public class DecryptorMainViewModel : ToolTabViewModel
                     while (remaining > 0)
                     {
                         ct.ThrowIfCancellationRequested();
+
                         int toRead = (int)Math.Min(buf.Length, remaining);
                         int bytesRead = await contentStream.ReadAsync(buf.AsMemory(0, toRead), ct);
 
@@ -355,30 +351,15 @@ public class DecryptorMainViewModel : ToolTabViewModel
                             break;
 
                         await outputStream.WriteAsync(buf.AsMemory(0, bytesRead), ct);
+
                         written += bytesRead;
                         remaining -= bytesRead;
                         item.Progress = totalBytes > 0 ? (int)(written * 100 / totalBytes) : 0;
+
+                        MainViewModel.SetTaskbarProgress(item.Progress);
                     }
                 }
             }
         }
     }
-
-    private void AppendLog(string msg, LogLevel level = LogLevel.Info)
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
-    }
-
-    private void ClearLog()
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Clear());
-    }
-
-    #endregion
 }

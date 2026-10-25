@@ -13,14 +13,13 @@ namespace RomForge.Controls.Switch;
 
 public partial class ConverterTab : UserControl
 {
-    private ConverterMainViewModel? ViewModel => DataContext as ConverterMainViewModel;
+    private ConverterMainViewModel ViewModel => (ConverterMainViewModel)DataContext;
 
     private readonly ListViewColumnSorter _sorter = new();
 
     public ConverterTab()
     {
         InitializeComponent();
-
         DataContextChanged += ConverterTab_DataContextChanged;
     }
 

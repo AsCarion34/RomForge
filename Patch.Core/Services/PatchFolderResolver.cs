@@ -13,6 +13,7 @@ public static class PatchFolderResolver
             return direct;
 
         var queue = new Queue<string>();
+
         queue.Enqueue(patchRoot);
 
         while (queue.Count > 0)
@@ -40,9 +41,7 @@ public static class PatchFolderResolver
         if (string.IsNullOrEmpty(startPath))
             return null;
 
-        var dir = Directory.Exists(startPath)
-            ? new DirectoryInfo(startPath)
-            : new DirectoryInfo(startPath).Parent;
+        var dir = Directory.Exists(startPath) ? new DirectoryInfo(startPath) : new DirectoryInfo(startPath).Parent;
 
         for (int i = 0; i < maxLevelsUp && dir != null; i++)
         {
@@ -89,5 +88,14 @@ public static class PatchFolderResolver
         }
 
         return null;
+    }
+
+    public static bool HasTitleIdDirs(string? patchRoot)
+    {
+        if (string.IsNullOrEmpty(patchRoot) || !Directory.Exists(patchRoot))
+            return false;
+
+        return Directory.EnumerateDirectories(patchRoot, "*", SearchOption.AllDirectories)
+            .Any(d => Path.GetFileName(d) is { Length: 16 } name && name.All(Uri.IsHexDigit));
     }
 }

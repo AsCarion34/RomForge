@@ -1,70 +1,73 @@
+using System.Collections;
 using WiiU.Core.WUP.Crypto;
+using WiiU.Core.WUP.Interfaces;
 using WiiU.Core.WUP.Models;
-using WiiU.Core.WUP.NusPackage.Interfaces;
 
 namespace WiiU.Core.WUP.Services
 {
-    public class Contents : IHasData
+    public class Contents : IHasData, IEnumerable<Content>
     {
-        private List<Content> contents = [];
-        private Content fstContent = null!;
+        private readonly List<Content> _contents = [];
 
-        public Contents()
+        public Contents() => FSTContent = GetNewContent();
+
+        private Content _fstContent = null!;
+
+        public Content FSTContent
         {
-            SetFSTContent(GetNewContent());
+            get => _fstContent;
+            set
+            {
+                _fstContent = value;
+                value.IsFSTContent = true;
+            }
         }
 
-        public void SetFSTContent(Content content)
-        {
-            fstContent = content;
-            content.SetFSTContent(true);
-        }
+        public short ContentCount => (short)_contents.Count;
 
-        public Content GetFSTContent() => fstContent;
+        public IEnumerator<Content> GetEnumerator() => _contents.GetEnumerator();
 
-        public Content GetNewContent()
-        {
-            return GetNewContent(false);
-        }
+        IEnumerator IEnumerable.GetEnumerator() => _contents.GetEnumerator();
+
+        public Content GetNewContent() => GetNewContent(false);
 
         public Content GetNewContent(bool isHashed)
         {
-            ContentDetails details = new (isHashed, (short)0x0000, 0x0, (short)0x0000);
-
+            ContentDetails details = new(isHashed, (short)0x0000, 0x0, (short)0x0000);
             return GetNewContent(details);
         }
 
         public Content GetNewContent(ContentDetails details)
         {
-            Content content = new ();
+            Content content = new()
+            {
+                ID = _contents.Count,
+                Index = (short)_contents.Count
+            };
 
-            content.SetID(contents.Count);
-            content.SetIndex((short)contents.Count);
-
-            if (details.IsContent())
+            if (details.IsContent)
                 content.AddType(Content.TYPE_CONTENT);
 
-            if (details.IsEncrypted())
+            if (details.IsEncrypted)
                 content.AddType(Content.TYPE_ENCRYPTED);
 
-            if (details.IsHashed())
+            if (details.IsHashed)
                 content.AddType(Content.TYPE_HASHED);
 
-            content.SetEntriesFlags(details.GetEntriesFlag());
-            content.SetGroupID(details.GetGroupID());
-            content.SetParentTitleID(details.GetParentTitleID());
-            GetContents().Add(content);
+            content.EntriesFlags = details.EntriesFlag;
+            content.GroupID = details.GroupID;
+            content.ParentTitleID = details.ParentTitleID;
+
+            _contents.Add(content);
 
             return content;
         }
-
-        public short GetContentCount() => (short)GetContents().Count;
 
         public byte[] GetAsData()
         {
             JByteBuffer buffer = JByteBuffer.Allocate(GetDataSize());
 
-            foreach (Content c in GetContents())
+            foreach (Content c in this)
                 buffer.Put(c.GetAsData());
 
             return buffer.Array();
@@ -74,7 +77,7 @@ namespace WiiU.Core.WUP.Services
         {
             int size = 0x00;
 
-            foreach (Content c in GetContents())
+            foreach (Content c in this)
                 size += c.GetDataSize();
 
             return size;
@@ -85,7 +88,7 @@ namespace WiiU.Core.WUP.Services
             long content_offset = 0;
             JByteBuffer buffer = JByteBuffer.Allocate(GetFSTContentHeaderDataSize());
 
-            foreach (Content c in GetContents())
+            foreach (Content c in this)
             {
                 Pair<byte[], long> result = c.GetFSTContentHeaderAsData(content_offset);
 
@@ -100,44 +103,31 @@ namespace WiiU.Core.WUP.Services
         {
             int size = 0;
 
-            foreach (Content c in GetContents())
+            foreach (Content c in this)
                 size += Content.GetFSTContentHeaderDataSize();
 
             return size;
         }
 
-        public List<Content> GetContents()
-        {
-            return contents ??= [];
-        }
-
         public void ResetFileOffsets()
         {
-            foreach (Content c in GetContents())
+            foreach (Content c in this)
                 c.ResetFileOffsets();
         }
 
         public void Update(FSTEntries fileEntries)
         {
-            foreach (Content c in GetContents())
+            foreach (Content c in this)
                 c.Update(fileEntries.GetFSTEntriesByContent(c));
         }
 
-        public void PackContents(string outputDir)
-        {
-            PackContents(outputDir, null);
-        }
-
-        public void PackContents(string outputDir, Action<Content>? onContentPacked)
-        {
-            PackContents(outputDir, onContentPacked, null);
-        }
+        public void PackContents(string outputDir, Action<Content>? onContentPacked) => PackContents(outputDir, onContentPacked, null);
 
         public void PackContents(string outputDir, Action<Content>? onContentPacked, Action<Content, string, long, long>? onContentBytesProcessed)
         {
-            foreach (Content c in GetContents())
+            foreach (Content c in this)
             {
-                if (!c.Equals(GetFSTContent()))
+                if (!c.Equals(FSTContent))
                 {
                     Content current = c;
 
@@ -149,15 +139,12 @@ namespace WiiU.Core.WUP.Services
             }
 
             NUSPackage nuspackage = NUSPackageFactory.GetPackageByContents(this)!;
-            Encryption encryption = nuspackage.GetEncryption();
+            Encryption encryption = nuspackage.Encryption;
 
-            string fst_path = $"{outputDir}/{fstContent.GetID():X8}.app";
-            encryption.EncryptFileWithPadding(nuspackage.GetFST(), fst_path, (short)GetFSTContent().GetID(), Content.CONTENT_FILE_PADDING);
+            string fst_path = $"{outputDir}/{FSTContent.ID:X8}.app";
+            encryption.EncryptFileWithPadding(nuspackage.FST, fst_path, (short)FSTContent.ID, Content.CONTENT_FILE_PADDING);
         }
 
-        public void DeleteContent(Content cur_content)
-        {
-            contents.Remove(cur_content);
-        }
+        public void DeleteContent(Content curContent) => _contents.Remove(curContent);
     }
 }

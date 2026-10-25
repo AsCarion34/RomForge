@@ -1,6 +1,4 @@
-﻿using _3DS.Core.Services;
-
-namespace _3DS.Core.Models;
+﻿namespace _3DS.Core.Models;
 
 public class NcchUnpackResult
 {

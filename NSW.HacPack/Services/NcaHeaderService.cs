@@ -17,11 +17,14 @@ public static class NcaHeaderService
         hdr.EncryptedKeys = new byte[4 * 0x10];
         hdr._0x340 = new byte[0xC0];
         hdr.FsHeaders = new NcaFsHeader[4];
+
         for (int i = 0; i < 4; i++)
         {
             hdr.FsHeaders[i].SuperblockRaw = new byte[0x138];
             hdr.FsHeaders[i].SectionCtr = new byte[0x8];
+
             Random.Shared.NextBytes(hdr.FsHeaders[i].SectionCtr);
+
             hdr.FsHeaders[i]._0x148 = new byte[0xB8];
             hdr.FsHeaders[i]._0x5 = new byte[0x3];
             hdr.SectionEntries[i]._0x8 = new byte[0x8];
@@ -33,15 +36,20 @@ public static class NcaHeaderService
         hdr.Magic = 0x3341434E;
         hdr.SdkVersion = settings.SdkVersion;
         hdr.TitleId = settings.TitleId + settings.IdOffset;
+
         if (settings.NcaDistType == LibHac.FsSystem.NcaHeader.DistributionType.GameCard)
             hdr.Distribution = 1;
+
         SetKeygen(ref hdr, settings);
     }
 
     public static void SetKeygen(ref NcaHeader hdr, NcaGenerationOptions settings)
     {
-        if (settings.KeyGeneration == 1) return;
+        if (settings.KeyGeneration == 1) 
+            return;
+
         hdr.CryptoType = 0x2;
+
         if (settings.KeyGeneration > 2)
             hdr.CryptoType2 = (byte)settings.KeyGeneration;
     }
@@ -74,6 +82,7 @@ public static class NcaHeaderService
     public static void SetIvfcLevel5(ref NcaHeader hdr, int idx, ulong size)
     {
         int ofs = 0x10 + 5 * 0x18;
+
         WriteU64(hdr.FsHeaders[idx].SuperblockRaw, ofs, 0);
         WriteU64(hdr.FsHeaders[idx].SuperblockRaw, ofs + 0x08, size);
         WriteU32(hdr.FsHeaders[idx].SuperblockRaw, ofs + 0x10, 0x0E);
@@ -82,6 +91,7 @@ public static class NcaHeaderService
     public static void SetIvfcLevel(ref NcaHeader hdr, int idx, int level, ulong size)
     {
         int ofs = 0x10 + level * 0x18;
+
         WriteU64(hdr.FsHeaders[idx].SuperblockRaw, ofs + 0x08, size);
         WriteU32(hdr.FsHeaders[idx].SuperblockRaw, ofs + 0x10, 0x0E);
     }
@@ -89,11 +99,13 @@ public static class NcaHeaderService
     public static void SetIvfcLogicalOffsets(ref NcaHeader hdr, int idx)
     {
         WriteU64(hdr.FsHeaders[idx].SuperblockRaw, 0x10, 0);
+
         for (int i = 1; i <= 5; i++)
         {
             int prevOfs = 0x10 + (i - 1) * 0x18;
             ulong prev = ReadU64(hdr.FsHeaders[idx].SuperblockRaw, prevOfs);
             ulong prevSize = ReadU64(hdr.FsHeaders[idx].SuperblockRaw, prevOfs + 0x08);
+
             WriteU64(hdr.FsHeaders[idx].SuperblockRaw, 0x10 + i * 0x18, prev + prevSize);
         }
     }
@@ -108,6 +120,15 @@ public static class NcaHeaderService
         WriteU64(hdr.FsHeaders[idx].SuperblockRaw, 0x40, pfs0Size);
     }
 
+    public static void SetCompressionInfo(ref NcaHeader hdr, int idx, long tableOffset, long tableSize, byte[] bucketTreeHeader)
+    {
+        byte[] area = hdr.FsHeaders[idx]._0x148;
+
+        WriteU64(area, 0x30, (ulong)tableOffset);
+        WriteU64(area, 0x38, (ulong)tableSize);
+        Array.Copy(bucketTreeHeader, 0, area, 0x40, 0x10);
+    }
+
     public static void SetPfs0MasterHash(ref NcaHeader hdr, int idx, byte[] hash) => Array.Copy(hash, 0, hdr.FsHeaders[idx].SuperblockRaw, 0, 0x20);
 
     public static void SetSectionHash(ref NcaHeader hdr, int idx, byte[] hash) => Array.Copy(hash, 0, hdr.SectionHashes, idx * 0x20, 0x20);
@@ -120,6 +141,7 @@ public static class NcaHeaderService
         {
             for (int i = 0; i < 8; i++)
                 hdr.RightsId[7 - i] = (byte)(settings.TitleId >> 8 * i & 0xFF);
+
             hdr.RightsId[15] = (byte)settings.KeyGeneration;
         }
     }

@@ -6,16 +6,23 @@ namespace _3DS.Core.Save.Models;
 public struct DbHeader
 {
     public const int Size = 32;
+
     public byte[] Magic;
+
     public uint Version;
+
     public ulong FsInfoOffset;
+
     public ulong ImageSize;
+
     public uint ImageBlockLen;
+
     public uint Padding;
 
     public static DbHeader Read(IRandomAccessFile f, int pos)
     {
         var buf = new byte[Size];
+
         f.Read(pos, buf, 0, Size);
 
         return new DbHeader

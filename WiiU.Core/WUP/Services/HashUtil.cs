@@ -9,16 +9,15 @@ namespace WiiU.Core.WUP.Services
 
         public static byte[] HashSHA1(byte[] data) => SHA1.HashData(data);
 
-        public static byte[] HashSHA1(string filePath) => HashSHA1(filePath, 0);
-
         public static byte[] HashSHA1(string filePath, int alignment)
         {
             byte[] hash = new byte[0x14];
 
             try
             {
-                using FileStream in_ = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+                using FileStream in_ = new(filePath, FileMode.Open, FileAccess.Read);
                 using SHA1 sha1 = SHA1.Create();
+
                 hash = Hash(sha1, in_, new FileInfo(filePath).Length, 0x8000, alignment);
             }
             catch (Exception e)
@@ -35,7 +34,7 @@ namespace WiiU.Core.WUP.Services
             long cur_position = 0;
             int inBlockBufferRead;
             byte[] blockBuffer = new byte[bufferSize];
-            ByteArrayBuffer overflow = new ByteArrayBuffer(bufferSize);
+            ByteArrayBuffer overflow = new(bufferSize);
 
             do
             {
@@ -63,7 +62,7 @@ namespace WiiU.Core.WUP.Services
 
             } while (cur_position < target_size && (inBlockBufferRead == bufferSize));
 
-            digest.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+            digest.TransformFinalBlock([], 0, 0);
 
             return digest.Hash!;
         }

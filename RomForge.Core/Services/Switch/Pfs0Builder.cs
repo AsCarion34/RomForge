@@ -30,7 +30,6 @@ public static class Pfs0Builder
         ulong fullHeaderSize = (ulong)(Marshal.SizeOf<Pfs0Header>() + Marshal.SizeOf<Pfs0FileEntry>() * fileList.Count + stringTable.Count);
         ulong alignedHeaderSize = AlignUp(fullHeaderSize + 1, alignment);
         ulong headerPadding = alignedHeaderSize - fullHeaderSize;
-
         var header = new Pfs0Header
         {
             Magic = MagicPfs0,
@@ -58,9 +57,7 @@ public static class Pfs0Builder
         long totalEstimated = fileList.Sum(f => f.EstimatedSize);
         string currentLabel = string.Empty;
         var reporter = new ProgressReporter(displayName, titleId, totalEstimated, progress);
-
         void onRead(long bytesRead) => reporter.AddProgress(bytesRead);
-
         var actualOffsets = new ulong[fileList.Count];
         var actualSizes = new ulong[fileList.Count];
         ulong relOffset = 0;
@@ -75,15 +72,18 @@ public static class Pfs0Builder
             for (int i = 0; i < fileList.Count; i++)
             {
                 ct.ThrowIfCancellationRequested();
+
                 var (name, writer, _, label) = fileList[i];
 
                 currentLabel = label;
                 actualOffsets[i] = relOffset;
+
                 long fileStartPos = outputStream.Position;
 
                 await writer(outputStream, onRead);
 
                 ulong written = (ulong)(outputStream.Position - fileStartPos);
+
                 actualSizes[i] = written;
                 relOffset += written;
             }
@@ -96,6 +96,7 @@ public static class Pfs0Builder
         progress?.Report(new ProgressInfo(100, currentLabel, titleId, string.Empty, string.Empty));
 
         long endPos = outputStream.Position;
+
         outputStream.Position = entryTablePos;
 
         for (int i = 0; i < fileList.Count; i++)
@@ -109,6 +110,7 @@ public static class Pfs0Builder
         }
 
         outputStream.Position = endPos;
+
         await outputStream.FlushAsync(ct);
     }
 
@@ -122,11 +124,11 @@ public static class Pfs0Builder
             if (fs.Length >= 0x10)
             {
                 uint magic = reader.ReadUInt32();
+
                 if (magic == MagicPfs0)
                 {
                     uint numFiles = reader.ReadUInt32();
                     uint stringTableSize = reader.ReadUInt32();
-
                     ulong headerStructsSize = 0x10 + ((ulong)numFiles * 0x18);
                     ulong totalHeaderSizeWithPadding = headerStructsSize + stringTableSize;
 
@@ -146,6 +148,7 @@ public static class Pfs0Builder
     private static void WriteStruct<T>(Stream stream, T value) where T : struct
     {
         Span<byte> buffer = stackalloc byte[Unsafe.SizeOf<T>()];
+
         MemoryMarshal.Write(buffer, in value);
         stream.Write(buffer);
     }

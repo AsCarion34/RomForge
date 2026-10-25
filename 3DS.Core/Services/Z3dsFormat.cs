@@ -10,11 +10,17 @@ public static class Z3dsFormat
     public static readonly byte[] MagicZ3DS = "Z3DS"u8.ToArray();
 
     public const uint SeekableMagicNumber = 0x184D2A5E;
+
     public const uint SeekTableFooterMagic = 0x8F92EAB1;
+
     public const byte FormatVersion = 0x01;
+
     public const byte MetaVersion = 0x01;
+
     public const byte MetaTypeEnd = 0x00;
+
     public const byte MetaTypeBinary = 0x01;
+
     public const int MaxMetaDataLength = 0xFFFF;
 
     public static int AlignUp(int value, int alignment) => (value + alignment - 1) & ~(alignment - 1);

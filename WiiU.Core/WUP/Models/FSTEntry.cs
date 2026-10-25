@@ -1,60 +1,18 @@
 using System.Diagnostics;
-using WiiU.Core.WUP.NusPackage.Interfaces;
+using WiiU.Core.WUP.Interfaces;
 using WiiU.Core.WUP.Services;
 
 namespace WiiU.Core.WUP.Models
 {
     public class FSTEntry : IHasData, ICloneable
     {
-        public enum Types : byte
-        {
-            DIR = 0x01,
-            notInNUS = 0x80,
-            WiiVC = 0x02,
-        }
+        private readonly string? _file;
+        private List<FSTEntry>? _children;
+        private Content? _content;
+        private byte[]? _decryptedSHA1 = new byte[0x14];
+        private readonly Func<Stream>? _streamFactory;
 
-        public enum Flags : short
-        {
-            NOBIGFILE = 0x04,
-            HASHED = 0x400,
-        }
-
-        private readonly string? file;
-
-        private string filename = "";
-        private FSTEntry? parent = null;
-        private List<FSTEntry>? children = null;
-        private int nameOffset = 0;
-        private int entryOffset = 0x00;
-
-        private short flags;
-
-        private bool isDirFlag = false;
-        private int parentOffset = 0;
-        private int nextOffset = 0;
-
-        private long filesize = 0;
-        private long fileoffset = 0;
-
-        private bool isRootFlag = false;
-
-        private int root_entryCount = 0;
-
-        private Content? content = null;
-
-        private byte[]? decryptedSHA1 = new byte[0x14];
-
-        private bool bigFile = false;
-
-        private bool hashedFile = false;
-
-        private bool notInPackage = false;
-
-        private readonly Func<Stream>? streamFactory = null;
-
-        public FSTEntry(string filePath) : this(filePath, false)
-        {
-        }
+        public FSTEntry(string filePath) : this(filePath, false) { }
 
         public FSTEntry(string filePath, bool notInPackage)
         {
@@ -64,160 +22,120 @@ namespace WiiU.Core.WUP.Models
             if (filePath == null || (!isDirectory && !isFileOnDisk))
                 throw new ArgumentException("Couldn't create FSTEntry, file is NULL or doesn't exist");
 
-            file = Path.GetFullPath(filePath);
+            _file = Path.GetFullPath(filePath);
 
-            SetDir(isDirectory);
-            SetFileName(isDirectory ? new DirectoryInfo(filePath).Name : Path.GetFileName(filePath));
-            SetFileSize(isDirectory ? 0 : new FileInfo(filePath).Length);
-            SetNotInPackage(notInPackage);
+            IsDir = isDirectory;
+            Filename = isDirectory ? new DirectoryInfo(filePath).Name : Path.GetFileName(filePath);
+            Filesize = isDirectory ? 0 : new FileInfo(filePath).Length;
+            IsNotInPackage = notInPackage;
 
-            if (IsFile())
-                decryptedSHA1 = null;
+            if (IsFile)
+                _decryptedSHA1 = null;
         }
 
         public FSTEntry(string name, Func<Stream> openRead, long length)
         {
-            file = null;
-            streamFactory = openRead ?? throw new ArgumentNullException(nameof(openRead));
-
-            SetDir(false);
-            SetFileName(name);
-            SetFileSize(length);
-            SetNotInPackage(false);
-
-            decryptedSHA1 = null;
+            _file = null;
+            _streamFactory = openRead ?? throw new ArgumentNullException(nameof(openRead));
+            IsDir = false;
+            Filename = name;
+            Filesize = length;
+            IsNotInPackage = false;
+            _decryptedSHA1 = null;
         }
-
-        public Func<Stream>? GetStreamFactory() => streamFactory;
 
         public FSTEntry(bool root)
         {
-            file = null;
+            _file = null;
 
             if (root)
             {
-                SetIsRoot(true);
-                SetDir(true);
+                IsRoot = true;
+                IsDir = true;
             }
         }
 
+        public Func<Stream>? StreamFactory => _streamFactory;
+        public string? FilePath => _file;
+
+        public string Filename { get; set; } = string.Empty;
+        public FSTEntry? Parent { get; private set; } = null;
+        public int NameOffset { get; private set; } = 0;
+        public int EntryOffset { get; set; } = 0x00;
+
+        public short Flags { get; set; }
+
+        public bool IsDir { get; set; } = false;
+        public int ParentOffset { get; set; } = 0;
+        public int NextOffset { get; set; } = 0;
+
+        private long _filesize = 0;
+        public long Filesize
+        {
+            get => IsFile ? _filesize : 0;
+            set => _filesize = value;
+        }
+
+        public long FileOffset { get; set; } = 0;
+
+        public bool IsRoot { get; private set; } = false;
+
+        public int RootEntryCount { get; set; } = 0;
+
+        public Content? Content
+        {
+            get => _content;
+            set
+            {
+                _content = value;
+
+                if (value != null)
+                    Flags = value.EntriesFlags;
+            }
+        }
+
+        public bool BigFile { get; set; } = false;
+        public bool HashedFile { get; set; } = false;
+        public bool IsNotInPackage { get; set; } = false;
+
+        public bool IsFile => !(IsDir || IsNotInPackage);
+
+        public List<FSTEntry> Children => _children ??= [];
+
         public void AddChildren(FSTEntry fstEntry)
         {
-            GetChildren().Add(fstEntry);
-            fstEntry.SetParent(this);
-        }
-
-        public bool IsNotInPackage() => notInPackage;
-
-        public void SetNotInPackage(bool notInPackage)
-        {
-            this.notInPackage = notInPackage;
-        }
-
-        public FSTEntry? GetParent() => parent;
-
-        private void SetParent(FSTEntry child)
-        {
-            parent = child;
-        }
-
-        public Content? GetContent() => content;
-
-        public void SetContent(Content content)
-        {
-            SetFlags(content.GetEntriesFlags());
-            this.content = content;
+            Children.Add(fstEntry);
+            fstEntry.Parent = this;
         }
 
         public void SetContentRecursive(Content content)
         {
-            SetContent(content);
+            Content = content;
 
-            foreach (FSTEntry entry in GetChildren())
+            foreach (FSTEntry entry in Children)
                 entry.SetContentRecursive(content);
-        }
-
-        public string? GetFile() => file;
-
-        public string GetFilename() => filename;
-
-        public void SetFileName(string filename)
-        {
-            this.filename = filename;
-        }
-
-        public long GetFilesize()
-        {
-            if (!IsFile())
-                return 0;
-
-            return filesize;
-        }
-
-        public void SetFileSize(long filesize)
-        {
-            this.filesize = filesize;
-        }
-
-        public long GetFileOffset() => fileoffset;
-
-        public void SetFileOffset(long fileOffset)
-        {
-            fileoffset = fileOffset;
-        }
-
-        private void SetIsRoot(bool isRoot)
-        {
-            isRootFlag = isRoot;
-        }
-
-        public bool IsRoot() => isRootFlag;
-
-        public void SetDir(bool isDir)
-        {
-            isDirFlag = isDir;
-        }
-
-        public bool IsDir() => isDirFlag;
-
-        public bool IsFile() => !(IsDir() || IsNotInPackage());
-
-        public bool IsBigFile() => bigFile;
-
-        public void SetBigFile(bool bigFile)
-        {
-            this.bigFile = bigFile;
-        }
-
-        public bool IsHashedFile() => hashedFile;
-
-        public void SetHashedFile(bool hashedFile)
-        {
-            this.hashedFile = hashedFile;
         }
 
         public byte GetEntryType()
         {
             byte type = 0;
 
-            if (IsDir()) 
+            if (IsDir)
                 type |= (byte)Types.DIR;
 
-            if (IsNotInPackage()) 
+            if (IsNotInPackage)
                 type |= (byte)Types.notInNUS;
 
-            if (GetFilename().EndsWith("nfs"))
+            if (Filename.EndsWith("nfs"))
                 type |= (byte)Types.WiiVC;
 
             return type;
         }
 
-        public short GetFlags() => flags;
-
         public FSTEntry? GetEntryByName(string name)
         {
-            foreach (FSTEntry f in GetChildren())
-                if (f.GetFilename().Equals(name))
+            foreach (FSTEntry f in Children)
+                if (f.Filename.Equals(name))
                     return f;
 
             return null;
@@ -227,42 +145,42 @@ namespace WiiU.Core.WUP.Models
         {
             JByteBuffer buffer = JByteBuffer.Allocate(GetDataSize());
 
-            if (IsRoot())
+            if (IsRoot)
             {
                 buffer.Put((byte)1);
                 buffer.Put(new byte[0x07]);
-                buffer.PutInt(root_entryCount);
+                buffer.PutInt(RootEntryCount);
                 buffer.Put(new byte[0x04]);
             }
             else
             {
                 buffer.Put(GetEntryType());
-                buffer.Put((byte)((nameOffset >> 16) & 0xFF));
-                buffer.PutShort((short)(nameOffset & 0xFFFF));
+                buffer.Put((byte)((NameOffset >> 16) & 0xFF));
+                buffer.PutShort((short)(NameOffset & 0xFFFF));
 
-                if (IsDir())
+                if (IsDir)
                 {
-                    buffer.PutInt(parentOffset);
-                    buffer.PutInt(nextOffset);
+                    buffer.PutInt(ParentOffset);
+                    buffer.PutInt(NextOffset);
                 }
-                else if (IsFile())
+                else if (IsFile)
                 {
-                    buffer.PutInt((int)(fileoffset >> 5));
-                    buffer.PutInt((int)filesize);
+                    buffer.PutInt((int)(FileOffset >> 5));
+                    buffer.PutInt((int)Filesize);
                 }
-                else if (IsNotInPackage())
+                else if (IsNotInPackage)
                 {
                     buffer.PutInt(0);
-                    buffer.PutInt((int)filesize);
+                    buffer.PutInt((int)Filesize);
                 }
 
-                buffer.PutShort(GetFlags());
-                buffer.PutShort((short)content!.GetID());
+                buffer.PutShort(Flags);
+                buffer.PutShort((short)Content!.ID);
             }
 
-            if (children != null)
+            if (_children != null)
             {
-                foreach (FSTEntry entry in GetChildren())
+                foreach (FSTEntry entry in Children)
                     buffer.Put(entry.GetAsData());
             }
 
@@ -273,7 +191,7 @@ namespace WiiU.Core.WUP.Models
         {
             int size = 0x10;
 
-            foreach (FSTEntry entry in GetChildren())
+            foreach (FSTEntry entry in Children)
                 size += entry.GetDataSize();
 
             return size;
@@ -281,10 +199,10 @@ namespace WiiU.Core.WUP.Models
 
         public byte[] GetDecryptedHash()
         {
-            if (decryptedSHA1 == null)
+            if (_decryptedSHA1 == null)
                 CalculateDecryptedHash();
 
-            return decryptedSHA1!;
+            return _decryptedSHA1!;
         }
 
         public void SetNameOffset(int offset)
@@ -292,37 +210,37 @@ namespace WiiU.Core.WUP.Models
             if (offset > 0xFFFFFF)
                 Debug.WriteLine("Warning, filename offset is too big. Maximum is " + 0xFFFFFF + " tried to set to" + offset);
 
-            nameOffset = offset;
+            NameOffset = offset;
         }
 
         public void Update()
         {
             SetNameOffset(FST.GetStringPos());
-            FST.AddString(filename);
-            SetEntryOffset(FST.CurEntryOffset);
+            FST.AddString(Filename);
+            EntryOffset = FST.CurEntryOffset;
 
             FST.CurEntryOffset++;
 
-            if (IsDir() && !IsRoot())
-                SetParentOffset(GetParent()!.GetEntryOffset());
+            if (IsDir && !IsRoot)
+                ParentOffset = Parent!.EntryOffset;
 
-            if (GetContent() != null && IsFile())
+            if (Content != null && IsFile)
             {
-                long fileoffset_ = GetContent()!.GetOffsetForFileAndIncrease(this);
-                SetFileOffset(fileoffset_);
+                long fileoffset_ = Content.GetOffsetForFileAndIncrease(this);
+                FileOffset = fileoffset_;
             }
 
-            foreach (FSTEntry entry in GetChildren())
+            foreach (FSTEntry entry in Children)
                 entry.Update();
         }
 
         public FSTEntry? UpdateDirRefs()
         {
-            if (!(IsDir() || IsRoot()))
+            if (!(IsDir || IsRoot))
                 return null;
 
-            if (parent != null)
-                SetParentOffset(GetParent()!.GetEntryOffset());
+            if (Parent != null)
+                ParentOffset = Parent.EntryOffset;
 
             FSTEntry? result = null;
 
@@ -333,18 +251,18 @@ namespace WiiU.Core.WUP.Models
                 FSTEntry cur_dir = dirChildren[i];
 
                 if (i + 1 < dirChildren.Count)
-                    cur_dir.SetNextOffset(dirChildren[i + 1].entryOffset);
+                    cur_dir.NextOffset = dirChildren[i + 1].EntryOffset;
 
                 FSTEntry? cur_result = cur_dir.UpdateDirRefs();
 
                 if (cur_result != null)
                 {
-                    FSTEntry cur_foo = cur_result.GetParent()!;
+                    FSTEntry cur_foo = cur_result.Parent!;
 
-                    while (cur_foo.GetNextOffset() == 0)
-                        cur_foo = cur_foo.GetParent()!;
+                    while (cur_foo.NextOffset == 0)
+                        cur_foo = cur_foo.Parent!;
 
-                    cur_result.SetNextOffset(cur_foo.GetNextOffset());
+                    cur_result.NextOffset = cur_foo.NextOffset;
                 }
 
                 if (!(i + 1 < dirChildren.Count))
@@ -354,40 +272,26 @@ namespace WiiU.Core.WUP.Models
             return result;
         }
 
-        private int GetNextOffset() => nextOffset;
-
-        public void SetEntryOffset(int entryOffset)
-        {
-            this.entryOffset = entryOffset;
-        }
-
-        public int GetEntryOffset() => entryOffset;
-
-        public void SetNextOffset(int nextOffset)
-        {
-            this.nextOffset = nextOffset;
-        }
-
         public override string ToString()
         {
             var sb = new System.Text.StringBuilder();
 
-            if (IsDir()) 
+            if (IsDir)
                 sb.Append("DIR: ").Append('\n');
 
-            if (IsDir()) 
-                sb.Append("Filename: ").Append(GetFilename()).Append('\n');
+            if (IsDir)
+                sb.Append("Filename: ").Append(Filename).Append('\n');
 
-            if (IsDir()) 
-                sb.Append("       ID:").Append(GetEntryOffset()).Append('\n');
+            if (IsDir)
+                sb.Append("       ID:").Append(EntryOffset).Append('\n');
 
-            if (IsDir()) 
-                sb.Append(" ParentID:").Append(parentOffset).Append('\n');
+            if (IsDir)
+                sb.Append(" ParentID:").Append(ParentOffset).Append('\n');
 
-            if (IsDir()) 
-                sb.Append("   NextID:").Append(nextOffset).Append('\n');
+            if (IsDir)
+                sb.Append("   NextID:").Append(NextOffset).Append('\n');
 
-            foreach (FSTEntry e in GetChildren())
+            foreach (FSTEntry e in Children)
                 sb.Append(e.ToString());
 
             return sb.ToString();
@@ -395,7 +299,7 @@ namespace WiiU.Core.WUP.Models
 
         public void PrintRecursive(int space)
         {
-            if (IsNotInPackage())
+            if (IsNotInPackage)
                 Debug.Write(" (not in package)");
 
             foreach (FSTEntry child in GetDirChildren(true))
@@ -409,13 +313,13 @@ namespace WiiU.Core.WUP.Models
         {
             List<FSTEntry> entries = [];
 
-            if (this.content == null)
+            if (Content == null)
             {
-                if (isDirFlag)
-                    Debug.WriteLine("The folder \"" + GetFilename() + "\" is emtpy. Please add a dummy file to it.");
+                if (IsDir)
+                    Debug.WriteLine("The folder \"" + Filename + "\" is emtpy. Please add a dummy file to it.");
                 else
                 {
-                    Debug.WriteLine("The file \"" + GetFilename() + "\" is not assigned to any content (.app).");
+                    Debug.WriteLine("The file \"" + Filename + "\" is not assigned to any content (.app).");
                     Debug.WriteLine("Please delete it or write a corresponding content rule");
                 }
 
@@ -423,39 +327,24 @@ namespace WiiU.Core.WUP.Models
             }
             else
             {
-                if (this.content.Equals(content))
+                if (Content.Equals(content))
                     entries.Add(this);
             }
 
-            foreach (FSTEntry child in GetChildren())
+            foreach (FSTEntry child in Children)
                 entries.AddRange(child.GetFSTEntriesByContent(content));
 
             return entries;
-        }
-
-        public List<FSTEntry> GetChildren()
-        {
-            return children ??= [];
         }
 
         public int GetEntryCount()
         {
             int count = 1;
 
-            foreach (FSTEntry entry in GetChildren())
+            foreach (FSTEntry entry in Children)
                 count += entry.GetEntryCount();
 
             return count;
-        }
-
-        public void SetParentOffset(int i)
-        {
-            parentOffset = i;
-        }
-
-        public void SetEntryCount(int fstEntryCount)
-        {
-            root_entryCount = fstEntryCount;
         }
 
         public List<FSTEntry> GetDirChildren() => GetDirChildren(false);
@@ -464,9 +353,9 @@ namespace WiiU.Core.WUP.Models
         {
             List<FSTEntry> result = [];
 
-            foreach (FSTEntry child in GetChildren())
+            foreach (FSTEntry child in Children)
             {
-                if (child.IsDir() && (all || !child.IsNotInPackage()))
+                if (child.IsDir && (all || !child.IsNotInPackage))
                     result.Add(child);
             }
 
@@ -479,29 +368,18 @@ namespace WiiU.Core.WUP.Models
         {
             List<FSTEntry> result = [];
 
-            foreach (FSTEntry child in GetChildren())
+            foreach (FSTEntry child in Children)
             {
-                if (child.IsFile() || (all && !child.IsDir()))
+                if (child.IsFile || (all && !child.IsDir))
                     result.Add(child);
             }
 
             return result;
         }
 
-        public void CalculateDecryptedHash()
-        {
-            decryptedSHA1 = HashUtil.HashSHA1(file!, 0x8000);
-        }
+        public void CalculateDecryptedHash() => _decryptedSHA1 = HashUtil.HashSHA1(_file!, 0x8000);
 
-        public void SetFlags(short flags)
-        {
-            this.flags = flags;
-        }
-
-        public FSTEntry Clone()
-        {
-            return (FSTEntry)MemberwiseClone();
-        }
+        public FSTEntry Clone() => (FSTEntry)MemberwiseClone();
 
         object ICloneable.Clone() => Clone();
     }

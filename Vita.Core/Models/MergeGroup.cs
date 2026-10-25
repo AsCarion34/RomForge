@@ -2,7 +2,7 @@
 
 public sealed class MergeGroup
 {
-    public required VitaContentCategory Category { get; init; }
+    public required ContentCategory Category { get; init; }
 
     public required string TitleId { get; init; }
 

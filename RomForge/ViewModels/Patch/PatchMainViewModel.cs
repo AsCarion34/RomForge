@@ -12,8 +12,6 @@ public class PatchMainViewModel : MultiToolTabViewModel
 
     public ArcadePatchMainViewModel ArcadeVM { get; } = new();
 
-    public VitaPatchMainViewModel VitaVM { get; } = new();
-
     public Pc98PatchMainViewModel Pc98VM { get; } = new();
 
     public ICommand RunCommand { get; }
@@ -27,11 +25,9 @@ public class PatchMainViewModel : MultiToolTabViewModel
     public PatchMainViewModel(Action<string> navigateToHashAction)
     {
         _navigateToHashAction = navigateToHashAction;
-
         RunCommand = new RelayCommand(async _ => await RunAsync(), _=> SelectedPatchVM?.CanRun() ?? false);
         CancelCommand = new RelayCommand(_ => Cancel());
         ClearCommand = new RelayCommand(_ => Clear());
-
         CalculateHashCommand = new RelayCommand(
             execute: _ =>
             {
@@ -44,7 +40,6 @@ public class PatchMainViewModel : MultiToolTabViewModel
 
         Tools.Add(NormalVM);
         Tools.Add(ArcadeVM);
-        Tools.Add(VitaVM);
         Tools.Add(Pc98VM);
 
         InitializeMultiTools();
@@ -59,7 +54,7 @@ public class PatchMainViewModel : MultiToolTabViewModel
         }
     }
 
-    private void Cancel() => SelectedPatchVM?.Cancel();
+    public override void Cancel() => SelectedPatchVM?.Cancel();
 
     private void Clear() => SelectedPatchVM?.Clear();
 }

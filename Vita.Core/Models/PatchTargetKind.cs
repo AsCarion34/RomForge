@@ -1,8 +1,8 @@
 ﻿namespace Vita.Core.Models;
 
-public enum PatchTargetKind 
-{ 
-    Xdelta, 
+public enum PatchTargetKind
+{
+    Overwrite,
 
-    Raw 
+    Patch
 }

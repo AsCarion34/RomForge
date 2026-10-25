@@ -71,6 +71,7 @@ public class MetaTable
         if (padding > 0)
         {
             var padBuf = new byte[padding];
+
             table.Write(8, padBuf, 0, padding);
         }
 

@@ -9,23 +9,15 @@ public static class RvzToIsoConverter
         try
         {
             using var reader = new RvzDiscReader(inputPath);
-            using var output = File.OpenHandle(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, FileOptions.None, reader.IsoSize);
-            
+            using var output = SparseFile.Create(outputPath, reader.IsoSize);
+
             reader.WriteIso(new FileIsoSink(output), progress, ct);
             
             succeeded = true;
         }
         finally
         {
-            if (!succeeded)
-            {
-                try
-                {
-                    if (File.Exists(outputPath))
-                        File.Delete(outputPath);
-                }
-                catch { }
-            }
+            OutputGuard.DeleteIfFailed(outputPath, succeeded);
         }
     }
 }

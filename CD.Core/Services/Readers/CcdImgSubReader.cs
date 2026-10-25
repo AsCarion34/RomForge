@@ -138,15 +138,11 @@ public class CcdImgSubReader : IDiscImageReader
 
             var trackStart = index0 ?? index1;
             var pregapSectors = index0.HasValue ? index1 - index0.Value : 0;
-            var nextStart = i + 1 < rawTracks.Count
-                ? (rawTracks[i + 1].Index0 ?? rawTracks[i + 1].Index1)
-                : totalImgSectors;
+            var nextStart = i + 1 < rawTracks.Count ? (rawTracks[i + 1].Index0 ?? rawTracks[i + 1].Index1) : totalImgSectors;
             var lengthSectors = nextStart - index1;
 
             if (trackStart < 0 || nextStart > totalImgSectors || lengthSectors <= 0)
-                throw new InvalidDataException(
-                    $"트랙 {i + 1}의 섹터 범위가 IMG 파일 크기를 벗어나거나 비정상입니다 " +
-                    $"(start={trackStart}, length={lengthSectors}, imgSectors={totalImgSectors}): {ccdFilePath}");
+                throw new InvalidDataException($"트랙 {i + 1}의 섹터 범위가 IMG 파일 크기를 벗어나거나 비정상입니다 (start={trackStart}, length={lengthSectors}, imgSectors={totalImgSectors}): {ccdFilePath}");
 
             var streamOffset = trackStart * SectorSize;
             var streamLength = (nextStart - trackStart) * SectorSize;
@@ -179,9 +175,7 @@ public class CcdImgSubReader : IDiscImageReader
             var lengthSectors = nextStart - trackStart;
 
             if (trackStart < 0 || nextStart > totalImgSectors || lengthSectors <= 0)
-                throw new InvalidDataException(
-                    $"Entry 기반 트랙 {i + 1}의 섹터 범위가 IMG 파일 크기를 벗어나거나 비정상입니다 " +
-                    $"(start={trackStart}, length={lengthSectors}, imgSectors={totalImgSectors}): {ccdFilePath}");
+                throw new InvalidDataException($"Entry 기반 트랙 {i + 1}의 섹터 범위가 IMG 파일 크기를 벗어나거나 비정상입니다 (start={trackStart}, length={lengthSectors}, imgSectors={totalImgSectors}): {ccdFilePath}");
 
             var isData = (control & 0x04) != 0;
             var dataType = isData ? MapTrackMode(DetectDataMode(imgPath, trackStart)) : CueFormatStrings.Audio;
@@ -269,6 +263,7 @@ public class CcdImgSubReader : IDiscImageReader
     private static int DetectDataMode(string imgPath, long lba)
     {
         using var fs = new FileStream(imgPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+
         fs.Seek(lba * SectorSize, SeekOrigin.Begin);
 
         var header = new byte[16];
@@ -280,6 +275,7 @@ public class CcdImgSubReader : IDiscImageReader
     private static SubStream OpenTrackStream(string imgPath, long startOffset, long length)
     {
         var fs = new FileStream(imgPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+
         fs.Seek(startOffset, SeekOrigin.Begin);
 
         return new SubStream(fs, length);

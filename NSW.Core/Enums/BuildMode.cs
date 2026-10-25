@@ -3,6 +3,8 @@
 public enum BuildMode
 {
     UnpackOnly,
+
     RebuildOnly,
+
     FullProcess
 }

@@ -21,6 +21,48 @@ public class CommonConfig : ViewModelBase
         get => _topmost;
         set { SetProperty(ref _topmost, value); }
     }
+
+    private bool _autoCheckUpdate = true;
+    public bool AutoCheckUpdate
+    {
+        get => _autoCheckUpdate;
+        set { SetProperty(ref _autoCheckUpdate, value); }
+    }
+
+    private string? _language = "Korean";
+    public string? Language
+    {
+        get => _language;
+        set { SetProperty(ref _language, value); }
+    }
+
+    private bool _isMuted;
+    public bool IsMuted
+    {
+        get => _isMuted;
+        set { SetProperty(ref _isMuted, value); }
+    }
+
+    private string _completeSoundPath = "complete.mp3";
+    public string CompleteSoundPath
+    {
+        get => _completeSoundPath;
+        set { SetProperty(ref _completeSoundPath, value); }
+    }
+
+    private string _cancelSoundPath = "cancel.mp3";
+    public string CancelSoundPath
+    {
+        get => _cancelSoundPath;
+        set { SetProperty(ref _cancelSoundPath, value); }
+    }
+
+    private string _errorSoundPath = "error.mp3";
+    public string ErrorSoundPath
+    {
+        get => _errorSoundPath;
+        set { SetProperty(ref _errorSoundPath, value); }
+    }
 }
 
 public class WindowConfig : ViewModelBase
@@ -128,6 +170,9 @@ public class PS1Config : ViewModelBase
 
     private bool _useUpperCase = false;
     public bool UseUpperCase { get => _useUpperCase; set => SetProperty(ref _useUpperCase, value); }
+
+    private bool _isHighQualityMode = true;
+    public bool IsHighQualityMode { get => _isHighQualityMode; set => SetProperty(ref _isHighQualityMode, value); }
 }
 
 public class TistoryConfig : ViewModelBase
@@ -147,6 +192,9 @@ public class OutputFoldersConfig : ViewModelBase
     private string? _switchMergeOutputPath;
     public string? SwitchMergeOutputPath { get => _switchMergeOutputPath; set => SetProperty(ref _switchMergeOutputPath, value); }
 
+    private string? _switchSplitOutputPath;
+    public string? SwitchSplitOutputPath { get => _switchSplitOutputPath; set => SetProperty(ref _switchSplitOutputPath, value); }    
+
     private string? _wiiURepackOutputPath;
     public string? WiiURepackOutputPath { get => _wiiURepackOutputPath; set => SetProperty(ref _wiiURepackOutputPath, value); }
 
@@ -158,6 +206,9 @@ public class OutputFoldersConfig : ViewModelBase
 
     private string? _vitaOutputPath;
     public string? VitaOutputPath { get => _vitaOutputPath; set => SetProperty(ref _vitaOutputPath, value); }
+
+    private string? _vitaConvertOutputPath;
+    public string? VitaConvertOutputPath { get => _vitaConvertOutputPath; set => SetProperty(ref _vitaConvertOutputPath, value); }
 
     private bool _useCompressCustomOutputPath;
     public bool UseCompressCustomOutputPath { get => _useCompressCustomOutputPath; set => SetProperty(ref _useCompressCustomOutputPath, value); }

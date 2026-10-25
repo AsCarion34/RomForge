@@ -1,3 +1,4 @@
+using WiiGC.Core.Interfaces;
 using WiiGC.Core.Services.GameCube;
 using WiiGC.Core.Services.Wii;
 
@@ -17,7 +18,7 @@ internal static class RvzInputSource
             if (WbfsSource.IsWbfs(handle))
                 return WbfsSource.Open(path, handle);
 
-            if (WiaSource.IsWia(handle))
+            if (WiaSource.IsWiaOrRvz(handle))
                 return WiaSource.Open(handle);
 
             return new PlainFileSource(handle);
@@ -25,7 +26,6 @@ internal static class RvzInputSource
         catch
         {
             handle.Dispose();
-
             throw;
         }
     }

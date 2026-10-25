@@ -15,7 +15,6 @@ public static class ExternalConfigBuilder
 
         BitConverter.GetBytes(0x06070070u).CopyTo(data, 0);
         BitConverter.GetBytes(0x06060006u).CopyTo(data, 4);
-
         WriteBlock(data, RevisionSize, useFmvFix, fmvFixValue, useCdTimingFix);
         WriteBlock(data, RevisionSize + BlockSize, useFmvFix, fmvFixValue, useCdTimingFix);
 

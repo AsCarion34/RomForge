@@ -54,9 +54,7 @@ public static class UniversalPatcher
             throw new FileNotFoundException($"파일을 찾을 수 없습니다: {patchPath}");
 
         byte[] header = new byte[8];
-
         using var fs = new FileStream(patchPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true);
-
         int read = await fs.ReadAsync(header, ct);
 
         return DetectFormat(header.AsSpan(0, read));

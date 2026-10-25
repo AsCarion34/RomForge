@@ -1,5 +1,7 @@
 ﻿using NSW.WPF.UI;
+using RomForge.Core.Services;
 using RomForge.ViewModels.Switch;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using Res = NSW.Core.Properties.Resources;
@@ -10,16 +12,7 @@ public partial class MergeTab : UserControl
 {
     private MergeMainViewModel ViewModel => (MergeMainViewModel)DataContext;
 
-    public MergeTab()
-    {
-        InitializeComponent();
-        fileMgr.FileListChanged += () => SwitchGameFileListOrganizer.Reorganize(fileMgr.GameFiles);
-    }
-
-    private void BtnSettings_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel.NavigateSettings();
-    }
+    public MergeTab() => InitializeComponent();
 
     private void BtnHelp_Click(object sender, RoutedEventArgs e)
     {
@@ -54,7 +47,7 @@ public partial class MergeTab : UserControl
 
     private async void BtnMergeStart_Click(object sender, RoutedEventArgs e)
     {
-        if (ViewModel.IsMergeRunning)
+        if (ViewModel.IsLocked)
         {
             ViewModel.Cancel();
             return;
@@ -62,13 +55,15 @@ public partial class MergeTab : UserControl
 
         if (!fileMgr.GameFiles.Any())
         {
-            ViewModel.Log(Res.Main_Err_NoFiles, Common.LogLevel.Error);
+            ViewModel.AppendLog(Res.Main_Err_NoFiles, Common.LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             return;
         }
 
         if (!FileManagerControl.KeyExists())
         {
-            ViewModel.Log(Res.Main_Err_NoKeys, Common.LogLevel.Error);
+            ViewModel.AppendLog(Res.Main_Err_NoKeys, Common.LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             return;
         }
 
@@ -78,37 +73,44 @@ public partial class MergeTab : UserControl
         await ViewModel.MergeAsync(fileMgr.GameFiles);
     }
 
-    private async void BtnSplitStart_Click(object sender, RoutedEventArgs e)
-    {
-        if (ViewModel.IsSplitRunning)
-        {
-            ViewModel.Cancel();
-            return;
-        }
-
-        if (!fileMgr.GameFiles.Any())
-        {
-            ViewModel.Log(Res.Main_Err_NoFiles, Common.LogLevel.Error);
-            return;
-        }
-
-        if (!FileManagerControl.KeyExists())
-        {
-            ViewModel.Log(Res.Main_Err_NoKeys, Common.LogLevel.Error);
-            return;
-        }
-
-        if (fileMgr.GameFiles.Any(f => f.IsKeyMissing))
-            await RecalcKeyMissingAsync();
-
-        await ViewModel.SplitAsync(fileMgr.GameFiles);
-    }
-
     private Task RecalcKeyMissingAsync()
     {
         var tcs = new TaskCompletionSource();
+
         fileMgr.RecalcKeyMissingFiles(() => tcs.SetResult());
 
         return tcs.Task;
+    }
+
+    private void TxtOutputPath_PreviewDragOver(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            if (e.Data.GetData(DataFormats.FileDrop) is string[] paths && paths.Length > 0 && Directory.Exists(paths[0]))
+                e.Effects = DragDropEffects.Copy;
+            else
+                e.Effects = DragDropEffects.None;
+        }
+        else
+            e.Effects = DragDropEffects.None;
+
+        e.Handled = true;
+    }
+
+    private void TxtOutputPath_Drop(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            if (e.Data.GetData(DataFormats.FileDrop) is string[] paths && paths.Length > 0)
+            {
+                string droppedPath = paths[0];
+                string? folderPath = Directory.Exists(droppedPath) ? droppedPath : Path.GetDirectoryName(droppedPath);
+
+                if (!string.IsNullOrEmpty(folderPath) && Directory.Exists(folderPath))
+                    ViewModel.OutputPath = folderPath;
+            }
+        }
+
+        e.Handled = true;
     }
 }

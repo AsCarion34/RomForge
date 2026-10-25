@@ -5,128 +5,56 @@ namespace WiiU.Core.WUP.Services
 {
     public static class NUSPackageFactory
     {
-        private static readonly Dictionary<Content, NUSPackage> contentDictionary = [];
-        private static readonly Dictionary<FST, NUSPackage> FSTDictionary = [];
-        private static readonly Dictionary<TMD, NUSPackage> TMDDictionary = [];
-        private static readonly Dictionary<FSTEntries, NUSPackage> FSTEntriesDictionary = [];
-        private static readonly Dictionary<Contents, NUSPackage> contentsDictionary = [];
+        private static readonly Dictionary<Content, NUSPackage> _contentDictionary = [];
+        private static readonly Dictionary<FST, NUSPackage> _fstDictionary = [];
+        private static readonly Dictionary<TMD, NUSPackage> _tmdDictionary = [];
+        private static readonly Dictionary<FSTEntries, NUSPackage> _fstEntriesDictionary = [];
+        private static readonly Dictionary<Contents, NUSPackage> _contentsDictionary = [];
 
         public static NUSPackage CreatePackageFromBuiltTree(Contents contents, FST fst, AppXMLInfo appInfo, Key encryptionKey, Key encryptKeyWith)
         {
-            NUSPackage nusPackage = new ();
+            NUSPackage nusPackage = new();
 
-            AddFSTDictonary(fst, nusPackage);
-            AddFSTEntriesDictonary(fst.GetFSTEntries(), nusPackage);
-            AddContentsDictonary(contents, nusPackage);
-            AddContentDictonary(contents, nusPackage);
+            AddFSTDictionary(fst, nusPackage);
+            AddFSTEntriesDictionary(fst.FSTEntries, nusPackage);
+            AddContentsDictionary(contents, nusPackage);
+            AddContentDictionary(contents, nusPackage);
 
             fst.Update();
 
-            Ticket ticket = new (appInfo.GetTitleID(), encryptionKey, encryptKeyWith);
-            TMD tmd = new (appInfo, fst, ticket);
+            Ticket ticket = new(appInfo.TitleID, encryptionKey, encryptKeyWith);
+            TMD tmd = new(appInfo, fst, ticket);
 
-            tmd.Update();
-            AddTMDDictonary(tmd, nusPackage);
+            tmd.UpdateContents();
+            AddTMDDictionary(tmd, nusPackage);
 
-            nusPackage.SetFST(fst);
-            nusPackage.SetTicket(ticket);
-            nusPackage.SetTMD(tmd);
+            nusPackage.FST = fst;
+            nusPackage.Ticket = ticket;
+            nusPackage.TMD = tmd;
 
             return nusPackage;
         }
 
-        public static NUSPackage CreateNewPackage(NusPackageConfiguration config)
+        private static void AddContentsDictionary(Contents contents, NUSPackage nusPackage) => _contentsDictionary[contents] = nusPackage;
+
+        private static void AddContentDictionary(Contents contents, NUSPackage nusPackage)
         {
-            NUSPackage nusPackage = new ();
-
-            Contents contents = new ();
-            FST fst = new (contents);
-
-            AddFSTDictonary(fst, nusPackage);
-
-            FSTEntries entries = fst.GetFSTEntries();
-
-            AddFSTEntriesDictonary(fst.GetFSTEntries(), nusPackage);
-
-            FSTEntry root = entries.GetRootEntry()!;
-
-            root.SetContent(contents.GetFSTContent());
-
-            string dir_read = config.GetDir()!;
-
-            ReadFiles(GetTopLevelEntries(dir_read), root);
-
-            ContentRulesService.ApplyRules(root, contents, config.GetRules()!);
-
-            AddContentsDictonary(contents, nusPackage);
-            AddContentDictonary(contents, nusPackage);
-            fst.Update();
-
-            Ticket ticket = new (config.GetAppInfo()!.GetTitleID(), config.GetEncryptionKey()!, config.GetEncryptKeyWith()!);
-            TMD tmd = new (config.GetAppInfo()!, fst, ticket);
-
-            tmd.Update();
-            AddTMDDictonary(tmd, nusPackage);
-            nusPackage.SetFST(fst);
-            nusPackage.SetTicket(ticket);
-            nusPackage.SetTMD(tmd);
-
-            return nusPackage;
-        }
-
-        private static void AddContentsDictonary(Contents contents, NUSPackage nusPackage)
-        {
-            contentsDictionary[contents] = nusPackage;
-        }
-
-        private static void AddContentDictonary(Contents contents, NUSPackage nusPackage)
-        {
-            foreach (Content c in contents.GetContents())
+            foreach (Content c in contents)
             {
-                if (!contentDictionary.ContainsKey(c))
-                    contentDictionary[c] = nusPackage;
+                if (!_contentDictionary.ContainsKey(c))
+                    _contentDictionary[c] = nusPackage;
             }
         }
 
-        private static void AddTMDDictonary(TMD tmd, NUSPackage nusPackage)
-        {
-            TMDDictionary[tmd] = nusPackage;
-        }
+        private static void AddTMDDictionary(TMD tmd, NUSPackage nusPackage) => _tmdDictionary[tmd] = nusPackage;
 
-        private static void AddFSTDictonary(FST fst, NUSPackage nusPackage)
-        {
-            FSTDictionary[fst] = nusPackage;
-        }
+        private static void AddFSTDictionary(FST fst, NUSPackage nusPackage) => _fstDictionary[fst] = nusPackage;
 
-        private static void AddFSTEntriesDictonary(FSTEntries fstEntries, NUSPackage nusPackage)
-        {
-            FSTEntriesDictionary[fstEntries] = nusPackage;
-        }
+        private static void AddFSTEntriesDictionary(FSTEntries fstEntries, NUSPackage nusPackage) => _fstEntriesDictionary[fstEntries] = nusPackage;
 
-        public static NUSPackage? GetPackageByContent(Content content)
-        {
-            return contentDictionary.TryGetValue(content, out var pkg) ? pkg : null;
-        }
+        public static NUSPackage? GetPackageByContent(Content content) => _contentDictionary.TryGetValue(content, out var pkg) ? pkg : null;
 
-        public static NUSPackage? GetPackageByFST(FST fst)
-        {
-            return FSTDictionary.TryGetValue(fst, out var pkg) ? pkg : null;
-        }
-
-        public static NUSPackage? GetPackageByTMD(TMD tmd)
-        {
-            return TMDDictionary.TryGetValue(tmd, out var pkg) ? pkg : null;
-        }
-
-        public static NUSPackage? GetPackageByContents(Contents contents)
-        {
-            return contentsDictionary.TryGetValue(contents, out var pkg) ? pkg : null;
-        }
-
-        public static NUSPackage? GetPackageByFSTEntires(FSTEntries fstEntries)
-        {
-            return FSTEntriesDictionary.TryGetValue(fstEntries, out var pkg) ? pkg : null;
-        }
+        public static NUSPackage? GetPackageByContents(Contents contents) => _contentsDictionary.TryGetValue(contents, out var pkg) ? pkg : null;
 
         private static string[] GetTopLevelEntries(string dir)
         {
@@ -135,11 +63,6 @@ namespace WiiU.Core.WUP.Services
             result.AddRange(Directory.GetFileSystemEntries(dir));
 
             return [.. result];
-        }
-
-        public static void ReadFiles(string[] list, FSTEntry parent)
-        {
-            ReadFiles(list, parent, false);
         }
 
         public static void ReadFiles(string[] list, FSTEntry parent, bool notInNUSPackage)
@@ -154,10 +77,10 @@ namespace WiiU.Core.WUP.Services
             {
                 if (Directory.Exists(f))
                 {
-                    FSTEntry newdir = new (f, notInNUSPackage);
+                    FSTEntry newDir = new(f, notInNUSPackage);
 
-                    parent.AddChildren(newdir);
-                    ReadFiles(GetTopLevelEntries(f), newdir, notInNUSPackage);
+                    parent.AddChildren(newDir);
+                    ReadFiles(GetTopLevelEntries(f), newDir, notInNUSPackage);
                 }
             }
         }

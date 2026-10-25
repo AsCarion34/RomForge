@@ -6,10 +6,7 @@ public class ToggleCommand(Func<object?, Task> executeAsync, Func<object?, bool>
 {
     public bool CanExecute(object? parameter) => canExecute?.Invoke(parameter) ?? true;
 
-    public async void Execute(object? parameter)
-    {
-        await executeAsync(parameter);
-    }
+    public async void Execute(object? parameter) => await executeAsync(parameter);
 
     public event EventHandler? CanExecuteChanged
     {

@@ -3,5 +3,6 @@
 public class MetaStat
 {
     public MetaTableStat Dirs = null!;
+
     public MetaTableStat Files = null!;
 }

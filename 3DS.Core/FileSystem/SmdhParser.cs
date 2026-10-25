@@ -10,11 +10,9 @@ public class SmdhParser
     private const int TitleStructSize = 0x200;
     private const int IconLargeOffset = 0x24C0;
 
-    private static readonly Locale3dsLanguage[] SlotLanguages =
+    private static readonly LocaleLanguage[] SlotLanguages =
     [
-        Locale3dsLanguage.JP, Locale3dsLanguage.EN, Locale3dsLanguage.FR, Locale3dsLanguage.DE,
-        Locale3dsLanguage.IT, Locale3dsLanguage.ES, Locale3dsLanguage.ZH, Locale3dsLanguage.KO,
-        Locale3dsLanguage.NL, Locale3dsLanguage.PT, Locale3dsLanguage.RU, Locale3dsLanguage.TW,
+        LocaleLanguage.JP, LocaleLanguage.EN, LocaleLanguage.FR, LocaleLanguage.DE, LocaleLanguage.IT, LocaleLanguage.ES, LocaleLanguage.ZH, LocaleLanguage.KO, LocaleLanguage.NL, LocaleLanguage.PT, LocaleLanguage.RU, LocaleLanguage.TW,
     ];
 
     public static SmdhInfo? TryParse(byte[] data)
@@ -32,16 +30,13 @@ public class SmdhParser
         for (int i = 0; i < 16; i++)
         {
             int offset = 0x08 + i * TitleStructSize;
+
             titles[i] = ParseTitle(data, offset);
         }
 
-        SmdhTitle title = titles[1].ShortDesc.Length > 0 ? titles[1]
-                        : titles[0].ShortDesc.Length > 0 ? titles[0]
-                        : titles.FirstOrDefault(t => t.ShortDesc.Length > 0);
-
+        SmdhTitle title = titles[1].ShortDesc.Length > 0 ? titles[1] : titles[0].ShortDesc.Length > 0 ? titles[0] : titles.FirstOrDefault(t => t.ShortDesc.Length > 0);
         byte[]? iconPixels = TryDecodeIconToBytes(data, IconLargeOffset, 48, 48);
-
-        var availableLanguages = new List<Locale3dsLanguage>();
+        var availableLanguages = new List<LocaleLanguage>();
 
         for (int i = 0; i < SlotLanguages.Length; i++)
         {
@@ -85,7 +80,6 @@ public class SmdhParser
     private static byte[]? TryDecodeIconToBytes(byte[] data, int offset, int width, int height)
     {
         byte[] pixels = new byte[width * height * 4];
-
         int srcIndex = offset;
 
         for (int tileY = 0; tileY < height; tileY += 8)
@@ -104,12 +98,12 @@ public class SmdhParser
                     }
 
                     ushort rgb565 = BitConverter.ToUInt16(data, srcIndex);
+
                     srcIndex += 2;
 
                     byte r = (byte)(((rgb565 >> 11) & 0x1F) * 255 / 31);
                     byte g = (byte)(((rgb565 >> 5) & 0x3F) * 255 / 63);
                     byte b = (byte)((rgb565 & 0x1F) * 255 / 31);
-
                     int dst = ((tileY + y) * width + (tileX + x)) * 4;
 
                     pixels[dst + 0] = b;

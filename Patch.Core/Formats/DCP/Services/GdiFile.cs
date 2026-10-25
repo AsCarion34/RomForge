@@ -53,9 +53,7 @@ public class GdiFile
             });
         }
 
-        return result.Tracks.Count == trackCount
-            ? result
-            : throw new InvalidDataException($".gdi 선언된 트랙 수({trackCount})와 실제 파싱된 트랙 수({result.Tracks.Count})가 다릅니다.");
+        return result.Tracks.Count == trackCount ? result : throw new InvalidDataException($".gdi 선언된 트랙 수({trackCount})와 실제 파싱된 트랙 수({result.Tracks.Count})가 다릅니다.");
     }
 
     public string GetTrackFullPath(GdiTrack track) => Path.Combine(BasePath, track.FileName);

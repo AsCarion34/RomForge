@@ -8,8 +8,11 @@ public class DbDirInfo : IDirInfo
     public const int InfoSize = 24;
 
     public int InfoByteLen => InfoSize;
+
     public uint Next;
+
     public uint SubDir;
+
     public uint SubFile;
 
     public uint GetNext() => Next;

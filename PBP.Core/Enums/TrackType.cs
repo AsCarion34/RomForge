@@ -3,5 +3,6 @@
 public enum TrackType
 {
     Data,
+
     Audio
 }

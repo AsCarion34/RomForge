@@ -1,12 +1,8 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
 using Ionic.Zlib;
 using NSW.WPF.Services;
 using NSW.WPF.UI;
-using PickPack.Disk;
-using PickPack.Disk.ETC;
 using RomForge.Core.UI.Command;
-using RomForge.Core.Models;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -14,19 +10,17 @@ using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using System.Windows.Shell;
+using RomForge.Core.Services;
+using PickPack.Disk.Models;
+using PickPack.Disk.Services;
+using PickPack.Disk.Helpers;
 
 namespace RomForge.ViewModels.Util;
 
 public class ZipImageToolMainViewModel : ToolTabViewModel
 {
-    #region Fields
-
     private readonly WmiWatchers _wmiWatchers = new();
-    private CancellationTokenSource? _cts;
-
-    #endregion
-
-    #region USB
 
     public ObservableCollection<DriveInfos> UsbDrives { get; } = [];
 
@@ -43,10 +37,6 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
             }
         }
     }
-
-    #endregion
-
-    #region Status
 
     private string _statusText1 = string.Empty;
     public string StatusText1
@@ -66,12 +56,14 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
     public int Progress
     {
         get => _progress;
-        set { _progress = value; OnPropertyChanged(); }
+        set 
+        { 
+            _progress = value; 
+
+            MainViewModel.SetTaskbarProgress(value);
+            OnPropertyChanged();
+        }
     }
-
-    #endregion
-
-    #region Tab
 
     private int _selectedTabIndex;
     public int SelectedTabIndex
@@ -79,10 +71,6 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
         get => _selectedTabIndex;
         set { _selectedTabIndex = value; OnPropertyChanged(); }
     }
-
-    #endregion
-
-    #region Write Tab
 
     private string _writeImagePath = string.Empty;
     public string WriteImagePath
@@ -105,10 +93,6 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
         set { _writeButtonText = value; OnPropertyChanged(); }
     }
 
-    #endregion
-
-    #region Read Tab
-
     private string _readImagePath = string.Empty;
     public string ReadImagePath
     {
@@ -116,6 +100,7 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
         set
         {
             _readImagePath = value;
+
             OnPropertyChanged();
             UpdateSegmentOptionsVisibility(value);
         }
@@ -160,17 +145,13 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
         set { _selectedCompressionIndex = value; OnPropertyChanged(); }
     }
 
-    #endregion
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
-
-    #region Commands
-
     public ICommand OpenWriteFileCommand { get; }
-    public ICommand WriteCommand { get; }
-    public ICommand OpenReadFileCommand { get; }
-    public ICommand ReadCommand { get; }
 
-    #endregion
+    public ICommand WriteCommand { get; }
+
+    public ICommand OpenReadFileCommand { get; }
+
+    public ICommand ReadCommand { get; }
 
     public ZipImageToolMainViewModel()
     {
@@ -180,12 +161,10 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
         {
             AppendLog("이동식 드라이브의 연결이 감지되었습니다.\n드라이브 목록을 갱신합니다.");
         };
-
         _wmiWatchers.USBRemoval += (s, e) =>
         {
             AppendLog("이동식 드라이브의 분리가 감지되었습니다.\n드라이브 목록을 갱신합니다.");
         };
-
         OpenWriteFileCommand = new RelayCommand(_ => OpenWriteFile());
         OpenReadFileCommand = new RelayCommand(_ => OpenReadFile());
         WriteCommand = new ToggleCommand(async _ => await WriteAsync());
@@ -193,8 +172,6 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
 
         ListRemovableUsbDrives();
     }
-
-    #region Private Methods
 
     private void ListRemovableUsbDrives()
     {        
@@ -264,7 +241,7 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
     {
         if (IsLocked)
         {
-            _cts?.Cancel();
+            Cancel();
             StatusText1 = "취소중...";
             return;
         }
@@ -279,7 +256,7 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
             return;
 
         WriteButtonText = "취소";
-        _cts = new CancellationTokenSource();
+        CancellationTokenSource = new CancellationTokenSource();
 
         using (BeginWork())
         {
@@ -292,28 +269,37 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
                 imgWriter.WriteEnded += OnWriteEnded;
 
                 AppendLog("굽기가 시작 됩니다.", LogLevel.Highlight);
-                await imgWriter.WriteImageAsync(WriteImagePath, SelectedDrive.DiskNumber, SelectedDrive.SizeBytes, _cts.Token);
+                await imgWriter.WriteImageAsync(WriteImagePath, SelectedDrive.DiskNumber, SelectedDrive.SizeBytes, CancellationTokenSource.Token);
             }
             catch (OperationCanceledException)
             {
                 Progress = 0;
                 StatusText1 = "굽기 취소";
+
                 PartitionUtil.RescanDisk(SelectedDrive.DiskNumber);
                 AppendLog("굽기가 취소 되었습니다.", LogLevel.Error);
+                await SoundPlayer.PlayCancelAsync();
             }
             catch (Win32Exception ex)
             {
                 AppendLog(ex.Message, LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
+                MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
+
             }
             catch (Exception ex)
             {
                 AppendLog(ex.Message, LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
+                MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
             }
             finally
             {
                 WriteButtonText = "굽기";
-                _cts?.Dispose();
-                _cts = null;
+
+                CancellationTokenSource?.Dispose();
+
+                CancellationTokenSource = null;
             }
         }
     }
@@ -341,7 +327,7 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
     {
         if (IsLocked)
         {
-            _cts?.Cancel();
+            CancellationTokenSource?.Cancel();
             StatusText1 = "취소중...";
             return;
         }
@@ -359,6 +345,7 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
         }
 
         ulong freeSpace = 0;
+
         try
         {
             freeSpace = DiskUtil.GetAvailableFreeSpace(Path.GetPathRoot(ReadImagePath));
@@ -366,16 +353,18 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
         catch (Exception ex)
         {
             AppendLog($"디스크 용량을 확인하는 중 오류가 발생했습니다: {ex.Message}", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
         }
 
         if (freeSpace < (ulong)SelectedDrive.SizeBytes)
         {
             AppendLog("디스크 용량이 부족합니다.", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             return;
         }
 
         ReadButtonText = "취소";
-        _cts = new CancellationTokenSource();
+        CancellationTokenSource = new CancellationTokenSource();
 
         using (BeginWork())
         {
@@ -391,7 +380,7 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
                 CompressionLevel compLevel = GetCompressionLevel();
 
                 AppendLog("저장이 시작 됩니다.", LogLevel.Highlight);
-                await Task.Run(() => reader.ReadImageAsync(SelectedDrive.DiskNumber, ReadImagePath, maxSegment, compLevel, _cts.Token));
+                await Task.Run(() => reader.ReadImageAsync(SelectedDrive.DiskNumber, ReadImagePath, maxSegment, compLevel, CancellationTokenSource.Token));
             }
             catch (OperationCanceledException)
             {
@@ -399,20 +388,25 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
                 StatusText1 = "저장 취소";
                 DeleteArchiveTempAndPartialFiles(ReadImagePath);
                 AppendLog("저장이 취소되었습니다.", LogLevel.Error);
+                await SoundPlayer.PlayCancelAsync();
             }
             catch (Win32Exception ex)
             {
                 AppendLog(ex.Message, LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
+                MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
             }
             catch (Exception ex)
             {
                 AppendLog(ex.Message, LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
+                MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
             }
             finally
             {
                 ReadButtonText = "저장";
-                _cts?.Dispose();
-                _cts = null;
+
+                CleanupTask();
             }
         }
     }
@@ -431,27 +425,27 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
 
     private void OnWriteEnded(object? sender, EventArgs e)
     {
-        Application.Current.Dispatcher.Invoke(() =>
+        Application.Current.Dispatcher.Invoke(async () =>
         {
             Progress = 100;
             StatusText1 = "이미지 굽기 완료";
 
+            await SoundPlayer.PlayCompleteAsync();
             PartitionUtil.RescanDisk(SelectedDrive!.DiskNumber);
             PartitionUtil.AssignNextAvailableDriveLetter();
-
             AppendLog("이미지 굽기가 완료되었습니다.", LogLevel.Ok);
         });
     }
 
     private void OnReaderEnded(object? sender, EventArgs e)
     {
-        Application.Current.Dispatcher.Invoke(() =>
+        Application.Current.Dispatcher.Invoke(async () =>
         {
             Progress = 100;
             StatusText1 = "이미지 저장 완료";
 
+            await SoundPlayer.PlayCompleteAsync();
             Path.GetDirectoryName(ReadImagePath).OpenFolder();
-
             AppendLog("이미지 저장이 완료되었습니다.", LogLevel.Ok);
         });
     }
@@ -465,6 +459,7 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
         }
 
         string ext = Path.GetExtension(path).TrimStart('.').ToLowerInvariant();
+
         SegmentOptionsVisible = ext == "zip";
     }
 
@@ -510,16 +505,4 @@ public class ZipImageToolMainViewModel : ToolTabViewModel
             Debug.WriteLine($"An unexpected error occurred: {ex.Message}");
         }
     }
-
-    private void AppendLog(string msg, LogLevel level = LogLevel.Info)
-    {
-        if (Application.Current?.Dispatcher == null) 
-            return;
-
-        Application.Current.Dispatcher.Invoke(() =>
-            LogEntries.Add(new LogEntry { Message = msg, Level = level })
-        );
-    }
-
-    #endregion
 }

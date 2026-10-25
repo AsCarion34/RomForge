@@ -1,4 +1,5 @@
 using Common.WPF.ViewModels;
+using NSW.Core.Models;
 using System.Windows.Media;
 
 namespace NSW.WPF.ViewModels;
@@ -12,6 +13,8 @@ public class GameFile(string filePath) : FileItemBase(filePath, "대기중")
     private string? _patchPath;
     private string? _patchPassword;
     private string _fileType = string.Empty;
+
+    private long? _overrideSizeBytes;
 
     public string FileType
     {
@@ -27,10 +30,27 @@ public class GameFile(string filePath) : FileItemBase(filePath, "대기중")
         }
     }
 
-    protected override void OnStatusChanged()
+    public long CustomSizeBytes
     {
-        base.OnStatusChanged();
+        get => _overrideSizeBytes ?? base.FileSizeBytes;
+        set
+        {
+            if (_overrideSizeBytes != value)
+            {
+                _overrideSizeBytes = value;
+                OnPropertyChanged(nameof(FileSizeBytes));
+                OnPropertyChanged(nameof(FileSize));
+            }
+        }
     }
+
+    public override long FileSizeBytes => CustomSizeBytes;
+
+    public IReadOnlyList<byte> ProgramIdOffsets { get; set; } = [];
+
+    public GameNamingInfo? Naming { get; set; }
+
+    protected override void OnStatusChanged() => base.OnStatusChanged();
 
     public string? TitleName
     {
@@ -75,9 +95,7 @@ public class GameFile(string filePath) : FileItemBase(filePath, "대기중")
 
     public string PatchDisplay => string.IsNullOrEmpty(PatchPath) ? "(없음)" : PatchPath;
 
-    public string PatchIconSource => string.IsNullOrEmpty(PatchPath)
-        ? "/Assets/Images/NoPatch.png"
-        : "/Assets/Images/Patch.png";
+    public string PatchIconSource => string.IsNullOrEmpty(PatchPath) ? "/Assets/Images/NoPatch.png" : "/Assets/Images/Patch.png";
 
     public bool IsKeyMissing => FileType == Core.Properties.Resources.Status_NoKey;
 
@@ -96,10 +114,17 @@ public class GameFile(string filePath) : FileItemBase(filePath, "대기중")
             bool hasDlc = FileType.Contains('D');
             int count = (hasBase ? 1 : 0) + (hasUpdate ? 1 : 0) + (hasDlc ? 1 : 0);
 
-            if (count > 1) return new SolidColorBrush(Color.FromArgb(50, 120, 0, 212));
-            if (hasBase) return new SolidColorBrush(Color.FromArgb(50, 0, 120, 212));
-            if (hasUpdate) return new SolidColorBrush(Color.FromArgb(50, 16, 124, 16));
-            if (hasDlc) return new SolidColorBrush(Color.FromArgb(50, 200, 130, 0));
+            if (count > 1)
+                return new SolidColorBrush(Color.FromArgb(50, 120, 0, 212));
+
+            if (hasBase)
+                return new SolidColorBrush(Color.FromArgb(50, 0, 120, 212));
+
+            if (hasUpdate)
+                return new SolidColorBrush(Color.FromArgb(50, 16, 124, 16));
+
+            if (hasDlc)
+                return new SolidColorBrush(Color.FromArgb(50, 200, 130, 0));
 
             return new SolidColorBrush(Color.FromArgb(30, 255, 255, 255));
         }
@@ -120,10 +145,17 @@ public class GameFile(string filePath) : FileItemBase(filePath, "대기중")
             bool hasDlc = FileType.Contains('D');
             int count = (hasBase ? 1 : 0) + (hasUpdate ? 1 : 0) + (hasDlc ? 1 : 0);
 
-            if (count > 1) return new SolidColorBrush(Color.FromRgb(180, 100, 255));
-            if (hasBase) return new SolidColorBrush(Color.FromRgb(100, 180, 255));
-            if (hasUpdate) return new SolidColorBrush(Color.FromRgb(100, 210, 100));
-            if (hasDlc) return new SolidColorBrush(Color.FromRgb(255, 190, 80));
+            if (count > 1)
+                return new SolidColorBrush(Color.FromRgb(180, 100, 255));
+
+            if (hasBase)
+                return new SolidColorBrush(Color.FromRgb(100, 180, 255));
+
+            if (hasUpdate)
+                return new SolidColorBrush(Color.FromRgb(100, 210, 100));
+
+            if (hasDlc)
+                return new SolidColorBrush(Color.FromRgb(255, 190, 80));
 
             return new SolidColorBrush(Color.FromRgb(160, 160, 160));
         }

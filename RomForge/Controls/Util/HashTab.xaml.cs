@@ -5,7 +5,6 @@ using RomForge.Core.Models.Util;
 using RomForge.Core.Services.Util;
 using RomForge.ViewModels.Util;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -32,14 +31,7 @@ public partial class HashTab : UserControl
         }
     }
 
-    private void OnScrollToItemRequested(HashFileItem item)
-    {
-        Dispatcher.InvokeAsync(() =>
-        {
-            if (item != null)
-                lvFiles.ScrollIntoView(item);
-        }, DispatcherPriority.Background);
-    }
+    private void OnScrollToItemRequested(HashFileItem item) => Dispatcher.InvokeAsync(() => lvFiles.ScrollIntoView(item), DispatcherPriority.Background);
 
     private void RadioButton_Checked(object sender, RoutedEventArgs e)
     {
@@ -67,6 +59,7 @@ public partial class HashTab : UserControl
         if (e.Key == Key.Delete)
         {
             var selected = lvFiles.SelectedItems.Cast<HashFileItem>().ToList();
+
             ViewModel.RemoveItems(selected);
         }
     }
@@ -98,6 +91,7 @@ public partial class HashTab : UserControl
     private void BtnRemove_Click(object sender, RoutedEventArgs e)
     {
         var selected = lvFiles.SelectedItems.Cast<HashFileItem>().ToList();
+
         ViewModel.RemoveItems(selected);
     }
 
@@ -132,8 +126,6 @@ public partial class HashTab : UserControl
         if (selected.Count == 0)
             return;
 
-        string? dir = Path.GetDirectoryName(selected[0].FilePath);
-
-        dir?.OpenFolder();
+        Path.GetDirectoryName(selected[0].FilePath)?.OpenFolder();
     }
 }

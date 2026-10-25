@@ -26,6 +26,7 @@ public class IvfcLevel : IRandomAccessFile
             throw new InvalidOperationException("IvfcLevel::new size mismatch");
 
         int chunkCount = Misc.DivideUp(blockCount, 4);
+
         _hash = hash;
         _data = data;
         _blockLen = blockLen;
@@ -114,7 +115,9 @@ public class IvfcLevel : IRandomAccessFile
                 else
                 {
                     SetStatus(i, BlockBroken);
+
                     anyBroken = true;
+
                     buf.AsSpan(destOffset, destCount).Fill(0xDD);
                 }
             }

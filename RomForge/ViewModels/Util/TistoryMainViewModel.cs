@@ -1,15 +1,15 @@
 using Common;
-using Common.WPF.ViewModels;
 using NSW.WPF.Services;
 using RomForge.Core;
-using RomForge.Core.Models;
 using RomForge.Core.Models.Util;
+using RomForge.Core.Services;
 using RomForge.Core.Services.Util;
 using RomForge.Core.UI.Command;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Shell;
 
 namespace RomForge.ViewModels.Util;
 
@@ -21,8 +21,6 @@ public class TistoryMainViewModel : ToolTabViewModel
     private bool _isBusy;
     private bool _autoExtractAfterDownload = AppConfig.Instance.Tistory.AutoExtractAfterDownload;
     private CancellationTokenSource _cts = new();
-
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
     public ObservableCollection<TistoryDownloadItem> FileItems { get; } = [];
 
@@ -131,9 +129,7 @@ public class TistoryMainViewModel : ToolTabViewModel
                         if (!string.IsNullOrEmpty(ext) && excludedExtensions.Contains(ext))
                             continue;
                     }
-                    catch
-                    {
-                    }
+                    catch { }
 
                     if (!existing.Add(url))
                         continue;
@@ -162,15 +158,25 @@ public class TistoryMainViewModel : ToolTabViewModel
                 if (FileItems.Count > 0)
                     ScrollToItemRequested?.Invoke(FileItems[^1]);
 
-                AppendLog(addedCount > 0 ? $"[분석 완료] 첨부파일 {addedCount}개를 추가했습니다." : "[분석 완료] 새로 추가된 첨부파일이 없습니다.", addedCount > 0 ? LogLevel.Highlight : LogLevel.Error);
+                if (addedCount > 0)
+                {
+                    AppendLog($"[분석 완료] 첨부파일 {addedCount}개를 추가했습니다.", LogLevel.Highlight);
+                    await SoundPlayer.PlayCompleteAsync();
+                    MainViewModel.SetTaskbarProgress(100);
+                }
+                else
+                    AppendLog("[분석 완료] 새로 추가된 첨부파일이 없습니다.", LogLevel.Error);
             }
             catch (OperationCanceledException)
             {
                 AppendLog("분석이 취소되었습니다.", LogLevel.Error);
+                await SoundPlayer.PlayCancelAsync();
             }
             catch (Exception ex)
             {
                 AppendLog($"[분석 실패] {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
+                MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
             }
             finally
             {
@@ -216,6 +222,7 @@ public class TistoryMainViewModel : ToolTabViewModel
 
                     item.Status = "다운로드중";
                     item.Progress = 0;
+                    MainViewModel.SetTaskbarProgress(0);
 
                     ScrollToItemRequested?.Invoke(item);
 
@@ -229,6 +236,7 @@ public class TistoryMainViewModel : ToolTabViewModel
                         item.FileName = Path.GetFileName(savedPath);
                         item.FileSizeBytes = sizeBytes;
                         item.Progress = 100;
+                        MainViewModel.SetTaskbarProgress(100);
                         item.Status = "완료";
 
                         lock (lockObj)
@@ -242,6 +250,7 @@ public class TistoryMainViewModel : ToolTabViewModel
                     {
                         item.Progress = 0;
                         item.Status = "실패";
+                        MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
                     }
                 });
 
@@ -260,11 +269,16 @@ public class TistoryMainViewModel : ToolTabViewModel
                 AppendLog("모든 작업이 종료되었습니다.", LogLevel.Highlight);
 
                 if (successCount > 0)
+                {
+                    await SoundPlayer.PlayCompleteAsync();
                     SaveDirectory.OpenFolder();
+                }
             }
             catch (OperationCanceledException)
             {
                 AppendLog("작업이 취소되었습니다.", LogLevel.Error);
+                await SoundPlayer.PlayCancelAsync();
+                MainViewModel.SetTaskbarProgress(0);
 
                 foreach (var item in FileItems.Where(i => i.Status == "대기중" || i.Status == "다운로드중"))
                 {
@@ -275,6 +289,8 @@ public class TistoryMainViewModel : ToolTabViewModel
             finally
             {
                 IsBusy = false;
+
+                CleanupTask();
                 CommandManager.InvalidateRequerySuggested();
             }
         }
@@ -318,6 +334,7 @@ public class TistoryMainViewModel : ToolTabViewModel
                 foreach (var item in items)
                 {
                     item.Progress = 0;
+                    MainViewModel.SetTaskbarProgress(0);
                     item.Status = "압축해제중";
                 }
 
@@ -337,6 +354,7 @@ public class TistoryMainViewModel : ToolTabViewModel
                     item.SavedPath = extractDir;
                     item.FileName = displayName;
                     item.Progress = 100;
+                    MainViewModel.SetTaskbarProgress(100);
                     item.Status = "압축해제완료";
                 }
 
@@ -350,7 +368,10 @@ public class TistoryMainViewModel : ToolTabViewModel
                     item.Progress = 0;
                     item.Status = "압축해제실패";
                 }
+
                 AppendLog($"[압축해제 실패] {representative.FileName}: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
+                MainViewModel.SetTaskbarProgress(100, TaskbarItemProgressState.Error);
             }
         }
 
@@ -361,13 +382,5 @@ public class TistoryMainViewModel : ToolTabViewModel
     {
         for (int i = 0; i < FileItems.Count; i++)
             FileItems[i].No = i + 1;
-    }
-
-    private void AppendLog(string msg, LogLevel level = LogLevel.Info)
-    {
-        if (Application.Current?.Dispatcher == null)
-            return;
-
-        Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
     }
 }

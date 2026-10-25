@@ -3,7 +3,8 @@ using _3DS.Core.Interfaces;
 using _3DS.Core.Models;
 using _3DS.Core.Services;
 using Common;
-using NSW.Utils;
+using NSW.Core.Utils;
+using Patch.Core.Enums;
 using Patch.Core.Services;
 using RomForge.Core.Models._3DS;
 using System.IO;
@@ -195,7 +196,7 @@ public class RepackService(Action<string, LogLevel> log, Func<string?> getPatchP
 
                 if (idx == 0)
                 {
-                    romfsPatchSource = patchCtx.CreateRomfsSource("romfs");
+                    romfsPatchSource = patchCtx.CreateRomfsSource("romfs", romfsResult.Files.Select(f => f.FullPath));
                     patchSource = romfsPatchSource;
                 }
 
@@ -218,7 +219,7 @@ public class RepackService(Action<string, LogLevel> log, Func<string?> getPatchP
         if (repackedNcchs.Count == 0)
             throw new InvalidOperationException("언팩된 파티션이 없습니다.");
 
-        string safeFileName = NspNameBuilder.SafeFileName(displayName);
+        string safeFileName = NameBuilder.SafeFileName(displayName);
         string fileName = string.IsNullOrEmpty(safeFileName) ? "output" : safeFileName;
         string namePart = string.IsNullOrEmpty(titleId) ? fileName : $"{fileName} [{titleId.ToUpperInvariant()}]";
         string outputBasePath = Path.Combine(outputPath, namePart + "_Repack");
@@ -314,7 +315,7 @@ public class RepackService(Action<string, LogLevel> log, Func<string?> getPatchP
 
             if (idx == 0)
             {
-                romfsPatchSource = patchCtx.CreateRomfsSource("romfs");
+                romfsPatchSource = patchCtx.CreateRomfsSource("romfs", (unpack.RomFs?.Files ?? []).Select(f => f.FullPath));
                 patchSource = romfsPatchSource;
             }
 

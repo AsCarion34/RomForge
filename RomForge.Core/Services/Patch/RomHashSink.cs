@@ -1,4 +1,5 @@
-﻿using System.Buffers;
+﻿using RomForge.Core.Models.Patch;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Runtime.ExceptionServices;
@@ -53,9 +54,7 @@ public sealed class RomHashSink : Stream
         set => Seek(value, SeekOrigin.Begin);
     }
 
-    public override void Flush()
-    {
-    }
+    public override void Flush() { }
 
     public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
@@ -69,9 +68,7 @@ public sealed class RomHashSink : Stream
         return _written;
     }
 
-    public override void SetLength(long value)
-    {
-    }
+    public override void SetLength(long value) { }
 
     public override void Write(byte[] buffer, int offset, int count) => Write(new ReadOnlySpan<byte>(buffer, offset, count));
 
@@ -129,9 +126,7 @@ public sealed class RomHashSink : Stream
             {
                 _queue.CompleteAdding();
             }
-            catch (ObjectDisposedException)
-            {
-            }
+            catch (ObjectDisposedException) { }
 
             _consumer.Wait();
 
@@ -194,9 +189,7 @@ public sealed class RomHashSink : Stream
                 ReportProgress(length);
             }
         }
-        catch (OperationCanceledException)
-        {
-        }
+        catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             _fault = ex;

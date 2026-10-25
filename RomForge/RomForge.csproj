@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <VersionPrefix>1.8.0.5</VersionPrefix>
+    <VersionPrefix>1.9.0.5</VersionPrefix>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
@@ -10,6 +10,7 @@
     <ApplicationIcon>icon.ico</ApplicationIcon>
     <AssemblyName>RomForge</AssemblyName>
     <RootNamespace>RomForge</RootNamespace>
+    <TieredCompilationQuickJitForLoops>false</TieredCompilationQuickJitForLoops>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <NoWarn>1701;1702;CA1401;CS8601;CS8604;CS8618;CA1416;CA1826;SYSLIB1045;SYSLIB1054;NETSDK1206</NoWarn>
@@ -18,85 +19,113 @@
     <NoWarn>1701;1702;CA1401;CS8601;CS8604;CS8618;CA1416;CA1826;SYSLIB1045;SYSLIB1054;NETSDK1206</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Assets\Images\Arcade.png" />
+    <None Remove="Assets\Images\ArcadeCartridge.png" />
+    <None Remove="Assets\Images\Blu-ray.png" />
     <None Remove="Assets\Images\Categories.png" />
+    <None Remove="Assets\Images\CD.png" />
     <None Remove="Assets\Images\Certs.png" />
     <None Remove="Assets\Images\Check.png" />
     <None Remove="Assets\Images\Comment.png" />
     <None Remove="Assets\Images\Copy.png" />
     <None Remove="Assets\Images\CUE.png" />
-    <None Remove="Assets\Images\Desktop.png" />
-    <None Remove="Assets\Images\Dreamcast.png" />
-    <None Remove="Assets\Images\Excel.png" />
+    <None Remove="Assets\Images\Diskette.png" />
+    <None Remove="Assets\Images\DVD.png" />
     <None Remove="Assets\Images\FontSize.png" />
+    <None Remove="Assets\Images\Gz.png" />
     <None Remove="Assets\Images\Hash.png" />
     <None Remove="Assets\Images\Help.png" />
+    <None Remove="Assets\Images\Image.png" />
     <None Remove="Assets\Images\Insert.png" />
     <None Remove="Assets\Images\Keygen.png" />
-    <None Remove="Assets\Images\Left.png" />
     <None Remove="Assets\Images\Lock.png" />
     <None Remove="Assets\Images\LowerA.png" />
     <None Remove="Assets\Images\movable.sed.png" />
     <None Remove="Assets\Images\Neural.png" />
     <None Remove="Assets\Images\NoPatch.png" />
     <None Remove="Assets\Images\OpenFolder.png" />
+    <None Remove="Assets\Images\PC98.png" />
+    <None Remove="Assets\Images\Pin.png" />
+    <None Remove="Assets\Images\PS3.png" />
     <None Remove="Assets\Images\PSP.png" />
     <None Remove="Assets\Images\Recover.png" />
     <None Remove="Assets\Images\Region.png" />
+    <None Remove="Assets\Images\Rename.png" />
     <None Remove="Assets\Images\Repack.png" />
-    <None Remove="Assets\Images\Right.png" />
+    <None Remove="Assets\Images\Resource.png" />
     <None Remove="Assets\Images\Saturn.png" />
     <None Remove="Assets\Images\Search.png" />
+    <None Remove="Assets\Images\Shield.png" />
+    <None Remove="Assets\Images\Sound.png" />
     <None Remove="Assets\Images\Split.png" />
     <None Remove="Assets\Images\Tistory.png" />
     <None Remove="Assets\Images\Unpack.png" />
+    <None Remove="Assets\Images\UnRepack.png" />
     <None Remove="Assets\Images\UpperA.png" />
     <None Remove="Assets\Images\Version.png" />
     <None Remove="Assets\Images\Vita.png" />
+    <None Remove="Assets\Images\VitaCartridge.png" />
     <None Remove="Assets\Images\VitaGray.png" />
     <None Remove="Assets\Images\Wii.png" />
     <None Remove="Assets\Images\WiiU.png" />
     <None Remove="Assets\Images\WorkSpace.png" />
     <None Remove="Assets\Images\zRIF.png" />
+    <None Remove="Assets\Sounds\cancel.mp3" />
+    <None Remove="Assets\Sounds\complete.mp3" />
+    <None Remove="Assets\Sounds\error.mp3" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="icon.ico" />
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Assets\Images\PS3.png" />
+    <Resource Include="Assets\Images\Rename.png" />
+    <Resource Include="Assets\Images\UnRepack.png" />
+  </ItemGroup>
+  <ItemGroup>
     <Resource Include="Assets\Images\3DS.png" />
+    <Resource Include="Assets\Images\Arcade.png" />
+    <Resource Include="Assets\Images\ArcadeCartridge.png" />
+    <Resource Include="Assets\Images\Blu-ray.png" />
     <Resource Include="Assets\Images\Cartridge.png" />
+    <Resource Include="Assets\Images\CD.png" />
     <Resource Include="Assets\Images\Certs.png" />
     <Resource Include="Assets\Images\Check.png" />
     <Resource Include="Assets\Images\Comment.png" />
     <Resource Include="Assets\Images\Convert.png" />
     <Resource Include="Assets\Images\Copy.png" />
     <Resource Include="Assets\Images\CUE.png" />
-    <Resource Include="Assets\Images\Desktop.png" />
-    <Resource Include="Assets\Images\Dreamcast.png" />
-    <Resource Include="Assets\Images\Excel.png" />
+    <Resource Include="Assets\Images\Diskette.png" />
+    <Resource Include="Assets\Images\DVD.png" />
     <Resource Include="Assets\Images\FontSize.png" />
+    <Resource Include="Assets\Images\Gz.png" />
     <Resource Include="Assets\Images\Hash.png" />
     <Resource Include="Assets\Images\HDD.png" />
     <Resource Include="Assets\Images\Help.png" />
+    <Resource Include="Assets\Images\Image.png" />
     <Resource Include="Assets\Images\Insert.png" />
     <Resource Include="Assets\Images\Keygen.png" />
-    <Resource Include="Assets\Images\Left.png" />
     <Resource Include="Assets\Images\LowerA.png" />
     <Resource Include="Assets\Images\Neural.png" />
     <Resource Include="Assets\Images\NoPatch.png" />
     <Resource Include="Assets\Images\OpenFolder.png" />
+    <Resource Include="Assets\Images\PC98.png" />
+    <Resource Include="Assets\Images\Pin.png" />
     <Resource Include="Assets\Images\PSP.png" />
     <Resource Include="Assets\Images\Recover.png" />
     <Resource Include="Assets\Images\Repack.png" />
-    <Resource Include="Assets\Images\Right.png" />
+    <Resource Include="Assets\Images\Resource.png" />
     <Resource Include="Assets\Images\Saturn.png" />
     <Resource Include="Assets\Images\SD.png" />
     <Resource Include="Assets\Images\Search.png" />
+    <Resource Include="Assets\Images\Shield.png" />
+    <Resource Include="Assets\Images\Sound.png" />
     <Resource Include="Assets\Images\Split.png" />
     <Resource Include="Assets\Images\Tistory.png" />
     <Resource Include="Assets\Images\Unpack.png" />
     <Resource Include="Assets\Images\UpperA.png" />
     <Resource Include="Assets\Images\Vita.png" />
-    <Resource Include="Assets\Images\VitaGray.png" />
+    <Resource Include="Assets\Images\VitaCartridge.png" />
     <Resource Include="Assets\Images\Wii.png" />
     <Resource Include="Assets\Images\WiiU.png" />
     <Resource Include="Assets\Images\WorkSpace.png" />
@@ -104,15 +133,15 @@
     <Resource Include="Assets\Images\DLC.png" />
     <Resource Include="Assets\Images\file.png" />
     <Resource Include="Assets\Images\Gift.png" />
-    <Resource Include="Assets\Images\gz.png" />
     <Resource Include="Assets\Images\img.png" />
     <Resource Include="Assets\Images\Input.png" />
     <Resource Include="Assets\Images\Install.png" />
     <Resource Include="Assets\Images\Installer.png" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="NAudio" Version="2.2.1" />
     <PackageReference Include="Ookii.Dialogs.Wpf" Version="5.0.1" />
-    <PackageReference Include="System.IO.Hashing" Version="10.0.9" />
+    <PackageReference Include="System.IO.Hashing" Version="10.0.12" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="App.xaml" />
@@ -121,7 +150,6 @@
     <ProjectReference Include="..\3DS.Core\3DS.Core.csproj" />
     <ProjectReference Include="..\CD.Core\CD.Core.csproj" />
     <ProjectReference Include="..\Common.WPF\Common.WPF.csproj" />
-    <ProjectReference Include="..\NSW.M1.Core\NSW.M1.Core.csproj" />
     <ProjectReference Include="..\NSW.WPF\NSW.WPF.csproj" />
     <ProjectReference Include="..\Patch.Core\Patch.Core.csproj" />
     <ProjectReference Include="..\PBP.Core\PBP.Core.csproj" />
@@ -142,9 +170,7 @@
     <Resource Include="Assets\Images\Compress.png" />
     <Resource Include="Assets\Images\Delete.png" />
     <Resource Include="Assets\Images\Dolphin.png" />
-    <Resource Include="Assets\Images\Drag.png" />
     <Resource Include="Assets\Images\Extension.png" />
-    <Resource Include="Assets\Images\FBNeo.png" />
     <Resource Include="Assets\Images\FileSizeBytes.png" />
     <Resource Include="Assets\Images\Info.png" />
     <Resource Include="Assets\Images\Level.png" />
@@ -152,7 +178,6 @@
     <Resource Include="Assets\Images\Loading.png" />
     <Resource Include="Assets\Images\Mame.png" />
     <Resource Include="Assets\Images\Merge.png" />
-    <Resource Include="Assets\Images\Metadata.png" />
     <Resource Include="Assets\Images\Output.png" />
     <Resource Include="Assets\Images\Package.png" />
     <Resource Include="Assets\Images\Patch.png" />
@@ -175,6 +200,9 @@
     <Resource Include="Assets\Images\ZipFile.png" />
     <Resource Include="Assets\Images\ZipFolder.png" />
     <Resource Include="Assets\Images\zRIF.png" />
+    <Resource Include="Assets\Sounds\cancel.mp3" />
+    <Resource Include="Assets\Sounds\complete.mp3" />
+    <Resource Include="Assets\Sounds\error.mp3" />
   </ItemGroup>
   <ItemGroup>
     <None Update="aes_keys.txt">

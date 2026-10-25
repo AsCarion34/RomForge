@@ -5,6 +5,7 @@ namespace _3DS.Core.Models;
 public class IvfcHeader
 {
     public const int Size = 0x5C;
+
     public const int HeaderAlign = 0x10;
 
     public uint Magic { get; init; }

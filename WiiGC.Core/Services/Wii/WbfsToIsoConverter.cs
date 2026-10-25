@@ -1,6 +1,4 @@
-﻿using WiiGC.Core.Services;
-
-namespace WiiGC.Core.Services.Wii;
+﻿namespace WiiGC.Core.Services.Wii;
 
 public static class WbfsToIsoConverter
 {
@@ -17,11 +15,9 @@ public static class WbfsToIsoConverter
 
             long length = wbfs.Length;
             int blockSize = wbfs.BlockSize;
-            long blockCount = (length + blockSize - 1) / blockSize;            
-            using var output = File.OpenHandle(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, FileOptions.None, length);
-
-            RandomAccess.SetLength(output, length);
-
+            long blockCount = (length + blockSize - 1) / blockSize;
+            using var output = SparseFile.Create(outputPath, length);
+            var sink = new FileIsoSink(output);
             byte[] buffer = new byte[blockSize];
 
             for (long block = 0; block < blockCount; block++)
@@ -32,12 +28,8 @@ public static class WbfsToIsoConverter
                 {
                     long offset = block * blockSize;
                     int size = (int)Math.Min(blockSize, length - offset);
-                    var span = buffer.AsSpan(0, size);
 
-                    wbfs.Read(offset, span);
-
-                    if (span.ContainsAnyExcept((byte)0))
-                        RandomAccess.Write(output, span, offset);
+                    SparseFile.CopyNonZero(wbfs, sink, buffer, offset, size, null, ct);
                 }
 
                 progress?.Invoke(Math.Min(1.0, (double)(block + 1) / blockCount));
@@ -47,15 +39,7 @@ public static class WbfsToIsoConverter
         }
         finally
         {
-            if (!succeeded)
-            {
-                try
-                {
-                    if (File.Exists(outputPath))
-                        File.Delete(outputPath);
-                }
-                catch { }
-            }
+            OutputGuard.DeleteIfFailed(outputPath, succeeded);
         }
     }
 }

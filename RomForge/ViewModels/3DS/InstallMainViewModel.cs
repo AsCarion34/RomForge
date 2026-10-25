@@ -1,5 +1,4 @@
-﻿using Common.WPF.ViewModels;
-using RomForge.Core.Models._3DS;
+﻿using RomForge.Core.Models._3DS;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
@@ -77,7 +76,6 @@ public class InstallMainViewModel : ToolTabViewModel
     public static string GetFileDialogFilter()
     {
         string wildcards = string.Join(";", SupportedExtensions.Select(ext => $"*{ext}"));
-
         return $"지원 파일|{wildcards}|모든 파일|*.*";
     }
 }

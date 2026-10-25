@@ -1,7 +1,5 @@
-﻿using LibHac.Ncm;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using RomForge.Core.Models.Patch;
-using RomForge.Core.Services.Patch;
 using RomForge.Core.UI.Helpers;
 using RomForge.ViewModels;
 using RomForge.ViewModels.Patch;
@@ -21,13 +19,13 @@ public partial class NormalTab : UserControl
     private static class PatchExtensions
     {
         public static readonly string[] AllowedExtensions = [".ips", ".bps", ".ups", ".ppf", ".aps", ".xdelta", ".dcp"];
+
         public static string FileFilter => $"패치 파일|{string.Join(";", AllowedExtensions.Select(ext => "*" + ext))}|모든 파일|*.*";
     }
 
     public NormalTab()
     {
         InitializeComponent();
-
         Loaded += (_, _) =>
         {
             if (ViewModel != null)
@@ -48,7 +46,6 @@ public partial class NormalTab : UserControl
             var textBrush = new SolidColorBrush(Color.FromRgb(0xDC, 0xDC, 0xDC));
             var headerBrush = new SolidColorBrush(Color.FromRgb(0xEE, 0xEE, 0xEE));
             var subBrush = new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88));
-
             var window = new Window
             {
                 Title = "해시 계산 기준 선택",
@@ -76,18 +73,14 @@ public partial class NormalTab : UserControl
                 TextWrapping = TextWrapping.Wrap,
                 FontWeight = FontWeights.Bold,
                 Foreground = headerBrush
-            };
-
+            };            
             var description = new TextBlock
             {
-                Text = "CHD에는 원본이 cue/bin이었는지 gdi였는지 기록되지 않습니다.\n\n"
-                     + "• GDI 기준: 패치가 실제로 사용하는 파일 (TOSEC 배치)\n"
-                     + "• CUE 기준: Redump cue/bin 원본과 비교할 때 (pregap을 원래 위치로 복원)",
+                Text = "CHD에는 원본이 cue/bin이었는지 gdi였는지 기록되지 않습니다.\n\n• GDI 기준: 패치가 실제로 사용하는 파일 (TOSEC 배치)\n• CUE 기준: Redump cue/bin 원본과 비교할 때 (pregap을 원래 위치로 복원)",
                 Margin = new Thickness(16, 0, 16, 16),
                 TextWrapping = TextWrapping.Wrap,
                 Foreground = textBrush
             };
-
             var hint = new TextBlock
             {
                 Text = "창을 닫으면 GDI 기준으로 계산합니다.",
@@ -95,9 +88,7 @@ public partial class NormalTab : UserControl
                 Foreground = subBrush,
                 FontSize = 11
             };
-
             var chosen = GdRomHashLayout.Gdi;
-
             var gdiButton = new Button
             {
                 Content = "GDI 기준",
@@ -132,10 +123,12 @@ public partial class NormalTab : UserControl
                 HorizontalAlignment = HorizontalAlignment.Right,
                 Margin = new Thickness(16, 0, 16, 16)
             };
+
             buttonsPanel.Children.Add(gdiButton);
             buttonsPanel.Children.Add(cueButton);
 
             var root = new StackPanel();
+
             root.Children.Add(header);
             root.Children.Add(description);
             root.Children.Add(hint);
@@ -144,7 +137,6 @@ public partial class NormalTab : UserControl
             window.Content = root;
 
             window.ShowDialog();
-
             tcs.SetResult(chosen);
         });
 
@@ -164,7 +156,6 @@ public partial class NormalTab : UserControl
             var headerBrush = new SolidColorBrush(Color.FromRgb(0xEE, 0xEE, 0xEE));
             var hoverBrush = new SolidColorBrush(Color.FromRgb(0x2D, 0x2D, 0x30));
             var selectedBrush = new SolidColorBrush(Color.FromRgb(0x00, 0x7A, 0xCC));
-
             var window = new Window
             {
                 Title = "원본 롬 파일 선택",
@@ -186,6 +177,7 @@ public partial class NormalTab : UserControl
             };
 
             var itemStyle = new Style(typeof(ListBoxItem));
+
             itemStyle.Setters.Add(new Setter(Control.ForegroundProperty, textBrush));
             itemStyle.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(8, 6, 8, 6)));
             itemStyle.Setters.Add(new Setter(FrameworkElement.MarginProperty, new Thickness(0, 0, 0, 2)));
@@ -195,21 +187,26 @@ public partial class NormalTab : UserControl
             {
                 Name = "ItemBorder"
             };
+
             itemBorder.SetValue(Border.BackgroundProperty, Brushes.Transparent);
             itemBorder.SetValue(Border.CornerRadiusProperty, new CornerRadius(4));
             itemBorder.SetValue(Border.PaddingProperty, new TemplateBindingExtension(Control.PaddingProperty));
+
             var itemContent = new FrameworkElementFactory(typeof(ContentPresenter));
+
             itemBorder.AppendChild(itemContent);
             itemTemplate.VisualTree = itemBorder;
 
             var hoverTrigger = new Trigger { Property = UIElement.IsMouseOverProperty, Value = true };
+
             hoverTrigger.Setters.Add(new Setter(Border.BackgroundProperty, hoverBrush) { TargetName = "ItemBorder" });
+
             var selectedTrigger = new Trigger { Property = ListBoxItem.IsSelectedProperty, Value = true };
+
             selectedTrigger.Setters.Add(new Setter(Border.BackgroundProperty, selectedBrush) { TargetName = "ItemBorder" });
             selectedTrigger.Setters.Add(new Setter(Control.ForegroundProperty, Brushes.White));
             itemTemplate.Triggers.Add(hoverTrigger);
             itemTemplate.Triggers.Add(selectedTrigger);
-
             itemStyle.Setters.Add(new Setter(Control.TemplateProperty, itemTemplate));
 
             var listBox = new ListBox
@@ -241,7 +238,6 @@ public partial class NormalTab : UserControl
                 FontWeight = FontWeights.Bold,
                 Foreground = headerBrush
             };
-
             var okButton = new Button
             {
                 Content = "선택",
@@ -258,7 +254,6 @@ public partial class NormalTab : UserControl
                 IsCancel = true,
                 Style = (Style)Application.Current!.FindResource("GrayButton")
             };
-
             string? selectedPath = null;
 
             okButton.Click += (_, _) =>
@@ -275,10 +270,12 @@ public partial class NormalTab : UserControl
                 HorizontalAlignment = HorizontalAlignment.Right,
                 Margin = new Thickness(12, 0, 12, 12)
             };
+
             buttonsPanel.Children.Add(okButton);
             buttonsPanel.Children.Add(cancelButton);
 
             var root = new DockPanel();
+
             DockPanel.SetDock(header, Dock.Top);
             DockPanel.SetDock(buttonsPanel, Dock.Bottom);
             root.Children.Add(header);
@@ -378,13 +375,5 @@ public partial class NormalTab : UserControl
         return ViewModel.PatchVM.NormalVM.PatchSlots[0];
     }
 
-    private void AddPatch_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel.PatchVM.NormalVM.AddPatchSlot();
-    }
-
-    private void ResetNamingFormat_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel.PatchVM.NormalVM.NamingFormat = PatchVersionInfoExtractor.DefaultNamingFormat;
-    }
+    private void AddPatch_Click(object sender, RoutedEventArgs e) => ViewModel.PatchVM.NormalVM.AddPatchSlot();
 }

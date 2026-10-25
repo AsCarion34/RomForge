@@ -6,6 +6,8 @@ namespace NSW.HacPack.Models;
 public struct CnmtExtendedAddonHeader
 {
     public ulong ApplicationTitleId;
+
     public uint RequiredApplicationVersion;
+
     public uint Padding;
 }

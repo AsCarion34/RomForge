@@ -8,7 +8,7 @@ using LibHac.Tools.Fs;
 using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.NcaUtils;
 using NSW.Core;
-using NSW.Utils;
+using NSW.Core.Utils;
 using System.IO;
 using Path = System.IO.Path;
 using Res = NSW.Core.Properties.Resources;
@@ -25,6 +25,7 @@ public class NspRecryptService : BaseSwitchService
         for (int i = 0; i < inputPaths.Count; i++)
         {
             ct.ThrowIfCancellationRequested();
+
             string path = inputPaths[i];
 
             try
@@ -36,7 +37,10 @@ public class NspRecryptService : BaseSwitchService
                 if (!string.IsNullOrEmpty(resultPath))
                     processedFiles.Add(resultPath);
             }
-            catch (OperationCanceledException) { throw; }
+            catch (OperationCanceledException)
+            {
+                throw; 
+            }
             catch (Exception ex)
             {
                 log?.Invoke($"{Path.GetFileName(path)} {Res.Log_ProcessError}: {ex.Message}", LogLevel.Error, string.Empty);
@@ -61,6 +65,7 @@ public class NspRecryptService : BaseSwitchService
 
             var meta = metas.First();
             var sourceStorage = new LocalStorage(inputPath, FileAccess.Read);
+
             disposables.Add(sourceStorage);
 
             string inputExt = Path.GetExtension(inputPath).ToLowerInvariant();
@@ -83,9 +88,11 @@ public class NspRecryptService : BaseSwitchService
             {
                 var xci = new Xci(keySet, sourceStorage);
                 var rootPartition = xci.OpenPartition(XciPartitionType.Root);
+
                 disposables.Add(rootPartition);
 
                 sourceFs = xci.OpenPartition(XciPartitionType.Secure);
+
                 disposables.Add(sourceFs);
 
                 rootEntriesTemplate = [.. rootPartition
@@ -119,9 +126,13 @@ public class NspRecryptService : BaseSwitchService
                     continue;
 
                 fileRef.Get.GetSize(out long size).ThrowIfFailure();
+
                 IFile rawFile = fileRef.Release();
+
                 disposables.Add(rawFile);
+
                 IStorage currentStorage = new FileStorage(rawFile);
+
                 disposables.Add(currentStorage);
 
                 if (entryExt is ".tik" or ".cert")
@@ -129,15 +140,19 @@ public class NspRecryptService : BaseSwitchService
                     if (!forceKeyGen0)
                     {
                         var cap = currentStorage;
+
                         fileEntries.Add((entryName, async (s, onRead) => await Common.Utils.CopyStreamAsync(cap.AsStream(), s, onRead, ct), size, entryName));
                     }
+
                     continue;
                 }
 
                 if (entryExt is not ".nca" and not ".ncz")
                 {
                     var cap = currentStorage;
+
                     fileEntries.Add((entryName, async (s, onRead) => await Common.Utils.CopyStreamAsync(cap.AsStream(), s, onRead, ct), size, entryName));
+
                     continue;
                 }
 
@@ -146,32 +161,36 @@ public class NspRecryptService : BaseSwitchService
                 string label = $"{meta.KrTitle ?? meta.EnTitle} [{nca.Header.ContentType}]";
                 var capStorage = currentStorage;
 
-                fileEntries.Add((entryName, async (s, onRead) =>
-                {
-                    await NcaRecryptService.RecryptAsync(capStorage.AsStream(), s, forceKeyGen0 ? 0 : keyGeneration, keySet, onRead, ct);
-                }, size, $"{label} [Recrypting]"));
+                fileEntries.Add((entryName, async (s, onRead) => await NcaRecryptService.RecryptAsync(capStorage.AsStream(), s, forceKeyGen0 ? 0 : keyGeneration, keySet, onRead, ct), size, $"{label} [Recrypting]"));
             }
 
-            string displayName = $"Recrypt {NspNameBuilder.CompressDisplayNameBuild(meta.KrTitle, meta.TitleId, meta.DisplayVersion)}";
+            string displayName = $"Recrypt {NameBuilder.CompressDisplayNameBuild(meta.KrTitle, meta.TitleId, meta.DisplayVersion)}";
 
             if (inputExt is ".xci" or ".xcz")
             {
                 using var fout = File.Open(finalPath, FileMode.Create, FileAccess.ReadWrite);
+
                 await WriteXciAsync(displayName, meta.TitleId, xciPrefixBuffer!, rootEntriesTemplate!, srcStream, fileEntries, fout, progress, ct);
             }
             else
             {
                 var fout = File.Open(finalPath, FileMode.Create, FileAccess.ReadWrite);
+
                 disposables.Add(fout);
+
                 await Pfs0Builder.WriteAsync(displayName, Path.GetFileNameWithoutExtension(finalPath), fileEntries, fout, 0x20, progress, ct);
             }
 
             isCompleted = true;
+
             log?.Invoke($"{Path.GetFileName(finalPath)} Recrypt {Res.Log_StatusDone}", LogLevel.Ok, meta.TitleId);
 
             return finalPath;
         }
-        catch (OperationCanceledException) { throw; }
+        catch (OperationCanceledException)
+        { 
+            throw;
+        }
         catch (Exception ex)
         {
             log?.Invoke($"{Path.GetFileName(inputPath)} {Res.Log_ProcessError}: {ex.Message}", LogLevel.Error, string.Empty);
@@ -179,8 +198,11 @@ public class NspRecryptService : BaseSwitchService
         }
         finally
         {
-            for (int i = disposables.Count - 1; i >= 0; i--) disposables[i]?.Dispose();
-            if (!isCompleted) CleanupOnFailure(finalPath, log, string.Empty);
+            for (int i = disposables.Count - 1; i >= 0; i--)
+                disposables[i]?.Dispose();
+
+            if (!isCompleted)
+                CleanupOnFailure(finalPath, log, string.Empty);
         }
     }
 }

@@ -26,10 +26,8 @@ public static class BinCueWriter
         }
 
         var binFileName = Path.GetFileName(binPath);
-
         var totalSectors = image.Tracks.Sum(t => (long)t.TotalSectors);
         long sectorsDone = 0;
-
         var cueEntry = new CueFileEntry { FileName = binFileName, FileType = "BINARY", Tracks = [] };
         long currentFrame = 0;
 
@@ -41,31 +39,19 @@ public static class BinCueWriter
 
                 await using var src = track.OpenSectorStream();
 
-                await SectorStreamCopier.CopySectorsAsync(
-                    src,
-                    outStream,
-                    track.TotalSectors,
-                    track.SourceSectorSize,
-                    OutputSectorSize,
+                await SectorStreamCopier.CopySectorsAsync(src, outStream, track.TotalSectors, track.SourceSectorSize, OutputSectorSize,
                     count =>
                     {
                         sectorsDone += count;
 
-                        progress?.Report(new ProgressInfo(
-                            (int)(totalSectors > 0 ? sectorsDone * 100 / totalSectors : 100),
-                            "BIN/CUE 변환 중",
-                            outputBaseName,
-                            string.Empty,
-                            string.Empty));
+                        progress?.Report(new ProgressInfo((int)(totalSectors > 0 ? sectorsDone * 100 / totalSectors : 100), "BIN/CUE 변환 중", outputBaseName, string.Empty, string.Empty));
                     },
                     ct);
 
                 var indexes = new List<CueIndex>();
 
                 if (track.PregapSectors > 0)
-                {
                     indexes.Add(new CueIndex { Number = 0, Position = FramesToPosition(currentFrame) });
-                }
 
                 indexes.Add(new CueIndex { Number = 1, Position = FramesToPosition(currentFrame + track.PregapSectors) });
 
@@ -81,6 +67,7 @@ public static class BinCueWriter
         }
 
         var cueFile = new CueFile { FilePath = cuePath, Entries = [cueEntry] };
+
         CueFileWriter.Write(cueFile, cuePath);
 
         return cuePath;

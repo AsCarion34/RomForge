@@ -14,6 +14,7 @@ public static class RomFsLayoutCalculator
         foreach (var d in dirs)
         {
             uint nameBytes = (uint)Encoding.Unicode.GetByteCount(d.Entry.Name);
+
             dirTableLen += d.Entry.Name.Length == 0 ? (uint)RomFsFormat.DirEntryFixed : (uint)(RomFsFormat.DirEntryFixed + RomFsFormat.AlignUp(nameBytes, 4));
         }
 
@@ -22,6 +23,7 @@ public static class RomFsLayoutCalculator
         foreach (var f in files)
         {
             uint nameBytes = (uint)Encoding.Unicode.GetByteCount(f.Entry.Name);
+
             fileTableLen += RomFsFormat.FileEntryFixed + RomFsFormat.AlignUp(nameBytes, 4);
         }
 

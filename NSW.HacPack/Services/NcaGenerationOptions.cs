@@ -8,40 +8,74 @@ namespace NSW.HacPack.Services;
 public class NcaGenerationOptions
 {
     public LibHac.Common.Keys.KeySet KeySet = new();
+
     public ulong TitleId;
+
     public string TempDirectory = string.Empty;
+
     public string OutDirectory = string.Empty;
+
     public string ExefsDirectory = string.Empty;
+
     public string RomfsDirectory = string.Empty;
+
     public string LogoDirectory = string.Empty;
+
     public string NcaDirectory = string.Empty;
+
     public string BackupDirectory = string.Empty;
+
     public string ProgramNcaPath = string.Empty;
+
     public string ControlNcaPath = string.Empty;
+
     public string LegalNcaPath = string.Empty;
+
     public string HtmlDocNcaPath = string.Empty;
+
     public string MetaNcaPath = string.Empty;
+
     public string DataNcaPath = string.Empty;
-    public string PublicDataNcaPath = string.Empty;    
-    public string CnmtPath = string.Empty;    
+
+    public string PublicDataNcaPath = string.Empty;
+
+    public string CnmtPath = string.Empty;
+
     public string AcidSignaturePrivateKey = string.Empty;
+
     public string NcaSignature1PrivateKey = string.Empty;
+
     public string NcaSignature2PrivateKey = string.Empty;
+
     public string NcaSignatureModulus = string.Empty;
+
     public byte Plaintext;
+
     public byte[] Digest = new byte[0x20];
+
     public uint TitleVersion;
+
     public byte HasTitleKey;
+
     public byte NoSelfSignNcaSignature2;
+
     public byte[] TitleKey = new byte[0x10];
+
     public byte[]? KeyAreaKey;
+
     public int KeyGeneration;
+
     public List<string> ManualNcaPaths = [];
+
     public Language Language = Language.None;
+
     public uint SdkVersion;
+
     public byte IdOffset = 0;
+
     public byte SourceIdOffset = 0;
 
+    public bool CompressRomfs;
 
     public string SdkVersionString
     {
@@ -53,17 +87,27 @@ public class NcaGenerationOptions
     }
 
     public LibHac.FsSystem.NcaHeader.ContentType NcaType = LibHac.FsSystem.NcaHeader.ContentType.Program;
+
     public FileType FileType = FileType.Nca;
+
     public ContentMetaType TitleType = ContentMetaType.Application;
+
     public NcaSigType NcaSig = NcaSigType.Zero;
+
     public LibHac.FsSystem.NcaHeader.DistributionType NcaDistType = LibHac.FsSystem.NcaHeader.DistributionType.Download;
 
     public bool IsProgramNcaValid => !string.IsNullOrEmpty(ProgramNcaPath) && File.Exists(ProgramNcaPath);
+
     public bool IsControlNcaValid => !string.IsNullOrEmpty(ControlNcaPath) && File.Exists(ControlNcaPath);
+
     public bool IsLegalNcaValid => !string.IsNullOrEmpty(LegalNcaPath) && File.Exists(LegalNcaPath);
+
     public bool IsHtmlDocNcaValid => !string.IsNullOrEmpty(HtmlDocNcaPath) && File.Exists(HtmlDocNcaPath);
+
     public bool IsMetaNcaValid => !string.IsNullOrEmpty(MetaNcaPath) && File.Exists(MetaNcaPath);
+
     public bool IsDataNcaValid => !string.IsNullOrEmpty(DataNcaPath) && File.Exists(DataNcaPath);
+
     public bool IsPublicDataNcaValid => !string.IsNullOrEmpty(PublicDataNcaPath) && File.Exists(PublicDataNcaPath);
 
     public GameMetadata? UserMetadata { get; set; }

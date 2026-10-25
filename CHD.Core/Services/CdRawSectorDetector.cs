@@ -37,6 +37,5 @@ public static class CdRawSectorDetector
         return CdRawSectorMode.None;
     }
 
-    private static bool IsCd001(byte[] data) =>
-        data.Length == 5 && data[0] == 'C' && data[1] == 'D' && data[2] == '0' && data[3] == '0' && data[4] == '1';
+    private static bool IsCd001(byte[] data) => data.Length == 5 && data[0] == 'C' && data[1] == 'D' && data[2] == '0' && data[3] == '0' && data[4] == '1';
 }

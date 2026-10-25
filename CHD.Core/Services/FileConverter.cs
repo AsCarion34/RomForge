@@ -19,6 +19,7 @@ public class FileConverter : IDisposable
     public FileConverter(string compression = "zlib")
     {
         _chdman = new ChdmanService();
+
         _chdman.ErrorReceived += (s, msg) => Log(msg, LogLevel.Error);
         _compression = compression;
 
@@ -34,7 +35,6 @@ public class FileConverter : IDisposable
             return ConversionResult.Fail(pathValidation.Message);
 
         var source = ConversionSource.FromPath(filePath);
-
         var validationError = source.Validate();
 
         if (validationError != null)
@@ -98,6 +98,7 @@ public class FileConverter : IDisposable
                 bool asCue = string.Equals(targetFormat, "CUE", StringComparison.OrdinalIgnoreCase);
                 var label = asCue ? "CUE" : "GDI";
                 var tocPath = Path.Combine(dir, name + (asCue ? ".cue" : ".gdi"));
+
                 CurrentOutputPath = tocPath;
 
                 Log($"{label} 추출 중...");
@@ -138,6 +139,7 @@ public class FileConverter : IDisposable
             else
             {
                 var cuePath = Path.Combine(dir, name + ".cue");
+
                 CurrentOutputPath = cuePath;
 
                 Log("BIN/CUE 추출 중...");
@@ -173,6 +175,7 @@ public class FileConverter : IDisposable
         {
             Log("변환 취소중...", LogLevel.Error);
             CleanupFiles(CurrentOutputPath);
+
             CurrentOutputPath = null;
 
             throw;
@@ -180,6 +183,7 @@ public class FileConverter : IDisposable
         catch (Exception ex)
         {
             CleanupFiles(CurrentOutputPath);
+
             CurrentOutputPath = null;
 
             return ConversionResult.Fail($"오류: {ex.Message}");
@@ -313,6 +317,7 @@ public class FileConverter : IDisposable
         {
             Log("압축 취소중...", LogLevel.Error);
             CleanupFiles(chdPath);
+
             CurrentOutputPath = null;
 
             throw;
@@ -320,6 +325,7 @@ public class FileConverter : IDisposable
         catch (Exception ex)
         {
             CleanupFiles(chdPath);
+
             CurrentOutputPath = null;
 
             return ConversionResult.Fail($"오류: {ex.Message}");
@@ -332,6 +338,7 @@ public class FileConverter : IDisposable
         var chdPath = Utils.GetUniqueFilePath(Utils.ResolveOutputFilePath(inputPath, ".chd", outputDir));
 
         Log($"{Path.GetFileName(inputPath)} 압축 시작", LogLevel.Highlight);
+
         CurrentOutputPath = chdPath;
 
         try
@@ -340,9 +347,7 @@ public class FileConverter : IDisposable
 
             var rawSectorMode = CdRawSectorDetector.Detect(inputPath);
 
-            bool success = rawSectorMode != CdRawSectorMode.None
-                ? await _chdman.CreateCdAsync(inputPath, chdPath, MapToCdCompression(_compression), progress, ct)
-                : await _chdman.CreateDvdAsync(inputPath, chdPath, _compression, progress, ct);
+            bool success = rawSectorMode != CdRawSectorMode.None ? await _chdman.CreateCdAsync(inputPath, chdPath, MapToCdCompression(_compression), progress, ct) : await _chdman.CreateDvdAsync(inputPath, chdPath, _compression, progress, ct);
 
             ct.ThrowIfCancellationRequested();
 
@@ -380,8 +385,8 @@ public class FileConverter : IDisposable
         catch (Exception ex)
         {
             CleanupFiles(chdPath);
-            CurrentOutputPath = null;
 
+            CurrentOutputPath = null;
             return ConversionResult.Fail($"오류: {ex.Message}");
         }
     }
@@ -399,12 +404,10 @@ public class FileConverter : IDisposable
                 return false;
 
             var lines = File.ReadAllLines(cuePath);
-
             var trackLines = lines
                 .Select(l => l.Trim())
                 .Where(l => TrackMode1Regex.IsMatch(l))
                 .ToList();
-
             var totalTrackCount = lines
                 .Select(l => l.Trim())
                 .Count(l => l.StartsWith("TRACK", StringComparison.OrdinalIgnoreCase));

@@ -8,7 +8,9 @@ public class DbFileKey : IParentedKey
     public const int KeySize = 12;
 
     public int KeyByteLen => KeySize;
+
     public uint Parent;
+
     public ulong Name;
 
     public uint GetParent() => Parent;

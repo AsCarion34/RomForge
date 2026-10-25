@@ -51,6 +51,7 @@ public class ChdReadStream(LibChdrWrapper wrapper, long totalLength) : Stream
             SeekOrigin.End => totalLength + offset,
             _ => _position
         };
+
         _position = Math.Clamp(_position, 0, totalLength);
 
         return _position;
@@ -65,11 +66,18 @@ public class ChdReadStream(LibChdrWrapper wrapper, long totalLength) : Stream
     }
 
     public override bool CanRead => true;
+
     public override bool CanSeek => true;
+
     public override bool CanWrite => false;
+
     public override long Length => totalLength;
+
     public override long Position { get => _position; set => _position = value; }
+
     public override void Flush() { }
+
     public override void SetLength(long value) => throw new NotSupportedException();
+
     public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 }

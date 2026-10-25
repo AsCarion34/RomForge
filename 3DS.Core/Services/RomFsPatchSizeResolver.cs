@@ -14,10 +14,7 @@ public static class RomFsPatchSizeResolver
 
         foreach (var file in files)
         {
-            Func<CancellationToken, ValueTask<Stream?>>? getOriginal = hasOriginalSource
-                ? (ct2 => ReadOriginalSliceAsync(ncchStream!, dataBase, file, ct2))
-                : null;
-
+            Func<CancellationToken, ValueTask<Stream?>>? getOriginal = hasOriginalSource ? (ct2 => ReadOriginalSliceAsync(ncchStream!, dataBase, file, ct2)) : null;
             var stream = await patchSource.OpenFileAsync(file.FullPath, getOriginal, log, ct);
 
             if (stream != null)

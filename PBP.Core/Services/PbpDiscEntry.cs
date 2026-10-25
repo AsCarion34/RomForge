@@ -10,31 +10,42 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
     const uint PSAR_TOC_OFFSET = 0x800;
     const uint PSAR_INDEX_OFFSET = 0x4000;
     const uint PSAR_ISO_OFFSET = 0x100000;
+
     public const int ISO_BLOCK_SIZE = 0x930;
 
     public Action<uint>? ProgressEvent { get; set; }
 
     private readonly Stream _stream;
-    private readonly int _psarOffset;
+    private readonly long _psarOffset;
     private readonly byte[] _compressionInBuffer;
+    private long _leadOutFrames;
 
     public List<IsoBlock> IsoIndex { get; }
+
     public List<TocEntry> TOC { get; }
+
     public uint IsoSize { get; }
+
     public int Index { get; }
+
     public string DiscID { get; }
+
     public bool IsPvdMismatch { get; }
 
-    public PbpDiscEntry(Stream stream, int psarOffset, int index)
+    public PbpDiscEntry(Stream stream, long psarOffset, int index)
     {
         _stream = stream;
         Index = index;
         _psarOffset = psarOffset;
+
         DiscID = GetDiscID();
         TOC = ReadTOC();
         IsoIndex = ReadIsoIndexes();
+
         _compressionInBuffer = new byte[16 * ISO_BLOCK_SIZE * 2];
+
         IsoSize = GetIsoSize(out bool mismatch);
+
         IsPvdMismatch = mismatch;
     }
 
@@ -59,22 +70,24 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
         _stream.Seek(_psarOffset + PSAR_TOC_OFFSET, SeekOrigin.Begin);
         _stream.Read(buffer, 0, 0xA);
 
-        if (buffer[2] != 0xA0) 
+        if (buffer[2] != 0xA0)
             throw new Exception("Invalid TOC!");
 
         int startTrack = TocHelper.FromBinaryDecimal(buffer[7]);
 
         _stream.Read(buffer, 0, 0xA);
 
-        if (buffer[2] != 0xA1) 
+        if (buffer[2] != 0xA1)
             throw new Exception("Invalid TOC!");
 
         int endTrack = TocHelper.FromBinaryDecimal(buffer[7]);
 
         _stream.Read(buffer, 0, 0xA);
 
-        if (buffer[2] != 0xA2) 
+        if (buffer[2] != 0xA2)
             throw new Exception("Invalid TOC!");
+
+        _leadOutFrames = (TocHelper.FromBinaryDecimal(buffer[7]) * 60L + TocHelper.FromBinaryDecimal(buffer[8])) * 75 + TocHelper.FromBinaryDecimal(buffer[9]);
 
         for (var c = startTrack; c <= endTrack; c++)
         {
@@ -82,7 +95,7 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
 
             var trackNo = TocHelper.FromBinaryDecimal(buffer[2]);
 
-            if (trackNo != c) 
+            if (trackNo != c)
                 throw new Exception("Invalid TOC!");
 
             entries.Add(new TocEntry
@@ -105,7 +118,7 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
 
         _stream.Seek(_psarOffset + PSAR_INDEX_OFFSET, SeekOrigin.Begin);
 
-        var thisOffset = (uint)_stream.Position;
+        var thisOffset = _stream.Position;
         var count = 0;
 
         while (thisOffset < _psarOffset + PSAR_ISO_OFFSET)
@@ -114,7 +127,8 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
             var length = _stream.ReadInteger();
 
             _stream.Read(dummy, 6);
-            thisOffset = (uint)_stream.Position;
+
+            thisOffset = _stream.Position;
 
             if (offset != 0 || length != 0)
             {
@@ -166,12 +180,43 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
         var pvdSize = pvdSectors * ISO_BLOCK_SIZE;
         var maxSize = (uint)(IsoIndex.Count * 16 * ISO_BLOCK_SIZE);
         const uint blockTolerance = 16 * ISO_BLOCK_SIZE;
-
         var diff = pvdSize > maxSize ? pvdSize - maxSize : maxSize - pvdSize;
 
         mismatch = pvdSize == 0 || diff > blockTolerance;
 
+        var tocSize = GetTocIsoSize(maxSize);
+
+        if (tocSize > 0 && IsTailZero(tocSize))
+            return tocSize;
+
         return mismatch ? maxSize : pvdSize;
+    }
+
+    private uint GetTocIsoSize(uint maxSize)
+    {
+        long upper = maxSize;
+        long lower = upper - 16 * ISO_BLOCK_SIZE;
+
+        foreach (var frames in new[] { _leadOutFrames, _leadOutFrames - 150 })
+        {
+            var size = frames * ISO_BLOCK_SIZE;
+
+            if (size > lower && size <= upper)
+                return (uint)size;
+        }
+
+        return 0;
+    }
+
+    private bool IsTailZero(uint size)
+    {
+        var lastBlock = IsoIndex.Count - 1;
+        var blockStart = (long)lastBlock * 16 * ISO_BLOCK_SIZE;
+        var buffer = new byte[16 * ISO_BLOCK_SIZE];
+
+        ReadBlock(lastBlock, buffer);
+
+        return !buffer.AsSpan((int)(size - blockStart)).ContainsAnyExcept((byte)0);
     }
 
     public long EndOffset
@@ -179,7 +224,6 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
         get
         {
             var lastBlock = IsoIndex[^1];
-
             return _psarOffset + PSAR_ISO_OFFSET + lastBlock.Offset + lastBlock.Length;
         }
     }
@@ -196,6 +240,7 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
             ct.ThrowIfCancellationRequested();
 
             var bufferSize = ReadBlock(i, outBuffer);
+
             totSize += bufferSize;
 
             if (totSize > IsoSize)
@@ -217,7 +262,7 @@ public class PbpDiscEntry : IDisposable, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (_stream != null) 
+        if (_stream != null)
             await _stream.DisposeAsync();
 
         GC.SuppressFinalize(this);

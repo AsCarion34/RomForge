@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using Common.WPF.Interfaces;
+using System.IO;
 
 namespace Common.WPF.ViewModels;
 
@@ -16,7 +17,7 @@ public abstract class FileItemBase : ProcessableItemBase, IFileMetadata
 
     public string FileSize => FormatSize(FileSizeBytes);
 
-    public long FileSizeBytes => _fileSizeBytes.Value;
+    public virtual long FileSizeBytes => _fileSizeBytes.Value;
 
     protected FileItemBase(string filePath, string initialStatus = "") : base(initialStatus)
     {

@@ -3,5 +3,6 @@
 public enum FileType
 {
     Nca = 1,
+
     Nsp = 2
 }

@@ -36,7 +36,6 @@ public class BinTrackCopier(Action<string, LogLevel> log)
 
         var sourceDir = Path.GetDirectoryName(cuePath)!;
         string sourceMainFileName = Path.GetFileName(sourcePath);
-
         var binsToCopy = referencedBins.Where(b => !string.Equals(Path.GetFileName(b), sourceMainFileName, StringComparison.OrdinalIgnoreCase)).ToList();
         int trackIndex = 0;
 
@@ -71,17 +70,15 @@ public class BinTrackCopier(Action<string, LogLevel> log)
 
         try
         {
-            string cueContent = await File.ReadAllTextAsync(cuePath).ConfigureAwait(false);
+            string cueContent = await File.ReadAllTextAsync(cuePath, ct).ConfigureAwait(false);
             string updatedCueContent = Regex.Replace(cueContent, @"FILE\s+""([^""]+)""\s+BINARY", m =>
             {
                 string referencedFileName = Path.GetFileName(m.Groups[1].Value);
 
-                return string.Equals(referencedFileName, sourceMainFileName, StringComparison.OrdinalIgnoreCase)
-                    ? $"FILE \"{newBinFileName}\" BINARY"
-                    : m.Value;
+                return string.Equals(referencedFileName, sourceMainFileName, StringComparison.OrdinalIgnoreCase) ? $"FILE \"{newBinFileName}\" BINARY" : m.Value;
             }, RegexOptions.IgnoreCase);
 
-            await File.WriteAllTextAsync(outputCuePath, updatedCueContent).ConfigureAwait(false);
+            await File.WriteAllTextAsync(outputCuePath, updatedCueContent, ct).ConfigureAwait(false);
 
             return outputCuePath;
         }

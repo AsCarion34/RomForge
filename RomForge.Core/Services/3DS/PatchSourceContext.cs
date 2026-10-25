@@ -1,5 +1,6 @@
 ﻿using _3DS.Core.Services;
 using Common;
+using Patch.Core.Interfaces;
 using Patch.Core.Services;
 using System.IO;
 
@@ -34,7 +35,6 @@ public sealed class PatchSourceContext : IDisposable
             catch (Exception ex)
             {
                 log($"⚠️ 한글패치 압축파일을 열 수 없습니다: {ex.Message}", LogLevel.Error);
-
                 return new PatchSourceContext(null, null, false);
             }
         }
@@ -42,7 +42,6 @@ public sealed class PatchSourceContext : IDisposable
         if (!Directory.Exists(rawPath))
         {
             log($"⚠️ 한글패치 경로를 찾을 수 없습니다: {rawPath}", LogLevel.Error);
-
             return new PatchSourceContext(null, null, false);
         }
 
@@ -57,12 +56,10 @@ public sealed class PatchSourceContext : IDisposable
         if (_archive != null)
         {
             string? prefix = ArchivePatchFolderResolver.FindSubDir(_archive.EntryPaths, folderName);
-
             return prefix == null ? null : PatchFileIndex.Build(_archive, prefix);
         }
 
         string? dir = PatchFolderResolver.FindSubDir(_diskPath!, folderName);
-
         return dir == null ? null : PatchFileIndex.Build(dir);
     }
 
@@ -75,7 +72,7 @@ public sealed class PatchSourceContext : IDisposable
 
         if (_archive != null)
         {
-            combined.Entries.AddRange(PatchFileIndex.BuildTopLevelOnly(_archive, "").Entries);
+            combined.Entries.AddRange(PatchFileIndex.BuildTopLevelOnly(_archive, string.Empty).Entries);
 
             string? exefsPrefix = ArchivePatchFolderResolver.FindSubDir(_archive.EntryPaths, "exefs");
 
@@ -125,8 +122,7 @@ public sealed class PatchSourceContext : IDisposable
     {
         string trimmed = subDirPrefix.TrimEnd('/');
         int lastSlash = trimmed.LastIndexOf('/');
-
-        return lastSlash < 0 ? "" : trimmed[..(lastSlash + 1)];
+        return lastSlash < 0 ? string.Empty : trimmed[..(lastSlash + 1)];
     }
 
     private static string? FindFileParentPrefix(IReadOnlyList<string> entryPaths, string fileName)
@@ -142,7 +138,7 @@ public sealed class PatchSourceContext : IDisposable
             if (!string.Equals(name, fileName, StringComparison.OrdinalIgnoreCase))
                 continue;
 
-            string parent = lastSlash < 0 ? "" : path[..(lastSlash + 1)];
+            string parent = lastSlash < 0 ? string.Empty : path[..(lastSlash + 1)];
             int depth = parent.Count(c => c == '/');
 
             if (depth < bestDepth)
@@ -183,21 +179,10 @@ public sealed class PatchSourceContext : IDisposable
         return best;
     }
 
-    public PatchFolderFileSource? CreateRomfsSource(string folderName)
+    public PatchFolderFileSource? CreateRomfsSource(string folderName, IEnumerable<string> targetPaths)
     {
-        if (!HasSource)
-            return null;
-
-        if (_archive != null)
-        {
-            string? prefix = ArchivePatchFolderResolver.FindSubDir(_archive.EntryPaths, folderName);
-
-            return prefix == null ? null : PatchFolderFileSource.ForArchive(_archive, prefix);
-        }
-
-        string? dir = PatchFolderResolver.FindSubDir(_diskPath!, folderName);
-
-        return dir == null ? null : PatchFolderFileSource.ForFolder(dir);
+        var index = FindSubIndex(folderName);
+        return index == null ? null : new PatchFolderFileSource(index, targetPaths, _archive is { SupportsCheapRepeatedOpen: false });
     }
 
     public void Dispose() => _archive?.Dispose();

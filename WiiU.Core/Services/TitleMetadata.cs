@@ -8,6 +8,7 @@ public sealed class TitleMetadata
     private const int TitleVersionOffset = 0x1DC;
 
     public ulong TitleId { get; }
+
     public ushort TitleVersion { get; }
 
     private TitleMetadata(ulong titleId, ushort titleVersion)

@@ -14,10 +14,10 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Margin="5,5,5,0" Height="150" IsEnabled="{Binding IsLocked, Converter={StaticResource InverseBool}}" Style="{StaticResource DropZone}" AllowDrop="True" Drop="CiaDrop_Drop" MouseLeftButtonDown="CiaDrop_Click">
+        <Border Grid.Row="0" Margin="5,0,5,0" Height="150" IsEnabled="{Binding IsLocked, Converter={StaticResource InverseBool}}" Style="{StaticResource DropZone}" AllowDrop="True" Drop="CiaDrop_Drop" MouseLeftButtonDown="CiaDrop_Click">
             <Grid Margin="14,0" Cursor="">
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding HintVisibility}" Opacity="0.85">
-                    <Image Source="/Assets/Images/drag.png" Width="24" Height="24" Margin="0,0,0,6" HorizontalAlignment="Center"/>
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding HintVisibility}" Opacity="0.9">
+                    <Image Source="/Assets/Images/Info.png" Width="24" Height="24" Margin="0,0,0,6" HorizontalAlignment="Center"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <Border Background="#1A1B8A5A" BorderBrush="#551B8A5A" BorderThickness="1" CornerRadius="6" Padding="10,4" Margin="0,0,6,0">
                             <TextBlock Text="CIA" Foreground="#54FFB5" FontWeight="Bold" FontSize="14" VerticalAlignment="Center">
@@ -68,8 +68,7 @@
                     </StackPanel>
                 </StackPanel>
 
-                <StackPanel Grid.Column="2" Orientation="Horizontal"
-                        VerticalAlignment="Center" Margin="12,0,0,0">
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
                     <Image Width="24" Height="24" Margin="0,0,8,0" Source="{Binding RomInfo.ProductCode, Converter={StaticResource RegionToImageConverter}}" ToolTip="{Binding RomInfo.Region}"/>
                     <Image Width="24" Height="24" Source="{Binding RomInfo.Crypto, Converter={StaticResource LockIconConverter}}"/>
                 </StackPanel>
@@ -105,7 +104,7 @@
                     <Button Style="{StaticResource RunButton}" IsEnabled="{Binding IsLocked, Converter={StaticResource InverseBool}}" Command="{Binding RunCommand}" Margin="0,0,6,0">
                         <StackPanel Orientation="Horizontal">
                             <Image Source="/Assets/Images/Run.png" Width="24" Height="24" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="추출" VerticalAlignment="Center" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                            <TextBlock Text="시작" VerticalAlignment="Center" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
                         </StackPanel>
                     </Button>
                     <Button Style="{StaticResource GrayButton}" IsEnabled="{Binding IsLocked}" Command="{Binding CancelCommand}">

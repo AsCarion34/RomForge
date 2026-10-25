@@ -21,6 +21,7 @@ public static class CnmtGenerator
         }
 
         var baseSettings = settingsList.First(s => s.IdOffset == 0);
+
         context.Header.Type = 0x80;
         context.Header.TitleId = baseSettings.TitleId;
         context.Header.TitleVersion = baseSettings.TitleVersion;
@@ -33,6 +34,7 @@ public static class CnmtGenerator
         };
 
         using var file = CreateFileStream(cnmtFilepath);
+
         WriteStructure(file, context.Header);
         WriteStructure(file, extHeader);
         WriteContentEntries(file, context);
@@ -95,6 +97,7 @@ public static class CnmtGenerator
         };
 
         using var file = CreateFileStream(cnmtFilepath);
+
         WriteStructure(file, context.Header);
         WriteStructure(file, extHeader);
         WriteContentEntries(file, context);
@@ -113,6 +116,7 @@ public static class CnmtGenerator
         context.Header.ContentEntryCount = context.ContentRecordsCount;
 
         using var file = CreateFileStream(cnmtFilepath);
+
         WriteStructure(file, context.Header);
         WriteContentEntries(file, context);
         file.Write(settings.Digest, 0, 0x20);
@@ -130,6 +134,7 @@ public static class CnmtGenerator
         context.Header.ContentEntryCount = context.ContentRecordsCount;
 
         using var file = CreateFileStream(cnmtFilepath);
+
         WriteStructure(file, context.Header);
         WriteContentEntries(file, context);
         file.Write(settings.Digest, 0, 0x20);
@@ -149,6 +154,7 @@ public static class CnmtGenerator
 
         ulong length = (ulong)file.Length;
         Span<byte> sizeSpan = stackalloc byte[8];
+
         MemoryMarshal.Write(sizeSpan, in length);
         sizeSpan[..6].CopyTo(record.Size);
     }
@@ -158,6 +164,7 @@ public static class CnmtGenerator
         if (!isValid) return;
 
         PopulateContentRecord(path, ref context.ContentRecords[context.ContentRecordsCount]);
+
         context.ContentRecords[context.ContentRecordsCount].Type = type;
         context.ContentRecords[context.ContentRecordsCount].IdOffset = idOffset;
         context.ContentRecordsCount++;
@@ -165,17 +172,22 @@ public static class CnmtGenerator
 
     private static FileStream CreateFileStream(string path)
     {
-        try { return File.Open(path, FileMode.Create, FileAccess.Write); }
-        catch (Exception ex) { throw new IOException($"Failed to create {path}!", ex); }
+        try 
+        { 
+            return File.Open(path, FileMode.Create, FileAccess.Write); 
+        }
+        catch (Exception ex) 
+        {
+            throw new IOException($"Failed to create {path}!", ex); 
+        }
     }
 
     private static void WriteStructure<T>(FileStream file, T value) where T : struct
     {
         int size = Marshal.SizeOf<T>();
-
         Span<byte> buffer = stackalloc byte[size];
-
         IntPtr ptr = Marshal.AllocHGlobal(size);
+
         try
         {
             Marshal.StructureToPtr(value, ptr, false);

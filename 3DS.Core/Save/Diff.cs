@@ -69,6 +69,7 @@ public class Diff
         header.Write(headerFile, 0);
 
         var table = new IvfcLevel(new SubFile(headerFile, 0x34, 0x20), new SubFile(file, info.SecondaryTableOffset, info.TableLen), info.TableLen);
+
         DifiPartition.Format(table, param);
 
         table.Commit();
@@ -80,6 +81,7 @@ public class Diff
         var check = new byte[16];
 
         file.Read(0x100, check, 0, 16);
+
         _parentLen = file.Length;
 
         IRandomAccessFile headerFileBare = new SubFile(file, 0x100, 0x100);

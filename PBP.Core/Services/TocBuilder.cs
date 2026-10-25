@@ -10,7 +10,6 @@ public static class TocBuilder
         var tracks = cue.Entries.SelectMany(f => f.Tracks).ToList();
         var tocData = new byte[0xA * (tracks.Count + 3)];
         var buf = new byte[0xA];
-
         var leadOut = PositionFromFrames(isoSize / 2352);
         var ctr = 0;
 
@@ -20,12 +19,14 @@ public static class TocBuilder
         buf[7] = ToBcd(tracks[0].Number);
         buf[8] = ToBcd(0x20);
         buf[9] = 0x00;
+
         Array.Copy(buf, 0, tocData, ctr, 0xA); ctr += 0xA;
 
         buf[0] = GetTrackType(tracks[^1].DataType);
         buf[2] = 0xA1;
         buf[7] = ToBcd(tracks[^1].Number);
         buf[8] = 0x00;
+
         Array.Copy(buf, 0, tocData, ctr, 0xA); ctr += 0xA;
 
         buf[0] = 0x01;
@@ -33,6 +34,7 @@ public static class TocBuilder
         buf[7] = ToBcd(leadOut.Minutes);
         buf[8] = ToBcd(leadOut.Seconds);
         buf[9] = ToBcd(leadOut.Frames);
+
         Array.Copy(buf, 0, tocData, ctr, 0xA); ctr += 0xA;
 
         foreach (var track in tracks)
@@ -42,17 +44,18 @@ public static class TocBuilder
             buf[2] = ToBcd(track.Number);
 
             var pos = track.Indexes.First(i => i.Number == 1).Position;
+
             buf[3] = ToBcd(pos.Minutes);
             buf[4] = ToBcd(pos.Seconds);
             buf[5] = ToBcd(pos.Frames);
             buf[6] = 0x00;
-
             pos += 150;
             buf[7] = ToBcd(pos.Minutes);
             buf[8] = ToBcd(pos.Seconds);
             buf[9] = ToBcd(pos.Frames);
 
             Array.Copy(buf, 0, tocData, ctr, 0xA);
+
             ctr += 0xA;
         }
 
@@ -66,9 +69,7 @@ public static class TocBuilder
         CueFormatStrings.Mode1_2352 => 0x41,
         CueFormatStrings.Mode2_2352 => 0x41,
         CueFormatStrings.Mode2_2336 => 0x41,
-
         CueFormatStrings.Audio => 0x01,
-
         _ => throw new NotSupportedException($"지원하지 않는 트랙 형식입니다: {dataType}")
     };
 
@@ -77,7 +78,6 @@ public static class TocBuilder
     public static MsfPosition PositionFromFrames(long frames)
     {
         var totalSeconds = (int)(frames / 75);
-
         return new MsfPosition { Minutes = totalSeconds / 60, Seconds = totalSeconds % 60, Frames = (int)(frames % 75) };
     }
 }

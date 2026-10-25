@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.IO.Compression;
 using Microsoft.Win32.SafeHandles;
+using WiiGC.Core.Interfaces;
 
 namespace WiiGC.Core.Services.GameCube;
 
@@ -75,8 +76,6 @@ internal sealed class GczSource : IRvzInputSource
     }
 
     public long Length => _discSize;
-
-    public int BlockSize => _blockSize;
 
     public static bool IsGcz(SafeFileHandle handle)
     {

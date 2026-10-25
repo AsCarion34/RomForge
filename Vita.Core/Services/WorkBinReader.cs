@@ -6,7 +6,7 @@ public static class WorkBinReader
 {
     public static WorkBinLicense Read(string workBinPath) => Parse(File.ReadAllBytes(workBinPath), workBinPath);
 
-    public static WorkBinLicense Read(IVitaSourceAccessor accessor, string workBinRelPath) => Parse(accessor.ReadAllBytes(workBinRelPath), workBinRelPath);
+    public static WorkBinLicense Read(ISourceAccessor accessor, string workBinRelPath) => Parse(accessor.ReadAllBytes(workBinRelPath), workBinRelPath);
 
     private static WorkBinLicense Parse(byte[] data, string label)
     {
@@ -35,7 +35,6 @@ public static class WorkBinReader
         if (contentId.Length >= 16)
         {
             titleId = contentId.Substring(7, 9);
-
             return true;
         }
 

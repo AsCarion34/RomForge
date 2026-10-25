@@ -32,7 +32,6 @@ public class PbpUnpacker
 
                 var discSuffix = isMultiDisc ? $" (Disc {disc.Index})" : string.Empty;
                 var candidateBaseName = $"{baseName}{discSuffix}";
-
                 var (binPath, cuePath) = GetUniquePairedPaths(outputDir, candidateBaseName);
 
                 OnNotify?.Invoke($"언팩중 {binPath}...");
@@ -62,7 +61,11 @@ public class PbpUnpacker
             OnNotify?.Invoke("실패 - 생성된 파일 정리 중...");
 
             foreach (var path in createdFiles)
-                try { File.Delete(path); } catch { }
+                try 
+                {
+                    File.Delete(path); 
+                }
+                catch { }
 
             throw;
         }

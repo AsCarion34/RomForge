@@ -8,6 +8,7 @@ public class DbSigner(uint id) : ISigner
     public byte[] Block(byte[] data)
     {
         var prefix = new byte[12];
+
         "CTR-9DB0"u8.CopyTo(prefix);
 
         BinaryPrimitives.WriteUInt32LittleEndian(prefix.AsSpan(8), id);

@@ -8,11 +8,7 @@ public class FolderRomFsFileSource(string folder, IRomFsFileSource? patchSource 
     public async ValueTask<Stream?> OpenFileAsync(string fullPath, Func<CancellationToken, ValueTask<Stream?>>? getOriginal = null, Action<string, LogLevel>? log = null, CancellationToken ct = default)
     {
         string localPath = Path.Combine(folder, fullPath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
-
-        ValueTask<Stream?> localGetOriginal(CancellationToken _) =>
-            File.Exists(localPath)
-                ? ValueTask.FromResult<Stream?>(File.OpenRead(localPath))
-                : ValueTask.FromResult<Stream?>(null);
+        ValueTask<Stream?> localGetOriginal(CancellationToken _) => File.Exists(localPath) ? ValueTask.FromResult<Stream?>(File.OpenRead(localPath)) : ValueTask.FromResult<Stream?>(null);
 
         if (patchSource != null)
         {

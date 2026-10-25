@@ -38,6 +38,9 @@ public partial class MainWindow : Window
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
+        if (!AppConfig.Instance.Common.AutoCheckUpdate)
+            return;
+
         try
         {
             var isUpdateAvailable = await VersionHelper.IsUpdateAvailableAsync();
@@ -131,6 +134,8 @@ public partial class MainWindow : Window
         if (logBox.SelectedItems.Count == 0 || logBox.Items.Count == 0)
             e.Handled = true;
     }
+
+    private void ClearLog_Click(object sender, RoutedEventArgs e) => ViewModel.ClearLog();
 
     private void CopyLog_Click(object sender, RoutedEventArgs e)
     {

@@ -13,6 +13,7 @@ public class CciSource : IInstallSource
     private const int MediaUnit = 0x200;
 
     public required Stream Stream { get; init; }
+
     public required KeyStore KeyStore { get; init; }
 
     public required NcchHeader MainHeader { get; init; }
@@ -42,6 +43,7 @@ public class CciSource : IInstallSource
             if (magic.AsSpan().SequenceEqual("Z3DS"u8))
             {
                 var z3dsHeader = Z3dsFormat.ParseZ3dsHeader(stream);
+
                 stream = new ZcciDecompressStream(stream, z3dsHeader);
             }
 
@@ -95,8 +97,11 @@ public class CciSource : IInstallSource
                         {
                             using var ncchStream = new NcchDecryptionStream(new SubStream(stream, byteOffset, (long)partSize * MediaUnit), 0, keyStore);
                             byte[] exheader = new byte[0x400];
+
                             ncchStream.Position = 0x200;
+
                             ncchStream.Read(exheader, 0, 0x400);
+
                             saveSize = BinaryPrimitives.ReadUInt32LittleEndian(exheader.AsSpan(0x1C0));
                         }
                         catch { }
@@ -207,6 +212,7 @@ public class CciSource : IInstallSource
         {
             var c = contents[i];
             int off = chunkOff + i * TmdChunkSize;
+
             BinaryPrimitives.WriteUInt32BigEndian(buf.AsSpan(off + 0x00), (uint)c.ContentIndex);
             BinaryPrimitives.WriteUInt16BigEndian(buf.AsSpan(off + 0x04), c.ContentIndex);
             BinaryPrimitives.WriteUInt64BigEndian(buf.AsSpan(off + 0x08), (ulong)c.ContentSize);

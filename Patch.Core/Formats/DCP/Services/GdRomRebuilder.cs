@@ -7,7 +7,6 @@ public static class GdRomRebuilder
     public static void RebuildFull(GdiFile originalGdi, Dictionary<string, byte[]> replacedFiles, string outputDir, Action<double, string>? onProgress = null, Action<string>? onLog = null, CancellationToken ct = default)
     {
         Directory.CreateDirectory(outputDir);
-
         onProgress?.Invoke(0.0, "기존 GD-ROM 미디어 해석 준비 중...");
 
         var sourceReader = new GdRomCompositeSectorReader(originalGdi);
@@ -49,7 +48,6 @@ public static class GdRomRebuilder
                 builder.SetFileData(entry, data);
 
                 fileDataCache[entry] = data;
-
                 fileDone++;
 
                 onProgress?.Invoke(0.01 * fileDone / allFiles.Count, $"패치 적용 중 ({fileDone:N0}/{allFiles.Count:N0})");
@@ -83,6 +81,7 @@ public static class GdRomRebuilder
             }
 
             dirDone++;
+
             onProgress?.Invoke(0.01 + 0.01 * dirDone / dirTotal, $"ISO9660 디렉토리 테이블 및 구조 재배치 중 ({dirDone}/{dirTotal})");
 
             foreach (var child in dir.Children.Where(c => c.IsDirectory))
@@ -119,11 +118,7 @@ public static class GdRomRebuilder
         var dedup = expanded.GroupBy(e => e.Lba).Select(g => g.Last()).OrderBy(e => e.Lba).ToList();
         var newDataTrackPath = Path.Combine(outputDir, firstDataTrack.FileName);
 
-        GdRomWriter.WriteDataTrack(newDataTrackPath, (uint)firstDataTrack.StartLba, dedup, (p, msg) =>
-        {
-            onProgress?.Invoke(0.02 + (p * 0.23), $"{firstDataTrack.FileName} 생성 중: {msg}");
-        }, ct);
-
+        GdRomWriter.WriteDataTrack(newDataTrackPath, (uint)firstDataTrack.StartLba, dedup, (p, msg) => onProgress?.Invoke(0.02 + (p * 0.23), $"{firstDataTrack.FileName} 생성 중: {msg}"), ct);
         onProgress?.Invoke(0.25, "나머지 트랙 분석 중...");
 
         var otherTracks = originalGdi.Tracks.Where(t => t != firstDataTrack).ToList();
@@ -163,7 +158,6 @@ public static class GdRomRebuilder
             while ((bytesRead = sourceStream.Read(buffer, 0, buffer.Length)) > 0)
             {
                 ct.ThrowIfCancellationRequested();
-
                 destStream.Write(buffer, 0, bytesRead);
 
                 totalBytesCopied += bytesRead;

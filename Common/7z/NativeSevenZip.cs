@@ -34,12 +34,9 @@ public static class NativeSevenZip
             }
             catch (DllNotFoundException ex)
             {
-                throw new FileNotFoundException(
-                    "네이티브 7z.dll을 로드할 수 없습니다. (표준 DllImport 검색으로도 찾지 못함)", ex);
+                throw new FileNotFoundException("네이티브 7z.dll을 로드할 수 없습니다. (표준 DllImport 검색으로도 찾지 못함)", ex);
             }
-            catch (EntryPointNotFoundException)
-            {
-            }
+            catch (EntryPointNotFoundException) { }
 
             IntPtr handle = GetModuleHandle("7z.dll");
 
@@ -50,11 +47,10 @@ public static class NativeSevenZip
             int len = GetModuleFileName(handle, sb, sb.Capacity);
 
             if (len == 0)
-            {
                 throw new FileNotFoundException("7z.dll의 실제 로드 경로를 확인할 수 없습니다 (GetModuleFileName 실패).");
-            }
 
             SevenZipExtractor.SetLibraryPath(sb.ToString());
+
             _initialized = true;
         }
     }

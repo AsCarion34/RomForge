@@ -1,4 +1,4 @@
-﻿using PickPack.Disk;
+﻿using PickPack.Disk.Helpers;
 using RomForge.Core.Services;
 using RomForge.ViewModels.Util;
 using System.Windows;
@@ -10,7 +10,7 @@ public partial class ZipImageToolTab : UserControl
 {
     private UsbDetector? _usbDetector;
 
-    private ZipImageToolMainViewModel? ViewModel => DataContext as ZipImageToolMainViewModel;
+    private ZipImageToolMainViewModel ViewModel => (ZipImageToolMainViewModel)DataContext;
 
     public ZipImageToolTab()
     {
@@ -35,6 +35,7 @@ public partial class ZipImageToolTab : UserControl
             _usbDetector = new UsbDetector();
 
             _usbDetector.Register(parentWindow);
+
             _usbDetector.DeviceChanged += async () =>
             {
                 await Task.Delay(500);

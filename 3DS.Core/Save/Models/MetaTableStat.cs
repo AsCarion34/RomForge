@@ -3,5 +3,6 @@
 public class MetaTableStat
 {
     public int Total;
+
     public int Free;
 }

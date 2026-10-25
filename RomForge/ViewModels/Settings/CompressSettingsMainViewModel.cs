@@ -1,5 +1,4 @@
-﻿using Common.WPF.ViewModels;
-using RomForge.Core;
+﻿using RomForge.Core;
 
 namespace RomForge.ViewModels.Settings;
 

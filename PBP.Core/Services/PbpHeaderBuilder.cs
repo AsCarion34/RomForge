@@ -9,8 +9,8 @@ public static class PbpHeaderBuilder
     public static void EnsureRequiredAssets(PbpAssets assets, byte[] basePbpBytes)
     {
         using var basePbp = new MemoryStream(basePbpBytes);
-
         var baseHeader = new uint[10];
+
         basePbp.Read(baseHeader, 10);
 
         if (baseHeader[0] != PBPMAGIC)

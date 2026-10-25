@@ -62,6 +62,7 @@ public class AesCbcSubStream(Stream baseStream, long start, long length, byte[] 
         int copyLen = Math.Min(count, read - prefixBytes);
 
         decrypted.AsSpan(prefixBytes, copyLen).CopyTo(buffer.AsSpan(offset));
+
         _position += copyLen;
 
         return copyLen;

@@ -1,4 +1,4 @@
-namespace WiiU.Core.WUP.NusPackage.Interfaces
+namespace WiiU.Core.WUP.Interfaces
 {
     public interface IHasData
     {

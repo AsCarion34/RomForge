@@ -45,7 +45,6 @@ public class CsoService
                 Version = headerBytes[16],
                 IndexShift = headerBytes[17],
             };
-
             int blockCount = (int)Math.Ceiling((double)header.UncompressedSize / header.BlockSize);
             var indexTable = new uint[blockCount + 1];
             var indexBytes = new byte[(blockCount + 1) * 4];
@@ -101,10 +100,7 @@ public class CsoService
                     }
 
                     if (decoded < 0)
-                        throw new InvalidDataException(
-                            $"블록 {i}/{blockCount} LZ4 디코드 실패: blockLen={blockLen}, " +
-                            $"offset={offset}, nextOffset={nextOffset}, IndexShift={header.IndexShift}, " +
-                            $"UncompressedSize={header.UncompressedSize}, BlockSize={header.BlockSize}");
+                        throw new InvalidDataException($"블록 {i}/{blockCount} LZ4 디코드 실패: blockLen={blockLen}, offset={offset}, nextOffset={nextOffset}, IndexShift={header.IndexShift}, UncompressedSize={header.UncompressedSize}, BlockSize={header.BlockSize}");
 
                     bout.Write(blockBuf.AsSpan(0, decoded));
                 }
@@ -305,7 +301,6 @@ public class CsoService
             bool dstIsOldDeflate = !targetIsLz4;
             using var deflateDecompressor = srcIsOldDeflate ? new DeflateDecompressor() : null;
             using var deflateCompressor = dstIsOldDeflate ? new DeflateCompressor(1) : null;
-
             long expectedPos = -1;
 
             for (int i = 0; i < blockCount; i++)
@@ -416,14 +411,12 @@ public class CsoService
                 report?.Invoke(i + 1, blockCount);
             }
 
-            {
-                long finalShifted = bout.Position >> dstIndexShift;
+            long finalShifted = bout.Position >> dstIndexShift;
 
-                if (finalShifted > 0x7FFFFFFFL)
-                    throw new InvalidOperationException($"IndexShift 계산 오류: 최종 오프셋({bout.Position})이 31비트 범위를 초과함");
+            if (finalShifted > 0x7FFFFFFFL)
+                throw new InvalidOperationException($"IndexShift 계산 오류: 최종 오프셋({bout.Position})이 31비트 범위를 초과함");
 
-                dstIndex[blockCount] = (uint)finalShifted;
-            }
+            dstIndex[blockCount] = (uint)finalShifted;
 
             bout.Seek(dstIndexOffset, SeekOrigin.Begin);
 
@@ -499,10 +492,7 @@ public class CsoService
     public async Task<bool> CompressToChdAsync(string isoPath, string chdPath, string compression = "zlib", IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
         var rawSectorMode = CdRawSectorDetector.Detect(isoPath);
-
-        bool success = rawSectorMode != CdRawSectorMode.None
-            ? await _chdman.CreateCdAsync(isoPath, chdPath, FileConverter.MapToCdCompression(compression), progress, ct)
-            : await _chdman.CreateDvdAsync(isoPath, chdPath, compression, progress, ct);
+        bool success = rawSectorMode != CdRawSectorMode.None ? await _chdman.CreateCdAsync(isoPath, chdPath, FileConverter.MapToCdCompression(compression), progress, ct) : await _chdman.CreateDvdAsync(isoPath, chdPath, compression, progress, ct);
 
         return success;
     }
@@ -538,9 +528,7 @@ public class CsoService
         var info = ChdInfoReader.ReadChdInfo(chdPath);
 
         if (info.SourceType == ChdSourceType.DVD)
-        {
             await _chdman.ExtractRawAsync(chdPath, isoPath, progress, ct);
-        }
         else if (info.SourceType == ChdSourceType.ISO)
         {
             using var wrapper = new LibChdrWrapper();
@@ -550,10 +538,8 @@ public class CsoService
                 throw new InvalidDataException($"CHD 열기 실패: {LibChdrWrapper.GetErrorString(err)}");
 
             long totalLength = (long)info.Tracks[0].Frames * 2048;
-
             using var chdStream = new ChdCdReadStream(wrapper, totalLength, info.Tracks[0].TrackType);
             await using var outputStream = File.Create(isoPath);
-
             var buffer = new byte[1 << 20];
             long written = 0;
             int read;
@@ -565,6 +551,7 @@ public class CsoService
                 await outputStream.WriteAsync(buffer.AsMemory(0, read), ct);
 
                 written += read;
+
                 progress?.Report(new ProgressInfo { Percent = totalLength > 0 ? (int)(written * 100 / totalLength) : 100, Label = "ISO 추출 중..." });
             }
         }

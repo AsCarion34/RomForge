@@ -2,7 +2,7 @@
 
 namespace Vita.Core.Services;
 
-public sealed class ZipSourceAccessor : IVitaSourceAccessor
+public sealed class ZipSourceAccessor : ISourceAccessor
 {
     private readonly FileStream _stream;
     private readonly ZipArchive _zip;
@@ -18,7 +18,7 @@ public sealed class ZipSourceAccessor : IVitaSourceAccessor
             _entries.TryAdd(Normalize(entry.FullName), entry);
     }
 
-    private static string Normalize(string path) => VitaPatchShared.NormalizeZipPath(path);
+    private static string Normalize(string path) => PatchShared.NormalizeZipPath(path);
 
     public bool DirectoryExists(string relativePath)
     {
@@ -28,6 +28,7 @@ public sealed class ZipSourceAccessor : IVitaSourceAccessor
             return _entries.Count > 0;
 
         prefix += "/";
+
         return _entries.Keys.Any(k => k.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
     }
 
@@ -72,7 +73,6 @@ public sealed class ZipSourceAccessor : IVitaSourceAccessor
             throw new FileNotFoundException(relativePath);
 
         var data = new byte[entry.Length];
-
         using var s = entry.Open();
 
         s.ReadExactly(data);

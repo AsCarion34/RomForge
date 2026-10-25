@@ -3,8 +3,5 @@ namespace RomForge.Controls.Settings;
 
 public partial class PSSettingsTab : UserControl
 {
-    public PSSettingsTab()
-    {
-        InitializeComponent();
-    }
+    public PSSettingsTab() => InitializeComponent();
 }

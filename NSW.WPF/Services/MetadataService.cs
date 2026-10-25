@@ -32,7 +32,6 @@ public static class MetadataService
                 ContentMetaType bestTypeInFile = ContentMetaType.Application;
                 List<LanguageInfo> bestLangsInFile = [];
                 List<byte> bestIndicesInFile = [];
-
                 var entries = fs.EnumerateEntries("/", "*.nca").ToList();
 
                 foreach (var entry in entries)
@@ -55,7 +54,6 @@ public static class MetadataService
                             {
                                 maxVersionInFile = cnmt.TitleVersion.Version;
                                 bestTypeInFile = cnmt.Type;
-
                                 bestIndicesInFile = [.. cnmt.ContentEntries
                                     .Where(e => e.Type == LibHac.Ncm.ContentType.Program)
                                     .Select(e => e.IdOffset)
@@ -86,6 +84,7 @@ public static class MetadataService
                                     LogoData = cFs.GetIconData((Language)i)
                                 });
                             }
+
                             bestLangsInFile = currentFileLangs;
                         }
                     }
@@ -100,7 +99,10 @@ public static class MetadataService
                         Indices = bestIndicesInFile
                     });
             }
-            catch { continue; }
+            catch 
+            { 
+                continue;
+            }
         }
 
         return candidates
@@ -170,12 +172,7 @@ public static class MetadataService
         foreach (var dir in Directory.EnumerateDirectories(unpackedDir))
         {
             string name = Path.GetFileName(dir);
-
-            byte? idOffset = name == "control"
-                ? (byte)0
-                : name.StartsWith("control") && byte.TryParse(name["control".Length..], out var n)
-                    ? n
-                    : null;
+            byte? idOffset = name == "control" ? (byte)0 : name.StartsWith("control") && byte.TryParse(name["control".Length..], out var n) ? n : null;
 
             if (idOffset is byte offset && File.Exists(Path.Combine(dir, "control.nacp")))
                 indices.Add(offset);

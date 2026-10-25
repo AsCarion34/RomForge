@@ -116,5 +116,4 @@ public partial class MsfPosition
 
         return new MsfPosition(a.Minutes + secondsCarry, seconds, frames);
     }
-
 }

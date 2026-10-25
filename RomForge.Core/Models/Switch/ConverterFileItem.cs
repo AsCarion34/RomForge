@@ -1,6 +1,6 @@
 ﻿namespace RomForge.Core.Models.Switch;
 
-public class ConverterFileItem : NSW.WPF.ViewModels.GameFile, Common.WPF.ViewModels.IConvertible
+public class ConverterFileItem : NSW.WPF.ViewModels.GameFile, Common.WPF.Interfaces.IConvertible
 {
     private string _selectedTargetFormat;
 
@@ -35,8 +35,8 @@ public class ConverterFileItem : NSW.WPF.ViewModels.GameFile, Common.WPF.ViewMod
 
     private static List<string> GetAvailableFormats(string ext) => ext.ToLowerInvariant() switch
     {
-        "nsp" => ["XCI", "NSZ", "XCZ"],
-        "xci" => ["NSP", "NSZ", "XCZ"],
+        "nsp" => ["NSZ", "XCI", "XCZ"],
+        "xci" => ["XCZ", "NSP", "NSZ"],
         "nsz" => ["NSP", "XCI", "XCZ"],
         "xcz" => ["XCI", "NSP", "NSZ"],
         _ => []

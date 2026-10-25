@@ -15,7 +15,9 @@ public abstract class ViewModelBase : INotifyPropertyChanged
             return false;
 
         field = value;
+
         OnPropertyChanged(name);
+
         return true;
     }
 }

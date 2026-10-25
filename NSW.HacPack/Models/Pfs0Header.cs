@@ -6,7 +6,10 @@ namespace NSW.HacPack.Models;
 public struct Pfs0Header
 {
     public uint Magic;
+
     public uint NumFiles;
+
     public uint StringTableSize;
+
     public uint Reserved;
 }

@@ -5,7 +5,6 @@
              xmlns:d="http://schemas.expression/blend/2008" 
              mc:Ignorable="d" 
              d:DesignHeight="600" d:DesignWidth="1000">
-
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -13,10 +12,7 @@
         </Grid.RowDefinitions>
 
         <ListView x:Name="lvFiles"  Margin="5,0,5,5" Grid.Row="0" ItemsSource="{Binding FileItems}" IsEnabled="{Binding IsLocked, Converter={StaticResource InverseBool}}" SelectionMode="Extended" AllowDrop="True"
-                  KeyUp="LvFiles_KeyUp"                  
-                  Drop="LvFiles_Drop"
-                  DragOver="LvFiles_DragOver"
-                  ContextMenuOpening="LvFiles_ContextMenuOpening">
+                  KeyUp="LvFiles_KeyUp" Drop="LvFiles_Drop" DragOver="LvFiles_DragOver" ContextMenuOpening="LvFiles_ContextMenuOpening">
             <ListView.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="폴더 열기" Click="MenuItem_OpenFolder_Click">
@@ -54,36 +50,32 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
+
                     <GridViewColumn Width="470">
                         <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="FileName"/>
-                        </GridViewColumn.Header>
-                        <GridViewColumn.HeaderTemplate>
-                            <DataTemplate>
+                            <GridViewColumnHeader Tag="FileName">
                                 <StackPanel Orientation="Horizontal">
                                     <Image Source="/Common.WPF;component/Assets/Images/AddFile.png" Width="24" Height="24" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                    <TextBlock Text="파일명" Foreground="#BBBBBB" FontSize="13" FontWeight="Bold" VerticalAlignment="Center" />
+                                    <TextBlock Text="파일명" Foreground="#BBBBBB" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
                                 </StackPanel>
-                            </DataTemplate>
-                        </GridViewColumn.HeaderTemplate>
+                            </GridViewColumnHeader>
+                        </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding FileName}" Padding="6,0" TextTrimming="CharacterEllipsis" ToolTip="{Binding FilePath}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
+
                     <GridViewColumn Width="140">
                         <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="Progress"/>
-                        </GridViewColumn.Header>
-                        <GridViewColumn.HeaderTemplate>
-                            <DataTemplate>
+                            <GridViewColumnHeader Tag="Progress">
                                 <StackPanel Orientation="Horizontal">
                                     <Image Source="/Assets/Images/Progress.png" Width="24" Height="24" Margin="0,0,5,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="진행률" Foreground="#BBBBBB" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
                                 </StackPanel>
-                            </DataTemplate>
-                        </GridViewColumn.HeaderTemplate>
+                            </GridViewColumnHeader>
+                        </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <Grid Margin="6,0">
@@ -104,8 +96,8 @@
             <Border.Background>
                 <SolidColorBrush Color="#181818" Opacity="0.95"/>
             </Border.Background>
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.85">
-                <Image Source="/Assets/Images/drag.png" Width="28" Height="28" Margin="0,0,0,8"/>
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.9">
+                <Image Source="/Assets/Images/Info.png" Width="28" Height="28" Margin="0,0,0,8"/>
                 <TextBlock Text="파일 또는 폴더를 여기에 드래그&amp;드롭하세요" Foreground="LightGray" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
                 <TextBlock Text="단일 트랙 CUE 파일을 생성합니다, 멀티 트랙 X" Foreground="#D4AF37" FontSize="13" FontWeight="Bold" Margin="0,8,0,0" HorizontalAlignment="Center"/>
                 <ItemsControl HorizontalAlignment="Center" Margin="0,5,0,0">

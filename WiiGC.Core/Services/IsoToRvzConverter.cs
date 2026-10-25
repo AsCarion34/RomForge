@@ -1,4 +1,5 @@
-﻿using System.Buffers.Binary;
+﻿using WiiGC.Core.Enums;
+using WiiGC.Core.Interfaces;
 using WiiGC.Core.Services.GameCube;
 using WiiGC.Core.Services.Wii;
 
@@ -8,6 +9,13 @@ public static class IsoToRvzConverter
 {
     public static void Convert(string inputPath, string outputPath, int compressionLevel = 18, int chunkSize = 131072, Action<double>? progress = null, CancellationToken ct = default)
     {
+        using var input = RvzInputSource.Open(inputPath);
+
+        Convert(input, outputPath, compressionLevel, chunkSize, progress, ct);
+    }
+
+    internal static void Convert(IRvzInputSource input, string outputPath, int compressionLevel = 18, int chunkSize = 131072, Action<double>? progress = null, CancellationToken ct = default)
+    {
         ThreadPool.GetMinThreads(out int minWorker, out int minIo);
         ThreadPool.SetMinThreads(Math.Max(minWorker, Environment.ProcessorCount * 3), minIo);
 
@@ -15,22 +23,23 @@ public static class IsoToRvzConverter
 
         try
         {
-            using var input = RvzInputSource.Open(inputPath);
             using var output = File.OpenHandle(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, FileOptions.None);
-            Span<byte> header = stackalloc byte[0x20];
+            Span<byte> header = stackalloc byte[DiscHeader.Size];
 
             if (input.Length < header.Length)
                 throw new InvalidDataException("디스크 이미지가 너무 작습니다.");
 
             input.Read(0, header);
 
-            if (RvzWiiWriter.IsWii(header))
+            var platform = DiscHeader.Detect(header);
+
+            if (platform == DiscPlatform.Wii)
             {
                 var writer = new RvzWiiWriter(input, output, compressionLevel, chunkSize);
 
                 writer.Write(progress, ct);
             }
-            else if (BinaryPrimitives.ReadUInt32BigEndian(header[0x1C..]) == 0xC2339F3D)
+            else if (platform == DiscPlatform.GameCube)
             {
                 var writer = new RvzGcWriter(input, output, compressionLevel, chunkSize);
 
@@ -43,15 +52,7 @@ public static class IsoToRvzConverter
         }
         finally
         {
-            if (!succeeded)
-            {
-                try
-                {
-                    if (File.Exists(outputPath))
-                        File.Delete(outputPath);
-                }
-                catch { }
-            }
+            OutputGuard.DeleteIfFailed(outputPath, succeeded);
         }
     }
 }

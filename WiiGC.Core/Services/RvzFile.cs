@@ -1,7 +1,9 @@
 using Microsoft.Win32.SafeHandles;
 using System.Buffers.Binary;
 using System.Security.Cryptography;
+using WiiGC.Core.Enums;
 using WiiGC.Core.Models;
+using WiiGC.Core.Models.Wii;
 
 namespace WiiGC.Core.Services;
 
@@ -18,6 +20,7 @@ internal sealed class RvzFile
     private const int RawDataEntrySize = 0x18;
     private const int RvzGroupEntrySize = 0x0C;
     private const int WiaGroupEntrySize = 0x08;
+    public required bool IsRvz { get; init; }
 
     public required RvzCompressionType Compression { get; init; }
 
@@ -38,6 +41,18 @@ internal sealed class RvzFile
     public required RawDataEntry[] RawEntries { get; init; }
 
     public required GroupEntry[] Groups { get; init; }
+
+    public static bool IsValidChunkSize(long chunkSize)
+    {
+        if (chunkSize <= 0)
+            return false;
+
+        bool powerOfTwo = (chunkSize & (chunkSize - 1)) == 0;
+
+        return (powerOfTwo && chunkSize >= Layout.BlockTotalSize) || chunkSize % Layout.GroupTotalSize == 0;
+    }
+
+    public bool IsGroupCompressed(GroupEntry group) => IsRvz ? group.IsCompressed : Compression != RvzCompressionType.None;
 
     public static RvzFile Open(SafeFileHandle handle)
     {
@@ -113,9 +128,7 @@ internal sealed class RvzFile
             throw new InvalidDataException("RVZ/WIA 압축기 데이터 크기가 올바르지 않습니다.");
 
         byte[] compressorData = h2.AsSpan(213, compressorDataSize).ToArray();
-        bool powerOfTwo = (chunkSize & (chunkSize - 1)) == 0;
-
-        if ((chunkSize < WiiLayout.BlockTotalSize || !powerOfTwo) && chunkSize % WiiLayout.GroupTotalSize != 0)
+        if (!IsValidChunkSize(chunkSize))
             throw new InvalidDataException($"RVZ/WIA 청크 크기가 올바르지 않습니다: {chunkSize}");
 
         if (compression > (uint)RvzCompressionType.Zstd || compression == (uint)RvzCompressionType.Purge)
@@ -153,11 +166,7 @@ internal sealed class RvzFile
             partitions[i] = new PartitionEntry
             {
                 Key = entryBuffer.AsSpan(0, 16).ToArray(),
-                DataEntries =
-                [
-                    ReadPartitionData(entryBuffer.AsSpan(16, 16)),
-                    ReadPartitionData(entryBuffer.AsSpan(32, 16))
-                ]
+                DataEntries = [ ReadPartitionData(entryBuffer.AsSpan(16, 16)), ReadPartitionData(entryBuffer.AsSpan(32, 16)) ]
             };
         }
 
@@ -184,6 +193,7 @@ internal sealed class RvzFile
 
         return new RvzFile
         {
+            IsRvz = isRvz,
             Compression = compressionType,
             DiscType = discType,
             ChunkSize = chunkSize,

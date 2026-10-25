@@ -6,16 +6,27 @@ namespace _3DS.Core.Save.Models;
 public struct DiffHeader
 {
     public const int Size = 0x5C;
+
     public byte[] Magic;
+
     public uint Version;
+
     public ulong SecondaryTableOffset;
+
     public ulong PrimaryTableOffset;
+
     public ulong TableSize;
+
     public ulong PartitionOffset;
+
     public ulong PartitionSize;
+
     public byte ActiveTable;
+
     public byte[] Padding;
+
     public byte[] Sha;
+
     public ulong UniqueId;
 
     public static DiffHeader Read(IRandomAccessFile f, int pos)
@@ -51,7 +62,9 @@ public struct DiffHeader
         BinaryPrimitives.WriteUInt64LittleEndian(buf.AsSpan(0x18), TableSize);
         BinaryPrimitives.WriteUInt64LittleEndian(buf.AsSpan(0x20), PartitionOffset);
         BinaryPrimitives.WriteUInt64LittleEndian(buf.AsSpan(0x28), PartitionSize);
+
         buf[0x30] = ActiveTable;
+
         Padding.CopyTo(buf, 0x31);
         Sha.CopyTo(buf, 0x34);
         BinaryPrimitives.WriteUInt64LittleEndian(buf.AsSpan(0x54), UniqueId);

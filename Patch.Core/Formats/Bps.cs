@@ -17,8 +17,7 @@ public static class Bps
         await File.WriteAllBytesAsync(outputPath, result, ct);
     }
 
-    public static Task<byte[]> ApplyPatchAsync(byte[] sourceData, byte[] patchData, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
-        => Task.Run(() => Decode(sourceData, patchData, progress, ct), ct);
+    public static Task<byte[]> ApplyPatchAsync(byte[] sourceData, byte[] patchData, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default) => Task.Run(() => Decode(sourceData, patchData, progress, ct), ct);
 
     public static async Task CreatePatchAsync(string sourcePath, string newPath, string patchPath, IProgress<ProgressInfo>? progress = null, CancellationToken ct = default)
     {
@@ -48,6 +47,12 @@ public static class Bps
 
             if (source.LongLength != sourceSize)
                 throw new InvalidDataException($"원본 파일 크기와 패치 파일 크기가 일치하지 않습니다. (패치가 기대하는 크기: {sourceSize:N0} bytes, 실제 파일 크기: {source.LongLength:N0} bytes)");
+
+            uint expectedSourceCrc = BitConverter.ToUInt32(patch, patch.Length - 12);
+            uint actualSourceCrc = CalculateCrc32(source);
+
+            if (actualSourceCrc != expectedSourceCrc)
+                throw new InvalidDataException($"원본 파일의 CRC32가 패치가 기대하는 값과 일치하지 않습니다. (패치가 기대하는 CRC32: {expectedSourceCrc:X8}, 실제 CRC32: {actualSourceCrc:X8})");
 
             if (metadataSize < 0 || pos + metadataSize > patch.Length - 12)
                 throw new InvalidDataException("BPS 메타데이터 크기가 유효하지 않습니다.");
@@ -246,6 +251,25 @@ public static class Bps
         }
     }
 
+    private static readonly uint[] Crc32Table = BuildCrc32Table();
+
+    private static uint[] BuildCrc32Table()
+    {
+        uint[] table = new uint[256];
+
+        for (uint i = 0; i < 256; i++)
+        {
+            uint value = i;
+
+            for (int j = 0; j < 8; j++)
+                value = (value & 1) != 0 ? (value >> 1) ^ 0xEDB88320 : value >> 1;
+
+            table[i] = value;
+        }
+
+        return table;
+    }
+
     private unsafe static uint CalculateCrc32(byte[] data, int length = -1)
     {
         if (length == -1) length = data.Length;
@@ -253,13 +277,9 @@ public static class Bps
         uint crc = 0xFFFFFFFF;
 
         fixed (byte* p = data)
+        fixed (uint* t = Crc32Table)
             for (int i = 0; i < length; i++)
-            {
-                crc ^= p[i];
-
-                for (int j = 0; j < 8; j++)
-                    crc = (crc >> 1) ^ ((crc & 1) * 0xEDB88320);
-            }
+                crc = t[(crc ^ p[i]) & 0xFF] ^ (crc >> 8);
 
         return ~crc;
     }

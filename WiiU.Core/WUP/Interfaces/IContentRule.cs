@@ -1,19 +1,13 @@
 using WiiU.Core.WUP.Models;
 
-namespace WiiU.Core.WUP.NusPackage.Interfaces
+namespace WiiU.Core.WUP.Interfaces
 {
     public interface IContentRule
     {
-        string GetPattern();
+        string Pattern { get; set; }
 
-        void SetPattern(string pattern);
+        ContentDetails Details { get; set; }
 
-        ContentDetails GetDetails();
-
-        void SetDetails(ContentDetails details);
-
-        bool IsContentPerMatch();
-
-        void SetContentPerMatch(bool contentPerMatch);
+        bool ContentPerMatch { get; set; }
     }
 }

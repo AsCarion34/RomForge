@@ -1,6 +1,7 @@
 ﻿using _3DS.Core.Models;
 using Common;
 using Patch.Core;
+using Patch.Core.Enums;
 using Patch.Core.Services;
 using System.Security.Cryptography;
 using System.Text;
@@ -18,6 +19,7 @@ public static class ExeFsPacker
     {
         if (files.Count == 0)
             throw new ArgumentException("ExeFS에 파일이 없습니다.");
+
         if (files.Count > MaxEntries)
             throw new ArgumentException($"ExeFS 최대 파일 수({MaxEntries}) 초과");
 
@@ -27,7 +29,6 @@ public static class ExeFsPacker
             totalSize += AlignUp((uint)f.Data.Length, BlockSize);
 
         byte[] buf = new byte[totalSize];
-
         uint currentOffset = 0;
 
         for (int i = 0; i < files.Count; i++)
@@ -161,9 +162,7 @@ public static class ExeFsPacker
                 log?.Invoke($"exefs IPS 패치 적용: {file.Name} ({sourceData.Length:N0} → {patchedData.Length:N0} bytes)", LogLevel.Ok);
             }
             else
-            {
                 patchedFiles.Add(file);
-            }
         }
 
         return (Pack(patchedFiles), patchedCount);

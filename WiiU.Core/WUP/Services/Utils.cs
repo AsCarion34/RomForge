@@ -14,7 +14,11 @@ namespace WiiU.Core.WUP.Services
 
                 foreach (var file in Directory.GetFiles(path))
                 {
-                    try { File.Delete(file); } catch {}
+                    try 
+                    {
+                        File.Delete(file); 
+                    } 
+                    catch {}
                 }
             }
             try
@@ -130,15 +134,6 @@ namespace WiiU.Core.WUP.Services
 
             return inBlockBuffer;
         }
-
-        public static long GetUnsingedIntFromBytes(byte[] input, int offset)
-        {
-            uint v = (uint)((input[offset] << 24) | (input[offset + 1] << 16) | (input[offset + 2] << 8) | input[offset + 3]);
-
-            return v;
-        }
-
-        public static int GetIntFromBytes(byte[] input, int offset) => (input[offset] << 24) | (input[offset + 1] << 16) | (input[offset + 2] << 8) | input[offset + 3];
                
         public static long CopyFileInto(string filePath, Stream out_)
         {
@@ -156,6 +151,7 @@ namespace WiiU.Core.WUP.Services
                     break;
 
                 out_.Write(buffer, 0, read);
+
                 written += read;
             } while (written < filesize);
 

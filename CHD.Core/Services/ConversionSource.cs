@@ -207,9 +207,7 @@ public class ConversionSource
         {
             InputFormat.Unknown => $"지원하지 않는 파일 형식: {Path.GetExtension(PrimaryFile)}",
             InputFormat.BinCue => ValidateBinCue(),
-            _ => File.Exists(PrimaryFile)
-                    ? null
-                    : $"파일을 찾을 수 없습니다: {Path.GetFileName(PrimaryFile)}"
+            _ => File.Exists(PrimaryFile) ? null : $"파일을 찾을 수 없습니다: {Path.GetFileName(PrimaryFile)}"
         };
     }
 

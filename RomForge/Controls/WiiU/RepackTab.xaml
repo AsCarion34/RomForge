@@ -7,7 +7,6 @@
              xmlns:core="clr-namespace:NSW.WPF.UI;assembly=NSW.WPF"
              mc:Ignorable="d" 
              d:DesignHeight="640" d:DesignWidth="800">
-
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -21,27 +20,17 @@
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="40"/>
                 </Grid.ColumnDefinitions>
 
                 <Grid Grid.Column="0">
                     <ListView ItemsSource="{Binding Entries}" SelectedItem="{Binding SelectedEntry}" Background="Transparent" BorderThickness="0" Margin="5" AllowDrop="True" 
-                              KeyUp="LvFiles_KeyUp"
-                              ContextMenuOpening="LvFiles_ContextMenuOpening"
-                              DragEnter="Root_DragEnter" 
-                              DragOver="Root_DragEnter" 
-                              Drop="Root_Drop">
+                              KeyUp="LvFiles_KeyUp" ContextMenuOpening="LvFiles_ContextMenuOpening" DragEnter="Root_DragEnter" DragOver="Root_DragEnter" Drop="Root_Drop">
                         <ListView.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="폴더 열기" Click="MenuItem_OpenFolder_Click">
                                     <MenuItem.Icon>
                                         <Image Source="/Common.WPF;component/Assets/Images/AddFolder.png" Width="20" Height="20"/>
-                                    </MenuItem.Icon>
-                                </MenuItem>
-                                <Separator/>
-                                <MenuItem Header="한글패치 취소" Click="BtnRemovePatch_Click">
-                                    <MenuItem.Icon>
-                                        <Image Source="/Assets/Images/Cancel.png" Width="20" Height="20"/>
                                     </MenuItem.Icon>
                                 </MenuItem>
                                 <Separator/>
@@ -77,7 +66,7 @@
                                 <GridViewColumn Width="260">
                                     <GridViewColumn.Header>
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <Image Source="/Common.WPF;component/Assets/Images/Title.png" Width="24" Height="24" Margin="0,0,4,0"/>
+                                            <Image Source="/Assets/Images/Blu-ray.png" Width="24" Height="24" Margin="0,0,4,0"/>
                                             <TextBlock Text="타이틀" Foreground="#BBBBBB" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </GridViewColumn.Header>
@@ -115,6 +104,11 @@
                                                         <MenuItem Header="압축파일 선택(zip/7z)..." Click="PatchMenu_SelectArchive_Click">
                                                             <MenuItem.Icon>
                                                                 <Image Source="/Assets/Images/ZipFolder.png" Width="24" Height="24"/>
+                                                            </MenuItem.Icon>
+                                                        </MenuItem>
+                                                        <MenuItem Header="선택 취소" Click="BtnRemovePatch_Click">
+                                                            <MenuItem.Icon>
+                                                                <Image Source="/Assets/Images/Cancel.png" Width="24" Height="24"/>
                                                             </MenuItem.Icon>
                                                         </MenuItem>
                                                     </ContextMenu>
@@ -158,8 +152,8 @@
                         <Border.Background>
                             <SolidColorBrush Color="#181818" Opacity="0.95"/>
                         </Border.Background>
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.85">
-                            <Image Source="/Assets/Images/drag.png" Width="28" Height="28" Margin="0,0,0,8"/>
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.9">
+                            <Image Source="/Assets/Images/Info.png" Width="28" Height="28" Margin="0,0,0,8"/>
                             <TextBlock Text="게임 파일 / 폴더를 여기에 드래그&amp;드롭하세요" Foreground="LightGray" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
                             <TextBlock Text="본편/업데이트/DLC는 title ID로 자동 분류됩니다" Foreground="#D4AF37" FontSize="12" Margin="0,6,0,0" HorizontalAlignment="Center"/>
                             <ItemsControl HorizontalAlignment="Center" Margin="0,8,0,0">
@@ -246,8 +240,9 @@
                 </Grid.ColumnDefinitions>
                 <Border Grid.Column="0" Background="#12FFFFFF" BorderBrush="#30FFFFFF" BorderThickness="1" CornerRadius="6">
                     <Grid>
-                        <TextBox Text="{Binding OutputPath, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsIdle}" Background="Transparent" BorderThickness="0" Foreground="#DCDCDC" FontSize="11" VerticalContentAlignment="Center" Padding="10,0"/>
-                        <TextBlock Text="작업 폴더를 선택하세요" Visibility="{Binding OutputHintVisibility}" Foreground="#50FFFFFF" FontSize="11" VerticalAlignment="Center" IsHitTestVisible="False" Margin="10,0,0,0"/>
+                        <TextBox Text="{Binding OutputPath, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsIdle}" Background="Transparent" BorderThickness="0" Foreground="#DCDCDC" FontSize="11" VerticalContentAlignment="Center" Padding="10,0" AllowDrop="True" 
+                                 PreviewDragOver="TxtOutputPath_PreviewDragOver" Drop="TxtOutputPath_Drop"/>
+                        <TextBlock Text="작업 폴더를 드래그하거나 선택하세요" Visibility="{Binding OutputHintVisibility}" Foreground="#50FFFFFF" FontSize="11" VerticalAlignment="Center" IsHitTestVisible="False" Margin="10,0,0,0"/>
                     </Grid>
                 </Border>
                 <Button Grid.Column="1" Width="30" Height="30" Padding="0" BorderThickness="1" Style="{StaticResource GrayButton}" Command="{Binding BrowseOutputCommand}" IsEnabled="{Binding IsIdle}" Margin="5,0,0,0">
@@ -265,7 +260,7 @@
 
             <core:IconButton Grid.Column="0" DefaultText="언팩" DefaultIcon="/Assets/Images/Unpack.png" CancelText="취소" CancelIcon="/Assets/Images/Cancel.png" IsRunning="{Binding IsUnpackRunning}" IsEnabled="{Binding UnpackEnabled}" Click="BtnUnpack_Click"/>
             <core:IconButton Grid.Column="1" Margin="5,0,0,0" DefaultText="리팩 (폴더 기반)" DefaultIcon="/Assets/Images/Repack.png" CancelText="취소" CancelIcon="/Assets/Images/Cancel.png" IsRunning="{Binding IsRebuildRunning}" IsEnabled="{Binding RebuildEnabled}" Click="BtnRebuild_Click"/>
-            <core:IconButton Grid.Column="2" Margin="5,0,5,0" DefaultText="언팩 + 리팩 (Full)" DefaultIcon="/Assets/Images/Run.png" CancelText="취소" CancelIcon="/Assets/Images/Cancel.png" IsRunning="{Binding IsFullRunning}" IsEnabled="{Binding StartEnabled}" Click="BtnStart_Click"/>
+            <core:IconButton Grid.Column="2" Margin="5,0,5,0" DefaultText="언팩 + 리팩 (Full)" DefaultIcon="/Assets/Images/UnRepack.png" CancelText="취소" CancelIcon="/Assets/Images/Cancel.png" IsRunning="{Binding IsFullRunning}" IsEnabled="{Binding StartEnabled}" Click="BtnStart_Click"/>
         </Grid>
 
         <Border Grid.Row="4" Background="#12FFFFFF" BorderBrush="#30FFFFFF" BorderThickness="0,1,0,0" CornerRadius="8" Margin="5,0,5,5" Padding="8,0">

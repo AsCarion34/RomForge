@@ -25,18 +25,22 @@ public class PbpReader
     public PbpReader(Stream stream)
     {
         var buffer = new byte[16];
+
         stream.Read(buffer, 0, 4);
 
         if (BitConverter.ToUInt32(buffer, 0) != PBPMAGIC)
             throw new Exception("Invalid Header found while reading PBP");
 
         stream.Seek(HEADER_SFO_OFFSET, SeekOrigin.Begin);
+
         var sfoOffset = stream.ReadUInteger();
 
         stream.Seek(sfoOffset, SeekOrigin.Begin);
+
         SFOData = stream.ReadSFO(sfoOffset);
 
         stream.Seek(HEADER_PSAR_OFFSET, SeekOrigin.Begin);
+
         var psarOffset = stream.ReadInteger();
 
         if (psarOffset == 0)
@@ -44,18 +48,15 @@ public class PbpReader
 
         stream.Seek(psarOffset, SeekOrigin.Begin);
         stream.Read(buffer, 0, 12);
+
         var header = System.Text.Encoding.ASCII.GetString(buffer, 0, 12);
 
         if (header == "PSISOIMG0000")
-        {
-            Discs =
-            [
-                new PbpDiscEntry(stream, psarOffset, 1)
-            ];
-        }
+            Discs = [ new PbpDiscEntry(stream, psarOffset, 1) ];
         else
         {
             stream.Read(buffer, 12, 4);
+
             var header16 = System.Text.Encoding.ASCII.GetString(buffer, 0, 16);
 
             if (header16 != "PSTITLEIMG000000")
@@ -80,11 +81,12 @@ public class PbpReader
                 stream.ReadInteger();
 
             var isoPositions = new uint[5];
+
             stream.Read(isoPositions, 5);
 
             Discs = [.. isoPositions
                 .Where(x => x > 0)
-                .Select((x, i) => new PbpDiscEntry(stream, psarOffset + (int)x, i + 1))];
+                .Select((x, i) => new PbpDiscEntry(stream, psarOffset + x, i + 1))];
         }
     }
 
@@ -104,10 +106,9 @@ public class PbpReader
         };
 
         stream.Seek(offset, SeekOrigin.Begin);
+
         var start = stream.ReadInteger();
-        var end = resource != ResourceType.PSAR
-            ? stream.ReadInteger()
-            : (int)stream.Length;
+        var end = resource != ResourceType.PSAR ? stream.ReadInteger() : (int)stream.Length;
 
         stream.Seek(start, SeekOrigin.Begin);
 
@@ -121,11 +122,13 @@ public class PbpReader
         if (length > 0)
         {
             var buffer = new byte[length];
+
             stream.Read(buffer, 0, length);
             outputStream = new MemoryStream(buffer);
 
             return true;
         }
+
         outputStream = null;
 
         return false;

@@ -1,8 +1,7 @@
-﻿using System.IO;
+﻿using RomForge.Core.Models.Patch;
+using System.IO;
 
 namespace RomForge.Core.Services.Patch;
-
-public readonly record struct RomHashResult(string Crc32, string Md5, string Sha1, long Length);
 
 public static class RomHasher
 {
@@ -12,7 +11,6 @@ public static class RomHasher
         Task.Run(() =>
         {
             using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.SequentialScan);
-
             return HashStream(fs, fs.Length, progress, ct);
         }, ct);
 

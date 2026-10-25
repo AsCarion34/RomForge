@@ -14,6 +14,7 @@ public class LevelToColorConverter : IValueConverter
                 return Brushes.White;
 
             double t = (level - 3) / 15.0;
+
             t = Math.Clamp(t, 0, 1);
 
             byte r = (byte)(255 * t);

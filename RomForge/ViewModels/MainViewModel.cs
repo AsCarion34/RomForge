@@ -1,16 +1,17 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
 using RomForge.Core;
 using RomForge.Core.Models;
 using RomForge.ViewModels._3DS;
 using RomForge.ViewModels.Patch;
-using RomForge.ViewModels.PS;
+using RomForge.ViewModels.PSP;
+using RomForge.ViewModels.PSVita;
 using RomForge.ViewModels.Settings;
 using RomForge.ViewModels.Switch;
 using RomForge.ViewModels.Util;
 using RomForge.ViewModels.Wii;
 using RomForge.ViewModels.WiiU;
 using System.Collections.ObjectModel;
+using System.Windows;
 using System.Windows.Shell;
 
 namespace RomForge.ViewModels;
@@ -35,11 +36,13 @@ public class MainViewModel : ToolTabViewModel
 
     public WiiUMainViewModel WiiUMainVM { get; } = new();
 
-    public _3DSMainViewModel Main3DsVM { get; } = new();
-
     public WiiMainViewModel WiiMainVM { get; } = new();
 
-    public PS1MainViewModel PSMainVM { get; } = new();
+    public _3DSMainViewModel Main3DsVM { get; } = new();
+
+    public PSVitaMainViewModel PSVitaMainVM { get; } = new();
+
+    public PSPMainViewModel PSPMainVM { get; } = new();    
 
     public UtilMainViewModel UtilMainVM { get; } = new();
 
@@ -76,11 +79,12 @@ public class MainViewModel : ToolTabViewModel
         1 => CompressVM.LogEntries,
         2 => UnifiedConvertVM.LogEntries,
         3 => SwitchMainVM.LogEntries,
-        4 => WiiUMainVM.LogEntries,        
-        5 => Main3DsVM.LogEntries,
-        6 => WiiMainVM.LogEntries,
-        7 => PSMainVM.LogEntries,
-        8 => UtilMainVM.LogEntries,
+        4 => WiiUMainVM.LogEntries,
+        5 => WiiMainVM.LogEntries,
+        6 => Main3DsVM.LogEntries,
+        7 => PSVitaMainVM.LogEntries,
+        8 => PSPMainVM.LogEntries,
+        9 => UtilMainVM.LogEntries,
         _ => PatchVM.LogEntries
     };
 
@@ -115,19 +119,19 @@ public class MainViewModel : ToolTabViewModel
         Current = this;
 
         PatchVM = new PatchMainViewModel(async (file) => await MapsToHashAndProcess(file));
-        SwitchMainVM.MergeVM.SettingsClicked += async (s, e) => await NavigateSwitchCompressSettings();
         Main3DsVM.RunNavigateCerts += MainVM_RunNavigateCerts;
         UnifiedConvertVM.RunNavigateCerts += MainVM_RunNavigateCerts;
-        PSMainVM.RunNavigatePackingSettings += PS1MainVM_RunNavigatePackingSettings;
+        PSPMainVM.RunNavigatePackingSettings += PS1MainVM_RunNavigatePackingSettings;
 
         Tools.Add(PatchVM);
         Tools.Add(CompressVM);
         Tools.Add(UnifiedConvertVM);
         Tools.Add(SwitchMainVM);
         Tools.Add(WiiUMainVM);
-        Tools.Add(Main3DsVM);
         Tools.Add(WiiMainVM);
-        Tools.Add(PSMainVM);
+        Tools.Add(Main3DsVM);
+        Tools.Add(PSVitaMainVM);
+        Tools.Add(PSPMainVM);
         Tools.Add(UtilMainVM);
         Tools.Add(Settings);
 
@@ -144,19 +148,6 @@ public class MainViewModel : ToolTabViewModel
 
         if (UtilMainVM.HashVM.RunCommand.CanExecute(null))
             UtilMainVM.HashVM.RunCommand.Execute(null);
-    }
-
-    public async Task NavigateCompressSettings()
-    {
-        SelectedViewModel = Settings;
-        Settings.SelectedViewModel = Settings.Compress;
-    }
-
-    private async Task NavigateSwitchCompressSettings()
-    {
-        SelectedViewModel = Settings;
-        Settings.SelectedViewModel = Settings.Compress;
-        Settings.Compress.SelectedTabIndex = 1;
     }
 
     private void MainVM_RunNavigateCerts(object? sender, EventArgs e)
@@ -201,6 +192,11 @@ public class MainViewModel : ToolTabViewModel
         {
             Current.TaskbarProgressState = state;
             Current.TaskbarProgressValue = value / 100.0;
+
+            if (state == TaskbarItemProgressState.Error)
+                Core.UI.Helpers.Win32API.FlashTaskbarIcon(Application.Current.MainWindow);
         }
     }
+
+    public override void ClearLog() => ActiveLogEntries.Clear();
 }

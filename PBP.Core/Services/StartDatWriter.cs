@@ -7,7 +7,6 @@ public static class StartDatWriter
     public static void WriteStartDat(Stream outputStream, byte[] basePbpBytes, byte[]? bootPng)
     {
         using var basePbp = new MemoryStream(basePbpBytes);
-
         var baseHeader = new uint[10];
 
         basePbp.Read(baseHeader, 10);
@@ -39,7 +38,6 @@ public static class StartDatWriter
 
         basePbp.Seek(x + 16, SeekOrigin.Begin);
         basePbp.Read(header, 2);
-
         basePbp.Seek(x, SeekOrigin.Begin);
         basePbp.Read(buffer, 0, (int)header[0]);
 

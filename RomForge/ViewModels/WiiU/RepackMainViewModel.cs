@@ -1,11 +1,10 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
 using NSW.Core.Enums;
 using NSW.WPF.Services;
 using NSW.WPF.UI;
 using RomForge.Core;
-using RomForge.Core.Models;
 using RomForge.Core.Models.WiiU;
+using RomForge.Core.Services;
 using RomForge.Core.Services.WiiU;
 using RomForge.Core.UI.Command;
 using System.Collections.ObjectModel;
@@ -16,18 +15,11 @@ using WiiU.Core.Services;
 
 namespace RomForge.ViewModels.WiiU;
 
-
 public class RepackMainViewModel : ToolTabViewModel
 {
-    private CancellationTokenSource _cts = new();
     private BuildMode? _currentMode;
     private TitleInputEntry? _selectedEntry;
     private string _outputPath = string.Empty;
-    private int _progressPct;
-    private string _progressLabel = "대기 중...";
-    private string _progressPercent = string.Empty;
-    private string _progressTime = "00:00 경과";
-    private string _progressSpeed = string.Empty;
 
     private static string KeysPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "keys.txt");
 
@@ -41,16 +33,22 @@ public class RepackMainViewModel : ToolTabViewModel
     public bool IsWuaFormat
     {
         get => OutputFormat == RepackOutputFormat.Wua;
-        set { if (value) OutputFormat = RepackOutputFormat.Wua; }
+        set 
+        { 
+            if (value) 
+                OutputFormat = RepackOutputFormat.Wua; 
+        }
     }
 
     public bool IsWupFormat
     {
         get => OutputFormat == RepackOutputFormat.Wup;
-        set { if (value) OutputFormat = RepackOutputFormat.Wup; }
+        set 
+        {
+            if (value) 
+                OutputFormat = RepackOutputFormat.Wup; 
+        }
     }
-
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
     public ObservableCollection<TitleInputEntry> Entries { get; } = [];
 
@@ -66,40 +64,11 @@ public class RepackMainViewModel : ToolTabViewModel
         set
         {
             _outputPath = value;
+
             OnPropertyChanged();
             OnPropertyChanged(nameof(OutputHintVisibility));
             AppConfig.Instance.OutputFolders.WiiURepackOutputPath = value;
         }
-    }
-
-    public int ProgressPct
-    {
-        get => _progressPct;
-        set { _progressPct = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressLabel
-    {
-        get => _progressLabel;
-        set { _progressLabel = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressPercent
-    {
-        get => _progressPercent;
-        set { _progressPercent = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressTime
-    {
-        get => _progressTime;
-        set { _progressTime = value; OnPropertyChanged(); }
-    }
-
-    public string ProgressSpeed
-    {
-        get => _progressSpeed;
-        set { _progressSpeed = value; OnPropertyChanged(); }
     }
 
     public Visibility EntriesHintVisibility => Entries.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -130,10 +99,7 @@ public class RepackMainViewModel : ToolTabViewModel
 
     public RepackMainViewModel()
     {
-        OutputPath = string.IsNullOrWhiteSpace(AppConfig.Instance.OutputFolders.WiiURepackOutputPath)
-            ? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "output")
-            : AppConfig.Instance.OutputFolders.WiiURepackOutputPath;
-
+        OutputPath = string.IsNullOrWhiteSpace(AppConfig.Instance.OutputFolders.WiiURepackOutputPath) ? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "output") : AppConfig.Instance.OutputFolders.WiiURepackOutputPath;
         RemoveSelectedCommand = new RelayCommand(_ => RemoveSelected(), _ => HasSelection);
         RemoveAllCommand = new RelayCommand(_ => Entries.Clear(), _ => Entries.Count > 0);
         BrowseOutputCommand = new RelayCommand(async _ => await BrowseOutput());
@@ -160,7 +126,7 @@ public class RepackMainViewModel : ToolTabViewModel
             if (existing is not null)
             {
                 Entries.Remove(existing);
-                Log($"기존 {row.Kind}을(를) 새 항목으로 교체합니다.", LogLevel.Info);
+                AppendLog($"기존 {row.Kind}을(를) 새 항목으로 교체합니다.", LogLevel.Info);
             }
         }
 
@@ -178,14 +144,15 @@ public class RepackMainViewModel : ToolTabViewModel
             {
                 if (!LooksLikeSupportedFolder(path))
                 {
-                    Log($"'{Path.GetFileName(path)}'는 WUP 폴더나 로드라인(code/content/meta) 폴더가 아니라서 자동 추가할 수 없습니다. 언팩 → 패치 → 리빌드 흐름을 이용해주세요.", LogLevel.Error);
+                    AppendLog($"'{Path.GetFileName(path)}'는 WUP 폴더나 로드라인(code/content/meta) 폴더가 아니라서 자동 추가할 수 없습니다. 언팩 → 패치 → 리팩 흐름을 이용해주세요.", LogLevel.Error);
+                    await SoundPlayer.PlayErrorAsync();
                     return;
                 }
 
                 var row = RepackService.PeekFolder(path);
 
                 AssignByGuessedRole(row);
-                WiiUEntryListOrganizer.Reorganize(Entries);
+                EntryListOrganizer.Reorganize(Entries);
                 return;
             }
 
@@ -195,13 +162,15 @@ public class RepackMainViewModel : ToolTabViewModel
 
             if (!isWua && !isWudOrWux)
             {
-                Log($"'{Path.GetFileName(path)}'는 지원하지 않는 형식입니다 (wud/wux/wua/WUP 폴더만 가능).", LogLevel.Error);
+                AppendLog($"'{Path.GetFileName(path)}'는 지원하지 않는 형식입니다 (wud/wux/wua/WUP 폴더만 가능).", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 return;
             }
 
             if (!isWua && !File.Exists(KeysPath))
             {
-                Log("keys.txt가 exe 폴더에 없습니다. keys.txt를 exe와 같은 폴더에 넣어주세요 (wud/wux 입력에는 필요합니다).", LogLevel.Error);
+                AppendLog("keys.txt가 exe 폴더에 없습니다. keys.txt를 exe와 같은 폴더에 넣어주세요 (wud/wux 입력에는 필요합니다).", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 return;
             }
 
@@ -210,13 +179,14 @@ public class RepackMainViewModel : ToolTabViewModel
             foreach (var row in rows)
                 AssignByGuessedRole(row);
 
-            WiiUEntryListOrganizer.Reorganize(Entries);
+            EntryListOrganizer.Reorganize(Entries);
 
-            Log($"{Path.GetFileName(path)} — {rows.Count}개 타이틀 추가됨.", LogLevel.Info);
+            AppendLog($"{Path.GetFileName(path)} — {rows.Count}개 타이틀 추가됨.", LogLevel.Info);
         }
         catch (Exception ex)
         {
-            Log($"'{path}' 추가 실패: {ex.Message}", LogLevel.Error);
+            AppendLog($"'{path}' 추가 실패: {ex.Message}", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
         }
     }
 
@@ -232,7 +202,8 @@ public class RepackMainViewModel : ToolTabViewModel
     {
         if (!Validate(mode, out string error))
         {
-            Log(error, LogLevel.Error);
+            AppendLog(error, LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
             return;
         }
 
@@ -244,23 +215,21 @@ public class RepackMainViewModel : ToolTabViewModel
         {
             try
             {
-                _cts.Dispose();
+                CancellationTokenSource?.Dispose();
 
-                _cts = new CancellationTokenSource();
+                CancellationTokenSource = new CancellationTokenSource();
 
-                await ExecuteAsync(mode, _cts.Token);
+                await ExecuteAsync(mode, CancellationTokenSource.Token);
             }
             finally
-            {
-                ProgressPct = 0;
+            {                
                 _currentMode = null;
 
+                CleanupTask();
                 NotifyButtonStates();
             }
         }
     }
-
-    public void Cancel() => _cts.Cancel();
 
     private async Task ExecuteAsync(BuildMode mode, CancellationToken ct)
     {
@@ -280,7 +249,8 @@ public class RepackMainViewModel : ToolTabViewModel
 
             if (scanned.Count == 0)
             {
-                Log("언팩된 데이터가 없습니다.", LogLevel.Error);
+                AppendLog("언팩된 데이터가 없습니다.", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 return;
             }
 
@@ -310,49 +280,47 @@ public class RepackMainViewModel : ToolTabViewModel
             switch (mode)
             {
                 case BuildMode.UnpackOnly:
-                    await RepackService.UnpackAsync(entriesSnapshot, KeysPath, OutputPath, progress, Log, ct);
+                    await RepackService.UnpackAsync(entriesSnapshot, KeysPath, OutputPath, progress, AppendLog, ct);
                     break;
                 case BuildMode.RebuildOnly:
                 case BuildMode.FullProcess:
-                    await RepackService.RepackAsync(entriesSnapshot, KeysPath, OutputPath, OutputFormat, progress, Log, ct);
+                    await RepackService.RepackAsync(entriesSnapshot, KeysPath, OutputPath, OutputFormat, progress, AppendLog, ct);
                     break;
             }
 
             isCompleted = true;
             ProgressPercent = "100%";
 
-            Log($"완료! 총 소요: {sw.Elapsed:mm\\:ss}", LogLevel.Ok);
+            AppendLog($"완료! 총 소요: {sw.Elapsed:mm\\:ss}", LogLevel.Ok);
+            await SoundPlayer.PlayCompleteAsync();
             OutputPath.OpenFolder();
         }
         catch (OperationCanceledException)
         {
-            Log("작업이 취소되었습니다.", LogLevel.Error);
+            AppendLog("작업이 취소되었습니다.", LogLevel.Error);
+            await SoundPlayer.PlayCancelAsync();
+            MainViewModel.SetTaskbarProgress(0);
         }
         catch (Exception ex)
         {
-            Log($"오류: {ex.Message}", LogLevel.Error);
+            AppendLog($"오류: {ex.Message}", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
+            MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
         }
         finally
         {
+            CleanupTask();
+
             if (!isCompleted && mode == BuildMode.UnpackOnly && Directory.Exists(unpackedRoot))
             {
-                try { Directory.Delete(unpackedRoot, true); } catch { }
+                try 
+                {
+                    Directory.Delete(unpackedRoot, true);
+                } 
+                catch { }
             }
         }
     }
-
-    private Action<ProgressInfo> BuildProgressReporter() =>
-        info =>
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                ProgressPct = info.Percent;
-                ProgressLabel = info.Label;
-                ProgressPercent = $"{info.Percent}%";
-                ProgressTime = info.TimeInfo;
-                ProgressSpeed = info.Speed;
-            });
-        };
 
     private bool Validate(BuildMode mode, out string error)
     {
@@ -401,8 +369,6 @@ public class RepackMainViewModel : ToolTabViewModel
             OnPropertyChanged(nameof(StartEnabled));
         });
     }
-
-    private void Log(string msg, LogLevel level = LogLevel.Info) => Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
 
     private async Task BrowseOutput()
     {

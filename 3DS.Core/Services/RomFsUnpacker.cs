@@ -18,24 +18,29 @@ public static class RomFsUnpacker
         byte[] ivfcBuf = new byte[IvfcHeader.Size];
 
         ncchStream.Position = ivfcAbsOffset;
+
         await ncchStream.ReadExactlyAsync(ivfcBuf, ct);
 
         var ivfc = IvfcHeader.Parse(ivfcBuf);
 
         if (ivfc.Magic != 0x43465649)
             throw new InvalidDataException("IVFC 매직 불일치");
+
         if (ivfc.TypeId != 0x10000)
             throw new InvalidDataException("IVFC TypeId가 CTR RomFS(0x10000)가 아닙니다.");
 
         long dataLevel2AbsOffset = ivfcAbsOffset + ivfc.GetDataLevel2Offset();
         byte[] romfsBuf = new byte[RomFsHeader.Size];
+
         ncchStream.Position = dataLevel2AbsOffset;
+
         await ncchStream.ReadExactlyAsync(romfsBuf, ct);
 
         var romfs = RomFsHeader.Parse(romfsBuf);
 
         if (romfs.HeaderSize != RomFsHeader.Size)
             throw new InvalidDataException($"RomFS 헤더 크기 이상: 0x{romfs.HeaderSize:X}");
+
         if (romfs.DirHashBucketOffset != RomFsHeader.Size)
             throw new InvalidDataException("RomFS DirHashBucket 오프셋 이상");
 
@@ -43,9 +48,11 @@ public static class RomFsUnpacker
         byte[] fileTable = new byte[romfs.FileEntrySize];
 
         ncchStream.Position = dataLevel2AbsOffset + romfs.DirEntryOffset;
+
         await ncchStream.ReadExactlyAsync(dirTable, ct);
 
         ncchStream.Position = dataLevel2AbsOffset + romfs.FileEntryOffset;
+
         await ncchStream.ReadExactlyAsync(fileTable, ct);
 
         var (dirs, files) = ParseEntryTables(dirTable, fileTable);
@@ -63,7 +70,6 @@ public static class RomFsUnpacker
     public static async Task SaveToDirectoryAsync(Stream ncchStream, RomFsUnpackResult result, string outputDir, Action<long, long>? reporter = null, CancellationToken ct = default)
     {
         long dataBase = result.DataLevel2Offset + result.RomFsHeader.DataOffset;
-
         long totalBytes = result.Files.Sum(f => (long)f.DataSize);
         long currentBytes = 0;
 
@@ -140,7 +146,9 @@ public static class RomFsUnpacker
             int idx = dirs.Count;
 
             dirs.Add(new RomFsDirNode { FullPath = fullPath, Entry = entry });
+
             dirVaddrToIndex[vaddr] = idx;
+
             vaddr += (uint)entry.TotalSize;
         }
 

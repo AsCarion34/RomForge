@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Text;
+﻿using System.Text;
 using Common;
 
 namespace Patch.Core.Formats;
@@ -33,6 +32,7 @@ public static class Ppf
             using var outStream = new MemoryStream();
 
             DecodeStreamInternal(srcStream, patStream, outStream, progress, ct);
+
             return outStream.ToArray();
         }, ct).ConfigureAwait(false);
     }
@@ -57,12 +57,14 @@ public static class Ppf
             throw new InvalidDataException("PPF 파일이 너무 짧습니다.");
 
         byte[] header = new byte[60];
+
         pat.ReadExactly(header, 0, 60);
 
         if (header[0] != 'P' || header[1] != 'P' || header[2] != 'F')
             throw new InvalidDataException("유효하지 않은 PPF 헤더입니다.");
 
         byte version = (byte)(header[3] - '0');
+
         if (version < 1 || version > 3)
             throw new InvalidDataException($"지원하지 않는 PPF 버전입니다: PPF {version}.0");
 
@@ -72,48 +74,56 @@ public static class Ppf
         if (version >= 2 && pat.Length > 10)
         {
             int lenIdx = version == 2 ? 4 : 2;
+
             if (pat.Length > lenIdx + 4)
             {
                 pat.Position = pat.Length - lenIdx - 4;
+
                 byte[] tail = new byte[4];
+
                 pat.ReadExactly(tail, 0, 4);
 
                 if (tail[0] == '.' && tail[1] == 'D' && tail[2] == 'I' && tail[3] == 'Z')
                 {
                     pat.Position = pat.Length - lenIdx;
+
                     byte[] lenBuf = new byte[lenIdx];
+
                     pat.ReadExactly(lenBuf, 0, lenIdx);
+
                     int idLen = version == 2 ? BitConverter.ToInt32(lenBuf, 0) : BitConverter.ToUInt16(lenBuf, 0);
+
                     dataEnd -= version == 2 ? idLen + 38 : idLen + 36;
                 }
             }
         }
 
         long pos = 60;
+
         if (version == 1)
-        {
             pos = 56;
-            pat.Position = pos;
-        }
         else if (version == 2)
         {
             ValidateBlockcheckInternal(pat, src, 0, 2);
             pos = 1084;
-            pat.Position = pos;
         }
         else
         {
             byte blockcheck = header[57];
+
             isUndoAvailable = header[58] == 1;
+
             byte imagetype = header[56];
 
             if (blockcheck != 0)
             {
                 ValidateBlockcheckInternal(pat, src, imagetype, 3);
+
                 pos = 1084;
-                pat.Position = pos;
             }
         }
+
+        pat.Position = pos;
 
         long srcSize = src.Length;
         long patchDataStartPos = pos;
@@ -141,6 +151,7 @@ public static class Ppf
                 break;
 
             outStream.Write(ioBuffer, 0, read);
+
             totalCopied += read;
 
             long now = Environment.TickCount64;
@@ -170,9 +181,10 @@ public static class Ppf
 
             pat.ReadExactly(buffer, 0, length);
 
-            if (offset >= 0 && offset + length <= srcSize)
+            if (offset >= 0)
             {
                 outStream.Position = offset;
+
                 outStream.Write(buffer, 0, length);
             }
 
@@ -290,7 +302,8 @@ public static class Ppf
 
                     pat.Write(offsetBytes, 0, offsetBytes.Length);
                     pat.WriteByte((byte)diffBytes.Count);
-                    pat.WriteAsync([.. diffBytes], 0, diffBytes.Count, ct).ConfigureAwait(false);
+                    pat.Write([.. diffBytes], 0, diffBytes.Count);
+
                     i--;
                 }
             }
@@ -302,6 +315,7 @@ public static class Ppf
             if (now >= nextReport)
             {
                 nextReport = now + 100;
+
                 report?.Invoke(currentPos, maxLen);
             }
         }
@@ -319,11 +333,13 @@ public static class Ppf
         byte[] patchBlock = new byte[1024];
 
         pat.Position = 60;
+
         pat.ReadExactly(patchBlock, 0, 1024);
 
         byte[] sourceBlock = new byte[1024];
 
         src.Position = sourceBlockStart;
+
         src.ReadExactly(sourceBlock, 0, 1024);
 
         for (int i = 0; i < 1024; i++)

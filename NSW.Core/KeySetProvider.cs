@@ -32,9 +32,13 @@ public sealed class KeySetProvider
     public void TryLoadKeys()
     {
         string keysPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "prod.keys");
+
         if (File.Exists(keysPath))
         {
-            try { _keySet = ExternalKeyReader.ReadKeyFile(keysPath); }
+            try 
+            { 
+                _keySet = ExternalKeyReader.ReadKeyFile(keysPath); 
+            }
             catch (Exception ex)
             {
                 Debug.WriteLine($"prod.keys 로딩 실패 ({keysPath}): {ex.Message}");

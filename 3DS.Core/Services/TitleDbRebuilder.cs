@@ -76,9 +76,7 @@ public class TitleDbRebuilder(KeyStore keyStore, SdCrypto sdCrypto, SdTitleScann
 
     private byte[] CreateCleanDb(DbType type)
     {
-        using var resource = typeof(TitleDbRebuilder).Assembly.GetManifestResourceStream("title.db.gz")
-            ?? throw new InvalidOperationException("title.db.gz 리소스를 찾을 수 없습니다.");
-
+        using var resource = typeof(TitleDbRebuilder).Assembly.GetManifestResourceStream("title.db.gz") ?? throw new InvalidOperationException("title.db.gz 리소스를 찾을 수 없습니다.");
         using var gzip = new GZipStream(resource, CompressionMode.Decompress);
         using var ms = new MemoryStream();
 
@@ -151,14 +149,12 @@ public class TitleDbRebuilder(KeyStore keyStore, SdCrypto sdCrypto, SdTitleScann
         catch (Exception ex)
         {
             Log($"TMD 읽기 실패 ({label}): {ex.Message}");
-
             return null;
         }
 
         if (tmd.TitleId != titleId || tmd.Contents.Length == 0)
         {
             Log($"TMD가 올바르지 않습니다 ({label}): 건너뜀");
-
             return null;
         }
 
@@ -176,7 +172,6 @@ public class TitleDbRebuilder(KeyStore keyStore, SdCrypto sdCrypto, SdTitleScann
         catch (Exception ex)
         {
             Log($"메인 콘텐츠 읽기 실패 ({label}): {ex.Message}");
-
             return null;
         }
 
@@ -185,7 +180,6 @@ public class TitleDbRebuilder(KeyStore keyStore, SdCrypto sdCrypto, SdTitleScann
         if (cmdId is null)
         {
             Log($"cmd 파일이 없습니다 ({label}): 건너뜀");
-
             return null;
         }
 

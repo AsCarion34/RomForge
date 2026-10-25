@@ -1,11 +1,13 @@
 ﻿using System.Buffers.Binary;
+using WiiGC.Core.Enums;
 using WiiGC.Core.Models;
+using WiiGC.Core.Models.Wii;
 
 namespace WiiGC.Core.Services;
 
 internal sealed class RvzChunkDecoder(RvzCompressionType compression, byte[] compressorData) : IDisposable
 {
-    private const int HashExceptionSize = 2 + WiiLayout.HashSize;
+    private const int HashExceptionSize = 2 + Layout.HashSize;
     private const int MaxExceptionListBytes = 52 * 64 * HashExceptionSize + 2;
 
     private static readonly List<HashException> EmptyList = [];
@@ -66,7 +68,7 @@ internal sealed class RvzChunkDecoder(RvzCompressionType compression, byte[] com
                 for (int j = 0; j < count; j++)
                 {
                     ushort offset = BinaryPrimitives.ReadUInt16BigEndian(stream[entryPosition..]);
-                    byte[] hash = stream.Slice(entryPosition + sizeof(ushort), WiiLayout.HashSize).ToArray();
+                    byte[] hash = stream.Slice(entryPosition + sizeof(ushort), Layout.HashSize).ToArray();
 
                     list.Add(new HashException(offset, hash));
 

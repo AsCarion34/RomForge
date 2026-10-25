@@ -9,7 +9,8 @@ using LibHac.Tools.Fs;
 using LibHac.Tools.FsSystem;
 using LibHac.Tools.FsSystem.NcaUtils;
 using NSW.Core;
-using NSW.Utils;
+using NSW.Core.Utils;
+using System.Diagnostics;
 using System.IO;
 using Path = System.IO.Path;
 using Res = NSW.Core.Properties.Resources;
@@ -21,14 +22,12 @@ public static class NspCompressService
     public static Task<string> CompressAsync(string inputPath, int compressionLevel, bool validation, bool useBlockMode, IProgress<ProgressInfo> progress, Action<string, LogLevel, string> log, string? outputDir = null, CancellationToken ct = default)
     {
         var keySet = KeySetProvider.Instance.KeySet ?? throw new InvalidOperationException(Res.Main_Err_NoKeys);
-
         return RunCoreAsync(inputPath, true, compressionLevel, validation, useBlockMode, false, keySet?.Clone(), progress, log, outputDir, ct);
     }
 
     public static Task<string> DecompressAsync(string inputPath, IProgress<ProgressInfo> progress, Action<string, LogLevel, string> log, string? outputDir = null, CancellationToken ct = default)
     {
         var keySet = KeySetProvider.Instance.KeySet ?? throw new InvalidOperationException(Res.Main_Err_NoKeys);
-
         return RunCoreAsync(inputPath, false, 0, false, false, false, keySet?.Clone(), progress, log, outputDir, ct);
     }
 
@@ -155,7 +154,7 @@ public static class NspCompressService
                 }
             }
 
-            string displayName = $"{(isCompressMode ? Res.Log_StatusCompressing : Res.Log_StatusDecompressing)} {NspNameBuilder.CompressDisplayNameBuild(meta.KrTitle, meta.TitleId, meta.DisplayVersion)}";
+            string displayName = $"{(isCompressMode ? Res.Log_StatusCompressing : Res.Log_StatusDecompressing)} {NameBuilder.CompressDisplayNameBuild(meta.KrTitle, meta.TitleId, meta.DisplayVersion)}";
             var fout = File.Open(finalPath, FileMode.Create, FileAccess.ReadWrite);
 
             disposables.Add(fout);
@@ -222,7 +221,7 @@ public static class NspCompressService
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"실패한 결과 파일 삭제 실패 ({finalPath}): {ex.Message}");
+                    Debug.WriteLine($"실패한 결과 파일 삭제 실패 ({finalPath}): {ex.Message}");
                 }
         }
     }

@@ -1,4 +1,7 @@
-﻿namespace Patch.Core.Services;
+﻿using Patch.Core.Interfaces;
+using Patch.Core.Models;
+
+namespace Patch.Core.Services;
 
 public sealed class NestedArchivePatchSource : IArchivePatchSource
 {
@@ -16,7 +19,7 @@ public sealed class NestedArchivePatchSource : IArchivePatchSource
     {
         _ownedSources.Add(root);
 
-        Expand(root, "", maxDepth, isRoot: true);
+        Expand(root, string.Empty, maxDepth, isRoot: true);
         EntryPaths = [.. _byFlatPath.Keys];
     }
 

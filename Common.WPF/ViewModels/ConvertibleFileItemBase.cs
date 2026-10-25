@@ -1,6 +1,6 @@
 ﻿namespace Common.WPF.ViewModels;
 
-public abstract class ConvertibleFileItemBase : FileItemBase, IConvertible
+public abstract class ConvertibleFileItemBase : FileItemBase, Interfaces.IConvertible
 {
     private string _selectedTargetFormat = string.Empty;
 

@@ -1,6 +1,5 @@
 using Common;
-using NSW.Utils;
-using Patch.Core;
+using NSW.Core.Utils;
 using Patch.Core.Services;
 using RomForge.Core.Models.WiiU;
 using System.Diagnostics;
@@ -14,7 +13,6 @@ namespace RomForge.Core.Services.WiiU;
 
 public sealed class RepackService()
 {
-    private static readonly string[] PatchAnchors = ["content", "meta", "code"];
 
     public static async Task<IReadOnlyList<TitleInputEntry>> PeekFileAsync(string path, string keysTxtPath, CancellationToken ct)
     {
@@ -46,7 +44,6 @@ public sealed class RepackService()
     public static TitleInputEntry PeekFolder(string folderPath)
     {
         using ITitleSource source = WupTitleSource.LooksLikeWupFolder(folderPath) ? new WupTitleSource(folderPath) : new FolderTitleSource(folderPath);
-
         return BuildRowFromFolder(folderPath, source);
     }
 
@@ -73,7 +70,10 @@ public sealed class RepackService()
 
                 rows.Add(row);
             }
-            catch (Exception ex) { log($"'{dir}' 폴더를 읽지 못했습니다: {ex.Message}", LogLevel.Error); }
+            catch (Exception ex)
+            {
+                log($"'{dir}' 폴더를 읽지 못했습니다: {ex.Message}", LogLevel.Error); 
+            }
         }
 
         return rows;
@@ -89,7 +89,7 @@ public sealed class RepackService()
 
         try
         {
-            var meta = await WiiUMetadataExtractor.Extract(path, keysTxtPath);
+            var meta = await MetadataExtractor.Extract(path, keysTxtPath);
 
             if (meta is not null)
             {
@@ -99,9 +99,7 @@ public sealed class RepackService()
                     icon = TryLoadIcon(pngBytes);
             }
         }
-        catch
-        {
-        }
+        catch { }
 
         return new TitleInputEntry(path, source.TitleIdHex)
         {
@@ -125,7 +123,7 @@ public sealed class RepackService()
 
         try
         {
-            var meta = source is WupTitleSource ? WiiUMetadataExtractor.ExtractFromTitleSource(source) : WiiUMetadataExtractor.ExtractFromFolder(folderPath);
+            var meta = source is WupTitleSource ? MetadataExtractor.ExtractFromTitleSource(source) : MetadataExtractor.ExtractFromFolder(folderPath);
 
             if (meta is not null)
             {
@@ -135,9 +133,7 @@ public sealed class RepackService()
                     icon = TryLoadIcon(pngBytes);
             }
         }
-        catch
-        {
-        }
+        catch { }
 
         return new TitleInputEntry(folderPath, source.TitleIdHex)
         {
@@ -159,8 +155,10 @@ public sealed class RepackService()
             var bitmap = new BitmapImage();
 
             bitmap.BeginInit();
+
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
             bitmap.StreamSource = ms;
+
             bitmap.EndInit();
             bitmap.Freeze();
 
@@ -189,93 +187,36 @@ public sealed class RepackService()
     public static (List<WupFileEntry> Files, IDisposable? PatchZipHandle) BuildFileEntries(ITitleSource source, string? patchPath, Action<string, LogLevel>? log = null)
     {
         var result = new List<WupFileEntry>();
-        var overwriteFiles = new Dictionary<string, PatchFileRef>(StringComparer.Ordinal);
-        var binaryPatches = new Dictionary<string, PatchFileRef>(StringComparer.Ordinal);
-        IArchivePatchSource? archive = null;
-
-        if (patchPath is not null)
-        {
-            PatchFileIndex index;
-
-            if (ArchivePatchSourceFactory.IsArchivePath(patchPath))
-            {
-                archive = ArchivePatchSourceFactory.Open(patchPath);
-
-                string prefix = ArchivePatchFolderResolver.FindPatchRoot(archive.EntryPaths, PatchAnchors) ?? "";
-
-                index = PatchFileIndex.Build(archive, prefix);
-            }
-            else
-            {
-                string effectivePatchFolder = PatchFolderResolver.FindPatchRoot(patchPath, PatchAnchors) ?? patchPath;
-
-                index = PatchFileIndex.Build(effectivePatchFolder);
-            }
-
-            foreach (var patchEntry in index.Entries)
-            {
-                string relDir = patchEntry.RelativeDir.Replace(Path.DirectorySeparatorChar, '/');
-                string relTarget = relDir.Length == 0 ? patchEntry.BaseName : $"{relDir}/{patchEntry.BaseName}";
-
-                if (patchEntry.Kind == PatchFileKind.BinaryPatch)
-                    binaryPatches[relTarget] = patchEntry.File;
-                else
-                    overwriteFiles[relTarget] = patchEntry.File;
-            }
-        }
-
         var sourceFiles = new HashSet<string>(source.EnumerateFiles(), StringComparer.Ordinal);
-        int overwriteMatched = overwriteFiles.Keys.Count(sourceFiles.Contains);
-        int binaryMatched = binaryPatches.Keys.Count(sourceFiles.Contains);
-
-        if (patchPath is not null && overwriteMatched == 0 && binaryMatched == 0)
-            log?.Invoke("패치 대상 파일이 존재하지 않습니다.", LogLevel.Error);
-        else if (patchPath is not null)
-        {
-            if (overwriteMatched > 0)
-                log?.Invoke($"교체 완료: {overwriteMatched}개 파일", LogLevel.Ok);
-
-            if (binaryMatched > 0)
-                log?.Invoke($"패치 적용 완료: {binaryMatched}개 파일", LogLevel.Ok);
-        }
+        PatchSession? patch = patchPath is null ? null : PatchSession.Open(patchPath, WiiURepackService.PatchAnchors, sourceFiles, log);
 
         foreach (string relPath in sourceFiles)
         {
             string capturedRelPath = relPath;
             ITitleSource capturedSource = source;
 
-            if (overwriteFiles.TryGetValue(relPath, out var overwriteRef))
+            if (patch is not null && patch.Plan.TryGetOverwrite(relPath, out var overwriteRef))
             {
                 log?.Invoke($"교체: {overwriteRef.DisplayName} → {relPath}", LogLevel.Ok);
                 result.Add(new WupFileEntry(relPath, overwriteRef.OpenRead, overwriteRef.Length));
                 continue;
             }
 
-            if (binaryPatches.TryGetValue(relPath, out var patchRef))
+            if (patch is not null && patch.Plan.IsPatched(relPath))
             {
-                byte[] originalData;
-                long expectedSize = source.GetFileSize(relPath);
-                using (var srcStream = source.OpenRead(relPath))
-                using (var ms = new MemoryStream(checked((int)expectedSize)))
-                {
-                    srcStream.CopyTo(ms);
-                    originalData = ms.Length == ms.Capacity ? ms.GetBuffer() : ms.ToArray();
-                }
-                byte[] patchData = patchRef.ReadSmallFileBytes();
-                byte[] patchedData = UniversalPatcher.ApplyPatchAsync(originalData, patchData, null).GetAwaiter().GetResult();
+                byte[] patchedData = patch.ApplyPatches(relPath, () => capturedSource.OpenRead(capturedRelPath), capturedSource.GetFileSize(capturedRelPath), log, CancellationToken.None);
 
-                log?.Invoke($"패치 완료: {patchRef.DisplayName} → {relPath}", LogLevel.Info);
-                result.Add(new WupFileEntry(relPath, () => new MemoryStream(patchedData), patchedData.Length));
+                result.Add(new WupFileEntry(relPath, () => new MemoryStream(patchedData, writable: false), patchedData.Length));
                 continue;
             }
 
             result.Add(new WupFileEntry(relPath, () => capturedSource.OpenRead(capturedRelPath), capturedSource.GetFileSize(capturedRelPath)));
         }
 
-        return (result, archive);
+        return (result, patch);
     }
 
-    public static async Task UnpackAsync(IReadOnlyList<TitleInputEntry> entries, string keysTxtPath, string outputPath, Action<ProgressInfo>? progress = null, Action<string, LogLevel>? log = null, CancellationToken ct = default)
+    public static async Task UnpackAsync(IReadOnlyList<TitleInputEntry> entries, string keysTxtPath, string outputPath, IProgress<ProgressInfo>? progress = null, Action<string, LogLevel>? log = null, CancellationToken ct = default)
     {
         await Task.Run(() =>
         {
@@ -299,7 +240,7 @@ public sealed class RepackService()
                 {
                     TitleRole.Update => "_update",
                     TitleRole.Dlc => "_dlc",
-                    _ => "",
+                    _ => string.Empty,
                 };
 
                 string destFolder = Utils.GetUniqueFilePath(Path.Combine(unpackedRoot, $"{source.TitleIdHex}_v{source.TitleVersion}{roleSuffix}"));
@@ -315,7 +256,7 @@ public sealed class RepackService()
 
                         long overall = Math.Min(entryOffset + done, grandTotal);
 
-                        progress?.Invoke(new ProgressInfo
+                        progress?.Report(new ProgressInfo
                         {
                             Percent = grandTotal > 0 ? (int)(overall * 100.0 / grandTotal) : 100,
                             Label = $"[{entry.Kind}] {filePath}",
@@ -330,7 +271,7 @@ public sealed class RepackService()
         }, ct);
     }
 
-    public static async Task RepackAsync(IReadOnlyList<TitleInputEntry> entries, string keysTxtPath, string outputPath, RepackOutputFormat format, Action<ProgressInfo>? progress = null, Action<string, LogLevel>? log = null, CancellationToken ct = default)
+    public static async Task RepackAsync(IReadOnlyList<TitleInputEntry> entries, string keysTxtPath, string outputPath, RepackOutputFormat format, IProgress<ProgressInfo>? progress = null, Action<string, LogLevel>? log = null, CancellationToken ct = default)
     {
         if (entries.Count == 0)
             throw new InvalidOperationException("패킹할 타이틀이 없습니다.");
@@ -365,7 +306,7 @@ public sealed class RepackService()
                     WiiURepackService.RepackMultiple(repackEntries, outputWuaPath,
                         onProgress: (done, total, path) =>
                         {
-                            progress?.Invoke(new ProgressInfo
+                            progress?.Report(new ProgressInfo
                             {
                                 Percent = total > 0 ? (int)(done * 100.0 / total) : 100,
                                 Label = path,
@@ -381,7 +322,11 @@ public sealed class RepackService()
                 {
                     if (File.Exists(outputWuaPath))
                     {
-                        try { File.Delete(outputWuaPath); } catch { }
+                        try
+                        {
+                            File.Delete(outputWuaPath);
+                        }
+                        catch { }
                     }
 
                     throw;
@@ -415,12 +360,12 @@ public sealed class RepackService()
             parts.Add(dlcCount > 1 ? $"{dlcCount}D" : "D");
 
         string comp = string.Join("+", parts);
-        string safeName = NspNameBuilder.SafeFileName(titleName);
+        string safeName = NameBuilder.SafeFileName(titleName);
 
         return $"{safeName} [{titleIdHex}] ({comp})";
     }
 
-    private static void RepackToWup(List<RepackEntry> repackEntries, List<ITitleSource> sources, IReadOnlyList<TitleInputEntry> entries, string outputPath, Action<ProgressInfo>? progress, Action<string, LogLevel>? log, CancellationToken ct)
+    private static void RepackToWup(List<RepackEntry> repackEntries, List<ITitleSource> sources, IReadOnlyList<TitleInputEntry> entries, string outputPath, IProgress<ProgressInfo>? progress, Action<string, LogLevel>? log, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
         long grandTotal = entries.Sum(e => e.TotalBytes);
@@ -451,7 +396,7 @@ public sealed class RepackService()
                         double fraction = total > 0 ? (double)done / total : 1.0;
                         long overall = entryOffset + (long)(fraction * entryTotal);
 
-                        progress?.Invoke(new ProgressInfo
+                        progress?.Report(new ProgressInfo
                         {
                             Percent = grandTotal > 0 ? (int)(overall * 100.0 / grandTotal) : 100,
                             Label = $"[{i + 1}/{sources.Count}] {label}",
@@ -465,14 +410,18 @@ public sealed class RepackService()
             {
                 if (Directory.Exists(wupFolder))
                 {
-                    try { Directory.Delete(wupFolder, true); } catch { }
+                    try
+                    {
+                        Directory.Delete(wupFolder, true);
+                    }
+                    catch { }
                 }
                 throw;
             }
 
             offset += entryTotal;
 
-            progress?.Invoke(new ProgressInfo
+            progress?.Report(new ProgressInfo
             {
                 Percent = grandTotal > 0 ? (int)(offset * 100.0 / grandTotal) : 100,
                 Label = $"WUP 생성 완료: {titleId:x16}_v{titleVersion}",
@@ -485,7 +434,7 @@ public sealed class RepackService()
 
     private static string BuildWupFolderName(TitleInputEntry entry)
     {
-        string safeName = NspNameBuilder.SafeFileName(entry.TitleName ?? entry.DisplayName);
+        string safeName = NameBuilder.SafeFileName(entry.TitleName ?? entry.DisplayName);
         string titleIdHex = entry.TitleIdHex.ToUpper();
         string roleTag = entry.Role switch
         {

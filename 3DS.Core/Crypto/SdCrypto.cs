@@ -103,6 +103,7 @@ public class SdCrypto
                 result[offset + i] = (byte)(data[offset + i] ^ keystream[i]);
 
             IncrementCtr(ctr);
+
             offset += chunk;
         }
 
@@ -147,10 +148,12 @@ public class SdCrypto
                     buffer[pos + i] ^= keystream[i];
 
                 IncrementCtr(ctr);
+
                 pos += chunk;
             }
 
             output.Write(buffer, 0, bytesRead);
+
             remaining -= bytesRead;
         }
     }
@@ -158,6 +161,7 @@ public class SdCrypto
     public static byte[] AesCmac(byte[] key, byte[] data)
     {
         using var aes = Aes.Create();
+
         aes.Mode = CipherMode.ECB;
         aes.Padding = PaddingMode.None;
         aes.Key = key;
@@ -186,6 +190,7 @@ public class SdCrypto
                 Buffer.BlockCopy(data, (blockCount - 1) * 16, lastBlock, 0, lastBlockSize);
 
             lastBlock[lastBlockSize] = 0x80;
+
             XorBlock(lastBlock, K2);
         }
 

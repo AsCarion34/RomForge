@@ -44,7 +44,6 @@ public static class RomFsPacker
     private static async Task PackInternalAsync(Stream ncchStream, long dataBase, IReadOnlyList<RomFsDirNode> dirs, IReadOnlyList<RomFsFileNode> files, Stream output, long startPos, long totalBytes, IRomFsFileSource? patchSource = null, Dictionary<string, long>? patchSizeMap = null, Action<long, long>? progress = null, Action<string, LogLevel>? log = null, CancellationToken ct = default)
     {
         var layout = await RomFsMetadataBuilder.BuildAsync(output, startPos, dirs, files, patchSizeMap, ct);
-
         long level3AbsStart = startPos + (long)layout.OffLevel3;
         var hashingStream = new IvfcHashTreeWriter.Level3HashingStream(output, RomFsFormat.BlockSize);
 
@@ -74,9 +73,7 @@ public static class RomFsPacker
                 await hashingStream.WriteAsync(new byte[padSize], ct);
             }
 
-            Func<CancellationToken, ValueTask<Stream?>>? getOriginal = hasOriginalSource
-                ? (ct2 => RomFsPatchSizeResolver.ReadOriginalSliceAsync(ncchStream, dataBase, file, ct2))
-                : null;
+            Func<CancellationToken, ValueTask<Stream?>>? getOriginal = hasOriginalSource ? (ct2 => RomFsPatchSizeResolver.ReadOriginalSliceAsync(ncchStream, dataBase, file, ct2)) : null;
 
             Stream? patchStream = patchSource != null ? await patchSource.OpenFileAsync(file.FullPath, getOriginal, log, ct) : null;
             long before = cumulativeWritten;
@@ -100,6 +97,7 @@ public static class RomFsPacker
         byte[] level3HashResult = hashingStream.GetHashResult();
 
         output.Position = startPos + (long)layout.OffLevel2Hash;
+
         await output.WriteAsync(level3HashResult, ct);
 
         await IvfcHashTreeWriter.GenHashLevelAsync(output, startPos + (long)layout.OffLevel2Hash, startPos + (long)layout.OffLevel1Hash, layout.Level2Size, RomFsFormat.BlockSize, ct);

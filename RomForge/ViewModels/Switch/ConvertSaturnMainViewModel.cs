@@ -1,12 +1,10 @@
 ﻿using Common;
-using Common.WPF.ViewModels;
 using LibHac.Ns;
 using NSW.Core;
 using NSW.Core.Enums;
-using NSW.M1.Core.Models;
-using NSW.M1.Core.Services;
+using NSW.Core.Services;
 using NSW.WPF.Services;
-using RomForge.Core.Models;
+using RomForge.Core.Services;
 using RomForge.Core.Services.Switch;
 using RomForge.Core.UI.Command;
 using System.Collections.ObjectModel;
@@ -38,20 +36,8 @@ namespace RomForge.ViewModels.Switch
         private string _coverImagePath = string.Empty;
         private ImageSource? _coverImageSource;
         private byte[]? _coverBytes;
-
         private bool _isConverting;
-        private string _progressLabel = "대기 중...";
-        private string _progressPercent = "0%";
-        private string _progressSpeed = string.Empty;
-        private string _progressTime = "00:00 경과";
-        private double _progressPct;
-
         private readonly Stopwatch _totalSw = new();
-
-        private CancellationTokenSource? _cts;
-
-        public ObservableCollection<LogEntry> LogEntries { get; } = [];
-
 
         public string GameTitle { get => _gameTitle; set { _gameTitle = value; OnPropertyChanged(); } }
 
@@ -125,16 +111,6 @@ namespace RomForge.ViewModels.Switch
         }
 
         public bool IsConverting { get => _isConverting; set { _isConverting = value; OnPropertyChanged(); } }
-
-        public string ProgressLabel { get => _progressLabel; set { _progressLabel = value; OnPropertyChanged(); } }
-
-        public string ProgressPercent { get => _progressPercent; set { _progressPercent = value; OnPropertyChanged(); } }
-
-        public string ProgressSpeed { get => _progressSpeed; set { _progressSpeed = value; OnPropertyChanged(); } }
-
-        public string ProgressTime { get => _progressTime; set { _progressTime = value; OnPropertyChanged(); } }
-
-        public double ProgressPct { get => _progressPct; set { _progressPct = value; OnPropertyChanged(); } }
 
         public Visibility CueHintVisibility => string.IsNullOrEmpty(CuePath) ? Visibility.Visible : Visibility.Collapsed;
 
@@ -271,7 +247,8 @@ namespace RomForge.ViewModels.Switch
         {
             if (!ValidateInputs(out string err))
             {
-                Log(err, LogLevel.Error);
+                AppendLog(err, LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
                 return;
             }
 
@@ -281,27 +258,30 @@ namespace RomForge.ViewModels.Switch
 
             using (BeginWork())
             {
-                _cts = new CancellationTokenSource();
+                CancellationTokenSource = new CancellationTokenSource();
 
                 try
                 {
-                    await RunConversionProcess(_cts.Token);
-                    Log($"완료! 총 소요: {_totalSw.Elapsed:mm\\:ss}", LogLevel.Ok);
+                    await RunConversionProcess(CancellationTokenSource.Token);
+                    await SoundPlayer.PlayCompleteAsync();
+                    AppendLog($"완료! 총 소요: {_totalSw.Elapsed:mm\\:ss}", LogLevel.Ok);                    
                 }
                 catch (OperationCanceledException)
                 {
-                    Log($"작업이 취소되었습니다.", LogLevel.Error);
+                    AppendLog($"작업이 취소되었습니다.", LogLevel.Error);
+                    await SoundPlayer.PlayCancelAsync();
                 }
                 catch (Exception ex)
                 {
-                    Log($"오류: {ex.Message}", LogLevel.Error);
+                    AppendLog($"오류: {ex.Message}", LogLevel.Error);
+                    await SoundPlayer.PlayErrorAsync();
+                    MainViewModel.SetTaskbarProgress(100, System.Windows.Shell.TaskbarItemProgressState.Error);
                 }
                 finally
-                {
-                    _cts?.Dispose();
-                    _cts = null;
+                {   
                     IsConverting = false;
-                    ProgressPct = 0;
+
+                    CleanupTask();
                 }
             }
         }
@@ -315,12 +295,13 @@ namespace RomForge.ViewModels.Switch
 
             try
             {
-                var progress = new Progress<(int pct, string label)>(p =>
+                var progress = new Progress<ProgressInfo>(p =>
                 {
-                    ProgressPct = p.pct >= 0 ? p.pct : 0;
+                    ProgressPct = p.Percent >= 0 ? p.Percent : 0;
                     ProgressPercent = ProgressPct.ToString("0.00") + "%";
-                    ProgressLabel = p.pct >= 0 ? $"{p.label} ({p.pct}%)" : p.label;
-                    ProgressTime = $"{_totalSw.Elapsed:mm\\:ss} 경과";
+                    ProgressLabel = p.Percent >= 0 ? $"{p.Label} ({p.Percent}%)" : p.Label;
+                    ProgressSpeed = p.Speed;
+                    ProgressTime = string.IsNullOrEmpty(p.TimeInfo) ? $"{_totalSw.Elapsed:mm\\:ss} 경과" : p.TimeInfo;
                 });
 
                 var progressHandler = new Progress<ProgressInfo>(p =>
@@ -330,11 +311,11 @@ namespace RomForge.ViewModels.Switch
                     ProgressLabel = p.Percent >= 0 ? $"CHD 압축 해제 중 ({p.Percent}%)" : "CHD 압축 해제 중";
                 });
 
-                Log("원본 NSP 언팩 중...");
+                AppendLog("원본 NSP 언팩 중...");
 
-                var unpackReq = new BuildRequest(NspPath, string.Empty, [], string.Empty, WorkPath);
+                var unpackReq = new NSW.Core.Models.BuildRequest(NspPath, string.Empty, [], string.Empty, WorkPath);
 
-                await NspBuildService.Run(unpackReq, BuildMode.UnpackOnly, progress, (msg, lvl) => Log(msg), token);
+                await NspBuildService.Run(unpackReq, BuildMode.UnpackOnly, progress, (msg, lvl) => AppendLog(msg), token);
 
                 token.ThrowIfCancellationRequested();
 
@@ -357,7 +338,7 @@ namespace RomForge.ViewModels.Switch
 
                 if (string.Equals(Path.GetExtension(CuePath), ".chd", StringComparison.OrdinalIgnoreCase))
                 {
-                    Log("CHD 압축 해제 중...");
+                    AppendLog("CHD 압축 해제 중...");
 
                     using var chdman = new CHD.Core.Services.ChdmanService();
                     bool ok = await chdman.ExtractCdAsync(CuePath, finalCuePath, progressHandler, token);
@@ -416,16 +397,16 @@ namespace RomForge.ViewModels.Switch
 
                 token.ThrowIfCancellationRequested();
 
-                Log("리팩 중...");
+                AppendLog("리팩 중...");
 
-                var rebuildReq = new BuildRequest(string.Empty, string.Empty, [], string.Empty, WorkPath)
+                var rebuildReq = new NSW.Core.Models.BuildRequest(string.Empty, string.Empty, [], string.Empty, WorkPath)
                 {
                     UserMetadata = metadata,
                     Language = ApplicationControlProperty.Language.None,
                     OverrideTitleId = ulong.Parse(NspTitleId, System.Globalization.NumberStyles.HexNumber)
                 };
 
-                string finalNspPath = await NspBuildService.Run(rebuildReq, BuildMode.RebuildOnly, progress, (msg, lvl) => Log(msg), token);
+                string finalNspPath = await NspBuildService.Run(rebuildReq, BuildMode.RebuildOnly, progress, (msg, lvl) => AppendLog(msg), token);
                 string finalRenamedPath = RenameOutputFile(finalNspPath, GameTitle, NspTitleId);
 
                 Path.GetDirectoryName(finalRenamedPath)!.OpenFolder();
@@ -467,8 +448,6 @@ namespace RomForge.ViewModels.Switch
             return newPath;
         }
 
-        public void Cancel() => _cts?.Cancel();
-
         private bool ValidateInputs(out string errorMsg)
         {
             errorMsg = string.Empty;
@@ -486,6 +465,7 @@ namespace RomForge.ViewModels.Switch
             }
 
             string ext = Path.GetExtension(CuePath).ToLowerInvariant();
+
             if (ext != ".cue" && ext != ".chd")
             {
                 errorMsg = "CUE 또는 CHD 파일만 지원합니다.";
@@ -506,8 +486,5 @@ namespace RomForge.ViewModels.Switch
 
             return true;
         }
-
-        private void Log(string msg, LogLevel level = LogLevel.Info) => Application.Current.Dispatcher.Invoke(() => LogEntries.Add(new LogEntry { Message = msg, Level = level }));
-
     }
 }

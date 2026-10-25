@@ -36,9 +36,7 @@ public class RepackedNcsdSource : INcsdSource
                 });
             }
             else
-            {
                 updatedContents.Add(chunk);
-            }
         }
 
         return new RepackedNcsdSource(resolved, updatedContents);

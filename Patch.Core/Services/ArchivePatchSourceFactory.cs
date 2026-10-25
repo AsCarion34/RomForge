@@ -1,4 +1,6 @@
-﻿namespace Patch.Core.Services;
+﻿using Patch.Core.Interfaces;
+
+namespace Patch.Core.Services;
 
 public static class ArchivePatchSourceFactory
 {
@@ -20,7 +22,7 @@ public static class ArchivePatchSourceFactory
     {
         int idx = path.IndexOf(ScopeSeparator, StringComparison.Ordinal);
 
-        return idx < 0 ? (path, "") : (path[..idx], path[(idx + ScopeSeparator.Length)..]);
+        return idx < 0 ? (path, string.Empty) : (path[..idx], path[(idx + ScopeSeparator.Length)..]);
     }
 
     public static string CombineScope(string archivePath, string scope) => string.IsNullOrEmpty(scope) ? archivePath : $"{archivePath}{ScopeSeparator}{scope}";
@@ -32,11 +34,8 @@ public static class ArchivePatchSourceFactory
         var (archivePath, scope) = SplitScope(path);
         string ext = Path.GetExtension(archivePath);
 
-        IArchivePatchSource baseArchive = string.Equals(ext, ".7z", StringComparison.OrdinalIgnoreCase)
-            ? new SevenZipArchivePatchSource(archivePath, password)
-            : string.Equals(ext, ".zip", StringComparison.OrdinalIgnoreCase)
-                ? new ZipArchivePatchSource(archivePath, password)
-                : throw new NotSupportedException($"지원하지 않는 압축 형식입니다: {ext}");
+        IArchivePatchSource baseArchive = string.Equals(ext, ".7z", StringComparison.OrdinalIgnoreCase) ? new SevenZipArchivePatchSource(archivePath, password) : string.Equals(ext, ".zip", StringComparison.OrdinalIgnoreCase)
+            ? new ZipArchivePatchSource(archivePath, password) : throw new NotSupportedException($"지원하지 않는 압축 형식입니다: {ext}");
 
         return scope.Length == 0 ? baseArchive : new ScopedArchivePatchSource(baseArchive, scope);
     }

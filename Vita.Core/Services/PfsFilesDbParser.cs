@@ -23,6 +23,7 @@ public static class PfsFilesDbParser
         reader.ReadUInt32();
         reader.ReadUInt32();
         reader.ReadUInt32();
+
         filesSalt = reader.ReadUInt32();
 
         stream.Seek(PageSize, SeekOrigin.Begin);
@@ -73,6 +74,7 @@ public static class PfsFilesDbParser
                 uint size = reader.ReadUInt32();
 
                 reader.ReadUInt32();
+
                 infos[i] = (idx, (PfsFileType)typeVal, size);
             }
 
@@ -139,11 +141,13 @@ public static class PfsFilesDbParser
                     throw new InvalidDataException($"디렉토리 인덱스 {parentIndex}를 찾을 수 없습니다.");
 
                 dirChain.Add(dirEntry.Name);
+
                 parentIndex = nextParent;
             }
 
             dirChain.Reverse();
             dirChain.Add(entry.Name);
+
             entry.RelativePath = Path.Combine([.. dirChain]);
         }
     }

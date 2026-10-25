@@ -42,12 +42,11 @@ public partial class LanguageTabControl : UserControl
                 return txtOverrideTitleId.Dispatcher.Invoke(new Func<ulong?>(() => OverrideTitleId));
 
             string text = txtOverrideTitleId.Text.Trim();
+
             if (string.IsNullOrEmpty(text))
                 return null;
 
-            return ulong.TryParse(text, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out ulong titleId)
-                ? titleId
-                : null;
+            return ulong.TryParse(text, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out ulong titleId) ? titleId : null;
         }
     }
 
@@ -57,7 +56,6 @@ public partial class LanguageTabControl : UserControl
     {
         Resources.Add("LanguageToFlagConverter", new LanguageToFlagConverter());
         Resources.Add("LanguageToFlagImageConverter", new LanguageToFlagImageConverter());
-
         InitializeComponent();
 
         lbLanguages.ItemsSource = LanguageList;
@@ -65,11 +63,11 @@ public partial class LanguageTabControl : UserControl
         txtGameName.TextChanged += TxtGameName_TextChanged;
         txtPublisher.TextChanged += TxtPublisher_TextChanged;
         txtOverrideTitleId.PreviewTextInput += TxtOverrideTitleId_PreviewTextInput;
+
         DataObject.AddPastingHandler(txtOverrideTitleId, TxtOverrideTitleId_Pasting);
     }
 
-    private static void TxtOverrideTitleId_PreviewTextInput(object sender, TextCompositionEventArgs e)
-        => e.Handled = !IsHexString(e.Text);
+    private static void TxtOverrideTitleId_PreviewTextInput(object sender, TextCompositionEventArgs e) => e.Handled = !IsHexString(e.Text);
 
     private void TxtOverrideTitleId_Pasting(object sender, DataObjectPastingEventArgs e)
     {
@@ -91,8 +89,7 @@ public partial class LanguageTabControl : UserControl
             BindMetadataToUI(metadata);
         }
 
-        txtOverrideTitleId.Text = (gameFiles.FirstOrDefault(f => f.FileType.Contains('B'))
-            ?? gameFiles.FirstOrDefault(f => !string.IsNullOrEmpty(f.TitleID)))?.TitleID ?? string.Empty;
+        txtOverrideTitleId.Text = (gameFiles.FirstOrDefault(f => f.FileType.Contains('B')) ?? gameFiles.FirstOrDefault(f => !string.IsNullOrEmpty(f.TitleID)))?.TitleID ?? string.Empty;
     }
 
     public void SyncMetadataFromUI()
@@ -104,13 +101,16 @@ public partial class LanguageTabControl : UserControl
         {
             var target = CurrentMetadata.Languages
                 .FirstOrDefault(l => l.Language == item.Language);
-            if (target != null) target.Flag = item.IsSelected;
+
+            if (target != null) 
+                target.Flag = item.IsSelected;
         }
     }
 
     private void ResetUI()
     {
         LanguageList.Clear();
+
         txtGameName.Text = string.Empty;
         txtPublisher.Text = string.Empty;
         txtOverrideTitleId.Text = string.Empty;
@@ -167,7 +167,6 @@ public partial class LanguageTabControl : UserControl
         txtGameName.Text = selectedItem.TitleName;
         txtPublisher.Text = selectedItem.Publisher;
         cbxMultiRom.ItemsSource = selectedItem.Indices;
-
         imgGame.Source = selectedItem.Logo is { Length: > 0 } ? selectedItem.Logo.ToBitmapImage() : null;
     }
 
@@ -193,7 +192,9 @@ public partial class LanguageTabControl : UserControl
 
         var target = CurrentMetadata.Languages
             .FirstOrDefault(l => l.Language == selectedItem.Language);
-        if (target != null) target.Publisher = txtPublisher.Text;
+
+        if (target != null) 
+            target.Publisher = txtPublisher.Text;
     }
 
     private void BtnForceLanguage_Click(object sender, RoutedEventArgs e)
@@ -202,12 +203,14 @@ public partial class LanguageTabControl : UserControl
             return;
 
         ForcedLanguage = selectedItem.Language;
+
         MessageBoxHelper.ShowInfo($"강제 언어가 {selectedItem.Language}로 설정되었습니다.");
     }
 
     private void BtnForceLanguageCancel_Click(object sender, RoutedEventArgs e)
     {
         ForcedLanguage = ApplicationControlProperty.Language.None;
+
         MessageBoxHelper.ShowInfo("강제 언어 설정이 취소되었습니다.");
     }
 
@@ -221,9 +224,11 @@ public partial class LanguageTabControl : UserControl
             {
                 e.Effects = DragDropEffects.Copy;
                 e.Handled = true;
+
                 return;
             }
         }
+
         e.Effects = DragDropEffects.None;
         e.Handled = true;
     }
@@ -231,25 +236,31 @@ public partial class LanguageTabControl : UserControl
     private void ImgGame_Drop(object sender, DragEventArgs e)
     {
         e.Handled = true;
+
         var files = (string[]?)e.Data.GetData(DataFormats.FileDrop);
 
         if (files is not { Length: > 0 })
             return;
 
         string ext = Path.GetExtension(files[0]).ToLowerInvariant();
+
         if (!SupportedExts.Contains(ext))
             return;
 
         try
         {
             byte[] finalBytes = files[0].ToImageBytes();
+
             imgGame.Source = finalBytes.ToBitmapImage();
 
             if (lbLanguages.SelectedItem is LanguageItem selectedItem && CurrentMetadata != null)
             {
                 selectedItem.Logo = finalBytes;
+
                 var target = CurrentMetadata.Languages.FirstOrDefault(l => l.Language == selectedItem.Language);
-                if (target != null) target.LogoData = finalBytes;
+
+                if (target != null)
+                    target.LogoData = finalBytes;
             }
         }
         catch (Exception ex)
@@ -276,6 +287,7 @@ public partial class LanguageTabControl : UserControl
             using (var fs = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write))
             {
                 var encoder = new PngBitmapEncoder();
+
                 encoder.Frames.Add(BitmapFrame.Create(bitmapSource));
                 encoder.Save(fs);
             }
@@ -292,9 +304,7 @@ public partial class LanguageTabControl : UserControl
                 {
                     File.Delete(tempFilePath);
                 }
-                catch
-                {
-                }
+                catch { }
         }
     }
 }

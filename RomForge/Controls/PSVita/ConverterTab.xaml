@@ -1,0 +1,226 @@
+<UserControl x:Class="RomForge.Controls.PSVita.ConverterTab"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:core="clr-namespace:NSW.WPF.UI;assembly=NSW.WPF"
+             mc:Ignorable="d" 
+             d:DesignHeight="640" d:DesignWidth="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Border Background="#12FFFFFF" BorderBrush="#30FFFFFF" BorderThickness="1" CornerRadius="8" Grid.Row="0" IsEnabled="{Binding IsIdle}" Margin="5,0,5,5">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="40"/>
+                </Grid.ColumnDefinitions>
+                <Grid Grid.Column="0">
+                    <ListView AllowDrop="True" Background="Transparent" BorderThickness="0" ScrollViewer.CanContentScroll="False" ContextMenuOpening="LvPkg_ContextMenuOpening" ItemsSource="{Binding SourceRows}" Margin="5" SelectedItem="{Binding SelectedRow}"
+                              KeyUp="LvPkg_KeyUp" DragEnter="Root_DragEnter" Drop="Root_Drop">
+                        <ListView.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="폴더 열기" Click="MenuItem_OpenFolder_Click">
+                                    <MenuItem.Icon>
+                                        <Image Source="/Common.WPF;component/Assets/Images/AddFolder.png" Width="20" Height="20"/>
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <Separator/>
+                                <MenuItem Header="선택 삭제" Command="{Binding RemoveSelectedCommand}">
+                                    <MenuItem.Icon>
+                                        <Image Source="/Assets/Images/Delete.png" Width="20" Height="20"/>
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem Header="전체 삭제" Command="{Binding RemoveAllCommand}">
+                                    <MenuItem.Icon>
+                                        <Image Source="/Assets/Images/Clear.png" Width="20" Height="20"/>
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                            </ContextMenu>
+                        </ListView.ContextMenu>
+                        <ListView.GroupStyle>
+                            <GroupStyle>
+                                <GroupStyle.HeaderTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="4,8,4,2" Orientation="Horizontal">
+                                            <TextBlock FontSize="12" FontWeight="Bold" Foreground="#D4AF37" Text="{Binding Name}"/>
+                                            <TextBlock FontSize="12" Foreground="#E8E8F0" Margin="10,0,0,0" Text="{Binding Items[0].DisplayTitle}"/>
+                                            <TextBlock FontSize="11" Foreground="#8888A8" Margin="10,0,0,0">
+                                                <Run Text="PKG"/>
+                                                <Run Text="{Binding ItemCount, Mode=OneWay}"/>
+                                                <Run Text="개"/>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </GroupStyle.HeaderTemplate>
+                            </GroupStyle>
+                        </ListView.GroupStyle>
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Width="80">
+                                    <GridViewColumn.Header>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Image Height="24" Margin="0,0,4,0" Source="/Common.WPF;component/Assets/Images/Categories.png" Width="24"/>
+                                            <TextBlock FontSize="13" FontWeight="Bold" Foreground="#BBBBBB" Text="종류" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Background="{Binding CategoryBadgeColor}" CornerRadius="4" HorizontalAlignment="Center" Padding="10,3">
+                                                <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="White" Text="{Binding Category}"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Width="260">
+                                    <GridViewColumn.Header>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Image Height="24" Width="24" Margin="0,0,4,0" Source="/Assets/Images/VitaCartridge.png"/>
+                                            <TextBlock FontSize="13" FontWeight="Bold" Foreground="#BBBBBB" Text="타이틀" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal" Margin="4,5" VerticalAlignment="Center">
+                                                <Border Width="32" Height="32" CornerRadius="4" Background="#1E1E22" Margin="0,0,8,0">
+                                                    <Image Source="{Binding IconImageSource}" Width="32" Height="32" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                </Border>
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#E8E8F0" Text="{Binding DisplayTitle}" ToolTip="{Binding DisplayTitle}"/>
+                                                    <TextBlock FontSize="11" Foreground="#8888A8" Margin="0,2,0,0" Text="{Binding TitleId}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Width="150">
+                                    <GridViewColumn.Header>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Image Height="24" Margin="0,0,4,0" Source="/Assets/Images/zRIF.png" Width="24" ToolTip="라이선스 파일 경로(work.bin, *.rif) / zRIF 문자열"/>
+                                            <TextBlock FontSize="13" FontWeight="Bold" Foreground="#BBBBBB" Text="키" VerticalAlignment="Center" ToolTip="라이선스 파일 경로(work.bin, *.rif) / zRIF 문자열 (Patch는 비워두면 App의 키를 사용)"/>
+                                        </StackPanel>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBox AllowDrop="True" Drop="License_Drop" FontSize="11" PreviewDragOver="License_PreviewDragOver" Text="{Binding License, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Width="80">
+                                    <GridViewColumn.Header>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Image Source="/Assets/Images/FileSizeBytes.png" Width="24" Height="24" Margin="0,0,4,0"/>
+                                            <TextBlock Text="용량" Foreground="#BBBBBB" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Size}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Width="200">
+                                    <GridViewColumn.Header>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Image Source="/Common.WPF;component/Assets/Images/AddFile.png" Width="24" Height="24" Margin="0,0,4,0"/>
+                                            <TextBlock Text="경로" Foreground="#BBBBBB" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </GridViewColumn.Header>
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Path}" VerticalAlignment="Center" ToolTip="{Binding Path}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+
+                    <Border BorderBrush="#333337" BorderThickness="1" CornerRadius="6" IsEnabled="{Binding IsIdle}" IsHitTestVisible="False" Margin="15,55,15,15" Visibility="{Binding EntriesHintVisibility}">
+                        <Border.Background>
+                            <SolidColorBrush Color="#181818" Opacity="0.95"/>
+                        </Border.Background>
+                        <StackPanel HorizontalAlignment="Center" Opacity="0.85" VerticalAlignment="Center">
+                            <Image Height="28" Margin="0,0,0,8" Source="/Assets/Images/Info.png" Width="28"/>
+                            <TextBlock FontSize="14" FontWeight="Bold" Foreground="LightGray" HorizontalAlignment="Center" Text="PS Vita PKG 파일/폴더를 여기에 드래그&amp;드롭하세요"/>
+                            <TextBlock FontSize="12" Foreground="#D4AF37" HorizontalAlignment="Center" Margin="0,6,0,0" Text="같은 타이틀 ID의 App/Patch/AddCont는 하나로 묶여 NoNpDrm 포맷으로 변환됩니다"/>
+                            <TextBlock FontSize="12" Foreground="#D4AF37" HorizontalAlignment="Center" Margin="0,6,0,0" Text="키(work.bin, *.rif / zRIF 문자열)가 필요합니다 (Patch는 App의 키를 공유할 수 있습니다)"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <StackPanel Grid.Column="1" Margin="5" VerticalAlignment="Top">
+                    <Button BorderThickness="1" Command="{Binding RemoveSelectedCommand}" Height="30" Margin="0,0,0,8" Padding="0" Style="{StaticResource GrayButton}" Width="30">
+                        <Image Height="30" RenderOptions.BitmapScalingMode="HighQuality" Source="/Assets/Images/Delete.png" ToolTip="선택 삭제" Width="30"/>
+                    </Button>
+                    <Button BorderThickness="1" Command="{Binding RemoveAllCommand}" Height="30" Margin="0,0,0,8" Padding="0" Style="{StaticResource GrayButton}" Width="30">
+                        <Image Height="30" RenderOptions.BitmapScalingMode="HighQuality" Source="/Assets/Images/Clear.png" ToolTip="모두 삭제" Width="30"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <StackPanel Grid.Row="1" Margin="5,0,5,5" Orientation="Horizontal">
+            <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="White" Margin="0,0,10,0" Text="출력 형식:" VerticalAlignment="Center"/>
+            <RadioButton Content="ZIP (타이틀 ID별)" FontSize="12" Foreground="White" GroupName="VitaConvertOutputGroup" IsChecked="{Binding OutputZip}" IsEnabled="{Binding IsIdle}" Margin="0,0,15,0" VerticalAlignment="Center"/>
+            <RadioButton Content="폴더 (타이틀 ID별)" FontSize="12" Foreground="White" GroupName="VitaConvertOutputGroup" IsChecked="{Binding OutputFolder}" IsEnabled="{Binding IsIdle}" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <Grid Grid.Row="2" Margin="5,0,5,5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Border Background="#12FFFFFF" BorderBrush="#30FFFFFF" BorderThickness="1" CornerRadius="6" Grid.Column="0" Height="36">
+                <Grid>
+                    <TextBox Background="Transparent" BorderThickness="0" FontSize="11" Foreground="#DCDCDC" IsEnabled="{Binding IsIdle}" Padding="10,0" Text="{Binding OutputPath, UpdateSourceTrigger=PropertyChanged}" VerticalContentAlignment="Center"
+                     AllowDrop="True" PreviewDragOver="TxtOutputPath_PreviewDragOver" Drop="TxtOutputPath_Drop"/>
+                    <TextBlock FontSize="11" Foreground="#50FFFFFF" IsHitTestVisible="False" Margin="10,0,0,0" Text="출력 폴더를 드래그하거나 선택하세요" VerticalAlignment="Center" Visibility="{Binding OutputHintVisibility}"/>
+                </Grid>
+            </Border>
+            <Button BorderThickness="1" Command="{Binding BrowseOutputCommand}" Grid.Column="1" Height="30" IsEnabled="{Binding IsIdle}" Margin="5,0,0,0" Padding="0" Style="{StaticResource GrayButton}" Width="30">
+                <Image Height="30" RenderOptions.BitmapScalingMode="HighQuality" Source="/Common.WPF;component/Assets/Images/AddFolder.png" Width="30"/>
+            </Button>
+        </Grid>
+
+        <core:IconButton Grid.Row="3" Margin="5,0,5,5" DefaultText="변환" DefaultIcon="/Assets/Images/Convert.png" CancelText="취소" CancelIcon="/Assets/Images/Cancel.png" IsRunning="{Binding IsLocked}" Click="BtnStart_Click"/>
+
+        <Border Background="#12FFFFFF" BorderBrush="#30FFFFFF" BorderThickness="0,1,0,0" CornerRadius="8" Grid.Row="4" Margin="5,0,5,5" Padding="8,0">
+            <Grid Height="28">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="140"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock FontSize="11" Foreground="#A0A0A0" Grid.Column="0" Text="{Binding ProgressLabel}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#4CAF50" Grid.Column="1" Margin="0,0,10,0" Text="{Binding ProgressPercent}" VerticalAlignment="Center"/>
+                <TextBlock FontSize="11" Foreground="Gray" Grid.Column="2" Margin="0,0,10,0" Text="{Binding ProgressSpeed}" VerticalAlignment="Center"/>
+                <TextBlock FontSize="11" Foreground="#4CAF50" Grid.Column="3" Margin="0,0,10,0" Text="{Binding ProgressTime}" VerticalAlignment="Center"/>
+                <Grid Grid.Column="4" Height="10" VerticalAlignment="Center">
+                    <Border Background="#25FFFFFF" CornerRadius="5"/>
+                    <Border ClipToBounds="True" CornerRadius="5" x:Name="barTrack">
+                        <Border Background="#4CAF50" CornerRadius="5" HorizontalAlignment="Left">
+                            <Border.Width>
+                                <MultiBinding Converter="{StaticResource ProgressToWidthConverter}">
+                                    <Binding ElementName="barTrack" Path="ActualWidth"/>
+                                    <Binding Path="ProgressPct"/>
+                                </MultiBinding>
+                            </Border.Width>
+                        </Border>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

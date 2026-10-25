@@ -1,5 +1,7 @@
 using System.Buffers.Binary;
 using Microsoft.Win32.SafeHandles;
+using WiiGC.Core.Interfaces;
+using WiiGC.Core.Models.Wii;
 
 namespace WiiGC.Core.Services.Wii;
 
@@ -8,7 +10,6 @@ internal sealed class WbfsSource : IRvzInputSource
     private const uint Magic = 0x53464257;
     private const int HeaderSize = 512;
     private const long WiiSectorSize = 0x8000;
-    private const long WiiSectorCount = 143432 * 2;
     private const long WiiSingleLayerSize = 4699979776;
     private const int WiiDiscHeaderSize = 256;
 
@@ -122,7 +123,7 @@ internal sealed class WbfsSource : IRvzInputSource
             if (wbfsToWiiShift < 0 || wbfsToWiiShift > 62)
                 throw new InvalidDataException("WBFS 섹터 크기가 올바르지 않습니다.");
 
-            long blocksPerDisc = WiiSectorCount >> wbfsToWiiShift;
+            long blocksPerDisc = Layout.DiscSectorCount >> wbfsToWiiShift;
 
             if (blocksPerDisc <= 0 || blocksPerDisc > ushort.MaxValue)
                 throw new InvalidDataException("WBFS 블록 수가 올바르지 않습니다.");
@@ -159,7 +160,7 @@ internal sealed class WbfsSource : IRvzInputSource
             {
                 long dataEnd = 0;
 
-                foreach (var spec in WiiPartitionTable.Read(source, length))
+                foreach (var spec in PartitionTable.Read(source, length))
                     dataEnd = Math.Max(dataEnd, spec.DataStart + spec.DataSize);
 
                 if (dataEnd > 0)

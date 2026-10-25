@@ -16,6 +16,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LibHac\LibHac.csproj" />
+    <ProjectReference Include="..\NSW.HacPack\NSW.HacPack.csproj" />
+    <ProjectReference Include="..\Patch.Core\Patch.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -6,7 +6,9 @@ namespace _3DS.Core.Save.Models;
 public struct OffsetOrFatFile
 {
     public const int Size = 8;
+
     public uint BlockIndex;
+
     public uint BlockCount;
 
     public static OffsetOrFatFile FromOffset(ulong offset) => new()

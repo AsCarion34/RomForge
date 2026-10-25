@@ -63,6 +63,7 @@ public class NcsdBuilder
                 if (padding > 0)
                 {
                     byte[] pad = new byte[padding];
+
                     await output.WriteAsync(pad, ct);
                 }
 

@@ -17,6 +17,7 @@ public class RomFsFileEntry
     public string Name { get; init; } = string.Empty;
 
     public const uint None = 0xFFFFFFFF;
+
     public const int FixedSize = 0x20;
 
     public int TotalSize => FixedSize + (int)AlignUp(NameSize, 4);

@@ -45,9 +45,7 @@ public class KeySlot
             int srcIdx = (i + byteShift) % 16;
             int nextIdx = (srcIdx + 1) % 16;
 
-            result[i] = bitShift == 0
-                ? input[srcIdx]
-                : (byte)((input[srcIdx] << bitShift) | (input[nextIdx] >> (8 - bitShift)));
+            result[i] = bitShift == 0 ? input[srcIdx] : (byte)((input[srcIdx] << bitShift) | (input[nextIdx] >> (8 - bitShift)));
         }
 
         return result;

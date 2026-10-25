@@ -7,7 +7,6 @@
              xmlns:util="clr-namespace:RomForge.ViewModels.Util"
              mc:Ignorable="d" 
              d:DesignHeight="600" d:DesignWidth="1000">
-
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -53,10 +52,7 @@
         </Border>
 
         <ListView x:Name="lvFiles" Grid.Row="1" Margin="5,0,5,5" ItemsSource="{Binding FileItems}" IsEnabled="{Binding IsLocked, Converter={StaticResource InverseBool}}" SelectionMode="Extended" AllowDrop="True"
-                  KeyUp="LvFiles_KeyUp"
-                  Drop="LvFiles_Drop"
-                  DragOver="LvFiles_DragOver"
-                  ContextMenuOpening="LvFiles_ContextMenuOpening">
+                  KeyUp="LvFiles_KeyUp" Drop="LvFiles_Drop" DragOver="LvFiles_DragOver" ContextMenuOpening="LvFiles_ContextMenuOpening">
             <ListView.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="폴더 열기" Click="MenuItem_OpenFolder_Click">
@@ -97,16 +93,13 @@
 
                     <GridViewColumn Width="280">
                         <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="FileName"/>
-                        </GridViewColumn.Header>
-                        <GridViewColumn.HeaderTemplate>
-                            <DataTemplate>
+                            <GridViewColumnHeader Tag="FileName">
                                 <StackPanel Orientation="Horizontal">
                                     <Image Source="/Common.WPF;component/Assets/Images/AddFile.png" Width="24" Height="24" Margin="0,0,5,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="파일명" Foreground="#BBBBBB" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
                                 </StackPanel>
-                            </DataTemplate>
-                        </GridViewColumn.HeaderTemplate>
+                            </GridViewColumnHeader>
+                        </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding FileName}" Padding="6,0" TextTrimming="CharacterEllipsis" ToolTip="{Binding FilePath}"/>
@@ -116,16 +109,13 @@
 
                     <GridViewColumn Width="90">
                         <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="FileSizeBytes"/>
-                        </GridViewColumn.Header>
-                        <GridViewColumn.HeaderTemplate>
-                            <DataTemplate>
+                            <GridViewColumnHeader Tag="FileSizeBytes">
                                 <StackPanel Orientation="Horizontal">
                                     <Image Source="/Assets/Images/FileSizeBytes.png" Width="24" Height="24" Margin="0,0,5,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="용량" Foreground="#BBBBBB" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
                                 </StackPanel>
-                            </DataTemplate>
-                        </GridViewColumn.HeaderTemplate>
+                            </GridViewColumnHeader>
+                        </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <TextBlock Text="{Binding FileSize}" Padding="6,0"/>
@@ -135,16 +125,13 @@
 
                     <GridViewColumn Width="120">
                         <GridViewColumn.Header>
-                            <GridViewColumnHeader Tag="Progress"/>
-                        </GridViewColumn.Header>
-                        <GridViewColumn.HeaderTemplate>
-                            <DataTemplate>
+                            <GridViewColumnHeader Tag="Progress">
                                 <StackPanel Orientation="Horizontal">
                                     <Image Source="/Assets/Images/Progress.png" Width="24" Height="24" Margin="0,0,5,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="진행률" Foreground="#BBBBBB" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
                                 </StackPanel>
-                            </DataTemplate>
-                        </GridViewColumn.HeaderTemplate>
+                            </GridViewColumnHeader>
+                        </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <Grid Margin="6,0">
@@ -159,14 +146,14 @@
                     </GridViewColumn>
 
                     <GridViewColumn Width="320">
-                        <GridViewColumn.HeaderTemplate>
-                            <DataTemplate>
+                        <GridViewColumn.Header>
+                            <GridViewColumnHeader Tag="HashResult">
                                 <StackPanel Orientation="Horizontal">
                                     <Image Source="/Assets/Images/Hash.png" Width="24" Height="24" Margin="0,0,5,0" VerticalAlignment="Center"/>
                                     <TextBlock Text="결과" Foreground="#BBBBBB" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
                                 </StackPanel>
-                            </DataTemplate>
-                        </GridViewColumn.HeaderTemplate>
+                            </GridViewColumnHeader>
+                        </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <DockPanel LastChildFill="True" VerticalAlignment="Center">
@@ -197,8 +184,8 @@
             <Border.Background>
                 <SolidColorBrush Color="#181818" Opacity="0.95"/>
             </Border.Background>
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.85">
-                <Image Source="/Assets/Images/drag.png" Width="28" Height="28" Margin="0,0,0,8"/>
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.9">
+                <Image Source="/Assets/Images/Info.png" Width="28" Height="28" Margin="0,0,0,8"/>
                 <TextBlock Text="파일 또는 폴더를 여기에 드래그&amp;드롭하세요" Foreground="LightGray" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
                 <TextBlock Text="파일 해시를 계산합니다" Foreground="#D4AF37" FontSize="13" FontWeight="Bold" Margin="0,8,0,0" HorizontalAlignment="Center"/>
                 <ItemsControl HorizontalAlignment="Center" Margin="0,6,0,0">

@@ -14,6 +14,7 @@ public static class WupPacker
 
         string scratchRoot = Path.Combine(outputFolder, "romforge_pack_" + Guid.NewGuid().ToString("N"));
         string prevTmpDir = Settings.TmpDir;
+
         Settings.TmpDir = Path.Combine(scratchRoot, "tmp");
 
         try
@@ -27,11 +28,11 @@ public static class WupPacker
 
             var contents = new Contents();
             var fst = new FST(contents);
-            FSTEntry root = fst.GetFSTEntries().GetRootEntry()!;
+            FSTEntry root = fst.FSTEntries.GetRootEntry()!;
 
-            root.SetContent(contents.GetFSTContent());
+            root.Content = contents.FSTContent;
 
-            var dirsByPath = new Dictionary<string, FSTEntry>(StringComparer.Ordinal) { [""] = root };
+            var dirsByPath = new Dictionary<string, FSTEntry>(StringComparer.Ordinal) { [string.Empty] = root };
             var seenFilePaths = new HashSet<string>(StringComparer.Ordinal);
 
             FSTEntry GetOrCreateDir(string dirPath)
@@ -40,13 +41,14 @@ public static class WupPacker
                     return existing;
 
                 int slash = dirPath.LastIndexOf('/');
-                string parentPath = slash < 0 ? "" : dirPath[..slash];
+                string parentPath = slash < 0 ? string.Empty : dirPath[..slash];
                 string name = slash < 0 ? dirPath : dirPath[(slash + 1)..];
                 FSTEntry parent = GetOrCreateDir(parentPath);
-                var dir = new FSTEntry(false);
-
-                dir.SetDir(true);
-                dir.SetFileName(name);
+                var dir = new FSTEntry(false)
+                {
+                    IsDir = true,
+                    Filename = name
+                };
                 parent.AddChildren(dir);
 
                 dirsByPath[dirPath] = dir;
@@ -79,18 +81,19 @@ public static class WupPacker
                 string dirPath = lastSlash < 0 ? string.Empty : relPath[..lastSlash];
                 string leafName = lastSlash < 0 ? relPath : relPath[(lastSlash + 1)..];
                 FSTEntry parentDir = GetOrCreateDir(dirPath);
-
                 var entry = new FSTEntry(leafName, file.OpenRead, file.Length);
+
                 parentDir.AddChildren(entry);
             }
 
-            var appInfo = new AppXMLInfo();
-
-            appInfo.SetTitleID((long)titleId);
-            appInfo.SetGroupID((short)((titleId >> 8) & 0xFFFF));
-            appInfo.SetOSVersion(0x000500101000400AL);
-            appInfo.SetTitleVersion((short)titleVersion);
-            appInfo.SetAppType(unchecked((int)0x80000000));
+            AppXMLInfo? appInfo = new()
+            {
+                TitleID = (long)titleId,
+                GroupID = (short)((titleId >> 8) & 0xFFFF),
+                OSVersion = 0x000500101000400AL,
+                TitleVersion = (short)titleVersion,
+                AppType = unchecked((int)0x80000000)
+            };
 
             if (appXmlBytes != null)
             {
@@ -100,13 +103,14 @@ public static class WupPacker
                     using var ms = new MemoryStream(appXmlBytes);
 
                     parser.LoadDocument(ms);
+
                     appInfo = parser.GetAppXMLInfo();
                 }
                 catch { }
             }
 
-            short contentGroup = appInfo.GetGroupID();
-            long parentTitleId = appInfo.GetTitleID() & ~0x0000000F00000000L;
+            short contentGroup = appInfo.GroupID;
+            long parentTitleId = appInfo.TitleID & ~0x0000000F00000000L;
             var rules = ContentRules.GetCommonRules(contentGroup, parentTitleId);
 
             ContentRulesService.ApplyRules(root, contents, rules);
@@ -124,7 +128,6 @@ public static class WupPacker
             long doneWork = 0;
 
             onProgress?.Invoke(0, totalBytes, "패킹 중");
-
             nusPackage.PackContents(outputFolder, onContentPacked: null, onContentBytesProcessed: (content, phase, done, total) =>
             {
                 ct.ThrowIfCancellationRequested();
@@ -139,7 +142,6 @@ public static class WupPacker
                     delta = 0;
 
                 contentLastDone[key] = done;
-
                 doneWork += delta;
 
                 if (doneWork > totalWork)
@@ -147,7 +149,7 @@ public static class WupPacker
 
                 ulong reportedBytes = totalWork > 0 ? (ulong)((double)doneWork / totalWork * totalBytes) : totalBytes;
 
-                onProgress?.Invoke(reportedBytes, totalBytes, $"{phase} #{content.GetID():x8}");
+                onProgress?.Invoke(reportedBytes, totalBytes, $"{phase} #{content.ID:x8}");
             });
 
             foreach (var file in Directory.GetFiles(outputFolder, "*.app").Concat(Directory.GetFiles(outputFolder, "*.h3")))

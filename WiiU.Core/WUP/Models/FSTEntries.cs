@@ -1,38 +1,33 @@
-using WiiU.Core.WUP.NusPackage.Interfaces;
+using WiiU.Core.WUP.Interfaces;
 using WiiU.Core.WUP.Services;
 
 namespace WiiU.Core.WUP.Models
 {
     public class FSTEntries : IHasData
     {
-        private List<FSTEntry> entries = [];
+        private readonly List<FSTEntry> _entries = [];
 
         public FSTEntries()
         {
             FSTEntry root = new (true);
-            entries.Add(root);
+            _entries.Add(root);
         }
 
-        public List<FSTEntry> GetEntries()
-        {
-            return entries ??= [];
-        }
-
-        public bool IsEmtpy() => entries.Count == 0;
+        public bool IsEmtpy() => _entries.Count == 0;
 
         public bool AddEntry(FSTEntry entry)
         {
-            if (!entry.IsDir())
+            if (!entry.IsDir)
                 return false;
 
-            GetEntries().Add(entry);
+            _entries.Add(entry);
 
             return true;
         }
 
         public void Update()
         {
-            foreach (FSTEntry entry in GetEntries())
+            foreach (FSTEntry entry in _entries)
                 entry.Update();
 
             UpdateDirRefs();
@@ -42,8 +37,8 @@ namespace WiiU.Core.WUP.Models
         {
             List<FSTEntry> result = [];
 
-            foreach (FSTEntry curEntry in GetEntries())
-                if (!curEntry.IsNotInPackage())
+            foreach (FSTEntry curEntry in _entries)
+                if (!curEntry.IsNotInPackage)
                     result.AddRange(curEntry.GetFSTEntriesByContent(content));
 
             return result;
@@ -53,7 +48,7 @@ namespace WiiU.Core.WUP.Models
         {
             int count = 0;
 
-            foreach (FSTEntry entry in GetEntries())
+            foreach (FSTEntry entry in _entries)
                 count += entry.GetEntryCount();
 
             return count;
@@ -63,42 +58,38 @@ namespace WiiU.Core.WUP.Models
         {
             JByteBuffer buffer = JByteBuffer.Allocate(GetDataSize());
 
-            foreach (FSTEntry entry in GetEntries())
+            foreach (FSTEntry entry in _entries)
                 buffer.Put(entry.GetAsData());
 
             return buffer.Array();
         }
 
-        public int GetDataSize()
-        {
-            return GetFSTEntryCount() * 0x10;
-        }
+        public int GetDataSize() => GetFSTEntryCount() * 0x10;
 
         public FSTEntry? GetRootEntry()
         {
-            List<FSTEntry> entries_ = GetEntries();
-
-            if (entries_.Count == 0)
+            if (_entries.Count == 0)
                 return null;
 
-            return entries_[0];
+            return _entries[0];
         }
 
         public void UpdateDirRefs()
         {
-            List<FSTEntry> entries_ = GetEntries();
+            List<FSTEntry> entries_ = _entries;
 
             if (entries_.Count == 0) 
                 return;
 
             FSTEntry root = entries_[0];
 
-            root.SetParentOffset(0);
-            root.SetNextOffset(FST.CurEntryOffset);
+            root.ParentOffset = 0;
+            root.NextOffset = FST.CurEntryOffset;
 
             FSTEntry? lastdir = root.UpdateDirRefs();
 
-            lastdir?.SetNextOffset(FST.CurEntryOffset);
+            if(lastdir != null)
+                lastdir.NextOffset = FST.CurEntryOffset;
         }
     }
 }

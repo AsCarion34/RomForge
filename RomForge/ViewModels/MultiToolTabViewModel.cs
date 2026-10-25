@@ -1,5 +1,4 @@
-﻿using Common.WPF.ViewModels;
-using RomForge.Core.Models;
+﻿using RomForge.Core.Models;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Windows;
@@ -31,8 +30,6 @@ public abstract class MultiToolTabViewModel : ToolTabViewModel
                 SubTabIndex = index;
         }
     }
-
-    public ObservableCollection<LogEntry> LogEntries { get; } = [];
 
     public ToolTabViewModel? SelectedTool => (SubTabIndex >= 0 && SubTabIndex < Tools.Count) ? Tools[SubTabIndex] : null;
 

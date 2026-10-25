@@ -2,27 +2,16 @@
 
 namespace PSP.Core.Services;
 
-public class ChdCdReadStream : Stream
+public class ChdCdReadStream(LibChdrWrapper wrapper, long totalLength, string? trackType = null) : Stream
 {
     private const int PhysicalFrameSize = 2448;
     private const int LogicalSectorSize = 2048;
-
-    private readonly LibChdrWrapper _wrapper;
-    private readonly long _totalLength;
-    private readonly int _skipBytes;
-    private readonly uint _sectorsPerHunk;
+    private readonly int _skipBytes = GetSkipBytes(trackType);
+    private readonly uint _sectorsPerHunk = (wrapper.Header?.hunkbytes ?? 0) / (uint)PhysicalFrameSize;
 
     private long _position;
     private byte[]? _currentHunk;
     private uint _cachedHunkIndex = uint.MaxValue;
-
-    public ChdCdReadStream(LibChdrWrapper wrapper, long totalLength, string? trackType = null)
-    {
-        _wrapper = wrapper;
-        _totalLength = totalLength;
-        _skipBytes = GetSkipBytes(trackType);
-        _sectorsPerHunk = (wrapper.Header?.hunkbytes ?? 0) / (uint)PhysicalFrameSize;
-    }
 
     private static int GetSkipBytes(string? trackType) => trackType?.ToUpperInvariant() switch
     {
@@ -35,7 +24,7 @@ public class ChdCdReadStream : Stream
     {
         int bytesRead = 0;
 
-        while (bytesRead < count && _position < _totalLength)
+        while (bytesRead < count && _position < totalLength)
         {
             long sector = _position / LogicalSectorSize;
             int posInSector = (int)(_position % LogicalSectorSize);
@@ -44,7 +33,7 @@ public class ChdCdReadStream : Stream
 
             if (_cachedHunkIndex != hunkIdx)
             {
-                _currentHunk = _wrapper.ReadHunk(hunkIdx);
+                _currentHunk = wrapper.ReadHunk(hunkIdx);
                 _cachedHunkIndex = hunkIdx;
             }
 
@@ -52,7 +41,8 @@ public class ChdCdReadStream : Stream
                 throw new NullReferenceException(nameof(_currentHunk));
 
             int toRead = (int)Math.Min(count - bytesRead, LogicalSectorSize - posInSector);
-            toRead = (int)Math.Min(toRead, _totalLength - _position);
+
+            toRead = (int)Math.Min(toRead, totalLength - _position);
 
             Array.Copy(_currentHunk, frameOffset + _skipBytes + posInSector, buffer, offset + bytesRead, toRead);
 
@@ -69,10 +59,11 @@ public class ChdCdReadStream : Stream
         {
             SeekOrigin.Begin => offset,
             SeekOrigin.Current => _position + offset,
-            SeekOrigin.End => _totalLength + offset,
+            SeekOrigin.End => totalLength + offset,
             _ => _position
         };
-        _position = Math.Clamp(_position, 0, _totalLength);
+
+        _position = Math.Clamp(_position, 0, totalLength);
 
         return _position;
     }
@@ -86,11 +77,18 @@ public class ChdCdReadStream : Stream
     }
 
     public override bool CanRead => true;
+
     public override bool CanSeek => true;
+
     public override bool CanWrite => false;
-    public override long Length => _totalLength;
+
+    public override long Length => totalLength;
+
     public override long Position { get => _position; set => _position = value; }
+
     public override void Flush() { }
+
     public override void SetLength(long value) => throw new NotSupportedException();
+
     public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 }

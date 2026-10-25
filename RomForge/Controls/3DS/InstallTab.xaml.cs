@@ -2,6 +2,7 @@
 using Microsoft.Win32;
 using NSW.WPF.Services;
 using RomForge.Core.Models._3DS;
+using RomForge.Core.Services;
 using RomForge.ViewModels._3DS;
 using System.IO;
 using System.Windows;
@@ -41,6 +42,7 @@ public partial class InstallTab : UserControl
         catch (Exception ex)
         {
             Vm.AppendLog($"오류: {ex.Message}", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
         }
     }
 
@@ -75,6 +77,7 @@ public partial class InstallTab : UserControl
         catch (Exception ex)
         {
             Vm.AppendLog($"오류: {ex.Message}", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
         }
     }
 
@@ -95,6 +98,7 @@ public partial class InstallTab : UserControl
             catch (Exception ex)
             {
                 Vm.AppendLog($"오류: {ex.Message}", LogLevel.Error);
+                await SoundPlayer.PlayErrorAsync();
             }
         }
     }
@@ -106,6 +110,7 @@ public partial class InstallTab : UserControl
     private async void Install_Click(object sender, RoutedEventArgs e)
     {
         _installCts = new CancellationTokenSource();
+
         Vm.Install.IsInstalling = true;
 
         try
@@ -125,10 +130,12 @@ public partial class InstallTab : UserControl
         catch (Exception ex)
         {
             Vm.AppendLog($"오류: {ex.Message}", LogLevel.Error);
+            await SoundPlayer.PlayErrorAsync();
         }
         finally
         {
             _installCts.Dispose();
+
             _installCts = null;
             Vm.Install.IsInstalling = false;
         }
@@ -145,6 +152,7 @@ public partial class InstallTab : UserControl
             files.AddRange(Directory.GetFiles(folder)); 
         } 
         catch { }
+
         foreach (var subDir in Directory.GetDirectories(folder))
             try 
             { 
@@ -168,8 +176,6 @@ public partial class InstallTab : UserControl
         if (selected.Count == 0)
             return;
 
-        string? dir = Path.GetDirectoryName(selected[0].FilePath);
-
-        dir?.OpenFolder();
+        Path.GetDirectoryName(selected[0].FilePath)?.OpenFolder();
     }
 }

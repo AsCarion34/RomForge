@@ -3,6 +3,8 @@
 public enum CdRawSectorMode
 {
     None,
+
     Mode1Raw,
+
     Mode2Raw
 }

@@ -1,6 +1,6 @@
 ﻿namespace Vita.Core.Services;
 
-public sealed class FolderSourceAccessor(string root) : IVitaSourceAccessor
+public sealed class FolderSourceAccessor(string root) : ISourceAccessor
 {
     private string Full(string relativePath) => Path.Combine(root, relativePath.Replace('/', Path.DirectorySeparatorChar));
 
@@ -16,7 +16,5 @@ public sealed class FolderSourceAccessor(string root) : IVitaSourceAccessor
 
     public long GetFileSize(string relativePath) => new FileInfo(Full(relativePath)).Length;
 
-    public void Dispose()
-    {
-    }
+    public void Dispose() { }
 }

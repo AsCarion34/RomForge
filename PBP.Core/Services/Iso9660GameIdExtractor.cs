@@ -85,9 +85,7 @@ public static class Iso9660GameIdExtractor
                     return prefix + match.Groups[3].Value + match.Groups[4].Value;
                 }
             }
-            catch
-            {
-            }
+            catch { }
         }
 
         return null;

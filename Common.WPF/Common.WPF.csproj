@@ -66,6 +66,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="NAudio" Version="2.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="Assets\Images\AddFile.png" />
     <Resource Include="Assets\Images\AddFolder.png" />
     <Resource Include="Assets\Images\american.png" />

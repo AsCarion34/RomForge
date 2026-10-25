@@ -22,6 +22,7 @@ public class SdDecryptStream(Stream baseStream, string sdPath, SdCrypto sdCrypto
             return bytesRead;
 
         DecryptBlock(buffer, offset, pos, bytesRead);
+
         _position += bytesRead;
 
         return bytesRead;
@@ -39,6 +40,7 @@ public class SdDecryptStream(Stream baseStream, string sdPath, SdCrypto sdCrypto
             return bytesRead;
 
         DecryptBlock(buffer, offset, pos, bytesRead);
+
         _position += bytesRead;
 
         return bytesRead;
@@ -102,7 +104,8 @@ public class SdDecryptStream(Stream baseStream, string sdPath, SdCrypto sdCrypto
     private static void IncrementCtr(byte[] ctr)
     {
         for (int i = 15; i >= 0; i--)
-            if (++ctr[i] != 0) break;
+            if (++ctr[i] != 0)
+                break;
     }
 
     public override long Position { get => _position; set => _position = value; }

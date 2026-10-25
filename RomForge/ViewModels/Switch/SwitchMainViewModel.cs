@@ -9,11 +9,15 @@ public class SwitchMainViewModel : MultiToolTabViewModel
 
     public MergeMainViewModel MergeVM { get; } = new();
 
+    public SplitMainViewModel SplitVM { get; } = new();
+
     public ConverterMainViewModel ConverterVM { get; } = new();
 
     public ConvertSaturnMainViewModel ConvertSaturnVM { get; } = new();
 
     public KeygenMainViewModel KeygenVM { get; } = new();
+
+    public RenameMainViewModel RenameVM { get; } = new();
 
     public static bool KeysAvailable => KeySetProvider.Instance.KeySet != null;
 
@@ -25,9 +29,11 @@ public class SwitchMainViewModel : MultiToolTabViewModel
     {
         Tools.Add(RepackVM);
         Tools.Add(MergeVM);
+        Tools.Add(SplitVM);
         Tools.Add(ConverterVM);
         Tools.Add(ConvertSaturnVM);
         Tools.Add(KeygenVM);
+        Tools.Add(RenameVM);
 
         InitializeMultiTools();
 

@@ -1,5 +1,4 @@
-﻿using _3DS.Core.Crypto;
-using _3DS.Core.Enums;
+﻿using _3DS.Core.Enums;
 using _3DS.Core.Models;
 using System.Text;
 
@@ -18,7 +17,6 @@ public class TmdParser
     public static TmdHeader Parse(BinaryReader br)
     {
         uint sigType = ReadBigEndianUInt32(br);
-
         byte[] signature;
         int paddingSize;
 
@@ -46,7 +44,6 @@ public class TmdParser
         br.ReadBytes(paddingSize);
 
         string issuer = Encoding.ASCII.GetString(br.ReadBytes(0x40)).TrimEnd('\0');
-
         byte version = br.ReadByte();
 
         br.ReadByte();

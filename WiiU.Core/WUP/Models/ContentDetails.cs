@@ -2,70 +2,28 @@ namespace WiiU.Core.WUP.Models
 {
     public class ContentDetails
     {
-        private bool isContent = true;
+        private bool _isContent = true;
+        private bool _isEncrypted = true;
+        private bool _isHashed = false;
+        private short _groupID = 0x0000;
+        private long _parentTitleID = 0x0;
+        private short _entriesFlag = 0x0000;
 
-        private bool isEncrypted = true;
-
-        private bool isHashed = false;
-
-        private short groupID = 0x0000;
-        private long parentTitleID = 0x0;
-
-        private short entriesFlag = 0x0000;
+        public bool IsContent { get => _isContent; set => _isContent = value; }
+        public bool IsEncrypted { get => _isEncrypted; set => _isEncrypted = value; }
+        public bool IsHashed { get => _isHashed; private set => _isHashed = value; }
+        public short GroupID { get => _groupID; private set => _groupID = value; }
+        public long ParentTitleID { get => _parentTitleID; private set => _parentTitleID = value; }
+        public short EntriesFlag { get => _entriesFlag; private set => _entriesFlag = value; }
 
         public ContentDetails(bool isHashed, short groupID, long parentTitleID, short entriesFlags)
         {
-            SetHashed(isHashed);
-            SetGroupID(groupID);
-            SetParentTitleID(parentTitleID);
-            SetEntriesFlag(entriesFlags);
+            IsHashed = isHashed;
+            GroupID = groupID;
+            ParentTitleID = parentTitleID;
+            EntriesFlag = entriesFlags;
         }
 
-        public bool IsHashed() => isHashed;
-
-        public void SetHashed(bool isHashed)
-        {
-            this.isHashed = isHashed;
-        }
-
-        public short GetGroupID() => groupID;
-
-        public void SetGroupID(short groupID)
-        {
-            this.groupID = groupID;
-        }
-
-        public long GetParentTitleID() => parentTitleID;
-
-        public void SetParentTitleID(long parentTitleID)
-        {
-            this.parentTitleID = parentTitleID;
-        }
-
-        public bool IsContent() => isContent;
-
-        public void SetContent(bool isContent)
-        {
-            this.isContent = isContent;
-        }
-
-        public bool IsEncrypted() => isEncrypted;
-
-        public void SetEncrypted(bool isEncrypted)
-        {
-            this.isEncrypted = isEncrypted;
-        }
-
-        public short GetEntriesFlag() => entriesFlag;
-
-        public void SetEntriesFlag(short entriesFlag)
-        {
-            this.entriesFlag = entriesFlag;
-        }
-
-        public override string ToString()
-        {
-            return "ContentDetails [isContent=" + isContent + ", isEncrypted=" + isEncrypted + ", isHashed=" + isHashed + ", groupID=" + groupID + ", parentTitleID=" + parentTitleID + ", entriesFlag=" + entriesFlag + "]";
-        }
+        public override string ToString() => "ContentDetails [isContent=" + IsContent + ", isEncrypted=" + IsEncrypted + ", isHashed=" + IsHashed + ", groupID=" + GroupID + ", parentTitleID=" + ParentTitleID + ", entriesFlag=" + EntriesFlag + "]";
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text;
+using WiiU.Core.IO;
 using WiiU.Core.Models;
 
 namespace WiiU.Core.Services;
@@ -23,6 +24,8 @@ public sealed class WupTitleSource : ITitleSource
     public string TitleIdHex { get; }
 
     public int TitleVersion { get; }
+
+    public int FstOffsetFactor => _fstOffsetFactor;
 
     public WupTitleSource(string folderPath)
     {
@@ -56,8 +59,6 @@ public sealed class WupTitleSource : ITitleSource
     }
 
     public static bool LooksLikeWupFolder(string folderPath) => File.Exists(Path.Combine(folderPath, "title.tmd")) && File.Exists(Path.Combine(folderPath, "title.tik"));
-
-    #region FST Parsing
 
     private readonly record struct FstClusterInfo(bool IsHashed);
 
@@ -133,10 +134,6 @@ public sealed class WupTitleSource : ITitleSource
         return Encoding.UTF8.GetString(data, offset, end - offset);
     }
 
-    #endregion
-
-    #region ITitleSource
-
     public IEnumerable<string> EnumerateFiles()
     {
         if (_entries.Count == 0)
@@ -192,59 +189,6 @@ public sealed class WupTitleSource : ITitleSource
         return new FstEntryStream(this, entry, path);
     }
 
-    private sealed class FstEntryStream(WupTitleSource owner, FstEntry entry, string path) : Stream
-    {
-        private long _position;
-
-        public override bool CanRead => true;
-        public override bool CanSeek => true;
-        public override bool CanWrite => false;
-        public override long Length => entry.FileSize;
-
-        public override long Position
-        {
-            get => _position;
-            set => _position = value;
-        }
-
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            long remaining = entry.FileSize - _position;
-            if (remaining <= 0)
-                return 0;
-
-            int toRead = (int)Math.Min(count, remaining);
-
-            try
-            {
-                owner.ReadFileEntry(entry, _position, buffer, offset, toRead);
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidDataException($"'{path}' 읽기 실패 (clusterIndex={entry.ClusterIndex}, offsetField={entry.FileOffsetField}, " + $"byteOffset={(long)entry.FileOffsetField * owner._fstOffsetFactor}, size={entry.FileSize}): {ex.Message}", ex);
-            }
-
-            _position += toRead;
-            return toRead;
-        }
-
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            _position = origin switch
-            {
-                SeekOrigin.Begin => offset,
-                SeekOrigin.Current => _position + offset,
-                SeekOrigin.End => entry.FileSize + offset,
-                _ => throw new ArgumentOutOfRangeException(nameof(origin)),
-            };
-            return _position;
-        }
-
-        public override void Flush() { }
-        public override void SetLength(long value) => throw new NotSupportedException();
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-    }
-
     private FstEntry? FindEntry(string path)
     {
         var parts = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
@@ -286,14 +230,10 @@ public sealed class WupTitleSource : ITitleSource
         return _entries[currentIndex];
     }
 
-    #endregion
-
-    #region Content Reading
-
-    private void ReadFileEntry(FstEntry entry, long readOffset, byte[] dest, int destOffset, int size)
+    internal void ReadFileEntry(FstEntry entry, long readOffset, byte[] dest, int destOffset, int size)
     {
         int clusterIndex = entry.ClusterIndex;
-        long baseOffset = (long)entry.FileOffsetField * _fstOffsetFactor + readOffset;
+        long baseOffset = (long)entry.FileOffsetField * FstOffsetFactor + readOffset;
         bool hashed = clusterIndex < _clusters.Count && _clusters[clusterIndex].IsHashed;
 
         if (hashed)
@@ -388,8 +328,10 @@ public sealed class WupTitleSource : ITitleSource
         var hashPart = block.AsSpan(0, HashedHeaderSize).ToArray();
 
         byte[] headerIv = new byte[16];
+
         headerIv[0] = (byte)(contentIndex >> 8);
         headerIv[1] = (byte)(contentIndex & 0xFF);
+
         AesCbcDecryptInPlace(hashPart, HashedHeaderSize, _titleKey, headerIv);
 
         int h0Index = (int)(blockIndex % 16);
@@ -439,8 +381,6 @@ public sealed class WupTitleSource : ITitleSource
 
         decryptor.TransformBlock(data, 0, length, data, 0);
     }
-
-    #endregion
 
     public void Dispose()
     {

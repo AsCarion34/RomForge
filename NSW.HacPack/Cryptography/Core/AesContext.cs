@@ -33,7 +33,9 @@ public sealed class AesContext : IDisposable
 
     public void SetIV(ReadOnlySpan<byte> iv)
     {
-        if (iv.Length != 16) throw new ArgumentException("IV must be 16 bytes.");
+        if (iv.Length != 16)
+            throw new ArgumentException("IV must be 16 bytes.");
+
         iv.CopyTo(_iv);
     }
 
@@ -85,7 +87,6 @@ public sealed class AesContext : IDisposable
         int halfKey = _key.Length / 2;
         byte[] key1 = _key.AsSpan(0, halfKey).ToArray();
         byte[] key2 = _key.AsSpan(halfKey, halfKey).ToArray();
-
         using var xtsCtx = new XtsAesContext(key1, key2);
         Span<byte> tweak = stackalloc byte[16];
 
@@ -100,18 +101,18 @@ public sealed class AesContext : IDisposable
     public static void CalculateCmac(Span<byte> dst, ReadOnlySpan<byte> src, ReadOnlySpan<byte> key)
     {
         byte[] k = key.ToArray();
-
         using var aes = Aes.Create();
+
         aes.Key = k;
         aes.Mode = CipherMode.ECB;
         aes.Padding = PaddingMode.None;
+
         using var enc = aes.CreateEncryptor();
 
         GenerateCmacSubkeys(enc, out byte[] K1, out byte[] K2);
 
         int blockCount = Math.Max(1, (src.Length + 15) / 16);
         bool lastBlockComplete = src.Length > 0 && src.Length % 16 == 0;
-
         byte[] X = new byte[16];
         byte[] Y = new byte[16];
 
@@ -119,16 +120,20 @@ public sealed class AesContext : IDisposable
         {
             for (int j = 0; j < 16; j++)
                 Y[j] = (byte)(src[i * 16 + j] ^ X[j]);
+
             enc.TransformBlock(Y, 0, 16, X, 0);
         }
 
         byte[] last = new byte[16];
         int lastLen = src.Length - (blockCount - 1) * 16;
+
         if (lastLen > 0)
             src.Slice((blockCount - 1) * 16, lastLen).CopyTo(last);
 
         byte[] subkey = lastBlockComplete ? K1 : K2;
-        if (!lastBlockComplete) last[lastLen] = 0x80;
+
+        if (!lastBlockComplete)
+            last[lastLen] = 0x80;
 
         for (int j = 0; j < 16; j++)
             last[j] ^= (byte)(X[j] ^ subkey[j]);
@@ -146,6 +151,7 @@ public sealed class AesContext : IDisposable
         for (int offset = 0; offset < srcArr.Length; offset += blockSize)
         {
             int len = Math.Min(blockSize, srcArr.Length - offset);
+
             transform.TransformBlock(srcArr, offset, len, dstArr, offset);
         }
 
@@ -159,15 +165,18 @@ public sealed class AesContext : IDisposable
         byte[] counterBlocks = new byte[chunkSize];
         byte[] keystream = new byte[chunkSize];
         Span<byte> counter = stackalloc byte[16];
+
         _iv.AsSpan().CopyTo(counter);
 
         using var aes = Aes.Create();
+
         aes.Key = _key;
         aes.Mode = CipherMode.ECB;
         aes.Padding = PaddingMode.None;
-        using var enc = aes.CreateEncryptor();
 
+        using var enc = aes.CreateEncryptor();
         int processed = 0;
+
         while (processed < src.Length)
         {
             int len = Math.Min(chunkSize, src.Length - processed);
@@ -194,7 +203,6 @@ public sealed class AesContext : IDisposable
         byte[] T = xtsCtx.ComputeTweak(_iv);
         byte[] buf = new byte[16];
         byte[] cc = new byte[16];
-
         var transform = encrypt ? xtsCtx.Enc : xtsCtx.Dec;
 
         for (int offset = 0; offset < src.Length; offset += 16)
@@ -216,10 +224,14 @@ public sealed class AesContext : IDisposable
         byte[] L = enc.TransformFinalBlock(new byte[16], 0, 16);
 
         K1 = ShiftLeft(L);
-        if ((L[0] & 0x80) != 0) K1[15] ^= 0x87;
+
+        if ((L[0] & 0x80) != 0) 
+            K1[15] ^= 0x87;
 
         K2 = ShiftLeft(K1);
-        if ((K1[0] & 0x80) != 0) K2[15] ^= 0x87;
+
+        if ((K1[0] & 0x80) != 0) 
+            K2[15] ^= 0x87;
     }
 
     private static void GetTweak(ulong sector, Span<byte> tweak)
@@ -234,38 +246,49 @@ public sealed class AesContext : IDisposable
     private static void IncrementCounter(Span<byte> counter)
     {
         for (int i = counter.Length - 1; i >= 0; i--)
-            if (++counter[i] != 0) break;
+            if (++counter[i] != 0)
+                break;
     }
 
     private static void GfMul(byte[] T)
     {
         byte carry = 0;
+
         for (int i = 0; i < 16; i++)
         {
             byte next = (byte)(T[i] >> 7);
+
             T[i] = (byte)(T[i] << 1 | carry);
             carry = next;
         }
-        if (carry != 0) T[0] ^= 0x87;
+
+        if (carry != 0)
+            T[0] ^= 0x87;
     }
 
     private static byte[] ShiftLeft(byte[] b)
     {
         byte[] r = new byte[16];
+
         for (int i = 0; i < 15; i++)
             r[i] = (byte)(b[i] << 1 | b[i + 1] >> 7);
+
         r[15] = (byte)(b[15] << 1);
+
         return r;
     }
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed) 
+            return;
+
         Array.Clear(_key, 0, _key.Length);
         Array.Clear(_iv, 0, _iv.Length);
         _ecbEnc?.Dispose();
         _ecbDec?.Dispose();
         _ecbAes?.Dispose();
+
         _disposed = true;
     }
 }

@@ -2,7 +2,7 @@
 using RomForge.Core.Models.Compression;
 using System.IO;
 using System.Text;
-using WiiGC.Core.Models;
+using WiiGC.Core.Enums;
 using WiiGC.Core.Services;
 
 namespace RomForge.Core.Services.Compression;
@@ -20,7 +20,7 @@ public static class FormatDetector
             case "gdi": return Result(RomFormat.Gdi, ConvertDirection.Compress, "chd");
             case "ccd": return Result(RomFormat.Ccd, ConvertDirection.Compress, "chd");
             case "img" when File.Exists(Path.ChangeExtension(filePath, ".ccd")):
-                return Result(RomFormat.Ccd, ConvertDirection.Compress, "chd");
+                        return Result(RomFormat.Ccd, ConvertDirection.Compress, "chd");
             case "nsp": return Result(RomFormat.Nsp, ConvertDirection.Compress, "nsz");
             case "nsz": return Result(RomFormat.Nsz, ConvertDirection.Decompress, "nsp");
             case "xci": return Result(RomFormat.Xci, ConvertDirection.Compress, "xcz");
@@ -131,9 +131,14 @@ public static class FormatDetector
     private static bool MatchMagic(byte[] data, string magic)
     {
         var bytes = Encoding.ASCII.GetBytes(magic);
-        if (data.Length < bytes.Length) return false;
+
+        if (data.Length < bytes.Length) 
+            return false;
+
         for (int i = 0; i < bytes.Length; i++)
-            if (data[i] != bytes[i]) return false;
+            if (data[i] != bytes[i])
+                return false;
+
         return true;
     }
 }

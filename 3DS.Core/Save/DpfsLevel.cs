@@ -1,4 +1,5 @@
 ﻿using _3DS.Core.Save.Interfaces;
+using System.Buffers.Binary;
 
 namespace _3DS.Core.Save;
 
@@ -56,7 +57,7 @@ public class DpfsLevel : IRandomAccessFile
         {
             uint dirty = _dirty[chunkI];
             int rawOffset = (chunkI - beginChunk) * 4;
-            uint raw = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(selectorBuf.AsSpan(rawOffset, 4));
+            uint raw = BinaryPrimitives.ReadUInt32LittleEndian(selectorBuf.AsSpan(rawOffset, 4));
             uint select = dirty ^ raw;
             int blockIBegin = Math.Max(chunkI * 32, beginBlock);
             int blockIEnd = Math.Min((chunkI + 1) * 32, endBlock);
@@ -76,6 +77,7 @@ public class DpfsLevel : IRandomAccessFile
     public void Write(int pos, byte[] buf, int offset, int count)
     {
         int end = pos + count;
+
         if (end > _len)
             throw new InvalidOperationException("DpfsLevel::write out of bound");
 
@@ -83,14 +85,14 @@ public class DpfsLevel : IRandomAccessFile
         int endBlock = Misc.DivideUp(end, _blockLen);
         int beginChunk = beginBlock / 32;
         int endChunk = Misc.DivideUp(endBlock, 32);
-
         var selectorBuf = new byte[(endChunk - beginChunk) * 4];
+
         _selector.Read(beginChunk * 4, selectorBuf, 0, selectorBuf.Length);
 
         for (int chunkI = beginChunk; chunkI < endChunk; chunkI++)
         {
             int rawOffset = (chunkI - beginChunk) * 4;
-            uint raw = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(selectorBuf.AsSpan(rawOffset, 4));
+            uint raw = BinaryPrimitives.ReadUInt32LittleEndian(selectorBuf.AsSpan(rawOffset, 4));
             uint select = ~raw;
             int blockIBegin = Math.Max(chunkI * 32, beginBlock);
             int blockIEnd = Math.Min((chunkI + 1) * 32, endBlock);
@@ -115,6 +117,7 @@ public class DpfsLevel : IRandomAccessFile
                     if (dataBegin > dataBeginAsBlock)
                     {
                         int marginLen = dataBegin - dataBeginAsBlock;
+
                         _pair[other].Read(dataBeginAsBlock, _blockBuf, 0, marginLen);
                         _pair[selectBit].Write(dataBeginAsBlock, _blockBuf, 0, marginLen);
                     }
@@ -122,6 +125,7 @@ public class DpfsLevel : IRandomAccessFile
                     if (dataEnd < dataEndAsBlock)
                     {
                         int marginLen = dataEndAsBlock - dataEnd;
+
                         _pair[other].Read(dataEnd, _blockBuf, 0, marginLen);
                         _pair[selectBit].Write(dataEnd, _blockBuf, 0, marginLen);
                     }
@@ -142,10 +146,10 @@ public class DpfsLevel : IRandomAccessFile
             {
                 _selector.Read(i * 4, bytes, 0, 4);
 
-                uint oldWord = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(bytes);
+                uint oldWord = BinaryPrimitives.ReadUInt32LittleEndian(bytes);
                 uint newWord = oldWord ^ _dirty[i];
 
-                System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(bytes, newWord);
+                BinaryPrimitives.WriteUInt32LittleEndian(bytes, newWord);
                 _selector.Write(i * 4, bytes, 0, 4);
                 _dirty[i] = 0;
             }
