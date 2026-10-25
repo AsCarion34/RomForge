@@ -397,7 +397,7 @@ public static class MetadataReader
         if (metas.Any(m => m.Type is ContentMetaType.AddOnContent or ContentMetaType.Delta))
             types.Add("D");
 
-        var main = metas.FirstOrDefault(m => m.Type == ContentMetaType.Application) ?? metas.FirstOrDefault(m => m.Type == ContentMetaType.Patch) ?? metas[0];
+        var main = metas.FirstOrDefault(m => m.Type == ContentMetaType.Patch) ?? metas.FirstOrDefault(m => m.Type == ContentMetaType.Application) ?? metas[0];
 
         info.Type = types.Count > 0 ? string.Join("+", types) : "?";
         info.TitleId = main.TitleId;

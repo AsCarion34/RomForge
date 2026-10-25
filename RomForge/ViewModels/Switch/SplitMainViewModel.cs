@@ -184,7 +184,10 @@ public class SplitMainViewModel : ToolTabViewModel
 
         row.Icon = ordered.FirstOrDefault(m => m.IconData != null)?.IconData?.ToBitmapImage();
         row.TitleId = main.TitleId;
-        row.Version = main.GetEffectiveDisplayVersion();
+
+        var updateMeta = ordered.FirstOrDefault(m => m.GetTypeTag().ToString().Contains("Patch", StringComparison.OrdinalIgnoreCase) || m.GetTypeTag().ToString().Contains("Update", StringComparison.OrdinalIgnoreCase));
+
+        row.Version = updateMeta != null ? updateMeta.GetEffectiveDisplayVersion() : main.GetEffectiveDisplayVersion();
         row.TypeText = string.Join("+", ordered.Select(m => Letter(m.GetTypeTag())).Distinct());
 
         row.Children.Clear();
