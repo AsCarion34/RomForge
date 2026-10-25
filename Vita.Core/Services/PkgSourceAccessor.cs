@@ -1,4 +1,5 @@
-﻿using Vita.Core.Cryptography;
+﻿using System.Buffers;
+using Vita.Core.Cryptography;
 using Vita.Core.Models;
 
 namespace Vita.Core.Services;
@@ -12,6 +13,7 @@ public sealed class PkgSourceAccessor : ISourceAccessor
     private const string BodyBinRelativePath = "sce_sys/package/body.bin";
     private const string DigsBinRelativePath = "sce_sys/package/digs.bin";
     private const int StatBinSize = 768;
+    private const int CopyChunkSize = 1024 * 1024;
 
     private readonly FileStream _stream;
     private readonly Aes128Ctr _ctr;
@@ -166,6 +168,51 @@ public sealed class PkgSourceAccessor : ISourceAccessor
 
         return PkgDecryptor.DecryptItemData(_stream, Header, _ctr, item);
     }
+
+    public void CopyTo(string relativePath, Stream destination, Action<long>? onProgress = null)
+    {
+        string rel = Normalize(relativePath);
+
+        if (IsVirtualFile(rel) || !_items.TryGetValue(rel, out var item))
+        {
+            byte[] data = ReadAllBytes(relativePath);
+
+            destination.Write(data);
+            onProgress?.Invoke(data.Length);
+            return;
+        }
+
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(CopyChunkSize);
+
+        try
+        {
+            long remaining = item.DataSize;
+            long position = 0;
+
+            _stream.Seek(Header.EncOffset + item.DataOffset, SeekOrigin.Begin);
+
+            while (remaining > 0)
+            {
+                int count = (int)Math.Min(CopyChunkSize, remaining);
+
+                _stream.ReadExactly(buffer, 0, count);
+                _ctr.XorAt(item.DataOffset / 16 + position / 16, buffer.AsSpan(0, count));
+                destination.Write(buffer, 0, count);
+                onProgress?.Invoke(count);
+
+                position += count;
+                remaining -= count;
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
+    private static bool IsVirtualFile(string rel) => rel.Equals(WorkBinRelativePath, StringComparison.OrdinalIgnoreCase) 
+        || rel.Equals(HeadBinRelativePath, StringComparison.OrdinalIgnoreCase) || rel.Equals(TailBinRelativePath, StringComparison.OrdinalIgnoreCase)
+        || rel.Equals(StatBinRelativePath, StringComparison.OrdinalIgnoreCase) || rel.Equals(BodyBinRelativePath, StringComparison.OrdinalIgnoreCase);
 
     public long GetFileSize(string relativePath)
     {

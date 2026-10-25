@@ -207,6 +207,9 @@ public class OutputFoldersConfig : ViewModelBase
     private string? _vitaOutputPath;
     public string? VitaOutputPath { get => _vitaOutputPath; set => SetProperty(ref _vitaOutputPath, value); }
 
+    private string? _vitaConvertOutputPath;
+    public string? VitaConvertOutputPath { get => _vitaConvertOutputPath; set => SetProperty(ref _vitaConvertOutputPath, value); }
+
     private bool _useCompressCustomOutputPath;
     public bool UseCompressCustomOutputPath { get => _useCompressCustomOutputPath; set => SetProperty(ref _useCompressCustomOutputPath, value); }
 

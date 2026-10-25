@@ -299,15 +299,15 @@ public class RepackMainViewModel : ToolTabViewModel
         }
     }
 
-    private void ApplyDefaultsAndLog(SourceRowViewModel row, string? pkgPathForLicenseTxt)
+    private void ApplyDefaultsAndLog(SourceRowViewModel row, string? pkgPath)
     {
-        if (row.IsPkg && pkgPathForLicenseTxt != null)
+        if (row.IsPkg && pkgPath != null)
         {
-            string? dir = Path.GetDirectoryName(pkgPathForLicenseTxt);
+            string? dir = Path.GetDirectoryName(pkgPath);
 
             if (!string.IsNullOrEmpty(dir))
             {
-                string txtPath = Path.Combine(dir, Path.GetFileNameWithoutExtension(pkgPathForLicenseTxt) + ".txt");
+                string txtPath = Path.Combine(dir, Path.GetFileNameWithoutExtension(pkgPath) + ".txt");
 
                 if (File.Exists(txtPath))
                 {
