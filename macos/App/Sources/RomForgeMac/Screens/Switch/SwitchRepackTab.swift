@@ -49,10 +49,10 @@ struct SwitchRepackTab: View {
         VStack(spacing: 8) {
             // txtOutput: PreviewDragOver/Drop(TxtOutputPath_*) — 폴더를 끌어다 놓으면 OutputPath
             HStack(spacing: 5) {
-                SwitchPathField(vm: vm, prop: "OutputPath", hint: "작업 폴더를 드래그하거나 선택하세요")
+                PathField(vm: vm, placeholder: "작업 폴더를 드래그하거나 선택하세요", pathTooltip: true)
                 ToolIconButton(icon: "AddFolder.png") { engine.run(vm, "BrowseOutputCommand") }
             }
-            .switchFolderDrop(engine, vm, "OutputPath")
+            .folderDrop(engine, vm, "OutputPath")
             .disabled(!idle)
 
             // 열 너비 * : * : 2*

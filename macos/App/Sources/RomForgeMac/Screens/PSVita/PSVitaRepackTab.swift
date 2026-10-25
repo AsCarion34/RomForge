@@ -35,7 +35,8 @@ struct PSVitaRepackTab: View {
                         }
                     }
 
-                    PSVitaOutputPathRow(vm: vm, placeholder: "작업 폴더를 드래그하거나 선택하세요")
+                    // 작업 폴더: OutputPath TextBox(폴더 드롭, OutputHintVisibility 안내) + 폴더 선택(BrowseOutputCommand)
+                    FolderPathRow(vm: vm, placeholder: "작업 폴더를 드래그하거나 선택하세요")
                 }
                 .disabled(!idle)
 
@@ -145,26 +146,26 @@ private struct PSVitaPatchCell: View {
         Menu {
             Button {
                 // PatchMenu_SelectFolder_Click
-                if let path = PSVitaUI.chooseFolder(title: "한글 패치 폴더 선택") {
+                if let path = FilePanels.openFolder(title: "한글 패치 폴더 선택") {
                     setPatch(path)
                 }
             } label: {
-                PSVitaMenuLabel(title: "폴더 선택...", icon: "AddFolder.png")
+                MenuLabel(title: "폴더 선택...", icon: "AddFolder.png")
             }
             Button {
                 // PatchMenu_SelectArchive_Click
-                if let path = PSVitaUI.chooseFile(title: "한글 패치 압축파일 선택",
-                                                  filter: "Archive Files (*.zip;*.7z)|*.zip;*.7z|All Files (*.*)|*.*") {
+                if let path = FilePanels.openFiles(title: "한글 패치 압축파일 선택",
+                                                   filter: "Archive Files (*.zip;*.7z)|*.zip;*.7z|All Files (*.*)|*.*").first {
                     setPatch(path)
                 }
             } label: {
-                PSVitaMenuLabel(title: "압축파일 선택(zip/7z)...", icon: "ZipFolder.png")
+                MenuLabel(title: "압축파일 선택(zip/7z)...", icon: "ZipFolder.png")
             }
             Button {
                 // MenuItem_RemovePatch_Click: SelectedRow.PatchPath = ""(패치 칸을 누르면 WPF가 그 행을 선택한다)
                 setPatch("")
             } label: {
-                PSVitaMenuLabel(title: "선택 취소", icon: "Cancel.png")
+                MenuLabel(title: "선택 취소", icon: "Cancel.png")
             }
         } label: {
             UpstreamAssets.menuImage((row.string("PatchIconSource") as NSString).lastPathComponent, size: 18)
@@ -180,7 +181,7 @@ private struct PSVitaPatchCell: View {
         .dropDestination(for: URL.self) { urls, _ in
             guard let path = urls.first?.path else { return false }
             let ext = (path as NSString).pathExtension.lowercased()
-            guard PSVitaUI.isDirectory(path) || ext == "zip" || ext == "7z" else { return false }
+            guard FilePanels.isDirectory(path) || ext == "zip" || ext == "7z" else { return false }
             setPatch(path)
             return true
         }

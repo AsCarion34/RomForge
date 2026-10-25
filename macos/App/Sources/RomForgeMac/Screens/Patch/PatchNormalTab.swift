@@ -133,14 +133,14 @@ struct PatchNormalTab: View {
 
     /// NormalSourceDrop_Click
     private func pickSource(_ vm: RemoteObject) {
-        if let path = PatchUI.choosePath(title: "원본 파일 선택") {
+        if let path = FilePanels.openFiles(title: "원본 파일 선택").first {
             engine.string(vm, "SourcePath").wrappedValue = path
         }
     }
 
     /// NormalPatchDrop_Click
     private func pickPatch(_ slot: RemoteObject) {
-        if let path = PatchUI.choosePath(title: "패치 파일 선택", filter: Self.patchFilter) {
+        if let path = FilePanels.openFiles(title: "패치 파일 선택", filter: Self.patchFilter).first {
             engine.string(slot, "FilePath").wrappedValue = path
         }
     }

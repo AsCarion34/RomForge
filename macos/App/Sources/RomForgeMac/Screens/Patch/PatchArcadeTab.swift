@@ -63,7 +63,7 @@ struct PatchArcadeTab: View {
 
     /// ArcadeSourceDrop_MouseLeftButtonDown
     private func pickSource(_ vm: RemoteObject) {
-        if let path = PatchUI.choosePath(title: "원본 ZIP 파일 선택", filter: "ZIP 압축 파일 (*.zip)|*.zip") {
+        if let path = FilePanels.openFiles(title: "원본 ZIP 파일 선택", filter: "ZIP 압축 파일 (*.zip)|*.zip").first {
             engine.string(vm, "SourcePath").wrappedValue = path
         }
     }

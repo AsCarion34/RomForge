@@ -7,29 +7,29 @@ struct PSPConverterTab: View {
     @Environment(EngineClient.self) private var engine
     let vm: RemoteObject
     @State private var selection = Set<Int>()
-    @State private var sortOrder: [PSPColumnSort] = []
+    @State private var sortOrder: [ColumnSort] = []
 
     /// IsEnabled="{Binding IsConverting, Converter=InverseBool}"
     private var isIdle: Bool { !(vm["IsConverting"]?.bool ?? false) }
 
     var body: some View {
         ToolLayout(vm: vm) {
-            Table(PSPColumnSort.sorted(engine.items(vm, "FileItems"), by: sortOrder), selection: $selection, sortOrder: $sortOrder) {
-                TableColumn("No.", sortUsing: PSPColumnSort(prop: "No")) { item in
+            Table(ColumnSort.sorted(engine.items(vm, "FileItems"), by: sortOrder), selection: $selection, sortOrder: $sortOrder) {
+                TableColumn("No.", sortUsing: ColumnSort("No", natural: true)) { item in
                     Text(item.string("No"))
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
                 .width(min: 40, ideal: 50)
 
-                TableColumn("파일명", sortUsing: PSPColumnSort(prop: "FileName")) { item in
+                TableColumn("파일명", sortUsing: ColumnSort("FileName", natural: true)) { item in
                     Text(item.string("FileName"))
                         .lineLimit(1)
                         .help(item.string("FilePath"))
                 }
                 .width(min: 160, ideal: 300)
 
-                TableColumn("입력", sortUsing: PSPColumnSort(prop: "Extension")) { item in
+                TableColumn("입력", sortUsing: ColumnSort("Extension", natural: true)) { item in
                     ExtensionBadge(item: item).frame(maxWidth: .infinity, alignment: .center)
                 }
                 .width(min: 60, ideal: 75)
@@ -38,14 +38,14 @@ struct PSPConverterTab: View {
                 TableColumn("출력") { item in PSPTargetFormatPicker(item: item).cellEnvironment(engine) }
                     .width(min: 70, ideal: 90)
 
-                TableColumn("용량", sortUsing: PSPColumnSort(prop: "FileSizeBytes")) { item in
+                TableColumn("용량", sortUsing: ColumnSort("FileSizeBytes", natural: true)) { item in
                     Text(item.string("FileSize"))
                         .monospacedDigit()
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 .width(min: 70, ideal: 90)
 
-                TableColumn("진행률", sortUsing: PSPColumnSort(prop: "Progress")) { item in PSPProgressCell(item: item) }
+                TableColumn("진행률", sortUsing: ColumnSort("Progress", natural: true)) { item in PSPProgressCell(item: item) }
                     .width(min: 100, ideal: 120)
             }
             .overlay {

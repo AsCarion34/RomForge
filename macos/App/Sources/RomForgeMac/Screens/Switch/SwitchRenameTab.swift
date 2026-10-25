@@ -10,7 +10,7 @@ struct SwitchRenameTab: View {
     let vm: RemoteObject
 
     @State private var selection = Set<Int>()
-    @State private var sortOrder: [SwitchColumnSort] = []
+    @State private var sortOrder: [ColumnSort] = []
     /// RenameMainViewModel.NamingPresets(정적 속성 → RenamePresets.All) 목록 번호
     @State private var presetsId: Int?
 
@@ -54,9 +54,9 @@ struct SwitchRenameTab: View {
     // MARK: 목록
 
     private func table(_ items: [RemoteObject]) -> some View {
-        Table(SwitchColumnSort.apply(sortOrder, to: items), selection: $selection, sortOrder: $sortOrder) {
+        Table(ColumnSort.sorted(items, by: sortOrder), selection: $selection, sortOrder: $sortOrder) {
             // 머리글: Categories.png(글자 없음), Tag="Status"
-            TableColumn("", sortUsing: SwitchColumnSort(prop: "Status")) { item in
+            TableColumn("", sortUsing: ColumnSort("Status")) { item in
                 Text(item.string("Status"))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color(hex: item.string("StatusColor").nonEmpty ?? "#888888"))
@@ -64,7 +64,7 @@ struct SwitchRenameTab: View {
                     .frame(maxWidth: .infinity)
             }
             .width(80)
-            TableColumn("파일명 비교 (현재 / 변경)", sortUsing: SwitchColumnSort(prop: "OldName")) { item in
+            TableColumn("파일명 비교 (현재 / 변경)", sortUsing: ColumnSort("OldName")) { item in
                 SwitchRenameNameCell(item: item).cellEnvironment(engine)
             }
             .width(min: 300, ideal: 770)
@@ -83,7 +83,7 @@ struct SwitchRenameTab: View {
             if !ids.isEmpty {
                 Button("폴더 열기") {
                     if let id = SwitchBridge.ordered(ids, in: items).first, let item = engine.store.object(id) {
-                        SwitchPanels.showContainingFolder(item.string("FilePath"))
+                        FilePanels.showContainingFolder(item.string("FilePath"))
                     }
                 }
                 Divider()
@@ -141,7 +141,7 @@ struct SwitchRenameTab: View {
     @ViewBuilder
     private var formatField: some View {
         if vm["IsFormatReadOnly"]?.bool == true {
-            SwitchReadOnlyField(text: vm.string("FormatText"))
+            ReadOnlyField(text: vm.string("FormatText"))
                 .help(Self.formatHelp)
         } else {
             TextField("", text: engine.string(vm, "FormatText"))
@@ -186,11 +186,11 @@ struct SwitchRenameTab: View {
 
     private func addFiles() {
         // Filter = "Switch 파일 (*.nsp;*.xci;*.nsz;*.xcz)|…|모든 파일|*.*"
-        addPaths(SwitchPanels.openFiles(title: "이름을 변경할 파일 선택", extensions: SwitchPanels.switchExtensions, multiple: true), expand: false)
+        addPaths(FilePanels.openFiles(title: "이름을 변경할 파일 선택", extensions: SwitchPanels.switchExtensions, multiple: true), expand: false)
     }
 
     private func addFolder() {
-        if let folder = SwitchPanels.openFolder(title: "추가할 폴더를 선택하세요") {
+        if let folder = FilePanels.openFolder(title: "추가할 폴더를 선택하세요") {
             addPaths([folder], expand: true)
         }
     }

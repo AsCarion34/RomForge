@@ -9,7 +9,7 @@ struct SwitchConverterTab: View {
     let vm: RemoteObject
 
     @State private var selection = Set<Int>()
-    @State private var sortOrder: [SwitchColumnSort] = []
+    @State private var sortOrder: [ColumnSort] = []
 
     var body: some View {
         let items = engine.items(vm, "FileItems")
@@ -42,32 +42,32 @@ struct SwitchConverterTab: View {
     }
 
     private func table(_ items: [RemoteObject]) -> some View {
-        Table(SwitchColumnSort.apply(sortOrder, to: items), selection: $selection, sortOrder: $sortOrder) {
-            TableColumn("", sortUsing: SwitchColumnSort(prop: "No")) { item in
+        Table(ColumnSort.sorted(items, by: sortOrder), selection: $selection, sortOrder: $sortOrder) {
+            TableColumn("", sortUsing: ColumnSort("No")) { item in
                 Text(item.string("No")).foregroundStyle(.secondary).frame(maxWidth: .infinity)
             }
             .width(40)
-            TableColumn("타이틀", sortUsing: SwitchColumnSort(prop: "TitleName")) { item in SwitchTitleCell(item: item).cellEnvironment(engine) }
+            TableColumn("타이틀", sortUsing: ColumnSort("TitleName")) { item in SwitchTitleCell(item: item).cellEnvironment(engine) }
                 .width(min: 180, ideal: 280)
-            TableColumn("종류", sortUsing: SwitchColumnSort(prop: "FileType")) { item in
+            TableColumn("종류", sortUsing: ColumnSort("FileType")) { item in
                 SwitchBadge(text: item.string("FileType"), background: item["TypeBackground"]?.color, foreground: item["TypeForeground"]?.color)
             }
             .width(90)
-            TableColumn("입력", sortUsing: SwitchColumnSort(prop: "Extension")) { item in
+            TableColumn("입력", sortUsing: ColumnSort("Extension")) { item in
                 SwitchBadge(text: item.string("Extension"), background: item["ExtensionBackground"]?.color, foreground: item["ExtensionForeground"]?.color)
             }
             .width(75)
             TableColumn("출력") { item in SwitchFormatPicker(item: item).cellEnvironment(engine) }
                 .width(95)
-            TableColumn("버전", sortUsing: SwitchColumnSort(prop: "Version")) { item in
+            TableColumn("버전", sortUsing: ColumnSort("Version")) { item in
                 Text(item.string("Version")).foregroundStyle(.secondary).frame(maxWidth: .infinity)
             }
             .width(80)
-            TableColumn("용량", sortUsing: SwitchColumnSort(prop: "FileSize")) { item in
+            TableColumn("용량", sortUsing: ColumnSort("FileSize")) { item in
                 Text(item.string("FileSize")).monospacedDigit().frame(maxWidth: .infinity, alignment: .trailing)
             }
             .width(90)
-            TableColumn("상태", sortUsing: SwitchColumnSort(prop: "Status")) { item in SwitchStatusCell(item: item) }
+            TableColumn("상태", sortUsing: ColumnSort("Status")) { item in SwitchStatusCell(item: item) }
                 .width(min: 100, ideal: 120)
         }
         .overlay {
@@ -84,7 +84,7 @@ struct SwitchConverterTab: View {
             if !ids.isEmpty {
                 Button("폴더 열기") {
                     if let id = SwitchBridge.ordered(ids, in: items).first, let item = engine.store.object(id) {
-                        SwitchPanels.showContainingFolder(item.string("FilePath"))
+                        FilePanels.showContainingFolder(item.string("FilePath"))
                     }
                 }
                 Divider()
@@ -105,11 +105,11 @@ struct SwitchConverterTab: View {
 
     private func addFiles() {
         // Filter = "Switch 파일 (*.nsp;*.xci;*.nsz;*.xcz)|…|모든 파일|*.*"
-        addPaths(SwitchPanels.openFiles(title: "변환할 파일 선택", extensions: SwitchPanels.switchExtensions, multiple: true), expand: false)
+        addPaths(FilePanels.openFiles(title: "변환할 파일 선택", extensions: SwitchPanels.switchExtensions, multiple: true), expand: false)
     }
 
     private func addFolder() {
-        if let folder = SwitchPanels.openFolder(title: "추가할 폴더를 선택하세요") {
+        if let folder = FilePanels.openFolder(title: "추가할 폴더를 선택하세요") {
             addPaths([folder], expand: true)
         }
     }

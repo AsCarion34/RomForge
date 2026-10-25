@@ -7,22 +7,22 @@ struct PSPUnpackingTab: View {
     @Environment(EngineClient.self) private var engine
     let vm: RemoteObject
     @State private var selection = Set<Int>()
-    @State private var sortOrder: [PSPColumnSort] = []
+    @State private var sortOrder: [ColumnSort] = []
 
     /// IsEnabled="{Binding IsConverting, Converter=InverseBool}"
     private var isIdle: Bool { !(vm["IsConverting"]?.bool ?? false) }
 
     var body: some View {
         ToolLayout(vm: vm) {
-            Table(PSPColumnSort.sorted(engine.items(vm, "FileItems"), by: sortOrder), selection: $selection, sortOrder: $sortOrder) {
-                TableColumn("No.", sortUsing: PSPColumnSort(prop: "No")) { item in
+            Table(ColumnSort.sorted(engine.items(vm, "FileItems"), by: sortOrder), selection: $selection, sortOrder: $sortOrder) {
+                TableColumn("No.", sortUsing: ColumnSort("No", natural: true)) { item in
                     Text(item.string("No"))
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
                 .width(min: 40, ideal: 50)
 
-                TableColumn("타이틀", sortUsing: PSPColumnSort(prop: "FileName")) { item in
+                TableColumn("타이틀", sortUsing: ColumnSort("FileName", natural: true)) { item in
                     HStack(spacing: 10) {
                         RemoteImage(value: item["Icon"], size: 36)
                             .clipShape(RoundedRectangle(cornerRadius: 6))
@@ -37,7 +37,7 @@ struct PSPUnpackingTab: View {
                 }
                 .width(min: 180, ideal: 270)
 
-                TableColumn("로컬 타이틀", sortUsing: PSPColumnSort(prop: "TitleLocalName")) { item in
+                TableColumn("로컬 타이틀", sortUsing: ColumnSort("TitleLocalName", natural: true)) { item in
                     VStack(alignment: .leading, spacing: 4) {
                         Text(item.string("TitleLocalName")).fontWeight(.semibold).lineLimit(1)
                         PSPLanguageFlags(item: item)
@@ -47,14 +47,14 @@ struct PSPUnpackingTab: View {
                 }
                 .width(min: 180, ideal: 270)
 
-                TableColumn("용량", sortUsing: PSPColumnSort(prop: "FileSizeBytes")) { item in
+                TableColumn("용량", sortUsing: ColumnSort("FileSizeBytes", natural: true)) { item in
                     Text(item.string("FileSize"))
                         .monospacedDigit()
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 .width(min: 70, ideal: 90)
 
-                TableColumn("진행률", sortUsing: PSPColumnSort(prop: "Progress")) { item in PSPProgressCell(item: item) }
+                TableColumn("진행률", sortUsing: ColumnSort("Progress", natural: true)) { item in PSPProgressCell(item: item) }
                     .width(min: 100, ideal: 120)
             }
             .overlay {
@@ -68,7 +68,7 @@ struct PSPUnpackingTab: View {
             // LvFiles_Drop: 폴더가 아닌 .pbp 파일만 AddPaths에 넘긴다.
             .modifier(PSPFileListBehavior(engine: engine, owner: vm, selection: $selection, enabled: isIdle,
                                           dropPaths: { urls in
-                                              urls.filter { !PSPFileActions.isDirectory($0) && $0.pathExtension.lowercased() == "pbp" }
+                                              urls.filter { !FilePanels.isDirectory($0.path) && $0.pathExtension.lowercased() == "pbp" }
                                                   .map(\.path)
                                           }))
         } options: {

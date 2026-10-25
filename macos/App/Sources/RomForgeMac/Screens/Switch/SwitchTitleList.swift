@@ -79,7 +79,7 @@ struct SwitchTitleList: View {
             if !ids.isEmpty {
                 Button("폴더 열기") {
                     if let id = SwitchBridge.ordered(ids, in: items).first, let file = engine.store.object(id) {
-                        SwitchPanels.showContainingFolder(file.string("FilePath"))
+                        FilePanels.showContainingFolder(file.string("FilePath"))
                     }
                 }
                 Divider()
@@ -93,11 +93,11 @@ struct SwitchTitleList: View {
         VStack(spacing: 8) {
             ToolIconButton(icon: "AddFile.png", help: "파일 추가") {
                 // Res.Dialog_SelectGameFile, Res.Filter_SwitchFiles(… *.nsp;*.xci;*.nsz;*.xcz)|Res.Filter_AllFiles|*.*
-                let paths = SwitchPanels.openFiles(title: "게임 파일 선택", extensions: SwitchPanels.switchExtensions, multiple: true)
+                let paths = FilePanels.openFiles(title: "게임 파일 선택", extensions: SwitchPanels.switchExtensions, multiple: true)
                 if !paths.isEmpty { Task { await addFiles(paths) } }
             }
             ToolIconButton(icon: "AddFolder.png", help: "폴더 추가") {
-                if let folder = SwitchPanels.openFolder(title: "게임 폴더 선택") { Task { await addFiles([folder]) } }
+                if let folder = FilePanels.openFolder(title: "게임 폴더 선택") { Task { await addFiles([folder]) } }
             }
             // BtnBulkPatch_Click: 단추의 ContextMenu를 연다.
             Menu {
@@ -113,7 +113,7 @@ struct SwitchTitleList: View {
             ToolIconButton(icon: "Delete.png", help: "선택 삭제") { removeFiles(selection, from: items) }
             ToolIconButton(icon: "Clear.png", help: "전체 삭제") { removeAll() }
             ToolIconButton(icon: "Help.png", help: "도움말") {
-                SwitchPanels.openURL("https://sinjunyoung.github.io/RomForge/switch-unpack-repack/")
+                FilePanels.openURL("https://sinjunyoung.github.io/RomForge/switch-unpack-repack/")
             }
         }
     }
@@ -163,14 +163,14 @@ struct SwitchTitleList: View {
 
     /// PatchMenu_SelectFolder_Click
     private func selectPatchFolder(_ item: RemoteObject) {
-        if let folder = SwitchPanels.openFolder(title: "\(item.string("TitleName"))에 적용할 한글패치 폴더 선택") {
+        if let folder = FilePanels.openFolder(title: "\(item.string("TitleName"))에 적용할 한글패치 폴더 선택") {
             Task { await assignFolderPatch(item, folder) }
         }
     }
 
     /// PatchMenu_SelectArchive_Click
     private func selectPatchArchive(_ item: RemoteObject) {
-        let paths = SwitchPanels.openFiles(title: "\(item.string("TitleName"))에 적용할 한글패치 압축파일 선택", extensions: ["zip", "7z"])
+        let paths = FilePanels.openFiles(title: "\(item.string("TitleName"))에 적용할 한글패치 압축파일 선택", extensions: ["zip", "7z"])
         if let path = paths.first { Task { await assignArchivePatch(item, path) } }
     }
 
@@ -242,7 +242,7 @@ struct SwitchTitleList: View {
 
         Task {
             guard let targets = await bulkTargets(titleVM, items),
-                  let folder = SwitchPanels.openFolder(title: "한글패치 루트 폴더 선택 (titleId 이름의 폴더 또는 titleId.zip/titleId.7z 파일을 자동 매칭합니다)"),
+                  let folder = FilePanels.openFolder(title: "한글패치 루트 폴더 선택 (titleId 이름의 폴더 또는 titleId.zip/titleId.7z 파일을 자동 매칭합니다)"),
                   let expectedIds = await SwitchBridge.methodDelegate(engine, type: Self.expectedIdsType, target: titleVM, method: "GetExpectedIds"),
                   let report = await engine.callStatic(Self.bulkMatcher, "MatchFromFolder", [EngineClient.refs(targets), .string(folder), expectedIds]),
                   report.refId != nil
@@ -258,8 +258,8 @@ struct SwitchTitleList: View {
 
         Task {
             guard let targets = await bulkTargets(titleVM, items),
-                  let path = SwitchPanels.openFiles(title: "한글패치 루트 압축파일 선택 (안에서 titleId 이름의 폴더를 자동 매칭합니다)",
-                                                    extensions: ["zip", "7z"]).first
+                  let path = FilePanels.openFiles(title: "한글패치 루트 압축파일 선택 (안에서 titleId 이름의 폴더를 자동 매칭합니다)",
+                                                  extensions: ["zip", "7z"]).first
             else { return }
 
             do {

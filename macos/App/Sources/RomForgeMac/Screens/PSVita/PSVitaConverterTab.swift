@@ -27,7 +27,8 @@ struct PSVitaConverterTab: View {
                                     first: ("ZIP (타이틀 ID별)", "OutputZip"),
                                     second: ("폴더 (타이틀 ID별)", "OutputFolder"))
 
-                    PSVitaOutputPathRow(vm: vm, placeholder: "출력 폴더를 드래그하거나 선택하세요")
+                    // 출력 폴더: OutputPath TextBox(폴더 드롭, OutputHintVisibility 안내) + 폴더 선택(BrowseOutputCommand)
+                    FolderPathRow(vm: vm, placeholder: "출력 폴더를 드래그하거나 선택하세요")
                 }
                 .disabled(!idle)
 

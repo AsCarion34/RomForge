@@ -62,7 +62,7 @@ struct PatchPc98Tab: View {
 
     /// SourceDrop_Click
     private func pickSource(_ vm: RemoteObject) {
-        if let path = PatchUI.choosePath(title: "원본 HDI 선택", filter: "PC98 디스크 이미지|*.hdi;*.nhd;*.thd|모든 파일|*.*") {
+        if let path = FilePanels.openFiles(title: "원본 HDI 선택", filter: "PC98 디스크 이미지|*.hdi;*.nhd;*.thd|모든 파일|*.*").first {
             engine.string(vm, "SourcePath").wrappedValue = path
         }
     }

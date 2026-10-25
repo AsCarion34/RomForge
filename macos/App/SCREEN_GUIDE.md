@@ -32,11 +32,14 @@ RomForge macOS 앱의 탭 화면을 만들 때 따르는 규칙입니다. 전체
 |---|---|
 | Drop → `ViewModel.X.AddPaths(paths)` | `.remoteFileList(engine, owner: vm, list: ..., dropMethod: "AddPaths")` 또는 `.dropDestination` + `engine.invoke(vm, "AddPaths", [.strings(paths)])` |
 | Delete 키·제거 버튼 → `RemoveItems(selected)` | `.remoteFileList(... removeMethod: "RemoveItems")`. 버튼이면 `engine.invoke(vm, "RemoveItems", [EngineClient.refs(selection)])` |
-| `new OpenFileDialog{...}` 후 VM 메서드 호출 | `NSOpenPanel`(같은 필터·다중 선택)로 고른 뒤 같은 VM 메서드 호출 |
+| `new OpenFileDialog{...}` · `VistaFolderBrowserDialog` 후 VM 메서드 호출 | `FilePanels.openFiles(title:filter:multiple:)`(WPF 필터 문자열 그대로) · `FilePanels.openFolder(title:)`로 고른 뒤 같은 VM 메서드 호출 |
 | VM 커맨드가 대화상자를 여는 경우 | 그냥 `engine.run(vm, "BrowseXxxCommand")`. 엔진이 SwiftUI 쪽 대화상자를 띄웁니다. |
-| 폴더 열기(Process.Start explorer) | `NSWorkspace.shared.activateFileViewerSelecting([url])` 또는 `NSWorkspace.shared.open(url)` |
-| URL 열기(Process.Start https://…) | `NSWorkspace.shared.open(URL(string: …)!)` |
-| ContextMenu 항목 | `.contextMenu(forSelectionType: Int.self) { ids in … }`로 같은 항목과 동작 |
+| 폴더 열기(Process.Start explorer, `OpenFolder()`) | `FilePanels.showFolder(dir)` · `FilePanels.showContainingFolder(file)`(폴더가 있을 때만 연다). 파일을 골라 보이려면 `NSWorkspace.shared.activateFileViewerSelecting([url])` |
+| URL 열기(Process.Start https://…) | `FilePanels.openURL("https://…")` |
+| ContextMenu 항목 | `.contextMenu(forSelectionType: Int.self) { ids in … }`로 같은 항목과 동작. 항목 아이콘은 `MenuLabel(title:icon:)` |
+| 왼쪽 클릭으로 ContextMenu 열기(`ContextMenu.IsOpen = true`) | `PopUpMenu.show([ContextMenuItem(title:icon:action:)])`. 같은 항목의 오른쪽 클릭 메뉴는 `.contextMenuItems(items)` |
+| GridViewColumnHeader_Click(`ListViewColumnSorter`) | `ColumnSort`(아래 공용 컴포넌트) |
+| 폴더 입력란의 `PreviewDragOver`(첫 항목이 폴더일 때만) + `Drop` | `.folderDrop(engine, vm, "OutputPath", enabled:)` 또는 `.folderDrop { folder in … }` |
 | code-behind가 upstream 도우미 클래스를 쓰는 경우(예: `new SwitchGameFileImporter(...)`, `SwitchBulkPatchMatcher.MatchFromFolder(...)`) | 로직을 Swift로 옮기지 말고 `engine.create` / `engine.call` / `engine.callStatic`으로 같은 upstream 클래스를 부른다 |
 | `ScrollToItemRequested` 같은 화면 전용 이벤트 | 생략 가능 |
 | `_cts = new CancellationTokenSource()` → `await Vm.XxxAsync(…, _cts.Token)`, 취소 단추 → `_cts.Cancel()` | `try await engine.callThrowing(vm.id, "XxxAsync", [args], options: CallOptions(cancelKey: key))`, 취소 단추 → `await engine.cancel(key)`. CancellationToken 인자는 생략합니다(엔진이 key의 토큰을 넣음). `catch (OperationCanceledException)`은 `catch let e as EngineError where e.isCancellation` |
@@ -95,11 +98,22 @@ UpstreamIcon(name: "Patch.png", size: 18)                       // upstream PNG 
 - `SubTabsView(owner: vm, tabs: [SubTab(title:icon:vmProp:)], selectionProp: "SelectedTabIndex") { index, childId in ... }`
   - upstream ViewModel이 선택 상태를 어떤 속성으로 갖는지(SelectedTabIndex 등) `dump_vm.py`로 확인합니다. 없으면 `selectionProp: nil`로 둡니다.
 - `.remoteFileList(engine, owner:list:selection:dropMethod:removeMethod:pathProp:enabled:)`: Table에 드롭, 삭제, Finder 보기, 제거 메뉴를 붙입니다.
+- `ColumnSort("Prop")`: ListViewColumnSorter(머리글 Tag로 화면 목록만 정렬) 자리. `@State var sortOrder: [ColumnSort] = []`, `Table(ColumnSort.sorted(items, by: sortOrder), selection: …, sortOrder: $sortOrder)`, `TableColumn("용량", sortUsing: ColumnSort("FileSizeBytes"))`
+  - 숫자는 크기로, 글자는 upstream CollectionView처럼 사전 순서로 비교합니다. `natural: true`면 Finder 순서("2" < "10")입니다.
 - `ExtensionBadge(item:)`, `ProgressCell(item:)`, `DropHint(title:detail:)`
 - `OptionCard(title:icon:) { ... }`: upstream OptionBorder 상자
 - **Table 셀 주의:** 셀 안에서 `@Environment(EngineClient.self)`를 읽는 뷰(엔진 바인딩 Picker, `RemoteImage`, 화면별 셀 뷰)를 쓰면 셀 끝에 `.cellEnvironment(engine)`을 붙입니다. 행이 지워질 때 SwiftUI가 셀을 환경 없이 한 번 더 갱신해 "No Observable object of type EngineClient" 오류로 앱이 멈추기 때문입니다.
 - 버튼(`Buttons.swift`): `IconLabel`(아이콘 + 문구), `IconButton`(code-behind Click), `CommandIconButton`(커맨드 + CanExecute), `RunCancelButton`(NSW.WPF IconButton: 실행 중이면 "취소"), `ToolIconButton`(아이콘만 있는 작은 버튼). 화면 폴더마다 새로 만들지 말고 이것을 씁니다.
 - `OutputPathRow(vm:toggleProp:pathProp:browseCommand:toggleTitle:placeholder:)`
+- 경로 입력란(`PathFields.swift`)
+  - `PathField(vm:prop:placeholder:pathTooltip:)`: 경로 TextBox(UpdateSourceTrigger=PropertyChanged). …HintVisibility 안내는 placeholder로 보입니다.
+  - `FolderPathRow(vm:prop:placeholder:browseCommand:dropEnabled:)`: [경로(폴더 드롭) + AddFolder.png 버튼(BrowseOutputCommand)] 줄
+  - `.folderDrop(engine, vm, prop, enabled:)` / `.folderDrop(enabled:) { folder in … }`: 폴더 입력란 드롭(PreviewDragOver가 폴더만 받는 TxtOutputPath_Drop)
+  - `LiveTextField(title:vm:prop:maxLength:)`: 입력할 때마다 보내되 엔진의 늦은 메아리로 입력 중인 글자를 덮지 않는 TextBox
+  - `ReadOnlyField(text:)`: IsReadOnly TextBox(선택·복사만)
+- 토글(`Toggles.swift`): `SlideToggleStyle()`(upstream SlideToggleStyle: 상자 + 오른쪽 스위치), `LeftSlideToggleStyle(spacing:)`(upstream LeftSlideToggleStyle: 왼쪽 스위치, 문구를 눌러도 바뀜)
+- 대화상자·Finder(`FilePanels.swift`): `openFiles(title:filter:multiple:)`(WPF 필터를 엔진 대화상자와 같은 규칙으로), `openFiles(title:extensions:multiple:)`, `openFolder(title:)`, `showFolder`, `showContainingFolder`, `openURL`, `isDirectory`, `droppedFolder`. 제목은 열기 창에 보이지 않아 안내 문구로도 보입니다.
+- 메뉴(`Menus.swift`): `MenuLabel(title:icon:)`(메뉴 항목 아이콘 + 문구), `ContextMenuItem(title:icon:action:)`, `PopUpMenu.show(items, iconSize:)`(왼쪽 클릭으로 ContextMenu 열기), `.contextMenuItems(items)`(같은 항목의 오른쪽 클릭 메뉴, 항목이 없으면 붙이지 않음)
 - `ToolProgressBar(vm:)`: upstream ToolTabViewModel의 표준 진행 줄(ProgressLabel · ProgressPercent · ProgressSpeed · ProgressTime · ProgressPct 막대)
 - `LevelSlider(vm:prop:range:textConverter:colorConverter:)`
 - `EnumPicker(vm:prop:labels:style:)`: `.segmented` / `.radio` / `.menu`
@@ -107,7 +121,7 @@ UpstreamIcon(name: "Patch.png", size: 18)                       // upstream PNG 
 - `GenericVMForm(vmId:)`: 자동 생성 화면. 아직 못 옮긴 부분의 임시 대체로만 씁니다.
 - `LogListView(listId:owner:)`: 로그(upstream 로그 메뉴: 로그 비우기 = owner의 ClearLog(), 로그 복사). ToolLayout이 자동으로 붙입니다.
 
-부족한 부품이 있으면 공용 파일을 고치지 말고, 자기 폴더 안에 `private` 보조 뷰로 만든 뒤 보고서에 적습니다.
+위 부품과 같은 역할(정렬, 토글 스타일, 열기 창, 클릭 메뉴, 경로 입력란)을 화면 폴더에 다시 만들지 않습니다. 부족한 부품이 있으면 공용 파일을 고치지 말고, 자기 폴더 안에 `private` 보조 뷰로 만든 뒤 보고서에 적습니다.
 
 ## 도구
 

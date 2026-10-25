@@ -86,72 +86,7 @@ struct ThreeDSDescribed<Content: View>: View {
     }
 }
 
-// MARK: - 입력 칸
-
-/// TextBox Text="{Binding Prop, UpdateSourceTrigger=PropertyChanged}" (MaxLength 선택).
-/// 입력할 때마다 ViewModel에 보내되, 엔진이 늦게 돌려주는 이전 값(내가 보낸 값의 메아리)으로 입력 중인 글자를 덮어쓰지 않는다.
-/// 드롭·찾아보기처럼 ViewModel이 다른 값으로 바뀌면 바로 따른다.
-struct ThreeDSTextField: View {
-    @Environment(EngineClient.self) private var engine
-    let title: String
-    let vm: RemoteObject
-    let prop: String
-    var maxLength: Int?
-
-    @State private var text = ""
-    @State private var sent: [String] = []
-
-    var body: some View {
-        TextField(title, text: $text)
-            .onAppear(perform: reload)
-            .onChange(of: vm.id) { _, _ in reload() }
-            .onChange(of: text) { _, value in
-                if let maxLength, value.utf16.count > maxLength {
-                    var limited = value
-                    while limited.utf16.count > maxLength { limited.removeLast() }
-                    text = limited
-                    return
-                }
-                // 아직 돌아오지 않은 마지막 값(없으면 ViewModel 값)과 같으면 보낼 것이 없다.
-                guard value != (sent.last ?? vm.string(prop)) else { return }
-                sent.append(value)
-                let id = vm.id, prop = prop
-                Task { await engine.set(id, prop, .string(value)) }
-            }
-            .onChange(of: vm.string(prop)) { _, value in
-                if let index = sent.lastIndex(of: value) {
-                    // 내가 보낸 값이 돌아왔다. 그보다 앞서 보낸 값은 더 기다리지 않는다.
-                    sent.removeFirst(index + 1)
-                    if sent.isEmpty, value != text { text = value }
-                    return
-                }
-                // 드롭·찾아보기 등 ViewModel 쪽 변경
-                sent.removeAll()
-                if value != text { text = value }
-            }
-    }
-
-    private func reload() {
-        sent.removeAll()
-        text = vm.string(prop)
-    }
-}
-
-// MARK: - 버튼·안내
-
-/// 컨텍스트 메뉴 항목(upstream MenuItem.Icon). 메뉴는 Image만 그리므로 크기를 맞춘 NSImage를 쓴다.
-struct ThreeDSMenuLabel: View {
-    let title: String
-    let icon: String
-
-    var body: some View {
-        Label {
-            Text(title)
-        } icon: {
-            UpstreamAssets.menuImage(icon)
-        }
-    }
-}
+// MARK: - 안내
 
 /// 빈 목록 안내(upstream HintVisibility 상자: Info.png, 안내 문구, 형식 배지)
 struct ThreeDSHint: View {
@@ -294,35 +229,6 @@ struct ThreeDSProgressCell: View {
 
 // MARK: - 목록 동작
 
-/// ListViewColumnSorter 자리: 헤더 Tag(속성 이름)로 화면의 정렬만 바꾼다(ViewModel 순서는 그대로).
-struct ThreeDSColumnSort: SortComparator {
-    let key: String
-    var order: SortOrder = .forward
-
-    init(_ key: String) { self.key = key }
-
-    func compare(_ lhs: RemoteObject, _ rhs: RemoteObject) -> ComparisonResult {
-        let result = MainActor.assumeIsolated { Self.compareValues(lhs[key], rhs[key]) }
-        guard order == .reverse else { return result }
-        switch result {
-        case .orderedAscending: return .orderedDescending
-        case .orderedDescending: return .orderedAscending
-        case .orderedSame: return .orderedSame
-        }
-    }
-
-    private static func compareValues(_ a: JSONValue?, _ b: JSONValue?) -> ComparisonResult {
-        switch (a, b) {
-        case let (.number(x)?, .number(y)?):
-            return x < y ? .orderedAscending : (x > y ? .orderedDescending : .orderedSame)
-        case let (.bool(x)?, .bool(y)?):
-            return x == y ? .orderedSame : (x ? .orderedDescending : .orderedAscending)
-        default:
-            return (a?.string ?? "").localizedCompare(b?.string ?? "")
-        }
-    }
-}
-
 /// upstream ListView + code-behind: Drop, Delete 키, 컨텍스트 메뉴("폴더 열기 / 선택 삭제 / 전체 삭제").
 /// 동작(ViewModel 메서드 호출)은 화면마다 다르므로 클로저로 받는다.
 struct ThreeDSListBehavior: ViewModifier {
@@ -350,16 +256,16 @@ struct ThreeDSListBehavior: ViewModifier {
             .contextMenu(forSelectionType: Int.self) { ids in
                 // LvFiles_ContextMenuOpening: 선택이 없으면 메뉴를 열지 않는다.
                 if !ids.isEmpty {
-                    Button { openFolder(ids) } label: { ThreeDSMenuLabel(title: "폴더 열기", icon: "AddFolder.png") }
+                    Button { openFolder(ids) } label: { MenuLabel(title: "폴더 열기", icon: "AddFolder.png") }
                     Divider()
                     Button {
                         remove(ids)
                         selection.subtract(ids)
-                    } label: { ThreeDSMenuLabel(title: "선택 삭제", icon: "Delete.png") }
+                    } label: { MenuLabel(title: "선택 삭제", icon: "Delete.png") }
                     Button {
                         clear()
                         selection.removeAll()
-                    } label: { ThreeDSMenuLabel(title: "전체 삭제", icon: "Clear.png") }
+                    } label: { MenuLabel(title: "전체 삭제", icon: "Clear.png") }
                 }
             }
     }
@@ -367,13 +273,7 @@ struct ThreeDSListBehavior: ViewModifier {
     /// MenuItem_OpenFolder_Click: 첫 선택 항목 FilePath의 폴더를 연다(Path.GetDirectoryName → OpenFolder).
     private func openFolder(_ ids: Set<Int>) {
         guard let item = rows.first(where: { ids.contains($0.id) }) else { return }
-        let path = item.string("FilePath")
-        guard !path.isEmpty else { return }
-        let directory = (path as NSString).deletingLastPathComponent
-        var isDirectory: ObjCBool = false
-        if FileManager.default.fileExists(atPath: directory, isDirectory: &isDirectory), isDirectory.boolValue {
-            NSWorkspace.shared.open(URL(fileURLWithPath: directory, isDirectory: true))
-        }
+        FilePanels.showContainingFolder(item.string("FilePath"))
     }
 }
 
@@ -480,8 +380,7 @@ enum ThreeDSFiles {
     /// InstallTab.GetFilesSafe: 폴더면 하위 폴더까지 모든 파일, 아니면 그대로. 읽을 수 없는 폴더는 건너뛴다.
     /// macOS 숨김 파일(._* 메타데이터 등)은 넘기지 않는다.
     static func expand(_ path: String) -> [String] {
-        var isDirectory: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory), isDirectory.boolValue else { return [path] }
+        guard FilePanels.isDirectory(path) else { return [path] }
 
         guard let enumerator = FileManager.default.enumerator(
             at: URL(fileURLWithPath: path, isDirectory: true),

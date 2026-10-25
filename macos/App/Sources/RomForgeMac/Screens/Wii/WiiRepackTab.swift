@@ -1,8 +1,6 @@
 // upstream: RomForge/Controls/Wii/RepackTab.xaml(.cs)
 // ViewModel: RomForge.ViewModels.Wii.RepackMainViewModel (WiiMainViewModel.RepackVM), GameInfo(GameDisplay), PatchInfo(PatchDisplay)
-import AppKit
 import SwiftUI
-import UniformTypeIdentifiers
 
 /// Wii 리팩 탭: [원본 | 패치] 드롭 영역, 언팩·리팩 버튼, 게임·패치 정보, 출력 포맷, 작업 폴더, 진행 상황 + 로그.
 /// 암호가 걸린 패치 압축은 엔진이 비밀번호 입력 창(ui.password)을 띄운다.
@@ -52,9 +50,9 @@ struct WiiRepackTab: View {
             }
             .help(vm.string("PatchPath"))
             .contextMenu {
-                Button(action: selectPatchFolder) { WiiMenuLabel(title: "폴더 선택...", icon: "AddFolder.png") }
+                Button(action: selectPatchFolder) { MenuLabel(title: "폴더 선택...", icon: "AddFolder.png") }
                     .disabled(!idle)
-                Button(action: selectPatchFile) { WiiMenuLabel(title: "파일 선택 (*.zip, *.7z, *.xml)...", icon: "ZipFolder.png") }
+                Button(action: selectPatchFile) { MenuLabel(title: "파일 선택 (*.zip, *.7z, *.xml)...", icon: "ZipFolder.png") }
                     .disabled(!idle)
             }
         }
@@ -91,22 +89,22 @@ struct WiiRepackTab: View {
 
     /// TxtRom_Click
     private func chooseDisc() {
-        if let path = WiiPanels.openFile(title: "Wii 디스크 파일 선택", filter: "Wii 디스크 파일|*.iso;*.wbfs;*.rvz;*.wia|모든 파일|*.*") {
+        if let path = FilePanels.openFiles(title: "Wii 디스크 파일 선택", filter: "Wii 디스크 파일|*.iso;*.wbfs;*.rvz;*.wia|모든 파일|*.*").first {
             engine.string(vm, "InputPath").wrappedValue = path
         }
     }
 
-    /// TxtPatch_MouseLeftButtonDown: Border.ContextMenu를 연다.
+    /// TxtPatch_MouseLeftButtonDown: Border.ContextMenu를 연다(MenuItem.Icon 24×24를 메뉴 크기 18로).
     private func showPatchMenu() {
-        WiiPopUpMenu.show([
-            WiiPopUpMenu.Item(title: "폴더 선택...", icon: "AddFolder.png", action: selectPatchFolder),
-            WiiPopUpMenu.Item(title: "파일 선택 (*.zip, *.7z, *.xml)...", icon: "ZipFolder.png", action: selectPatchFile),
-        ])
+        PopUpMenu.show([
+            ContextMenuItem(title: "폴더 선택...", icon: "AddFolder.png", action: selectPatchFolder),
+            ContextMenuItem(title: "파일 선택 (*.zip, *.7z, *.xml)...", icon: "ZipFolder.png", action: selectPatchFile),
+        ], iconSize: 18)
     }
 
     /// SelectFolder_Click
     private func selectPatchFolder() {
-        if let path = WiiPanels.openFolder(title: "패치 폴더 선택") {
+        if let path = FilePanels.openFolder(title: "패치 폴더 선택") {
             engine.string(vm, "PatchPath").wrappedValue = path
         }
     }
@@ -114,7 +112,7 @@ struct WiiRepackTab: View {
     /// SelectFile_Click
     private func selectPatchFile() {
         let filter = "패치 파일 (*.zip;*.7z;*.xml)|*.zip;*.7z;*.xml|ZIP 파일 (*.zip)|*.zip|7Z 파일 (*.7z)|*.7z|XML 파일 (*.xml)|*.xml|모든 파일 (*.*)|*.*"
-        if let path = WiiPanels.openFile(title: "패치 파일 선택", filter: filter) {
+        if let path = FilePanels.openFiles(title: "패치 파일 선택", filter: filter).first {
             engine.string(vm, "PatchPath").wrappedValue = path
         }
     }
@@ -253,7 +251,7 @@ struct WiiRepackTab: View {
                 .disabled(!idle)
             Spacer()
             ToolIconButton(icon: "Help.png", help: "도움말", enabled: idle) {
-                WiiPanels.openURL(Self.helpURL)
+                FilePanels.openURL(Self.helpURL)
             }
         }
     }
@@ -262,14 +260,10 @@ struct WiiRepackTab: View {
     private func outputRow(idle: Bool) -> some View {
         HStack(spacing: 5) {
             HStack {
-                WiiTextField(title: "작업 폴더를 드래그하거나 선택하세요", vm: vm, prop: "OutputPath")
+                LiveTextField(title: "작업 폴더를 드래그하거나 선택하세요", vm: vm, prop: "OutputPath")
                     .textFieldStyle(.roundedBorder)
             }
-            .dropDestination(for: URL.self) { urls, _ in
-                guard vm["IsIdle"]?.bool ?? true, let folder = WiiPanels.droppedFolder(urls) else { return false }
-                engine.string(vm, "OutputPath").wrappedValue = folder
-                return true
-            }
+            .folderDrop(engine, vm, "OutputPath", enabled: idle)
 
             ToolIconButton(icon: "AddFolder.png", enabled: engine.canRun(vm, "BrowseOutputCommand")) {
                 engine.run(vm, "BrowseOutputCommand")
@@ -281,112 +275,6 @@ struct WiiRepackTab: View {
 
 /// StartAsync를 부른 뒤 끝날 때까지의 RepackMainViewModel 번호
 @MainActor private var wiiRepackStarting: Set<Int> = []
-
-// MARK: - 대화상자
-
-@MainActor
-private enum WiiPanels {
-    /// OpenFileDialog. filter는 upstream WPF 필터 문자열 그대로 받고 UiHostHandler와 같은 규칙으로 쓴다
-    /// (모든 필터의 확장자를 허용, '*.*'가 있으면 형식을 제한하지 않음).
-    static func openFile(title: String, filter: String) -> String? {
-        let panel = NSOpenPanel()
-        panel.title = title
-        panel.message = title
-        panel.canChooseFiles = true
-        panel.canChooseDirectories = false
-        panel.allowsMultipleSelection = false
-
-        let parts = filter.split(separator: "|", omittingEmptySubsequences: false)
-        let patterns = stride(from: 1, to: parts.count, by: 2)
-            .flatMap { parts[$0].split(separator: ";") }
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-        let extensions = patterns.map { $0.replacingOccurrences(of: "*.", with: "") }.filter { !$0.isEmpty && $0 != "*" }
-        if !patterns.contains("*.*"), !extensions.isEmpty {
-            panel.allowedContentTypes = extensions.compactMap { UTType(filenameExtension: $0) }
-        }
-
-        return panel.runModal() == .OK ? panel.url?.path : nil
-    }
-
-    /// OpenFolderDialog
-    static func openFolder(title: String) -> String? {
-        let panel = NSOpenPanel()
-        panel.title = title
-        panel.message = title
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.canCreateDirectories = true
-        panel.allowsMultipleSelection = false
-        return panel.runModal() == .OK ? panel.url?.path : nil
-    }
-
-    /// TxtOutputPath_PreviewDragOver: 첫 항목이 폴더일 때만 받는다(그 밖에는 DragDropEffects.None이라 Drop이 오지 않는다).
-    /// TxtOutputPath_Drop: 그 폴더를 OutputPath로.
-    static func droppedFolder(_ urls: [URL]) -> String? {
-        guard let first = urls.first else { return nil }
-        var isDirectory: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: first.path, isDirectory: &isDirectory), isDirectory.boolValue else { return nil }
-        return first.path
-    }
-
-    /// BtnHelp_Click(Process.Start https://…)
-    static func openURL(_ string: String) {
-        if let url = URL(string: string) { NSWorkspace.shared.open(url) }
-    }
-}
-
-/// 왼쪽 클릭으로 ContextMenu 열기(TxtPatch_MouseLeftButtonDown: ContextMenu.IsOpen = true).
-/// SwiftUI는 contextMenu를 코드로 열 수 없어 같은 항목의 NSMenu를 마우스 위치에 띄운다.
-@MainActor
-private enum WiiPopUpMenu {
-    struct Item {
-        let title: String
-        let icon: String
-        let action: @MainActor () -> Void
-    }
-
-    /// NSMenuItem.target은 약한 참조라 메뉴 동작이 불릴 때까지 붙잡아 둔다.
-    private static var handler: Handler?
-
-    static func show(_ items: [Item]) {
-        let handler = Handler(items.map(\.action))
-        let menu = NSMenu()
-        menu.autoenablesItems = false
-
-        for (index, item) in items.enumerated() {
-            let menuItem = NSMenuItem(title: item.title, action: #selector(Handler.perform(_:)), keyEquivalent: "")
-            menuItem.target = handler
-            menuItem.tag = index
-            menuItem.image = icon(item.icon)
-            menu.addItem(menuItem)
-        }
-
-        self.handler = handler
-        _ = menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
-    }
-
-    /// MenuItem.Icon(24×24)을 메뉴 크기로
-    private static func icon(_ name: String) -> NSImage? {
-        guard let copy = UpstreamAssets.nsImage(name)?.copy() as? NSImage else { return nil }
-        copy.size = NSSize(width: 18, height: 18)
-        return copy
-    }
-
-    private final class Handler: NSObject {
-        let actions: [@MainActor () -> Void]
-
-        init(_ actions: [@MainActor () -> Void]) {
-            self.actions = actions
-        }
-
-        @objc func perform(_ sender: NSMenuItem) {
-            guard actions.indices.contains(sender.tag) else { return }
-            let action = actions[sender.tag]
-            // 메뉴가 닫힌 뒤 대화상자를 연다.
-            Task { @MainActor in action() }
-        }
-    }
-}
 
 // MARK: - 보조 뷰
 
@@ -453,62 +341,6 @@ private struct WiiZoneLabel: View {
                 .padding(.top, 2)
                 .padding(.trailing, 6)
         }
-    }
-}
-
-/// MenuItem(Header + MenuItem.Icon)
-private struct WiiMenuLabel: View {
-    let title: String
-    let icon: String
-
-    var body: some View {
-        Label {
-            Text(title)
-        } icon: {
-            UpstreamAssets.menuImage(icon, size: 16)
-        }
-    }
-}
-
-/// TextBox Text="{Binding Prop, UpdateSourceTrigger=PropertyChanged}".
-/// 입력할 때마다 ViewModel에 보내되, 엔진이 늦게 돌려주는 이전 값(내가 보낸 값의 메아리)으로 입력 중인 글자를 덮어쓰지 않는다.
-/// 드롭·찾아보기처럼 ViewModel이 다른 값으로 바뀌면 바로 따른다.
-private struct WiiTextField: View {
-    @Environment(EngineClient.self) private var engine
-    let title: String
-    let vm: RemoteObject
-    let prop: String
-
-    @State private var text = ""
-    @State private var sent: [String] = []
-
-    var body: some View {
-        TextField(title, text: $text)
-            .onAppear(perform: reload)
-            .onChange(of: vm.id) { _, _ in reload() }
-            .onChange(of: text) { _, value in
-                // 아직 돌아오지 않은 마지막 값(없으면 ViewModel 값)과 같으면 보낼 것이 없다.
-                guard value != (sent.last ?? vm.string(prop)) else { return }
-                sent.append(value)
-                let id = vm.id, prop = prop
-                Task { await engine.set(id, prop, .string(value)) }
-            }
-            .onChange(of: vm.string(prop)) { _, value in
-                if let index = sent.lastIndex(of: value) {
-                    // 내가 보낸 값이 돌아왔다. 그보다 앞서 보낸 값은 더 기다리지 않는다.
-                    sent.removeFirst(index + 1)
-                    if sent.isEmpty, value != text { text = value }
-                    return
-                }
-                // 드롭·찾아보기 등 ViewModel 쪽 변경
-                sent.removeAll()
-                if value != text { text = value }
-            }
-    }
-
-    private func reload() {
-        sent.removeAll()
-        text = vm.string(prop)
     }
 }
 

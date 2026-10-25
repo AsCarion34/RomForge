@@ -37,13 +37,13 @@ struct SettingsPatchTab: View {
                     Text("해제 시 원본 ROM 폴더 안의 output 폴더에 저장").font(.caption).foregroundStyle(.secondary)
                 }
             }
-            .toggleStyle(SettingsSlideToggleStyle())
+            .toggleStyle(SlideToggleStyle())
             .padding(.top, 5)
 
             if vm.isVisible("OutputPathVisibility") {
-                // 폴더를 드롭하면 OutputPath로(TxtOutputPath_PreviewDragOver / TxtOutputPath_Drop)
+                // 폴더를 드롭하면 OutputPath로(TxtOutputPath_PreviewDragOver: 첫 경로가 폴더일 때만 / TxtOutputPath_Drop)
                 SettingsPathField(vm: vm, prop: "OutputPath", placeholder: "출력 폴더를 선택하세요",
-                                  browseCommand: "BrowseOutputCommand", dropValue: SettingsPathField.folder)
+                                  browseCommand: "BrowseOutputCommand", dropValue: FilePanels.droppedFolder)
                     .padding(.top, 2)
             }
         }

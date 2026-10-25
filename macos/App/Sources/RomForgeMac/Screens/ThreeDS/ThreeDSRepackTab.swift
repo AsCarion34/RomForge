@@ -1,6 +1,5 @@
 // upstream: RomForge/Controls/3DS/RepackTab.xaml(.cs)
 // ViewModel: RepackMainViewModel (Main3DsVM.RepackVM), TitleViewModel(RomInfo), PatchDisplay(PatchInfo)
-import AppKit
 import SwiftUI
 
 /// 3DS 리팩: 원본 / 패치 DropZone, 언팩·리팩 버튼, 롬 정보(게임명·배급사 수정)와 패치 정보, 출력 포맷, 작업 폴더, 진행 상황.
@@ -10,7 +9,7 @@ struct ThreeDSRepackTab: View {
 
     /// code-behind SupportedExtensions(TxtRom_Drop)
     private static let romExtensions: Set<String> = ["3ds", "cci", "zcci", "cia"]
-    private static let helpURL = URL(string: "https://sinjunyoung.github.io/RomForge/3ds-merge/")!
+    private static let helpURL = "https://sinjunyoung.github.io/RomForge/3ds-merge/"
 
     var body: some View {
         ChildVM(id: vmId) { vm in
@@ -69,15 +68,15 @@ struct ThreeDSRepackTab: View {
                                // ToolTip="{Binding PatchPath}". upstream은 ToolTipService.IsEnabled를 InputPath 값 유무에 묶었다.
                                tooltip: vm.string("InputPath").isEmpty ? "" : vm.string("PatchPath"),
                                enabled: idle,
-                               onClick: { ThreeDSPopupMenu.show(patchMenu(vm)) },
+                               onClick: { PopUpMenu.show(patchMenu(vm)) },
                                onDrop: { urls in dropPatch(vm, urls) },
                                menu: patchMenu(vm))
     }
 
-    private func patchMenu(_ vm: RemoteObject) -> [ThreeDSMenuItem] {
+    private func patchMenu(_ vm: RemoteObject) -> [ContextMenuItem] {
         [
-            ThreeDSMenuItem(title: "폴더 선택...", icon: "AddFolder.png") { selectPatchFolder(vm) },
-            ThreeDSMenuItem(title: "파일 선택 (*.zip, *.7z)...", icon: "ZipFolder.png") { selectPatchFile(vm) },
+            ContextMenuItem(title: "폴더 선택...", icon: "AddFolder.png") { selectPatchFolder(vm) },
+            ContextMenuItem(title: "파일 선택 (*.zip, *.7z)...", icon: "ZipFolder.png") { selectPatchFile(vm) },
         ]
     }
 
@@ -204,10 +203,10 @@ struct ThreeDSRepackTab: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 // TextBox MaxLength="63"
-                ThreeDSTextField(title: "", vm: info, prop: "ShortDescription", maxLength: 63)
+                LiveTextField(title: "", vm: info, prop: "ShortDescription", maxLength: 63)
                     .font(.body.weight(.semibold))
                     .help("게임명 (최대 63자)")
-                ThreeDSTextField(title: "", vm: info, prop: "Publisher", maxLength: 63)
+                LiveTextField(title: "", vm: info, prop: "Publisher", maxLength: 63)
                     .font(.caption)
                     .help("배급사 (최대 63자)")
                 Text("\(info.string("ProductCode")) · \(info.string("TitleId"))")
@@ -247,7 +246,7 @@ struct ThreeDSRepackTab: View {
             Spacer()
 
             // BtnHelp_Click
-            Button { NSWorkspace.shared.open(Self.helpURL) } label: { UpstreamIcon(name: "Help.png", size: 24) }
+            Button { FilePanels.openURL(Self.helpURL) } label: { UpstreamIcon(name: "Help.png", size: 24) }
                 .buttonStyle(.borderless)
                 .help("도움말")
                 .disabled(!idle)
@@ -268,26 +267,18 @@ struct ThreeDSRepackTab: View {
     /// TextBox(OutputPath, 비어 있으면 안내) + 폴더 버튼(BrowseOutputCommand). 폴더를 끌어다 놓을 수 있다.
     private func outputRow(_ vm: RemoteObject, idle: Bool) -> some View {
         HStack(spacing: 5) {
+            // TxtOutputPath_PreviewDragOver: 첫 경로가 있는 폴더일 때만 놓을 수 있다. TxtOutputPath_Drop: 그 폴더를 OutputPath로.
             HStack {
-                ThreeDSTextField(title: "작업 폴더를 드래그하거나 선택하세요", vm: vm, prop: "OutputPath")
+                LiveTextField(title: "작업 폴더를 드래그하거나 선택하세요", vm: vm, prop: "OutputPath")
                     .textFieldStyle(.roundedBorder)
                     .disabled(!idle)
             }
-            .dropDestination(for: URL.self) { urls, _ in dropOutput(vm, urls, idle: idle) }
+            .folderDrop(engine, vm, "OutputPath", enabled: idle)
 
             Button { engine.run(vm, "BrowseOutputCommand") } label: { UpstreamIcon(name: "AddFolder.png", size: 24) }
                 .buttonStyle(.borderless)
                 .disabled(!idle || !engine.canRun(vm, "BrowseOutputCommand"))
         }
-    }
-
-    /// TxtOutputPath_PreviewDragOver: 첫 경로가 있는 폴더일 때만 놓을 수 있다. TxtOutputPath_Drop: 그 폴더를 OutputPath로.
-    private func dropOutput(_ vm: RemoteObject, _ urls: [URL], idle: Bool) -> Bool {
-        guard idle, let first = urls.first else { return false }
-        var isDirectory: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: first.path, isDirectory: &isDirectory), isDirectory.boolValue else { return false }
-        engine.string(vm, "OutputPath").wrappedValue = first.path
-        return true
     }
 }
 
@@ -346,13 +337,6 @@ private struct ThreeDSPatchInfoBox: View {
 
 // MARK: - DropZone
 
-/// ContextMenu의 MenuItem(Header, Icon, Click)
-private struct ThreeDSMenuItem {
-    let title: String
-    let icon: String
-    let action: @MainActor () -> Void
-}
-
 /// upstream DropZone 스타일 Border(높이 65): 가운데 [아이콘 + 경로 또는 안내], 오른쪽 위 작은 제목.
 /// 왼쪽 클릭과 파일 드롭을 받고, menu가 있으면 오른쪽 클릭 메뉴(Border.ContextMenu)도 붙인다.
 /// IsEnabled="{Binding IsIdle}"가 꺼지면 모두 막는다.
@@ -365,7 +349,7 @@ private struct ThreeDSDropZone: View {
     let enabled: Bool
     let onClick: () -> Void
     let onDrop: ([URL]) -> Bool
-    var menu: [ThreeDSMenuItem] = []
+    var menu: [ContextMenuItem] = []
 
     @State private var targeted = false
 
@@ -396,60 +380,12 @@ private struct ThreeDSDropZone: View {
         .onTapGesture {
             if enabled { onClick() }
         }
-        .contextMenu {
-            if enabled {
-                ForEach(menu.indices, id: \.self) { index in
-                    Button(action: menu[index].action) {
-                        ThreeDSMenuLabel(title: menu[index].title, icon: menu[index].icon)
-                    }
-                }
-            }
-        }
+        .contextMenuItems(enabled ? menu : [])
         .dropDestination(for: URL.self) { urls, _ in
             guard enabled, !urls.isEmpty else { return false }
             return onDrop(urls)
         } isTargeted: { targeted = $0 && enabled }
         .help(tooltip)
         .opacity(enabled ? 1 : 0.55)
-    }
-}
-
-/// TxtPatch_MouseLeftButtonDown(ContextMenu.PlacementTarget = 요소, IsOpen = true) 자리.
-/// SwiftUI contextMenu는 코드로 열 수 없으므로 같은 항목의 NSMenu를 마우스 위치에 띄운다.
-@MainActor
-private enum ThreeDSPopupMenu {
-    static func show(_ items: [ThreeDSMenuItem]) {
-        let menu = NSMenu()
-        menu.autoenablesItems = false
-
-        for item in items {
-            let target = Target(item.action)
-            let menuItem = NSMenuItem(title: item.title, action: #selector(Target.click), keyEquivalent: "")
-            menuItem.target = target
-            menuItem.representedObject = target   // NSMenuItem.target은 약한 참조라 항목이 붙잡아 둔다.
-            menuItem.image = icon(item.icon)
-            menu.addItem(menuItem)
-        }
-
-        menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
-    }
-
-    /// 메뉴 아이콘. 원본 PNG(수백 px)를 그대로 넣으면 메뉴가 커지므로 크기를 정한 사본을 쓴다.
-    private static func icon(_ name: String, size: CGFloat = 16) -> NSImage? {
-        guard let copy = UpstreamAssets.nsImage(name)?.copy() as? NSImage else { return nil }
-        copy.size = NSSize(width: size, height: size)
-        return copy
-    }
-
-    @MainActor
-    private final class Target: NSObject {
-        let action: @MainActor () -> Void
-
-        init(_ action: @escaping @MainActor () -> Void) {
-            self.action = action
-        }
-
-        /// MenuItem Click
-        @objc func click() { action() }
     }
 }

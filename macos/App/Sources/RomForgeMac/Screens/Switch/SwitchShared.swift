@@ -2,7 +2,6 @@
 // ViewModel: SwitchMainViewModel 하위 탭 공용(엔진 호출 도우미·보조 뷰)
 import AppKit
 import SwiftUI
-import UniformTypeIdentifiers
 
 // MARK: - 엔진 호출 도우미
 
@@ -139,63 +138,12 @@ enum SwitchBridge {
     }
 }
 
-// MARK: - 대화상자·Finder
+// MARK: - 대화상자 필터
 
-@MainActor
+/// 대화상자·Finder 동작은 공용 FilePanels를 쓴다.
 enum SwitchPanels {
     /// "Switch 파일 (*.nsp;*.xci;*.nsz;*.xcz)" — WPF 대화상자의 기본(첫) 필터
     static let switchExtensions = ["nsp", "xci", "nsz", "xcz"]
-
-    /// OpenFileDialog. extensions가 nil이면 모든 파일
-    static func openFiles(title: String, extensions: [String]? = nil, multiple: Bool = false) -> [String] {
-        let panel = NSOpenPanel()
-        panel.title = title
-        panel.message = title
-        panel.canChooseFiles = true
-        panel.canChooseDirectories = false
-        panel.allowsMultipleSelection = multiple
-        if let extensions {
-            panel.allowedContentTypes = extensions.compactMap { UTType(filenameExtension: $0) }
-        }
-        return panel.runModal() == .OK ? panel.urls.map(\.path) : []
-    }
-
-    /// FolderBrowserDialog / OpenFolderDialog(설명을 제목으로)
-    static func openFolder(title: String) -> String? {
-        let panel = NSOpenPanel()
-        panel.title = title
-        panel.message = title
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.canCreateDirectories = true
-        panel.allowsMultipleSelection = false
-        return panel.runModal() == .OK ? panel.url?.path : nil
-    }
-
-    /// TxtOutputPath_PreviewDragOver / TxtOutputPath_Drop: 끌어다 놓은 첫 항목이 폴더일 때만 받는다
-    /// (PreviewDragOver가 폴더가 아니면 DragDropEffects.None으로 막는다).
-    static func droppedFolder(_ urls: [URL]) -> String? {
-        guard let path = urls.first?.path else { return nil }
-        var isDirectory: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory), isDirectory.boolValue else { return nil }
-        return path
-    }
-
-    /// NSW.WPF.Services.ProcessExtensions.OpenFolder: 폴더가 있으면 연다.
-    static func showFolder(_ path: String?) {
-        var isDirectory: ObjCBool = false
-        guard let path, !path.isEmpty, FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory), isDirectory.boolValue else { return }
-        NSWorkspace.shared.open(URL(fileURLWithPath: path))
-    }
-
-    /// 파일이 있는 폴더(Path.GetDirectoryName(file).OpenFolder())
-    static func showContainingFolder(_ file: String) {
-        showFolder((file as NSString).deletingLastPathComponent)
-    }
-
-    static func openURL(_ string: String) {
-        if let url = URL(string: string) { NSWorkspace.shared.open(url) }
-    }
 }
 
 // MARK: - 화면 수명과 관계없이 유지하는 상태
@@ -392,64 +340,25 @@ struct SwitchFormatPicker: View {
     }
 }
 
-/// 읽기 전용 TextBox(IsReadOnly=True): 선택·복사만 된다.
-struct SwitchReadOnlyField: View {
-    let text: String
-
-    var body: some View {
-        Text(text.isEmpty ? " " : text)
-            .textSelection(.enabled)
-            .lineLimit(1)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 4)
-            .background(RoundedRectangle(cornerRadius: 5).strokeBorder(Color.secondary.opacity(0.4)))
-    }
-}
-
-/// 경로 TextBox(빈 칸이면 안내 문구 — …HintVisibility 자리)
-struct SwitchPathField: View {
-    @Environment(EngineClient.self) private var engine
-    let vm: RemoteObject
-    let prop: String
-    let hint: String
-
-    var body: some View {
-        TextField(hint, text: engine.string(vm, prop))
-            .textFieldStyle(.roundedBorder)
-            .help(vm.string(prop))
-    }
-}
-
-extension View {
-    /// TxtOutputPath_PreviewDragOver / TxtOutputPath_Drop: 폴더를 끌어다 놓으면 경로 속성(prop)에 넣는다.
-    func switchFolderDrop(_ engine: EngineClient, _ vm: RemoteObject, _ prop: String) -> some View {
-        dropDestination(for: URL.self) { urls, _ in
-            guard let folder = SwitchPanels.droppedFolder(urls) else { return false }
-            engine.string(vm, prop).wrappedValue = folder
-            return true
-        }
-    }
-}
-
-/// MergeTab·SplitTab 출력 폴더 줄: [경로(폴더 드래그)] [출력 폴더 선택].
+/// MergeTab·SplitTab 출력 폴더 줄: [경로(폴더 드래그 — TxtOutputPath_PreviewDragOver / TxtOutputPath_Drop)] [출력 폴더 선택].
 /// btnWorkSpace(OpenWorkSpaceCommand)는 upstream에서 그림이 빠져 크기가 없는(보이지 않는) 단추라 옮기지 않는다.
+/// 찾아보기가 커맨드가 아니라 code-behind(BtnBrowseOutput_Click)라 공용 FolderPathRow를 쓰지 않는다.
 struct SwitchOutputFolderRow: View {
     @Environment(EngineClient.self) private var engine
     let vm: RemoteObject
 
     var body: some View {
         HStack(spacing: 5) {
-            SwitchPathField(vm: vm, prop: "OutputPath", hint: "출력 폴더를 드래그하거나 선택하세요")
+            PathField(vm: vm, placeholder: "출력 폴더를 드래그하거나 선택하세요", pathTooltip: true)
             // Res.ToolTip_BrowseOutput
             ToolIconButton(icon: "AddFolder.png", help: "출력 폴더 선택") {
                 // BtnBrowseOutput_Click: VistaFolderBrowserDialog(Res.Hint_SelectOutput)
-                if let folder = SwitchPanels.openFolder(title: "출력 폴더를 선택하세요") {
+                if let folder = FilePanels.openFolder(title: "출력 폴더를 선택하세요") {
                     engine.string(vm, "OutputPath").wrappedValue = folder
                 }
             }
         }
-        .switchFolderDrop(engine, vm, "OutputPath")
+        .folderDrop(engine, vm, "OutputPath")
     }
 }
 
@@ -523,32 +432,6 @@ struct SwitchCheckbox: NSViewRepresentable {
             sender.state = next ? .on : .off
             parent.toggle(next)
         }
-    }
-}
-
-/// ListViewColumnSorter 자리: 머리글(Tag) 속성 값으로 화면에서만 정렬한다(원본 컬렉션 순서는 그대로).
-struct SwitchColumnSort: SortComparator {
-    var prop: String
-    var order: SortOrder = .forward
-
-    func compare(_ lhs: RemoteObject, _ rhs: RemoteObject) -> ComparisonResult {
-        let result = MainActor.assumeIsolated { Self.compareValues(lhs[prop], rhs[prop]) }
-        switch (order, result) {
-        case (.reverse, .orderedAscending): return .orderedDescending
-        case (.reverse, .orderedDescending): return .orderedAscending
-        default: return result
-        }
-    }
-
-    private static func compareValues(_ a: JSONValue?, _ b: JSONValue?) -> ComparisonResult {
-        if let x = a?.double, let y = b?.double {
-            return x < y ? .orderedAscending : (x > y ? .orderedDescending : .orderedSame)
-        }
-        return (a?.string ?? "").localizedCompare(b?.string ?? "")
-    }
-
-    static func apply(_ order: [SwitchColumnSort], to items: [RemoteObject]) -> [RemoteObject] {
-        order.isEmpty ? items : items.sorted(using: order)
     }
 }
 

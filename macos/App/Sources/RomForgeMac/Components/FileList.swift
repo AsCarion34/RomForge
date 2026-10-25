@@ -96,6 +96,50 @@ extension EngineClient {
     }
 }
 
+// MARK: - 정렬
+
+/// ListViewColumnSorter(GridViewColumnHeader_Click) 자리: 머리글 Tag 속성 값으로 화면 목록만 정렬한다(ViewModel 순서는 그대로).
+///   @State private var sortOrder: [ColumnSort] = []
+///   Table(ColumnSort.sorted(items, by: sortOrder), selection: $selection, sortOrder: $sortOrder) {
+///       TableColumn("용량", sortUsing: ColumnSort("FileSizeBytes")) { ... }
+/// 숫자는 크기로, 나머지는 글자로 비교한다. 글자는 upstream CollectionView처럼 지역 설정의 사전 순서(localizedCompare)이고,
+/// natural이면 Finder처럼 글자 속 숫자를 크기로 본다(localizedStandardCompare: "2" < "10").
+struct ColumnSort: SortComparator {
+    let prop: String
+    var natural = false
+    var order: SortOrder = .forward
+
+    init(_ prop: String, natural: Bool = false) {
+        self.prop = prop
+        self.natural = natural
+    }
+
+    func compare(_ lhs: RemoteObject, _ rhs: RemoteObject) -> ComparisonResult {
+        // 표 정렬은 화면(메인 스레드)에서만 한다.
+        let result = MainActor.assumeIsolated { compareValues(lhs[prop], rhs[prop]) }
+
+        guard order == .reverse else { return result }
+        switch result {
+        case .orderedAscending: return .orderedDescending
+        case .orderedDescending: return .orderedAscending
+        case .orderedSame: return .orderedSame
+        }
+    }
+
+    private func compareValues(_ a: JSONValue?, _ b: JSONValue?) -> ComparisonResult {
+        if let x = a?.double, let y = b?.double {
+            return x < y ? .orderedAscending : (x > y ? .orderedDescending : .orderedSame)
+        }
+        let textA = a?.string ?? "", textB = b?.string ?? ""
+        return natural ? textA.localizedStandardCompare(textB) : textA.localizedCompare(textB)
+    }
+
+    /// 정렬 기준이 없으면 ViewModel 순서 그대로 둔다.
+    static func sorted(_ items: [RemoteObject], by order: [ColumnSort]) -> [RemoteObject] {
+        order.isEmpty ? items : items.sorted(using: order)
+    }
+}
+
 // MARK: - 셀
 
 /// 확장자 배지(upstream ExtensionColorMap 색). 글자는 upstream처럼 ViewModel 값 그대로 쓴다.

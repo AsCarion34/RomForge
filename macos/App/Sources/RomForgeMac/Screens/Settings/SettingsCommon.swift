@@ -1,24 +1,11 @@
 // upstream: RomForge/Controls/Settings/GeneralSettingsTab.xaml(.cs), RomForge/Controls/Settings/PatchSettingsTab.xaml(.cs), RomForge/Controls/Settings/CompressSettingsTab.xaml, RomForge/Controls/Settings/PSSettingsTab.xaml
 // ViewModel: GeneralSettingsMainViewModel, PatchSettingsMainViewModel, CompressSettingsMainViewModel, PSSettingsMainViewModel
-// 설정 하위 탭 공통 부품: SlideToggleStyle, 경로 입력란(드롭·찾아보기), RadioButton, 압축 레벨 안내, 형식 배지
+// 설정 하위 탭 공통 부품: 경로 입력란(드롭·찾아보기), RadioButton, 압축 레벨 안내, 형식 배지
 import SwiftUI
-
-/// upstream SlideToggleStyle ToggleButton: 상자 왼쪽에 내용, 오른쪽에 슬라이드 스위치(스위치는 macOS 기본 스위치).
-struct SettingsSlideToggleStyle: ToggleStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        Toggle(isOn: configuration.$isOn) {
-            configuration.label
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .toggleStyle(.switch)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
-    }
-}
 
 /// 경로 입력란 + 찾아보기 버튼(upstream: 둥근 상자 안 TextBox(UpdateSourceTrigger=PropertyChanged) + 안내 TextBlock + AddFolder.png 버튼).
 /// 값이 비었을 때 보이던 안내(XxxHintVisibility)는 입력란 안내 문구로 보인다.
+/// 찾아보기 버튼은 테두리 있는 버튼이라 다른 탭의 FolderPathRow(테두리 없는 ToolIconButton)를 쓰지 않는다.
 struct SettingsPathField: View {
     @Environment(EngineClient.self) private var engine
     let vm: RemoteObject
@@ -30,8 +17,7 @@ struct SettingsPathField: View {
 
     var body: some View {
         HStack(spacing: 5) {
-            TextField(placeholder, text: engine.string(vm, prop))
-                .textFieldStyle(.roundedBorder)
+            PathField(vm: vm, prop: prop, placeholder: placeholder)
                 .dropDestination(for: URL.self) { urls, _ in
                     guard let value = dropValue(urls) else { return false }
                     engine.string(vm, prop).wrappedValue = value
@@ -44,14 +30,6 @@ struct SettingsPathField: View {
             }
             .disabled(!engine.canRun(vm, browseCommand))
         }
-    }
-
-    /// PreviewDragOver가 첫 경로가 있는 폴더일 때만 받는 입력란(출력 폴더). Drop은 그 폴더를 넣는다.
-    static func folder(_ urls: [URL]) -> String? {
-        guard let first = urls.first else { return nil }
-        var isDirectory: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: first.path, isDirectory: &isDirectory), isDirectory.boolValue else { return nil }
-        return first.path
     }
 
     /// PreviewDragOver가 모든 파일 드롭을 받는 입력란(효과음). Drop은 첫 파일 경로를 넣는다.

@@ -9,7 +9,7 @@ struct UtilTistoryTab: View {
     @State private var selection = Set<Int>()
     /// 목록 머리글의 "전체 선택 / 해제" 체크박스(IsChecked="True"로 시작, ViewModel에 바인딩되지 않음)
     @State private var allChecked = true
-    @State private var sortOrder: [UtilColumnSort] = []
+    @State private var sortOrder: [ColumnSort] = []
 
     /// IsEnabled="{Binding IsLocked, Converter=InverseBool}"
     private var isUnlocked: Bool { !(vm["IsLocked"]?.bool ?? false) }
@@ -29,7 +29,7 @@ struct UtilTistoryTab: View {
                 Toggle(isOn: engine.bool(vm, "AutoExtractAfterDownload")) {
                     Text("압축 자동 해제 (완료 후 원본 삭제)").fontWeight(.bold)
                 }
-                .toggleStyle(UtilLeftSwitchToggleStyle())
+                .toggleStyle(LeftSlideToggleStyle(spacing: 10))
                 .help("다운로드한 파일이 압축파일(zip/7z/rar)이면 자동으로 압축을 풀고 원본 압축파일을 삭제합니다")
                 .disabled(!isUnlocked)
                 .padding(.trailing, 14)
@@ -77,11 +77,7 @@ struct UtilTistoryTab: View {
                 // Text="{Binding SaveDirectory, UpdateSourceTrigger=PropertyChanged}" + 폴더 드롭(TxtSaveDirectory_PreviewDragOver / Drop)
                 TextField("", text: engine.string(vm, "SaveDirectory"))
                     .textFieldStyle(.roundedBorder)
-                    .dropDestination(for: URL.self) { urls, _ in
-                        guard let folder = UtilFileActions.droppedFolder(urls) else { return false }
-                        engine.invoke(vm, "ChangeSaveDirectory", [.string(folder)])
-                        return true
-                    }
+                    .folderDrop { engine.invoke(vm, "ChangeSaveDirectory", [.string($0)]) }
                     .help("폴더를 이곳에 드래그하여 다운로드 위치를 변경할 수 있습니다.")
                 IconButton(title: " 변경", icon: "AddFolder.png", enabled: isUnlocked) {
                     // BtnChangeFolder_Click
@@ -96,30 +92,30 @@ struct UtilTistoryTab: View {
 
     private var fileList: some View {
         VStack(spacing: 0) {
-            Table(UtilColumnSort.sorted(engine.items(vm, "FileItems"), by: sortOrder), selection: $selection, sortOrder: $sortOrder) {
-                TableColumn("No.", sortUsing: UtilColumnSort(prop: "No")) { item in
+            Table(ColumnSort.sorted(engine.items(vm, "FileItems"), by: sortOrder), selection: $selection, sortOrder: $sortOrder) {
+                TableColumn("No.", sortUsing: ColumnSort("No", natural: true)) { item in
                     Text(item.string("No"))
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
                 .width(min: 36, ideal: 60)
 
-                TableColumn("파일명", sortUsing: UtilColumnSort(prop: "FileName")) { item in
+                TableColumn("파일명", sortUsing: ColumnSort("FileName", natural: true)) { item in
                     Text(item.string("FileName"))
                         .lineLimit(1)
                         .help(item.string("Url"))
                 }
                 .width(min: 160, ideal: 380)
 
-                TableColumn("용량", sortUsing: UtilColumnSort(prop: "FileSizeBytes")) { item in
+                TableColumn("용량", sortUsing: ColumnSort("FileSizeBytes", natural: true)) { item in
                     Text(item.string("FileSize")).monospacedDigit()
                 }
                 .width(min: 70, ideal: 90)
 
-                TableColumn("진행률", sortUsing: UtilColumnSort(prop: "Progress")) { item in UtilProgressCell(item: item) }
+                TableColumn("진행률", sortUsing: ColumnSort("Progress", natural: true)) { item in UtilProgressCell(item: item) }
                     .width(min: 100, ideal: 140)
 
-                TableColumn("상태", sortUsing: UtilColumnSort(prop: "Status")) { item in
+                TableColumn("상태", sortUsing: ColumnSort("Status", natural: true)) { item in
                     Text(item.string("Status")).frame(maxWidth: .infinity, alignment: .center)
                 }
                 .width(min: 60, ideal: 90)
@@ -164,18 +160,6 @@ struct UtilTistoryTab: View {
         allChecked = isOn
         for item in engine.items(vm, "FileItems") {
             engine.bool(item, "IsSelected").wrappedValue = isOn
-        }
-    }
-}
-
-/// upstream LeftSlideToggleStyle: 왼쪽에 슬라이드 스위치, 오른쪽에 내용(스위치는 macOS 기본 스위치)
-private struct UtilLeftSwitchToggleStyle: ToggleStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: 10) {
-            Toggle(isOn: configuration.$isOn) { configuration.label }
-                .toggleStyle(.switch)
-                .labelsHidden()
-            configuration.label
         }
     }
 }

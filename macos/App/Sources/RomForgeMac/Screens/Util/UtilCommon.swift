@@ -1,7 +1,6 @@
 // upstream: RomForge/Controls/Util/HashTab.xaml(.cs), RomForge/Controls/Util/TistoryTab.xaml(.cs), RomForge/Controls/Util/CertsTab.xaml(.cs), RomForge/Controls/Util/CueTab.xaml(.cs)
 // ViewModel: HashMainViewModel, TistoryMainViewModel, CertsMainViewModel, CueMainViewModel
 // 유틸 하위 탭 공통 부분: 빈 목록 안내, 하단 버튼·목록 메뉴·드롭·삭제 처리기, 파일·폴더 대화상자
-import AppKit
 import SwiftUI
 
 /// 빈 목록 안내(upstream HintVisibility 상자: 아이콘, 안내 문구, 형식 배지)
@@ -58,37 +57,6 @@ struct UtilProgressCell: View {
     }
 }
 
-/// GridViewColumnHeader_Click(ListViewColumnSorter) 자리: 머리글 Tag 속성으로 화면 목록만 정렬한다(ViewModel 순서는 그대로).
-struct UtilColumnSort: SortComparator {
-    let prop: String
-    var order: SortOrder = .forward
-
-    func compare(_ lhs: RemoteObject, _ rhs: RemoteObject) -> ComparisonResult {
-        // 표 정렬은 화면(메인 스레드)에서만 한다.
-        let (a, b, textA, textB) = MainActor.assumeIsolated {
-            (lhs[prop]?.double, rhs[prop]?.double, lhs.string(prop), rhs.string(prop))
-        }
-
-        let result: ComparisonResult
-        if let a, let b {
-            result = a < b ? .orderedAscending : (a > b ? .orderedDescending : .orderedSame)
-        } else {
-            result = textA.localizedStandardCompare(textB)
-        }
-
-        guard order == .reverse else { return result }
-        switch result {
-        case .orderedAscending: return .orderedDescending
-        case .orderedDescending: return .orderedAscending
-        case .orderedSame: return .orderedSame
-        }
-    }
-
-    static func sorted(_ items: [RemoteObject], by order: [UtilColumnSort]) -> [RemoteObject] {
-        order.isEmpty ? items : items.sorted(using: order)
-    }
-}
-
 /// code-behind의 버튼·메뉴 처리기(파일 추가, 폴더 추가, 선택 삭제, 전체 삭제, 폴더 열기)
 @MainActor
 enum UtilFileActions {
@@ -126,27 +94,9 @@ enum UtilFileActions {
         engine.items(vm, "FileItems").first { ids.contains($0.id) }
     }
 
-    /// dir?.OpenFolder(): 폴더가 있으면 Finder로 연다.
-    static func openDirectory(_ directory: String?) {
-        guard let directory, !directory.isEmpty else { return }
-        var isDirectory: ObjCBool = false
-        if FileManager.default.fileExists(atPath: directory, isDirectory: &isDirectory), isDirectory.boolValue {
-            NSWorkspace.shared.open(URL(fileURLWithPath: directory, isDirectory: true))
-        }
-    }
-
     /// Path.GetDirectoryName(path)
     nonisolated static func directoryName(_ path: String) -> String? {
         path.isEmpty ? nil : (path as NSString).deletingLastPathComponent
-    }
-
-    /// 폴더 입력란의 PreviewDragOver + Drop: 첫 경로가 있는 폴더일 때만 받아 그 경로를 돌려준다.
-    /// (Drop은 파일이면 그 폴더를 쓰지만 PreviewDragOver가 폴더가 아닌 드롭을 막는다)
-    nonisolated static func droppedFolder(_ urls: [URL]) -> String? {
-        guard let first = urls.first else { return nil }
-        var isDirectory: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: first.path, isDirectory: &isDirectory), isDirectory.boolValue else { return nil }
-        return first.path
     }
 
     /// 엔진이 띄우는 파일 대화상자와 같은 처리(WPF 필터 해석 포함)를 쓴다.
@@ -200,8 +150,9 @@ struct UtilFileListBehavior: ViewModifier {
                 // LvFiles_ContextMenuOpening: 선택이 없으면 메뉴를 열지 않는다.
                 if !ids.isEmpty {
                     Button("폴더 열기") {
+                        // dir?.OpenFolder(): 폴더가 있으면 Finder로 연다.
                         if let item = UtilFileActions.firstSelected(engine, vm, ids) {
-                            UtilFileActions.openDirectory(folderOf(item))
+                            FilePanels.showFolder(folderOf(item))
                         }
                     }
                     Divider()

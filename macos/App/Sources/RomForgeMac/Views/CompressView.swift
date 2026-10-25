@@ -1,6 +1,5 @@
 // upstream: RomForge/Controls/CompressTab.xaml(.cs)
 // ViewModel: CompressMainViewModel
-import AppKit
 import SwiftUI
 
 /// 압축 탭: 파일 목록(번호·파일명·변환·용량·진행률) + 출력 폴더 변경 + 파일/폴더 추가 · 선택/전체 삭제 · 시작 · 취소.
@@ -13,13 +12,12 @@ struct CompressView: View {
 
     @State private var selection = Set<Int>()
     /// GridViewColumnHeader_Click(ListViewColumnSorter): 머리글을 누르면 그 열(Tag) 기준으로 화면에서만 정렬
-    @State private var sortOrder: [CompressSortComparator] = []
+    @State private var sortOrder: [ColumnSort] = []
 
     var body: some View {
         ChildVM(id: vmId) { vm in
             let locked = vm["IsLocked"]?.bool ?? false
-            let items = engine.items(vm, "FileItems")
-            let rows = sortOrder.isEmpty ? items : items.sorted(using: sortOrder)
+            let rows = ColumnSort.sorted(engine.items(vm, "FileItems"), by: sortOrder)
 
             ToolLayout(vm: vm) {
                 fileTable(vm, rows: rows, locked: locked)
@@ -54,7 +52,7 @@ struct CompressView: View {
     private func fileTable(_ vm: RemoteObject, rows: [RemoteObject], locked: Bool) -> some View {
         Table(rows, selection: $selection, sortOrder: $sortOrder) {
             // upstream 머리글은 글자 없이 List.png 아이콘만 있다.
-            TableColumn("", sortUsing: CompressSortComparator(prop: "No")) { item in
+            TableColumn("", sortUsing: ColumnSort("No", natural: true)) { item in
                 Text(item.string("No"))
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
@@ -62,7 +60,7 @@ struct CompressView: View {
             }
             .width(70)
 
-            TableColumn("파일명", sortUsing: CompressSortComparator(prop: "FileName")) { item in
+            TableColumn("파일명", sortUsing: ColumnSort("FileName", natural: true)) { item in
                 Text(item.string("FileName"))
                     .lineLimit(1)
                     .truncationMode(.tail)
@@ -71,19 +69,19 @@ struct CompressView: View {
             .width(min: 120, ideal: 330)
 
             // 배지 글자는 ExtensionLabel("iso→chd"처럼 자동으로 고른 결과 형식까지), 정렬은 Tag="Extension"
-            TableColumn("변환", sortUsing: CompressSortComparator(prop: "Extension")) { item in
+            TableColumn("변환", sortUsing: ColumnSort("Extension", natural: true)) { item in
                 ExtensionBadge(item: item, textProp: "ExtensionLabel")
                     .frame(maxWidth: .infinity)
             }
             .width(90)
 
-            TableColumn("용량", sortUsing: CompressSortComparator(prop: "FileSizeBytes")) { item in
+            TableColumn("용량", sortUsing: ColumnSort("FileSizeBytes", natural: true)) { item in
                 Text(item.string("FileSize"))
                     .monospacedDigit()
             }
             .width(90)
 
-            TableColumn("진행률", sortUsing: CompressSortComparator(prop: "Progress")) { item in
+            TableColumn("진행률", sortUsing: ColumnSort("Progress", natural: true)) { item in
                 HStack(spacing: 6) {
                     ProgressCell(item: item)
                     Text(String(item["Progress"]?.int ?? 0) + "%")
@@ -116,28 +114,20 @@ struct CompressView: View {
                 Button {
                     openFolder(ids, rows: rows)
                 } label: {
-                    menuLabel("폴더 열기", icon: "AddFolder.png")
+                    MenuLabel(title: "폴더 열기", icon: "AddFolder.png")
                 }
                 Divider()
                 Button {
                     remove(vm, ids)
                 } label: {
-                    menuLabel("선택 삭제", icon: "Delete.png")
+                    MenuLabel(title: "선택 삭제", icon: "Delete.png")
                 }
                 Button {
                     clear(vm)
                 } label: {
-                    menuLabel("전체 삭제", icon: "Clear.png")
+                    MenuLabel(title: "전체 삭제", icon: "Clear.png")
                 }
             }
-        }
-    }
-
-    private func menuLabel(_ title: String, icon: String) -> some View {
-        Label {
-            Text(title)
-        } icon: {
-            UpstreamAssets.menuImage(icon, size: 16)
         }
     }
 
@@ -151,15 +141,13 @@ struct CompressView: View {
             Toggle(isOn: engine.bool(vm, "UseCustomOutputPath")) {
                 Text("출력 폴더 변경").bold()
             }
-            .toggleStyle(CompressSlideToggleStyle())
+            .toggleStyle(LeftSlideToggleStyle())
 
             TextField("", text: engine.string(vm, "OutputPath"))
                 .textFieldStyle(.roundedBorder)
                 .disabled(!custom)
-                // TxtOutputPath_PreviewDragOver · TxtOutputPath_Drop(입력란이 켜졌을 때만)
-                .dropDestination(for: URL.self) { urls, _ in
-                    custom && !locked && dropOutputFolder(vm, urls)
-                }
+                // TxtOutputPath_PreviewDragOver · TxtOutputPath_Drop(입력란이 켜졌을 때만, 첫 항목이 폴더일 때만)
+                .folderDrop(engine, vm, "OutputPath", enabled: custom && !locked)
 
             ToolIconButton(icon: "AddFolder.png", enabled: custom && engine.canRun(vm, "BrowseOutputCommand")) {
                 engine.run(vm, "BrowseOutputCommand")
@@ -173,27 +161,16 @@ struct CompressView: View {
     /// BtnAddFiles_Click. upstream 필터(CompressMainViewModel.GetFileDialogFilter())는 "지원 파일|…|모든 파일|*.*"라
     /// UiHostHandler와 같이 형식을 제한하지 않는다(지원하지 않는 확장자는 AddPaths가 거른다).
     private func addFiles(_ vm: RemoteObject) {
-        let panel = NSOpenPanel()
-        panel.canChooseFiles = true
-        panel.canChooseDirectories = false
-        panel.allowsMultipleSelection = true
-
-        if panel.runModal() == .OK {
-            engine.invoke(vm, "AddPaths", [.strings(panel.urls.map(\.path))])
+        let paths = FilePanels.openFiles(multiple: true)
+        if !paths.isEmpty {
+            engine.invoke(vm, "AddPaths", [.strings(paths)])
         }
     }
 
-    /// BtnAddFolder_Click
+    /// BtnAddFolder_Click: VistaFolderBrowserDialog("추가할 폴더를 선택하세요")
     private func addFolder(_ vm: RemoteObject) {
-        let panel = NSOpenPanel()
-        panel.title = "추가할 폴더를 선택하세요"
-        panel.message = "추가할 폴더를 선택하세요"
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.allowsMultipleSelection = false
-
-        if panel.runModal() == .OK, let url = panel.url {
-            engine.invoke(vm, "AddPaths", [.strings([url.path])])
+        if let folder = FilePanels.openFolder(title: "추가할 폴더를 선택하세요") {
+            engine.invoke(vm, "AddPaths", [.strings([folder])])
         }
     }
 
@@ -211,75 +188,8 @@ struct CompressView: View {
 
     /// MenuItem_OpenFolder_Click: 첫 선택 항목이 있는 폴더를 연다(OpenFolder: 폴더가 있을 때만).
     private func openFolder(_ ids: Set<Int>, rows: [RemoteObject]) {
-        guard let path = rows.first(where: { ids.contains($0.id) })?.string("FilePath"), !path.isEmpty else { return }
-        let folder = (path as NSString).deletingLastPathComponent
-        guard FileManager.default.fileExists(atPath: folder) else { return }
-        NSWorkspace.shared.open(URL(fileURLWithPath: folder))
-    }
-
-    /// TxtOutputPath_PreviewDragOver: 첫 항목이 폴더일 때만 받는다.
-    /// TxtOutputPath_Drop: 그 폴더를 OutputPath로 쓴다(파일이면 상위 폴더를 쓰는 분기는 DragOver가 막아 실제로는 폴더만 온다).
-    private func dropOutputFolder(_ vm: RemoteObject, _ urls: [URL]) -> Bool {
-        var isDirectory: ObjCBool = false
-        guard let path = urls.first?.path,
-              FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory), isDirectory.boolValue
-        else { return false }
-
-        engine.string(vm, "OutputPath").wrappedValue = path
-        return true
-    }
-}
-
-/// upstream LeftSlideToggleStyle: 밀어서 켜는 스위치를 문구 왼쪽에 둔다(macOS 기본 .switch는 스위치가 문구 오른쪽에 온다).
-/// upstream은 스위치와 문구가 한 버튼이라 문구를 눌러도 바뀐다.
-private struct CompressSlideToggleStyle: ToggleStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        SlideToggle(configuration: configuration)
-    }
-
-    private struct SlideToggle: View {
-        let configuration: ToggleStyleConfiguration
-        @Environment(\.isEnabled) private var isEnabled
-
-        var body: some View {
-            HStack(spacing: 8) {
-                Toggle(isOn: configuration.$isOn) { configuration.label }
-                    .toggleStyle(.switch)
-                    .labelsHidden()
-                configuration.label
-                    .opacity(isEnabled ? 1 : 0.5)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        if isEnabled { configuration.isOn.toggle() }
-                    }
-            }
-            .fixedSize()
-        }
-    }
-}
-
-/// ListViewColumnSorter 자리: 열의 Tag(속성 이름) 값으로 비교한다(숫자는 크기, 문자열은 이름 순).
-private struct CompressSortComparator: SortComparator {
-    let prop: String
-    var order: SortOrder = .forward
-
-    func compare(_ lhs: RemoteObject, _ rhs: RemoteObject) -> ComparisonResult {
-        // 정렬은 화면(body)에서만 하므로 메인 스레드다.
-        let result = MainActor.assumeIsolated { Self.compareValues(lhs[prop], rhs[prop]) }
-
-        guard order == .reverse else { return result }
-        switch result {
-        case .orderedAscending: return .orderedDescending
-        case .orderedDescending: return .orderedAscending
-        case .orderedSame: return .orderedSame
-        }
-    }
-
-    private static func compareValues(_ a: JSONValue?, _ b: JSONValue?) -> ComparisonResult {
-        if let x = a?.double, let y = b?.double {
-            return x < y ? .orderedAscending : (x > y ? .orderedDescending : .orderedSame)
-        }
-        return (a?.string ?? "").localizedStandardCompare(b?.string ?? "")
+        guard let path = rows.first(where: { ids.contains($0.id) })?.string("FilePath") else { return }
+        FilePanels.showContainingFolder(path)
     }
 }
 

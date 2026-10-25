@@ -76,7 +76,7 @@ struct SwitchSaturnTab: View {
     /// TxtOutputPath_Drop: 폴더를 끌어다 놓으면 경로 속성에 넣는다.
     private func dropFolder(_ prop: String) -> ([URL]) -> Bool {
         { urls in
-            guard let folder = SwitchPanels.droppedFolder(urls) else { return false }
+            guard let folder = FilePanels.droppedFolder(urls) else { return false }
             engine.string(vm, prop).wrappedValue = folder
             return true
         }
@@ -137,15 +137,15 @@ struct SwitchSaturnTab: View {
             }
             .padding(.top, 5)
             GridRow {
-                SwitchReadOnlyField(text: vm.string("GameId"))
-                SwitchReadOnlyField(text: vm.string("GameVersion"))
+                ReadOnlyField(text: vm.string("GameId"))
+                ReadOnlyField(text: vm.string("GameVersion"))
             }
             GridRow {
                 Text("NSP 타이틀 ID").fontWeight(.semibold)
             }
             .padding(.top, 10)
             GridRow {
-                SwitchReadOnlyField(text: vm.string("NspTitleId"))
+                ReadOnlyField(text: vm.string("NspTitleId"))
             }
         }
         .textFieldStyle(.roundedBorder)

@@ -1,6 +1,5 @@
 // upstream: RomForge/Controls/WiiU/ConverterTab.xaml(.cs)
 // ViewModel: RomForge.ViewModels.WiiU.ConverterMainViewModel (WiiUMainViewModel.ConverterVM), 항목 RomForge.Core.Models.WiiU.FileItem
-import AppKit
 import SwiftUI
 
 /// WiiU 포맷 변환 탭: WUP · Loadiine · WUD/WUX · WUA 상호 변환.
@@ -24,19 +23,8 @@ struct WiiUConverterTab: View {
         } options: {
             VStack(spacing: 8) {
                 // TextBox(OutputPath, AllowDrop) + 찾아보기(BrowseOutputCommand), IsEnabled = !IsConverting
-                HStack(spacing: 5) {
-                    HStack {
-                        TextField("출력 폴더를 드래그하거나 선택하세요", text: engine.string(vm, "OutputPath"))
-                            .textFieldStyle(.roundedBorder)
-                    }
-                    .wiiUOutputFolderDrop(enabled: !converting) { folder in
-                        engine.string(vm, "OutputPath").wrappedValue = folder
-                    }
-                    ToolIconButton(icon: "AddFolder.png", enabled: engine.canRun(vm, "BrowseOutputCommand")) {
-                        engine.run(vm, "BrowseOutputCommand")
-                    }
-                }
-                .disabled(converting)
+                FolderPathRow(vm: vm, placeholder: "출력 폴더를 드래그하거나 선택하세요", dropEnabled: !converting)
+                    .disabled(converting)
 
                 HStack(spacing: 6) {
                     // IsEnabled = !IsConverting
@@ -138,12 +126,12 @@ struct WiiUConverterTab: View {
 
     /// BtnAddFiles_Click: Filter = "WiiU 파일 (*.wud;*.wux;*.wua)|…|모든 파일 (*.*)|*.*"
     private func addFiles() {
-        addPaths(WiiUPanels.openFiles(title: "변환할 파일 선택", extensions: ["wud", "wux", "wua"], multiple: true))
+        addPaths(FilePanels.openFiles(title: "변환할 파일 선택", extensions: ["wud", "wux", "wua"], multiple: true))
     }
 
     /// BtnAddFolder_Click
     private func addFolder() {
-        if let folder = WiiUPanels.openFolder(title: "추가할 폴더를 선택하세요 (WUP 또는 Loadiine 폴더)") {
+        if let folder = FilePanels.openFolder(title: "추가할 폴더를 선택하세요 (WUP 또는 Loadiine 폴더)") {
             addPaths([folder])
         }
     }

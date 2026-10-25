@@ -87,7 +87,7 @@ struct SwitchSplitFileList: View {
             if !ids.isEmpty {
                 Button("폴더 열기") {
                     if let id = SwitchBridge.ordered(ids, in: rows).first, let row = engine.store.object(id) {
-                        SwitchPanels.showContainingFolder(row.string("FilePath"))
+                        FilePanels.showContainingFolder(row.string("FilePath"))
                     }
                 }
                 Divider()
@@ -102,10 +102,10 @@ struct SwitchSplitFileList: View {
             // Res.ToolTip_AddFile
             ToolIconButton(icon: "AddFile.png", help: "파일 추가") {
                 // Res.Dialog_SelectGameFile, Res.Filter_SwitchFiles(… *.nsp;*.xci;*.nsz;*.xcz)|Res.Filter_AllFiles|*.*
-                addFiles(SwitchPanels.openFiles(title: "게임 파일 선택", extensions: SwitchPanels.switchExtensions, multiple: true))
+                addFiles(FilePanels.openFiles(title: "게임 파일 선택", extensions: SwitchPanels.switchExtensions, multiple: true))
             }
             ToolIconButton(icon: "AddFolder.png", help: "폴더 추가") {
-                if let folder = SwitchPanels.openFolder(title: "게임 폴더 선택") { addFiles([folder]) }
+                if let folder = FilePanels.openFolder(title: "게임 폴더 선택") { addFiles([folder]) }
             }
             // Res.ToolTip_RemoveSelected
             ToolIconButton(icon: "Delete.png", help: "선택 항목 제거") { remove(selection) }

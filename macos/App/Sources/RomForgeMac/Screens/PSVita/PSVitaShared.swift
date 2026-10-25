@@ -1,68 +1,12 @@
 // upstream: RomForge/Controls/PSVita/RepackTab.xaml(.cs), RomForge/Controls/PSVita/ConverterTab.xaml(.cs)
-// ViewModel: RomForge.ViewModels.PSVita.RepackMainViewModel · ConverterMainViewModel 공용 부분(SourceRowViewModel 셀, 목록 메뉴, 출력 폴더 줄)
-import AppKit
+// ViewModel: RomForge.ViewModels.PSVita.RepackMainViewModel · ConverterMainViewModel 공용 부분(SourceRowViewModel 셀, 목록 메뉴)
 import SwiftUI
-import UniformTypeIdentifiers
 
-// MARK: - 대화상자·Finder·실행
+// MARK: - 실행
 
 /// PS Vita 하위 탭(리팩 · 포맷 변환)이 같이 쓰는 code-behind 동작(이 폴더 전용).
 @MainActor
 enum PSVitaUI {
-    /// VistaFolderBrowserDialog(Description을 제목으로)
-    static func chooseFolder(title: String) -> String? {
-        let panel = NSOpenPanel()
-        panel.title = title
-        panel.message = title
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.canCreateDirectories = true
-        panel.allowsMultipleSelection = false
-        return panel.runModal() == .OK ? panel.url?.path : nil
-    }
-
-    /// OpenFileDialog. filter는 upstream WPF 필터 문자열 그대로 받고 UiHostHandler와 같은 규칙으로 쓴다
-    /// ('*.*'가 있으면 형식을 제한하지 않음).
-    static func chooseFile(title: String, filter: String) -> String? {
-        let panel = NSOpenPanel()
-        panel.title = title
-        panel.message = title
-        panel.canChooseFiles = true
-        panel.canChooseDirectories = false
-        panel.allowsMultipleSelection = false
-
-        let parts = filter.split(separator: "|", omittingEmptySubsequences: false)
-        let patterns = stride(from: 1, to: parts.count, by: 2)
-            .flatMap { parts[$0].split(separator: ";") }
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-
-        if !patterns.contains("*.*") {
-            let types = patterns.compactMap { $0.hasPrefix("*.") ? UTType(filenameExtension: String($0.dropFirst(2))) : nil }
-            if !types.isEmpty { panel.allowedContentTypes = types }
-        }
-
-        return panel.runModal() == .OK ? panel.url?.path : nil
-    }
-
-    static func isDirectory(_ path: String) -> Bool {
-        var isDir: ObjCBool = false
-        return FileManager.default.fileExists(atPath: path, isDirectory: &isDir) && isDir.boolValue
-    }
-
-    /// MenuItem_OpenFolder_Click: Path.GetDirectoryName(SelectedRow.Path)?.OpenFolder() — 폴더가 있을 때만 연다.
-    static func openParentFolder(of path: String) {
-        guard !path.isEmpty else { return }
-        let dir = (path as NSString).deletingLastPathComponent
-        guard !dir.isEmpty, isDirectory(dir) else { return }
-        NSWorkspace.shared.open(URL(fileURLWithPath: dir))
-    }
-
-    /// TxtOutputPath_PreviewDragOver / TxtOutputPath_Drop: 끌어다 놓은 첫 항목이 폴더일 때만 받는다.
-    static func droppedFolder(_ urls: [URL]) -> String? {
-        guard let path = urls.first?.path, isDirectory(path) else { return nil }
-        return path
-    }
-
     /// BtnStart_Click · RunAsync: 실행 중(IsLocked)이면 Cancel(), 아니면 await StartAsync(…).
     /// 단추를 연달아 눌러 StartAsync가 겹치지 않게 exclusive로 부른다(IsLocked가 화면에 오기 전 틈).
     static func startOrCancel(_ engine: EngineClient, _ vm: RemoteObject, _ args: [JSONValue] = []) {
@@ -173,20 +117,6 @@ struct PSVitaPathCell: View {
 
 // MARK: - 목록 주변
 
-/// 메뉴 항목(MenuItem.Icon). 메뉴는 AppKit이 그려 크기를 정한 아이콘 사본을 쓴다.
-struct PSVitaMenuLabel: View {
-    let title: String
-    let icon: String
-
-    var body: some View {
-        Label {
-            Text(title)
-        } icon: {
-            UpstreamAssets.menuImage(icon, size: 16)
-        }
-    }
-}
-
 /// ListView.ContextMenu(리팩 · 포맷 변환 같음): 폴더 열기 | 선택 삭제 · 전체 삭제.
 /// LvPkg_ContextMenuOpening: 선택한 행이 없으면 메뉴를 열지 않는다. WPF처럼 오른쪽 클릭한 행을 SelectedRow로 맞춘 뒤 실행한다.
 struct PSVitaRowMenu: View {
@@ -198,10 +128,10 @@ struct PSVitaRowMenu: View {
         if let target = ids.first ?? vm.ref("SelectedRow") {
             Button {
                 engine.selectedItem(vm, "SelectedRow").wrappedValue = target
-                // MenuItem_OpenFolder_Click
-                PSVitaUI.openParentFolder(of: engine.store.object(target)?.string("Path") ?? "")
+                // MenuItem_OpenFolder_Click: Path.GetDirectoryName(SelectedRow.Path)?.OpenFolder() — 폴더가 있을 때만 연다.
+                FilePanels.showContainingFolder(engine.store.object(target)?.string("Path") ?? "")
             } label: {
-                PSVitaMenuLabel(title: "폴더 열기", icon: "AddFolder.png")
+                MenuLabel(title: "폴더 열기", icon: "AddFolder.png")
             }
 
             Divider()
@@ -215,14 +145,14 @@ struct PSVitaRowMenu: View {
                     await engine.execute(removeCommand)
                 }
             } label: {
-                PSVitaMenuLabel(title: "선택 삭제", icon: "Delete.png")
+                MenuLabel(title: "선택 삭제", icon: "Delete.png")
             }
 
             // Command="{Binding RemoveAllCommand}"
             Button {
                 engine.run(vm, "RemoveAllCommand")
             } label: {
-                PSVitaMenuLabel(title: "전체 삭제", icon: "Clear.png")
+                MenuLabel(title: "전체 삭제", icon: "Clear.png")
             }
             .disabled(!engine.canRun(vm, "RemoveAllCommand"))
         }
@@ -299,27 +229,5 @@ struct PSVitaRadioPair: View {
                 engine.bool(vm, on).wrappedValue = true
                 engine.bool(vm, off).wrappedValue = false
             })
-    }
-}
-
-/// 작업(출력) 폴더 줄: OutputPath TextBox(폴더 드롭) + 안내 문구(OutputHintVisibility 자리 = placeholder) + 폴더 선택(BrowseOutputCommand)
-struct PSVitaOutputPathRow: View {
-    @Environment(EngineClient.self) private var engine
-    let vm: RemoteObject
-    let placeholder: String
-
-    var body: some View {
-        HStack(spacing: 5) {
-            TextField(placeholder, text: engine.string(vm, "OutputPath"))
-                .textFieldStyle(.roundedBorder)
-                .dropDestination(for: URL.self) { urls, _ in
-                    guard let folder = PSVitaUI.droppedFolder(urls) else { return false }
-                    engine.string(vm, "OutputPath").wrappedValue = folder
-                    return true
-                }
-            ToolIconButton(icon: "AddFolder.png", enabled: engine.canRun(vm, "BrowseOutputCommand")) {
-                engine.run(vm, "BrowseOutputCommand")
-            }
-        }
     }
 }

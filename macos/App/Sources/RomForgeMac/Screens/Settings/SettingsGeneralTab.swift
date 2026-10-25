@@ -44,7 +44,7 @@ struct SettingsGeneralTab: View {
                     .foregroundStyle(isOn.wrappedValue ? .primary : .secondary)
             }
         }
-        .toggleStyle(SettingsSlideToggleStyle())
+        .toggleStyle(SlideToggleStyle())
     }
 
     /// 소리 파일 줄: 경로 입력란(드롭하면 첫 파일 — SoundTextBox_PreviewDragOver / XxxSoundTextBox_Drop) + BrowseXxxSoundCommand

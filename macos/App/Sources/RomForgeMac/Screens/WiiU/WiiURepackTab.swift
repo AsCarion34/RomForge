@@ -37,24 +37,13 @@ struct WiiURepackTab: View {
                     Spacer()
                     // BtnHelp_Click
                     ToolIconButton(icon: "Help.png", help: "도움말") {
-                        WiiUPanels.openURL("https://sinjunyoung.github.io/RomForge/wiiu-repack/")
+                        FilePanels.openURL("https://sinjunyoung.github.io/RomForge/wiiu-repack/")
                     }
                 }
 
                 // TextBox(OutputPath, AllowDrop) + 찾아보기(BrowseOutputCommand), IsEnabled = IsIdle
-                HStack(spacing: 5) {
-                    HStack {
-                        TextField("작업 폴더를 드래그하거나 선택하세요", text: engine.string(vm, "OutputPath"))
-                            .textFieldStyle(.roundedBorder)
-                    }
-                    .wiiUOutputFolderDrop(enabled: idle) { folder in
-                        engine.string(vm, "OutputPath").wrappedValue = folder
-                    }
-                    ToolIconButton(icon: "AddFolder.png", enabled: engine.canRun(vm, "BrowseOutputCommand")) {
-                        engine.run(vm, "BrowseOutputCommand")
-                    }
-                }
-                .disabled(!idle)
+                FolderPathRow(vm: vm, placeholder: "작업 폴더를 드래그하거나 선택하세요", dropEnabled: idle)
+                    .disabled(!idle)
 
                 // 열 너비 * : * : 2*
                 HStack(spacing: 5) {
@@ -133,20 +122,20 @@ struct WiiURepackTab: View {
                 Button {
                     // MenuItem_OpenFolder_Click: Path.GetDirectoryName(FilePath).OpenFolder()
                     if let entry = engine.store.object(id) {
-                        WiiUPanels.showFolder((entry.string("FilePath") as NSString).deletingLastPathComponent)
+                        FilePanels.showContainingFolder(entry.string("FilePath"))
                     }
                 } label: {
-                    WiiUMenuLabel(title: "폴더 열기", icon: "AddFolder.png")
+                    MenuLabel(title: "폴더 열기", icon: "AddFolder.png")
                 }
                 Divider()
                 Button { removeEntry(id) } label: {
-                    WiiUMenuLabel(title: "선택 삭제", icon: "Delete.png")
+                    MenuLabel(title: "선택 삭제", icon: "Delete.png")
                 }
                 Button {
                     // BtnClear_Click: Entries.Clear()
                     Task { await engine.call(vm.ref("Entries"), "Clear") }
                 } label: {
-                    WiiUMenuLabel(title: "전체 삭제", icon: "Clear.png")
+                    MenuLabel(title: "전체 삭제", icon: "Clear.png")
                 }
             }
         }
@@ -185,14 +174,14 @@ struct WiiURepackTab: View {
 
     /// PatchMenu_SelectFolder_Click
     private func selectPatchFolder(_ entry: RemoteObject) {
-        if let folder = WiiUPanels.openFolder(title: "\(entry.string("TitleName"))에 적용할 한글패치 폴더 선택") {
+        if let folder = FilePanels.openFolder(title: "\(entry.string("TitleName"))에 적용할 한글패치 폴더 선택") {
             Task { await engine.set(entry.id, "PatchPath", .string(folder)) }
         }
     }
 
     /// PatchMenu_SelectArchive_Click: Filter = "압축파일 (*.zip;*.7z)|*.zip;*.7z"
     private func selectPatchArchive(_ entry: RemoteObject) {
-        let files = WiiUPanels.openFiles(title: "\(entry.string("TitleName"))에 적용할 한글패치 압축파일 선택", extensions: ["zip", "7z"])
+        let files = FilePanels.openFiles(title: "\(entry.string("TitleName"))에 적용할 한글패치 압축파일 선택", extensions: ["zip", "7z"])
         if let file = files.first {
             Task { await engine.set(entry.id, "PatchPath", .string(file)) }
         }
@@ -224,9 +213,9 @@ private struct WiiUPatchCell: View {
 
     var body: some View {
         Menu {
-            Button(action: selectFolder) { WiiUMenuLabel(title: "폴더 선택...", icon: "AddFolder.png") }
-            Button(action: selectArchive) { WiiUMenuLabel(title: "압축파일 선택(zip/7z)...", icon: "ZipFolder.png") }
-            Button(action: removePatch) { WiiUMenuLabel(title: "선택 취소", icon: "Cancel.png") }
+            Button(action: selectFolder) { MenuLabel(title: "폴더 선택...", icon: "AddFolder.png") }
+            Button(action: selectArchive) { MenuLabel(title: "압축파일 선택(zip/7z)...", icon: "ZipFolder.png") }
+            Button(action: removePatch) { MenuLabel(title: "선택 취소", icon: "Cancel.png") }
         } label: {
             UpstreamAssets.menuImage((item.string("PatchIconSource") as NSString).lastPathComponent, size: 18)
         }

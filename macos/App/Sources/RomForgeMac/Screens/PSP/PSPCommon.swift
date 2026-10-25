@@ -1,7 +1,6 @@
 // upstream: RomForge/Controls/PSP/PackingTab.xaml(.cs), RomForge/Controls/PSP/UnpackingTab.xaml(.cs), RomForge/Controls/PSP/ConverterTab.xaml(.cs)
-// 공통 부분: 빈 목록 안내, 진행률 셀, 머리글 정렬, 하위 ViewModel describe, 목록 메뉴·드롭·삭제, 파일 대화상자
+// 공통 부분: 빈 목록 안내, 진행률 셀, 하위 ViewModel describe, 목록 메뉴·드롭·삭제, 파일 대화상자
 // ViewModel: DiscListViewModel(PackingMainViewModel.Files), UnpackingMainViewModel, ConverterViewModel
-import AppKit
 import SwiftUI
 
 /// 빈 목록 안내(upstream HintVisibility 상자: 아이콘, 안내 문구, 형식 배지)
@@ -46,37 +45,6 @@ struct PSPProgressCell: View {
                 .font(.caption.monospacedDigit())
                 .frame(minWidth: 34, alignment: .trailing)
         }
-    }
-}
-
-/// GridViewColumnHeader_Click(ListViewColumnSorter) 자리: 머리글 Tag 속성으로 화면 목록만 정렬한다(ViewModel 순서는 그대로).
-struct PSPColumnSort: SortComparator {
-    let prop: String
-    var order: SortOrder = .forward
-
-    func compare(_ lhs: RemoteObject, _ rhs: RemoteObject) -> ComparisonResult {
-        // 표 정렬은 화면(메인 스레드)에서만 한다.
-        let (a, b, textA, textB) = MainActor.assumeIsolated {
-            (lhs[prop]?.double, rhs[prop]?.double, lhs.string(prop), rhs.string(prop))
-        }
-
-        let result: ComparisonResult
-        if let a, let b {
-            result = a < b ? .orderedAscending : (a > b ? .orderedDescending : .orderedSame)
-        } else {
-            result = textA.localizedStandardCompare(textB)
-        }
-
-        guard order == .reverse else { return result }
-        switch result {
-        case .orderedAscending: return .orderedDescending
-        case .orderedDescending: return .orderedAscending
-        case .orderedSame: return .orderedSame
-        }
-    }
-
-    static func sorted(_ items: [RemoteObject], by order: [PSPColumnSort]) -> [RemoteObject] {
-        order.isEmpty ? items : items.sorted(using: order)
     }
 }
 
@@ -134,20 +102,7 @@ enum PSPFileActions {
     /// MenuItem_OpenFolder_Click: 첫 선택 항목 FilePath의 폴더를 연다(Path.GetDirectoryName → OpenFolder)
     static func openFolder(_ engine: EngineClient, _ owner: RemoteObject?, _ ids: Set<Int>) {
         guard let item = engine.items(owner, "FileItems").first(where: { ids.contains($0.id) }) else { return }
-        let path = item.string("FilePath")
-        guard !path.isEmpty else { return }
-
-        let directory = (path as NSString).deletingLastPathComponent
-        var isDirectory: ObjCBool = false
-        if FileManager.default.fileExists(atPath: directory, isDirectory: &isDirectory), isDirectory.boolValue {
-            NSWorkspace.shared.open(URL(fileURLWithPath: directory, isDirectory: true))
-        }
-    }
-
-    /// Directory.Exists(path)
-    nonisolated static func isDirectory(_ url: URL) -> Bool {
-        var isDirectory: ObjCBool = false
-        return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) && isDirectory.boolValue
+        FilePanels.showContainingFolder(item.string("FilePath"))
     }
 
     /// 엔진이 띄우는 파일 대화상자와 같은 처리(WPF 필터 해석 포함)를 쓴다.

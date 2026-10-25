@@ -27,7 +27,7 @@ struct SwitchSplitTab: View {
                     Spacer(minLength: 0)
 
                     ToolIconButton(icon: "Help.png", help: "도움말") {
-                        SwitchPanels.openURL("https://sinjunyoung.github.io/RomForge/switch-merge/")
+                        FilePanels.openURL("https://sinjunyoung.github.io/RomForge/switch-merge/")
                     }
                     .disabled(!idle)
                 }

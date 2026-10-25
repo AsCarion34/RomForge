@@ -10,7 +10,7 @@ struct ThreeDSDecryptorTab: View {
 
     @State private var selection = Set<Int>()
     /// GridViewColumnHeader_Click(ListViewColumnSorter)
-    @State private var sortOrder: [ThreeDSColumnSort] = []
+    @State private var sortOrder: [ColumnSort] = []
 
     var body: some View {
         ChildVM(id: vmId) { vm in
@@ -36,26 +36,26 @@ struct ThreeDSDecryptorTab: View {
     }
 
     private func list(_ vm: RemoteObject, busy: Bool) -> some View {
-        let rows = engine.items(vm, "FileItems").sorted(using: sortOrder)
+        let rows = ColumnSort.sorted(engine.items(vm, "FileItems"), by: sortOrder)
 
         return Table(rows, selection: $selection, sortOrder: $sortOrder) {
-            TableColumn("", sortUsing: ThreeDSColumnSort("No")) { item in
+            TableColumn("", sortUsing: ColumnSort("No")) { item in
                 Text(item.string("No")).foregroundStyle(.secondary).frame(maxWidth: .infinity)
             }
             .width(40)
-            TableColumn("타이틀", sortUsing: ThreeDSColumnSort("FileName")) { item in ThreeDSTitleCell(item: item).cellEnvironment(engine) }
+            TableColumn("타이틀", sortUsing: ColumnSort("FileName")) { item in ThreeDSTitleCell(item: item).cellEnvironment(engine) }
                 .width(min: 160, ideal: 220)
-            TableColumn("종류", sortUsing: ThreeDSColumnSort("TypeLabel")) { item in ThreeDSTypeBadge(item: item) }
+            TableColumn("종류", sortUsing: ColumnSort("TypeLabel")) { item in ThreeDSTypeBadge(item: item) }
                 .width(90)
-            TableColumn("형식", sortUsing: ThreeDSColumnSort("Extension")) { item in ThreeDSExtensionBadge(item: item) }
+            TableColumn("형식", sortUsing: ColumnSort("Extension")) { item in ThreeDSExtensionBadge(item: item) }
                 .width(75)
-            TableColumn("", sortUsing: ThreeDSColumnSort("Crypto")) { item in ThreeDSLockCell(item: item).cellEnvironment(engine) }
+            TableColumn("", sortUsing: ColumnSort("Crypto")) { item in ThreeDSLockCell(item: item).cellEnvironment(engine) }
                 .width(40)
-            TableColumn("용량", sortUsing: ThreeDSColumnSort("FileSizeBytes")) { item in
+            TableColumn("용량", sortUsing: ColumnSort("FileSizeBytes")) { item in
                 Text(item.string("FileSize")).frame(maxWidth: .infinity, alignment: .trailing)
             }
             .width(80)
-            TableColumn("진행률", sortUsing: ThreeDSColumnSort("Progress")) { item in ThreeDSProgressCell(item: item) }
+            TableColumn("진행률", sortUsing: ColumnSort("Progress")) { item in ThreeDSProgressCell(item: item) }
                 .width(110)
         }
         .overlay {

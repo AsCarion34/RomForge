@@ -100,8 +100,8 @@ enum UiHostHandler {
         return .bool(NSPasteboard.general.setString(p["text"]?.string ?? "", forType: .string))
     }
 
-    /// WPF 필터("설명|*.iso;*.cue|모든 파일|*.*")에서 확장자를 뽑아 허용 형식으로 쓴다.
-    private static func applyFilter(_ filter: String?, to panel: NSSavePanel) {
+    /// WPF 필터("설명|*.iso;*.cue|모든 파일|*.*")에서 확장자를 뽑아 허용 형식으로 쓴다(화면의 FilePanels도 쓴다).
+    static func applyFilter(_ filter: String?, to panel: NSSavePanel) {
         guard let filter, !filter.isEmpty else { return }
         let parts = filter.split(separator: "|", omittingEmptySubsequences: false)
         let patterns = stride(from: 1, to: parts.count, by: 2).flatMap { parts[$0].split(separator: ";") }

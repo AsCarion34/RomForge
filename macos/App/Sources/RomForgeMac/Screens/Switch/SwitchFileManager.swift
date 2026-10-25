@@ -11,7 +11,7 @@ struct SwitchFileManager: View {
     var enabled = true
 
     @State private var selection = Set<Int>()
-    @State private var sortOrder: [SwitchColumnSort] = []
+    @State private var sortOrder: [ColumnSort] = []
 
     var body: some View {
         let items = list.items(engine)
@@ -26,16 +26,16 @@ struct SwitchFileManager: View {
     }
 
     private func table(_ items: [RemoteObject]) -> some View {
-        Table(SwitchColumnSort.apply(sortOrder, to: items), selection: $selection, sortOrder: $sortOrder) {
+        Table(ColumnSort.sorted(items, by: sortOrder), selection: $selection, sortOrder: $sortOrder) {
             // 머리글: Categories.png(글자 없음), Tag="FileType"
-            TableColumn("", sortUsing: SwitchColumnSort(prop: "FileType")) { item in
+            TableColumn("", sortUsing: ColumnSort("FileType")) { item in
                 SwitchBadge(text: item.string("FileType"), background: item["TypeBackground"]?.color, foreground: item["TypeForeground"]?.color)
                     .frame(maxWidth: .infinity)
             }
             .width(70)
-            TableColumn("타이틀", sortUsing: SwitchColumnSort(prop: "TitleName")) { item in SwitchTitleCell(item: item).cellEnvironment(engine) }
+            TableColumn("타이틀", sortUsing: ColumnSort("TitleName")) { item in SwitchTitleCell(item: item).cellEnvironment(engine) }
                 .width(min: 200, ideal: 380)
-            TableColumn("버전", sortUsing: SwitchColumnSort(prop: "Version")) { item in
+            TableColumn("버전", sortUsing: ColumnSort("Version")) { item in
                 Text(item.string("Version"))
                     .fontWeight(.bold)
                     .help(item.string("Version"))
@@ -43,13 +43,13 @@ struct SwitchFileManager: View {
             }
             .width(120)
             // 머리글: Extension.png(글자 없음), Tag="Extension"
-            TableColumn("", sortUsing: SwitchColumnSort(prop: "Extension")) { item in
+            TableColumn("", sortUsing: ColumnSort("Extension")) { item in
                 SwitchBadge(text: item.string("Extension"), background: item["ExtensionBackground"]?.color, foreground: item["ExtensionForeground"]?.color)
                     .frame(maxWidth: .infinity)
             }
             .width(50)
             // Res.Header_Size
-            TableColumn("용량", sortUsing: SwitchColumnSort(prop: "FileSize")) { item in
+            TableColumn("용량", sortUsing: ColumnSort("FileSize")) { item in
                 Text(item.string("FileSize")).monospacedDigit().frame(maxWidth: .infinity, alignment: .trailing)
             }
             .width(75)
@@ -68,7 +68,7 @@ struct SwitchFileManager: View {
             if !ids.isEmpty {
                 Button("폴더 열기") {
                     if let id = SwitchBridge.ordered(ids, in: items).first, let file = engine.store.object(id) {
-                        SwitchPanels.showContainingFolder(file.string("FilePath"))
+                        FilePanels.showContainingFolder(file.string("FilePath"))
                     }
                 }
                 Divider()
@@ -83,11 +83,11 @@ struct SwitchFileManager: View {
             // Res.ToolTip_AddFile
             ToolIconButton(icon: "AddFile.png", help: "파일 추가") {
                 // Res.Dialog_SelectGameFile, Res.Filter_SwitchFiles(… *.nsp;*.xci;*.nsz;*.xcz)|Res.Filter_AllFiles|*.*
-                let paths = SwitchPanels.openFiles(title: "게임 파일 선택", extensions: SwitchPanels.switchExtensions, multiple: true)
+                let paths = FilePanels.openFiles(title: "게임 파일 선택", extensions: SwitchPanels.switchExtensions, multiple: true)
                 if !paths.isEmpty { Task { await addFiles(paths) } }
             }
             ToolIconButton(icon: "AddFolder.png", help: "폴더 추가") {
-                if let folder = SwitchPanels.openFolder(title: "게임 폴더 선택") { Task { await addFiles([folder]) } }
+                if let folder = FilePanels.openFolder(title: "게임 폴더 선택") { Task { await addFiles([folder]) } }
             }
             // Res.ToolTip_RemoveSelected
             ToolIconButton(icon: "Delete.png", help: "선택 항목 제거") { removeFiles(selection, from: items) }

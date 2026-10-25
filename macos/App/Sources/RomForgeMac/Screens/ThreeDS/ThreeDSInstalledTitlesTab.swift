@@ -150,9 +150,9 @@ struct ThreeDSInstalledTitlesTab: View {
         .contextMenu(forSelectionType: Int.self) { ids in
             // ContextMenu_Opening: InstalledTitles가 작업 중이면 열지 않는다. CCI 추출은 모두 본편(IsApplication)일 때만.
             if !ids.isEmpty, !(titles["IsLocked"]?.bool ?? false) {
-                Button { extract(rows, ids, asCci: false) } label: { ThreeDSMenuLabel(title: "CIA로 추출", icon: "DLC.png") }
+                Button { extract(rows, ids, asCci: false) } label: { MenuLabel(title: "CIA로 추출", icon: "DLC.png") }
                 if allApplications(ids) {
-                    Button { extract(rows, ids, asCci: true) } label: { ThreeDSMenuLabel(title: "CCI로 추출", icon: "Cartridge.png") }
+                    Button { extract(rows, ids, asCci: true) } label: { MenuLabel(title: "CCI로 추출", icon: "Cartridge.png") }
                 }
             }
         }
