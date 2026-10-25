@@ -21,12 +21,13 @@ SCREENS = os.path.join(ROOT, "macos", "App", "Sources", "RomForgeMac")
 OVERRIDDEN = {
     "RomForge/Views/PasswordPromptWindow.xaml.cs": "macos/Overrides/RomForge/PasswordPromptWindow.cs",
     "RomForge.Core/Services/Util/ClipboardHelper.cs": "macos/Overrides/RomForge.Core/ClipboardHelper.cs",
-    "PickPack.Disk/DriveInfos.cs": "macos/Overrides/PickPack.Disk/DriveInfos.cs",
-    "PickPack.Disk/ImageWriter.cs": "macos/Overrides/PickPack.Disk/ImageWriter.cs",
-    "PickPack.Disk/ImageReader.cs": "macos/Overrides/PickPack.Disk/ImageReader.cs",
-    "PickPack.Disk/ETC/DiskUtil.cs": "macos/Overrides/PickPack.Disk/DiskUtil.cs",
-    "PickPack.Disk/ETC/PartitionUtil.cs": "macos/Overrides/PickPack.Disk/PartitionUtil.cs",
+    "PickPack.Disk/Helpers/DriveInfos.cs": "macos/Overrides/PickPack.Disk/DriveInfos.cs",
+    "PickPack.Disk/Services/ImageWriter.cs": "macos/Overrides/PickPack.Disk/ImageWriter.cs",
+    "PickPack.Disk/Services/ImageReader.cs": "macos/Overrides/PickPack.Disk/ImageReader.cs",
+    "PickPack.Disk/Helpers/DiskUtil.cs": "macos/Overrides/PickPack.Disk/DiskUtil.cs",
+    "PickPack.Disk/Helpers/PartitionUtil.cs": "macos/Overrides/PickPack.Disk/PartitionUtil.cs",
     "Common/7z/NativeSevenZip.cs": "macos/Overrides/Common/NativeSevenZip.cs",
+    "Common.WPF/SoundManager.cs": "macos/Overrides/Common.WPF/SoundManager.cs",
     "CHD.Core/src/tools/chdman_wrapper.h": "macos/Native/chdman/chdman_paths_mac.cpp (진입점 시그니처)",
 }
 NATIVE = ("CHD.Core/src/", "CHD.Core/scripts/", "Patch.Core/src/")

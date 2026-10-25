@@ -2,7 +2,7 @@
 // ViewModel: PSSettingsMainViewModel (SettingsMainViewModel.PS1)
 import SwiftUI
 
-/// PS 설정(하위 탭 "PBP 패킹"): 압축 레벨 / 출력 옵션
+/// PSP 설정(하위 탭 "PBP 패킹"): 압축 레벨 / 출력 옵션
 struct SettingsPSTab: View {
     @Environment(EngineClient.self) private var engine
     let vm: RemoteObject

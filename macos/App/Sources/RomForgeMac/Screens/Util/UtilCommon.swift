@@ -1,11 +1,12 @@
-// upstream: RomForge/Controls/Util/HashTab.xaml(.cs), TistoryTab.xaml(.cs), CertsTab.xaml(.cs), CueTab.xaml(.cs), ZipImageToolTab.xaml(.cs) 공통 부분(하단 버튼, 목록 메뉴·드롭·삭제, 파일 대화상자)
-// ViewModel: HashMainViewModel, TistoryMainViewModel, CertsMainViewModel, CueMainViewModel, ZipImageToolMainViewModel
+// upstream: RomForge/Controls/Util/HashTab.xaml(.cs), RomForge/Controls/Util/TistoryTab.xaml(.cs), RomForge/Controls/Util/CertsTab.xaml(.cs), RomForge/Controls/Util/CueTab.xaml(.cs)
+// ViewModel: HashMainViewModel, TistoryMainViewModel, CertsMainViewModel, CueMainViewModel
+// 유틸 하위 탭 공통 부분: 빈 목록 안내, 하단 버튼·목록 메뉴·드롭·삭제 처리기, 파일·폴더 대화상자
 import AppKit
 import SwiftUI
 
 /// 빈 목록 안내(upstream HintVisibility 상자: 아이콘, 안내 문구, 형식 배지)
 struct UtilHint: View {
-    var icon = "drag.png"
+    var icon = "Info.png"
     let title: String
     var detail: String? = nil
     var badges: [String] = []
@@ -137,6 +138,15 @@ enum UtilFileActions {
     /// Path.GetDirectoryName(path)
     nonisolated static func directoryName(_ path: String) -> String? {
         path.isEmpty ? nil : (path as NSString).deletingLastPathComponent
+    }
+
+    /// 폴더 입력란의 PreviewDragOver + Drop: 첫 경로가 있는 폴더일 때만 받아 그 경로를 돌려준다.
+    /// (Drop은 파일이면 그 폴더를 쓰지만 PreviewDragOver가 폴더가 아닌 드롭을 막는다)
+    nonisolated static func droppedFolder(_ urls: [URL]) -> String? {
+        guard let first = urls.first else { return nil }
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: first.path, isDirectory: &isDirectory), isDirectory.boolValue else { return nil }
+        return first.path
     }
 
     /// 엔진이 띄우는 파일 대화상자와 같은 처리(WPF 필터 해석 포함)를 쓴다.

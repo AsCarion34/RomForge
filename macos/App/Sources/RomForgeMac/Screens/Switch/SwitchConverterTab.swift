@@ -72,7 +72,7 @@ struct SwitchConverterTab: View {
         }
         .overlay {
             if vm.isVisible("HintVisibility") {
-                SwitchDropHint(title: "파일 또는 폴더를 여기에 드래그하세요", detail: "하기 파일 포맷을 상호 변환합니다", icon: "drag.png")
+                SwitchDropHint(title: "파일 또는 폴더를 여기에 드래그하세요", detail: "하기 파일 포맷을 상호 변환합니다")
             }
         }
         .dropDestination(for: URL.self) { urls, _ in

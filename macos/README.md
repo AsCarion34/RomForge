@@ -2,6 +2,11 @@
 
 Windows용 WPF 앱 [RomForge](https://github.com/sinjunyoung/RomForge)를 macOS에서 쓰기 위한 포트입니다.
 
+> **원본과 이 포크**
+> - 원본은 [sinjunyoung/RomForge](https://github.com/sinjunyoung/RomForge)입니다. RomForge의 기능과 코드는 모두 원작자 sinjunyoung 님의 작업입니다.
+> - 이 포크는 macOS용 UI(SwiftUI 앱)와 그 UI를 실행하는 데 필요한 연결 코드(엔진 브리지, Windows API 대체, 네이티브 라이브러리 빌드)만 `macos/`에 더했습니다. 롬 처리 로직은 원본 코드를 고치지 않고 그대로 빌드해 씁니다.
+> - 원작자의 작업을 존중하며, 원본이 바뀌면 그 변경을 그대로 따라갑니다. 라이선스는 원본과 같은 GPL-2.0-or-later입니다.
+
 - **SwiftUI 앱**: 화면과 macOS 연동(대화상자, 드래그앤드롭, 클립보드)을 맡습니다.
 - **.NET 엔진**: upstream의 ViewModel과 Core 라이브러리를 **수정 없이** 빌드해 화면 없이 실행합니다.
 - 앱은 엔진과 stdio(줄 단위 JSON)로 통신하며 upstream ViewModel을 원격으로 조작합니다. 그래서 upstream의 로직 변경이 그대로 반영됩니다.
@@ -15,8 +20,8 @@ SwiftUI 앱 ──stdio JSON──▶ 엔진 (upstream RomForge.csproj를 macOS 
 
 ## 원칙: upstream 파일은 고치지 않는다
 
-- macOS 관련 파일은 모두 `macos/` 아래에 둡니다. 예외는 CI용 `.github/workflows/macos.yml` 하나뿐입니다.
-- 그래서 `git merge upstream/main`에서 충돌이 나지 않습니다.
+- macOS 관련 파일은 모두 `macos/` 아래에 둡니다. 예외는 CI용 `.github/workflows/macos.yml`과 루트 `README.md` 맨 위의 포크 안내문뿐입니다.
+- 그래서 `git merge upstream/main`은 충돌 없이 끝납니다(upstream이 README 첫 줄을 고친 경우에만 안내문 부분을 손으로 합칩니다).
 - Windows 빌드(`BUILD.bat`)는 `macos/`를 전혀 쓰지 않습니다.
 - upstream 코드를 macOS용으로 **대체한 곳**만 동기화할 때 확인하면 됩니다. `scripts/ui-sync-report.py`가 자동으로 짚어 줍니다.
 
@@ -25,10 +30,11 @@ SwiftUI 앱 ──stdio JSON──▶ 엔진 (upstream RomForge.csproj를 macOS 
 | `Overrides/RomForge/PasswordPromptWindow.cs` | `RomForge/Views/PasswordPromptWindow.xaml.cs`의 `OpenWithPasswordPromptAsync` | WPF 창 대신 SwiftUI 입력 창 |
 | `Overrides/RomForge.Core/ClipboardHelper.cs` | 같은 이름 파일 | user32 대신 NSPasteboard |
 | `Overrides/Common/NativeSevenZip.cs` | `Common/7z/NativeSevenZip.cs` | Windows 7z.dll 대신 SharpCompress(`Compat/SevenZip`) |
-| `Overrides/PickPack.Disk/*` | `DriveInfos`, `ImageWriter`, `ImageReader`, `ETC/DiskUtil`, `ETC/PartitionUtil` | Windows 물리 디스크 API 대신 diskutil·`/dev/rdiskN`·authopen |
+| `Overrides/Common.WPF/SoundManager.cs` | 같은 이름 파일 | NAudio(Windows winmm·ACM) 대신 afplay로 효과음 재생 |
+| `Overrides/PickPack.Disk/*` | `Helpers/DriveInfos`, `Services/ImageWriter`, `Services/ImageReader`, `Helpers/DiskUtil`, `Helpers/PartitionUtil` | Windows 물리 디스크 API 대신 diskutil·`/dev/rdiskN`·authopen |
 | `Native/chdman/chdman_paths_mac.cpp` | chdman 래퍼 진입점 | `ChdmanService.ToLongPath`가 붙이는 `\\?\` 접두사 제거 |
 
-- `Compat/`: WPF, GDI+(`System.Drawing`), WMI(`System.Management`), `WindowsIdentity`, SevenZipSharp의 대체 구현입니다. upstream이 새 Windows API를 쓰기 시작하면 컴파일 오류로 바로 드러납니다.
+- `Compat/`: WPF(Dispatcher·DispatcherTimer·컬렉션 뷰 등), GDI+(`System.Drawing`), WMI(`System.Management`), `WindowsIdentity`, SevenZipSharp, NAudio `WaveOutEvent`(macOS AudioQueue)의 대체 구현입니다. upstream이 새 Windows API를 쓰기 시작하면 컴파일 오류로 바로 드러납니다.
 - `build/Mac.targets`: 프로젝트별로 무엇을 빼고 대체하는지 정한 macOS 빌드 프로필입니다.
 
 ## 구조
@@ -98,7 +104,7 @@ python3 macos/tests/e2e_disk_image.py      # SD/USB 굽기·읽기(디스크 이
 python3 macos/tests/e2e_bridge_features.py # 브리지: 취소·연타 방지·백그라운드 실행·enum 변환·64비트 정수
 ```
 
-- 엔진 점검: `RomForge --selftest`(ViewModel 트리 생성), `--test-7z`, `--test-disks`, `--dump-schema`
+- 엔진 점검: `RomForge --selftest`(ViewModel 트리 생성), `--test-7z`, `--test-disks`, `--test-audio`(효과음·배경음 미리듣기를 무음으로 재생), `--dump-schema`
 - 화면 점검: `ROMFORGE_DEBUG_TOUR=접두사`로 앱을 실행하면 모든 탭을 PNG로 저장합니다.
 - 실제 USB 기록 경로(authopen 관리자 인증)는 실제 장치로 직접 확인해야 합니다.
 
@@ -140,11 +146,14 @@ python3 macos/scripts/ui-sync-report.py ORIG_HEAD HEAD --schema-old /tmp/schema-
 upstream이 `.gitignore`로 제외한 resx 리소스 11개는 빌드할 때 빈 대체 파일로 만듭니다(`scripts/ensure-private-assets.sh`).
 
 - **PS1 → PBP 변환:** PSP 템플릿 10개가 필요합니다. 실제 파일을 넣어야 동작합니다.
-- **3DS SD 설치 마무리:** `binary/custom-install-finalize.3dsx`가 필요합니다. ihaveamac/custom-install v2.1(MIT) 공식 릴리스에서 받아 같은 경로에 넣습니다.
+- **3DS SD 설치 마무리:** `3DS.Core/Resources/custom-install-finalize.3dsx`가 필요합니다. ihaveamac/custom-install v2.1(MIT) 공식 릴리스에서 받아 같은 경로에 넣습니다(예전 위치 `binary/`에서 upstream이 옮겼습니다).
 
 ## Windows판과 다른 점·알려진 한계
 
-- **화면:** 10개 탭과 하위 탭을 모두 SwiftUI로 옮겼습니다. 각 화면 파일 첫 줄에 대응하는 upstream XAML을 적어 두었습니다.
+- **화면:** 11개 탭과 하위 탭을 모두 SwiftUI로 옮겼습니다. 각 화면 파일 첫 줄에 대응하는 upstream XAML을 적어 두었습니다.
+- **작업 표시줄:** 진행도는 Dock 아이콘의 진행 막대로 보여 줍니다. upstream이 오류 때 작업 표시줄 아이콘을 깜빡이는 동작은 앱이 뒤에 있을 때 Dock 아이콘을 튀기는 것으로 대신합니다.
+- **소리:** 효과음은 afplay로, PSP 배경음 미리듣기는 AudioQueue로 재생합니다.
+- **업데이트 확인:** upstream의 시작 시 업데이트 확인(설정 > 일반)은 Windows판 릴리스를 보는 기능이라 macOS판에서는 하지 않습니다.
 - **SD/USB 굽기:** 실제 장치에 쓸 때는 macOS 관리자 인증 창(authopen)이 뜹니다. 자동 테스트는 디스크 이미지 가상 장치로만 했습니다. 실제 USB·SD는 직접 확인이 필요합니다.
 - **화면에서만 하던 동작:** 목록을 해당 항목 위치로 스크롤하는 동작(ScrollToItemRequested)은 옮기지 않았습니다.
 - **PS1 → PBP:** PSP 템플릿(Sony 데이터)은 들어 있지 않습니다. 직접 넣어야 합니다.

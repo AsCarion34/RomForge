@@ -3,7 +3,7 @@
 import AppKit
 import SwiftUI
 
-/// 패치 > PC98 탭: 원본 HDI · 한글패치(폴더/ZIP) + 안내 + 이 탭의 로그 + 진행률.
+/// 패치 > PC98 탭: 원본 HDI · 패치(폴더/IPS/ZIP) + 안내 + 이 탭의 로그 + 진행률.
 struct PatchPc98Tab: View {
     @Environment(EngineClient.self) private var engine
     let vmId: Int?
@@ -16,16 +16,17 @@ struct PatchPc98Tab: View {
                 HStack(spacing: 2) {
                     PatchDropZone(enabled: idle, tooltip: vm.string("SourcePath"),
                                   onDrop: { engine.string(vm, "SourcePath").wrappedValue = $0[0] },  // SourceDrop_Drop
-                                  onClick: { pickSource(vm) }) {
-                        PatchZoneLabel(icon: "AddFile.png", text: vm.string("SourceLabel"), caption: "원본 HDI")
+                                  onClick: { pickSource(vm) }) {                                     // SourceDrop_Click
+                        PatchZoneLabel(icon: "Diskette.png", text: vm.string("SourceLabel"), caption: "원본")
                     }
+                    // PatchDrop_Drop · PatchDrop_MouseLeftButtonDown(ContextMenu: SelectFolder_Click · SelectFile_Click)
                     PatchDropZone(enabled: idle, tooltip: vm.string("PatchPath"),
-                                  onDrop: { dropPatch(vm, $0[0]) },
-                                  onClick: { pickPatch(vm) }) {
-                        PatchZoneLabel(icon: "Patch.png", text: vm.string("PatchLabel"), caption: "한글패치 (폴더/ZIP)")
+                                  onDrop: { PatchUI.dropPatchPath($0) { engine.string(vm, "PatchPath").wrappedValue = $0 } },
+                                  menu: PatchUI.patchPathMenu { engine.string(vm, "PatchPath").wrappedValue = $0 }) {
+                        PatchZoneLabel(icon: "Patch.png", text: vm.string("PatchLabel"), caption: "패치")
                     }
                 }
-                .frame(height: 50)
+                .frame(height: 65)
 
                 HStack(spacing: 8) {
                     UpstreamIcon(name: "Patch.png", size: 16)
@@ -50,9 +51,9 @@ struct PatchPc98Tab: View {
                 .scrollContentBackground(.hidden)
                 .frame(maxHeight: .infinity)
 
-                PatchProgressFooter(label: vm.string("ProgressLabel"),
-                                    percent: vm.string("ProgressPercent"),
-                                    value: vm["ProgressPct"]?.double ?? 0)
+                ToolProgressBar(vm: vm)
+                    .padding(.horizontal, 8)
+                    .frame(height: 28)
             }
             .padding(5)
             .observeLists(engine, vm, ["LogEntries"])
@@ -64,19 +65,5 @@ struct PatchPc98Tab: View {
         if let path = PatchUI.choosePath(title: "원본 HDI 선택", filter: "PC98 디스크 이미지|*.hdi;*.nhd;*.thd|모든 파일|*.*") {
             engine.string(vm, "SourcePath").wrappedValue = path
         }
-    }
-
-    /// PatchDrop_Click
-    private func pickPatch(_ vm: RemoteObject) {
-        if let path = PatchUI.choosePath(title: "한글패치 ZIP 선택", filter: "ZIP 파일|*.zip|모든 파일|*.*") {
-            engine.string(vm, "PatchPath").wrappedValue = path
-        }
-    }
-
-    /// PatchDrop_Drop: 폴더나 .zip이면 그대로, 아니면 그 파일이 있는 폴더
-    private func dropPatch(_ vm: RemoteObject, _ path: String) {
-        let isZip = (path as NSString).pathExtension.lowercased() == "zip"
-        let value = PatchUI.isDirectory(path) || isZip ? path : (path as NSString).deletingLastPathComponent
-        engine.string(vm, "PatchPath").wrappedValue = value
     }
 }

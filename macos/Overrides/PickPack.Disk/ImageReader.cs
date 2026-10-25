@@ -1,9 +1,10 @@
 using Ionic.Zlib;
-using PickPack.Disk.ETC;
+using PickPack.Disk.Helpers;
+using PickPack.Disk.Models;
 
-namespace PickPack.Disk
+namespace PickPack.Disk.Services
 {
-    // upstream PickPack.Disk/ImageReader.cs의 macOS 대체. upstream이 바뀌면 같은 부분을 맞춘다.
+    // upstream PickPack.Disk/Services/ImageReader.cs의 macOS 대체. upstream이 바뀌면 같은 부분을 맞춘다.
     // upstream과 다른 곳: 장치를 \\.\PHYSICALDRIVEN 대신 /dev/rdiskN으로 연다(필요하면 관리자 인증).
     public class ImageReader
     {

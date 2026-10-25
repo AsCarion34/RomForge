@@ -10,7 +10,7 @@ RomForge macOS 앱의 탭 화면을 만들 때 따르는 규칙입니다. 전체
 
 - 각 화면은 `Sources/RomForgeMac/Screens/<그룹>/` 아래에 둡니다. 다른 폴더의 파일은 고치지 않습니다.
 - 메인 탭 진입점은 `struct <이름>Screen: View { let vmId: Int }`입니다.
-  - 이름: `PatchScreen`, `ConvertScreen`, `SwitchScreen`, `WiiUScreen`, `ThreeDSScreen`, `WiiScreen`, `PSScreen`, `UtilScreen`, `SettingsScreen`
+  - 이름: `PatchScreen`, `ConvertScreen`, `SwitchScreen`, `WiiUScreen`, `WiiScreen`, `ThreeDSScreen`, `PSVitaScreen`, `PSPScreen`, `UtilScreen`, `SettingsScreen` (압축 탭은 `Views/CompressView`)
   - `vmId`는 MainViewModel의 해당 속성(PatchVM 등) 객체 번호입니다.
 - **모든 파일 첫 줄에 upstream 출처를 적습니다.** upstream이 화면을 바꿨을 때 고칠 Swift 파일을 자동으로 찾는 데 씁니다.
   ```swift
@@ -58,6 +58,7 @@ vm.options("EnumProp")                          // enum 선택지
 vm.has("AddPaths")                              // 공개 메서드가 있는지
 
 engine.items(vm, "FileItems")                   // 컬렉션 항목(RemoteObject 배열). 먼저 observeLists로 구독
+engine.store.groupBy(listId)                    // upstream이 CollectionViewSource로 묶은 목록의 묶음 기준 속성 이름(항목은 뷰 순서로 온다)
 item.string("FileName"), item["Progress"]?.double
 
 engine.bool(vm, "Prop")        // Binding<Bool>
@@ -99,11 +100,12 @@ UpstreamIcon(name: "Patch.png", size: 18)                       // upstream PNG 
 - **Table 셀 주의:** 셀 안에서 `@Environment(EngineClient.self)`를 읽는 뷰(엔진 바인딩 Picker, `RemoteImage`, 화면별 셀 뷰)를 쓰면 셀 끝에 `.cellEnvironment(engine)`을 붙입니다. 행이 지워질 때 SwiftUI가 셀을 환경 없이 한 번 더 갱신해 "No Observable object of type EngineClient" 오류로 앱이 멈추기 때문입니다.
 - 버튼(`Buttons.swift`): `IconLabel`(아이콘 + 문구), `IconButton`(code-behind Click), `CommandIconButton`(커맨드 + CanExecute), `RunCancelButton`(NSW.WPF IconButton: 실행 중이면 "취소"), `ToolIconButton`(아이콘만 있는 작은 버튼). 화면 폴더마다 새로 만들지 말고 이것을 씁니다.
 - `OutputPathRow(vm:toggleProp:pathProp:browseCommand:toggleTitle:placeholder:)`
+- `ToolProgressBar(vm:)`: upstream ToolTabViewModel의 표준 진행 줄(ProgressLabel · ProgressPercent · ProgressSpeed · ProgressTime · ProgressPct 막대)
 - `LevelSlider(vm:prop:range:textConverter:colorConverter:)`
 - `EnumPicker(vm:prop:labels:style:)`: `.segmented` / `.radio` / `.menu`
 - `CommandButton(title:systemImage:vm:command:arg:prominent:)`
 - `GenericVMForm(vmId:)`: 자동 생성 화면. 아직 못 옮긴 부분의 임시 대체로만 씁니다.
-- `LogListView(listId:)`: 로그. ToolLayout이 자동으로 붙입니다.
+- `LogListView(listId:owner:)`: 로그(upstream 로그 메뉴: 로그 비우기 = owner의 ClearLog(), 로그 복사). ToolLayout이 자동으로 붙입니다.
 
 부족한 부품이 있으면 공용 파일을 고치지 말고, 자기 폴더 안에 `private` 보조 뷰로 만든 뒤 보고서에 적습니다.
 

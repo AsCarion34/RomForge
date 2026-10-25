@@ -14,6 +14,7 @@ internal static class ConverterRegistry
     {
         ["InverseBool"] = "InverseBoolConverter",
         ["LogColor"] = "LogLevelToColorConverter",
+        ["LanguageLabelConverter"] = "Locale3dsLanguageToLabelConverter",
     };
 
     private static readonly Dictionary<string, object> Instances = new(StringComparer.Ordinal);

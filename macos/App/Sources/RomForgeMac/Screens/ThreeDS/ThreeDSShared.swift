@@ -1,5 +1,5 @@
 // upstream: RomForge/Controls/3DS/MainTab.xaml, InstallMainTab.xaml, InstallTab.xaml(.cs), InstalledTitlesTab.xaml(.cs), ConverterTab.xaml(.cs), DecryptorTab.xaml(.cs) 공통 부분(하위 탭, 표 셀, 목록 드롭·삭제·메뉴, 정렬, 대화상자)
-// ViewModel: _3DSMainViewModel, InstallerMainViewModel, ConverterMainViewModel, DecryptorMainViewModel, TitleViewModel, _3DSFileItem, DecryptorFileItem
+// ViewModel: _3DSMainViewModel, InstallerMainViewModel, ConverterMainViewModel, DecryptorMainViewModel, TitleViewModel, FileItem, DecryptorFileItem
 import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
@@ -153,9 +153,9 @@ struct ThreeDSMenuLabel: View {
     }
 }
 
-/// 빈 목록 안내(upstream HintVisibility 상자: drag.png, 안내 문구, 형식 배지)
+/// 빈 목록 안내(upstream HintVisibility 상자: Info.png, 안내 문구, 형식 배지)
 struct ThreeDSHint: View {
-    var icon = "drag.png"
+    var icon = "Info.png"
     var iconSize: CGFloat = 28
     let title: String
     var detail: String?
@@ -418,7 +418,7 @@ enum ThreeDSBridge {
     /// 공개 메서드를 끝까지 기다려 부른다. 실패하면 upstream 예외를 돌려준다(code-behind의 try/catch 자리).
     static func call(_ engine: EngineClient, _ obj: Int, _ method: String, _ args: [JSONValue] = []) async -> Result<JSONValue, Error> {
         do {
-            return .success(try await engine.request("call", ["obj": .int(obj), "method": .string(method), "args": .array(args)]))
+            return .success(try await engine.callThrowing(obj, method, args))
         } catch {
             return .failure(error)
         }
@@ -427,6 +427,12 @@ enum ThreeDSBridge {
     /// code-behind의 Vm.AppendLog(msg, LogLevel.X)
     static func log(_ engine: EngineClient, _ vm: RemoteObject?, _ message: String, _ level: String) {
         engine.invoke(vm, "AppendLog", [.string(message), .string(level)])
+    }
+
+    /// code-behind의 catch 블록: Vm.AppendLog(msg, LogLevel.Error) 다음 await SoundPlayer.PlayErrorAsync()
+    static func fail(_ engine: EngineClient, _ vm: RemoteObject?, _ message: String) async {
+        await engine.call(vm?.id, "AppendLog", [.string(message), .string("Error")])
+        await engine.callStatic("RomForge.Core.Services.SoundPlayer", "PlayErrorAsync")
     }
 }
 

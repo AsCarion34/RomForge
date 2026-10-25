@@ -29,7 +29,7 @@ struct UtilCertsTab: View {
 
                 Spacer()
 
-                CommandIconButton(title: "추출", icon: "Run.png", vm: vm, command: "RunCommand", enabled: isUnlocked, prominent: true)
+                CommandIconButton(title: "시작", icon: "Run.png", vm: vm, command: "RunCommand", enabled: isUnlocked, prominent: true)
                 CommandIconButton(title: "취소", icon: "Cancel.png", vm: vm, command: "CancelCommand", enabled: !isUnlocked)
             }
         }
@@ -44,7 +44,7 @@ struct UtilCertsTab: View {
 
             if vm.isVisible("HintVisibility") {
                 VStack(spacing: 4) {
-                    UpstreamIcon(name: "drag.png", size: 24)
+                    UpstreamIcon(name: "Info.png", size: 24)
                     HStack(spacing: 6) {
                         UtilBadge(text: "CIA")
                         Text("파일을 여기에 드래그&드롭하세요").font(.headline)
@@ -109,10 +109,10 @@ struct UtilCertsTab: View {
         .font(.caption)
     }
 
-    /// BtnAddFile_Click: OpenFileDialog{Filter=CertsMainViewModel.GetFileDialogFilter(), Title="CIA 파일 선택"} → SetFile
+    /// BtnAddFile_Click: OpenFileDialog{Filter=CertsMainViewModel.FileDialogFilter(정적 속성), Title="CIA 파일 선택"} → SetFile
     private func selectFile() {
         Task {
-            let filter = await engine.callStatic("CertsMainViewModel", "GetFileDialogFilter")?.string
+            let filter = await engine.callStatic("CertsMainViewModel", "get_FileDialogFilter")?.string
             if let path = UtilFileActions.openFiles(filter: filter, title: "CIA 파일 선택", multiselect: false).first {
                 engine.invoke(vm, "SetFile", [.string(path)])
             }

@@ -79,7 +79,7 @@ def test_background(engine):
 
 
 def test_value_type(engine):
-    label = engine.request("convert", converter="Locale3dsLanguageToLabelConverter", value="KO", valueType="_3DS.Core.Enums.Locale3dsLanguage")
+    label = engine.request("convert", converter="Locale3dsLanguageToLabelConverter", value="KO", valueType="_3DS.Core.Enums.LocaleLanguage")
     plain = engine.request("convert", converter="Locale3dsLanguageToLabelConverter", value="KO")
     return check("convert valueType: 이름 문자열 → enum 값으로 변환기 실행", label == "한국어" and plain == "미선택", f"{label!r} / 타입 없이 {plain!r}")
 

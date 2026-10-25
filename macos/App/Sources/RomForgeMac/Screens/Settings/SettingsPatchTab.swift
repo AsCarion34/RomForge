@@ -29,27 +29,22 @@ struct SettingsPatchTab: View {
                 }
             }
 
+            // SlideToggleStyle ToggleButton
             Toggle(isOn: engine.bool(vm, "UseCustomOutputPath")) {
-                HStack(spacing: 12) {
+                HStack(spacing: 10) {
+                    UpstreamIcon(name: "AddFolder.png", size: 18)
                     Text("출력 폴더 변경").fontWeight(.bold)
                     Text("해제 시 원본 ROM 폴더 안의 output 폴더에 저장").font(.caption).foregroundStyle(.secondary)
                 }
             }
+            .toggleStyle(SettingsSlideToggleStyle())
             .padding(.top, 5)
 
             if vm.isVisible("OutputPathVisibility") {
-                HStack(spacing: 5) {
-                    // 빈 값일 때의 안내(OutputHintVisibility)는 입력란 안내 문구로 보인다.
-                    TextField("출력 폴더를 선택하세요", text: engine.string(vm, "OutputPath"))
-                        .textFieldStyle(.roundedBorder)
-                    Button {
-                        engine.run(vm, "BrowseOutputCommand")
-                    } label: {
-                        UpstreamIcon(name: "AddFolder.png", size: 20)
-                    }
-                    .disabled(!engine.canRun(vm, "BrowseOutputCommand"))
-                }
-                .padding(.top, 2)
+                // 폴더를 드롭하면 OutputPath로(TxtOutputPath_PreviewDragOver / TxtOutputPath_Drop)
+                SettingsPathField(vm: vm, prop: "OutputPath", placeholder: "출력 폴더를 선택하세요",
+                                  browseCommand: "BrowseOutputCommand", dropValue: SettingsPathField.folder)
+                    .padding(.top, 2)
             }
         }
     }

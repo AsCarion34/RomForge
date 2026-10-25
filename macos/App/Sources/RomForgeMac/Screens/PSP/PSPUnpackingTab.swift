@@ -1,28 +1,28 @@
-// upstream: RomForge/Controls/PS/UnpackingTab.xaml(.cs)
-// ViewModel: UnpackingMainViewModel (PS1MainViewModel.UnPackingVM)
+// upstream: RomForge/Controls/PSP/UnpackingTab.xaml(.cs)
+// ViewModel: UnpackingMainViewModel (PSPMainViewModel.UnPackingVM)
 import SwiftUI
 
 /// PBP 언팩: PBP 목록(아이콘·타이틀·로컬 타이틀·언어 국기) → BIN+CUE 복원
-struct PSUnpackingTab: View {
+struct PSPUnpackingTab: View {
     @Environment(EngineClient.self) private var engine
     let vm: RemoteObject
     @State private var selection = Set<Int>()
-    @State private var sortOrder: [PSColumnSort] = []
+    @State private var sortOrder: [PSPColumnSort] = []
 
     /// IsEnabled="{Binding IsConverting, Converter=InverseBool}"
     private var isIdle: Bool { !(vm["IsConverting"]?.bool ?? false) }
 
     var body: some View {
         ToolLayout(vm: vm) {
-            Table(PSColumnSort.sorted(engine.items(vm, "FileItems"), by: sortOrder), selection: $selection, sortOrder: $sortOrder) {
-                TableColumn("No.", sortUsing: PSColumnSort(prop: "No")) { item in
+            Table(PSPColumnSort.sorted(engine.items(vm, "FileItems"), by: sortOrder), selection: $selection, sortOrder: $sortOrder) {
+                TableColumn("No.", sortUsing: PSPColumnSort(prop: "No")) { item in
                     Text(item.string("No"))
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
                 .width(min: 40, ideal: 50)
 
-                TableColumn("타이틀", sortUsing: PSColumnSort(prop: "FileName")) { item in
+                TableColumn("타이틀", sortUsing: PSPColumnSort(prop: "FileName")) { item in
                     HStack(spacing: 10) {
                         RemoteImage(value: item["Icon"], size: 36)
                             .clipShape(RoundedRectangle(cornerRadius: 6))
@@ -37,53 +37,54 @@ struct PSUnpackingTab: View {
                 }
                 .width(min: 180, ideal: 270)
 
-                TableColumn("로컬 타이틀", sortUsing: PSColumnSort(prop: "TitleLocalName")) { item in
+                TableColumn("로컬 타이틀", sortUsing: PSPColumnSort(prop: "TitleLocalName")) { item in
                     VStack(alignment: .leading, spacing: 4) {
                         Text(item.string("TitleLocalName")).fontWeight(.semibold).lineLimit(1)
-                        PSLanguageFlags(item: item)
+                        PSPLanguageFlags(item: item)
                     }
                     .padding(.vertical, 4)
                     .cellEnvironment(engine)
                 }
                 .width(min: 180, ideal: 270)
 
-                TableColumn("용량", sortUsing: PSColumnSort(prop: "FileSizeBytes")) { item in
+                TableColumn("용량", sortUsing: PSPColumnSort(prop: "FileSizeBytes")) { item in
                     Text(item.string("FileSize"))
                         .monospacedDigit()
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 .width(min: 70, ideal: 90)
 
-                TableColumn("진행률", sortUsing: PSColumnSort(prop: "Progress")) { item in PSProgressCell(item: item) }
+                TableColumn("진행률", sortUsing: PSPColumnSort(prop: "Progress")) { item in PSPProgressCell(item: item) }
                     .width(min: 100, ideal: 120)
             }
             .overlay {
                 if vm.isVisible("HintVisibility") {
-                    PSHint(title: "파일 또는 폴더를 여기에 드래그&드롭하세요",
-                           detail: "PBP를 원본 BIN+CUE로 복원합니다",
-                           badges: ["PBP"])
+                    PSPHint(icon: "Info.png",
+                            title: "파일 또는 폴더를 여기에 드래그&드롭하세요",
+                            detail: "PBP를 원본 BIN+CUE로 복원합니다",
+                            badges: ["PBP"])
                 }
             }
             // LvFiles_Drop: 폴더가 아닌 .pbp 파일만 AddPaths에 넘긴다.
-            .modifier(PSFileListBehavior(engine: engine, vm: vm, selection: $selection, enabled: isIdle,
-                                         dropPaths: { urls in
-                                             urls.filter { !PSFileActions.isDirectory($0) && $0.pathExtension.lowercased() == "pbp" }
-                                                 .map(\.path)
-                                         }))
+            .modifier(PSPFileListBehavior(engine: engine, owner: vm, selection: $selection, enabled: isIdle,
+                                          dropPaths: { urls in
+                                              urls.filter { !PSPFileActions.isDirectory($0) && $0.pathExtension.lowercased() == "pbp" }
+                                                  .map(\.path)
+                                          }))
         } options: {
             HStack(spacing: 6) {
                 IconButton(title: "파일 추가", icon: "AddFile.png", enabled: isIdle) {
-                    PSFileActions.addFiles(engine, vm, filter: "PBP 파일|*.pbp|모든 파일|*.*", title: "파일 선택")
+                    PSPFileActions.addFiles(engine, vm, filter: "PBP 파일|*.pbp|모든 파일|*.*", title: "파일 선택")
                 }
                 IconButton(title: "폴더 추가", icon: "AddFolder.png", enabled: isIdle) {
-                    PSFileActions.addFolder(engine, vm)
+                    PSPFileActions.addFolder(engine, vm)
                 }
                 IconButton(title: "선택 삭제", icon: "Delete.png", enabled: isIdle) {
-                    PSFileActions.remove(engine, vm, selection)
+                    PSPFileActions.remove(engine, vm, selection)
                     selection.removeAll()
                 }
                 IconButton(title: "전체 삭제", icon: "Clear.png", enabled: isIdle) {
-                    PSFileActions.clear(engine, vm)
+                    PSPFileActions.clear(engine, vm)
                     selection.removeAll()
                 }
 
@@ -97,7 +98,7 @@ struct PSUnpackingTab: View {
 }
 
 /// 로컬 타이틀 아래 언어 국기(ItemsSource=Languages, PbpLanguageToFlagConverter)
-struct PSLanguageFlags: View {
+struct PSPLanguageFlags: View {
     @Environment(EngineClient.self) private var engine
     let item: RemoteObject
 
@@ -107,27 +108,10 @@ struct PSLanguageFlags: View {
 
         HStack(spacing: 3) {
             ForEach(Array(languages.enumerated()), id: \.offset) { _, language in
-                PSLanguageFlag(language: language)
+                // 목록 항목(문자열)이라 속성 경로가 없다. 값으로 변환기를 부른다.
+                RemoteImage(value: engine.converted("PbpLanguageToFlagConverter", value: .string(language)), size: 16)
             }
         }
         .task(id: listId) { await engine.observeList(listId) }
-    }
-}
-
-/// 언어 이름 하나를 upstream PbpLanguageToFlagConverter로 국기 이미지로 바꿔 그린다.
-struct PSLanguageFlag: View {
-    @Environment(EngineClient.self) private var engine
-    let language: String
-    @State private var flag: JSONValue?
-
-    var body: some View {
-        RemoteImage(value: flag, size: 16)
-            .task(id: language) {
-                // 목록 항목(문자열)이라 속성 경로가 없다. 값으로 변환기를 부른다.
-                flag = try? await engine.request("convert", [
-                    "converter": .string("PbpLanguageToFlagConverter"),
-                    "value": .string(language),
-                ])
-            }
     }
 }

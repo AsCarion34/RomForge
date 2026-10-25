@@ -1,3 +1,4 @@
+using Patch.Core.Interfaces;
 using Patch.Core.Services;
 using RomForge.Mac.Compat;
 using System.Windows;

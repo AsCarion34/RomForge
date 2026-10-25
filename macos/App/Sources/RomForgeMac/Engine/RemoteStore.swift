@@ -34,6 +34,8 @@ final class RemoteObject: Identifiable {
 final class RemoteStore {
     private(set) var objects: [Int: RemoteObject] = [:]
     private(set) var lists: [Int: [JSONValue]] = [:]
+    /// upstream이 기본 컬렉션 뷰에 PropertyGroupDescription을 넣은 목록의 묶음 기준 속성 이름(엔진이 항목을 그 순서로 보낸다)
+    private(set) var listGroups: [Int: [String]] = [:]
     private(set) var commands: [Int: Bool] = [:]
 
     /// 사용자가 방금 바꾼 속성. 그 직후 엔진이 돌려보내는 이전 값이 입력 중인 글자를 덮지 않게 잠시 무시한다
@@ -48,6 +50,8 @@ final class RemoteStore {
     func object(_ id: Int?) -> RemoteObject? { id.flatMap { objects[$0] } }
 
     func items(_ id: Int?) -> [JSONValue] { id.flatMap { lists[$0] } ?? [] }
+
+    func groupBy(_ id: Int?) -> [String] { id.flatMap { listGroups[$0] } ?? [] }
 
     func canExecute(_ id: Int?) -> Bool { id.flatMap { commands[$0] } ?? false }
 
@@ -93,6 +97,7 @@ final class RemoteStore {
     func applyCollection(_ params: JSONValue) {
         guard let id = params["obj"]?.int else { return }
         lists[id] = params["items"]?.array ?? []
+        listGroups[id] = params["groupBy"]?.array?.compactMap(\.string)
     }
 
     func applyCommands(_ params: JSONValue) {

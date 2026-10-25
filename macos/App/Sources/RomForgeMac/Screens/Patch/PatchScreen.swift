@@ -2,19 +2,19 @@
 // ViewModel: PatchMainViewModel
 import SwiftUI
 
-/// 패치 탭: 하위 탭 [일반 | 아케이드 | PS Vita | PC98] + 아래쪽 [초기화 · 해시 계산 | 패치 시작 · 취소].
+/// 패치 탭: 하위 탭 [일반 | 아케이드 | PC98] + 아래쪽 [초기화 · 해시 계산 | 시작 · 취소].
+/// (upstream이 PS Vita 하위 탭을 PS Vita 메인 탭의 리팩으로 옮겼다 → Screens/PSVita/PSVitaRepackTab.swift)
 /// upstream의 RunCommand·CancelCommand·ClearCommand·CalculateHashCommand는 SubTabIndex로 고른 하위 ViewModel(SelectedTool)에
 /// 적용되므로 하위 탭 선택을 SubTabIndex에 그대로 맞춘다.
 struct PatchScreen: View {
     @Environment(EngineClient.self) private var engine
     let vmId: Int
 
-    /// upstream TabItem 순서. PS Vita 탭 머리글은 upstream에서 글자 없이 PS VITA 로고(Vita.png/VitaGray.png)다.
-    private static let tabs: [(title: String, vmProp: String)] = [
-        ("일반", "NormalVM"),
-        ("아케이드", "ArcadeVM"),
-        ("PS Vita", "VitaVM"),
-        ("PC98", "Pc98VM"),
+    /// upstream TabItem 순서와 머리글 아이콘. 머리글은 공용 SubTabsView처럼 분할 컨트롤에 글자만 그린다.
+    private static let tabs = [
+        SubTab(title: "일반", icon: "Patch.png", vmProp: "NormalVM"),
+        SubTab(title: "아케이드", icon: "Arcade.png", vmProp: "ArcadeVM"),
+        SubTab(title: "PC98", icon: "PC98.png", vmProp: "Pc98VM"),
     ]
 
     var body: some View {
@@ -36,7 +36,7 @@ struct PatchScreen: View {
 
                     Spacer()
 
-                    CommandIconButton(title: "패치 시작", icon: "Run.png", vm: vm, command: "RunCommand", enabled: !locked, prominent: true)
+                    CommandIconButton(title: "시작", icon: "Run.png", vm: vm, command: "RunCommand", enabled: !locked, prominent: true)
                     CommandIconButton(title: "취소", icon: "Cancel.png", vm: vm, command: "CancelCommand", enabled: locked)
                 }
             }
@@ -66,8 +66,7 @@ struct PatchScreen: View {
         Group {
             switch index {
             case 1: PatchArcadeTab(vmId: childId)
-            case 2: PatchVitaTab(vmId: childId, patchIdle: vm["IsIdle"]?.bool ?? true)
-            case 3: PatchPc98Tab(vmId: childId)
+            case 2: PatchPc98Tab(vmId: childId)
             default: PatchNormalTab(vmId: childId)
             }
         }

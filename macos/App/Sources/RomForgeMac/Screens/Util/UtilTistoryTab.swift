@@ -7,7 +7,7 @@ struct UtilTistoryTab: View {
     @Environment(EngineClient.self) private var engine
     let vm: RemoteObject
     @State private var selection = Set<Int>()
-    /// 목록 머리글의 "전체선택/해제" 체크박스(IsChecked="True"로 시작, ViewModel에 바인딩되지 않음)
+    /// 목록 머리글의 "전체 선택 / 해제" 체크박스(IsChecked="True"로 시작, ViewModel에 바인딩되지 않음)
     @State private var allChecked = true
     @State private var sortOrder: [UtilColumnSort] = []
 
@@ -25,10 +25,14 @@ struct UtilTistoryTab: View {
             }
         } options: {
             HStack(spacing: 6) {
-                Toggle("압축 자동 해제 (완료 후 원본 삭제)", isOn: engine.bool(vm, "AutoExtractAfterDownload"))
-                    .help("다운로드한 파일이 압축파일(zip/7z/rar)이면 자동으로 압축을 풀고 원본 압축파일을 삭제합니다")
-                    .disabled(!isUnlocked)
-                    .padding(.trailing, 14)
+                // LeftSlideToggleStyle ToggleButton(왼쪽 스위치 + 굵은 문구)
+                Toggle(isOn: engine.bool(vm, "AutoExtractAfterDownload")) {
+                    Text("압축 자동 해제 (완료 후 원본 삭제)").fontWeight(.bold)
+                }
+                .toggleStyle(UtilLeftSwitchToggleStyle())
+                .help("다운로드한 파일이 압축파일(zip/7z/rar)이면 자동으로 압축을 풀고 원본 압축파일을 삭제합니다")
+                .disabled(!isUnlocked)
+                .padding(.trailing, 14)
 
                 IconButton(title: "선택 삭제", icon: "Delete.png", enabled: isUnlocked) {
                     UtilFileActions.remove(engine, vm, selection)
@@ -61,11 +65,7 @@ struct UtilTistoryTab: View {
                 Button {
                     engine.run(vm, "AnalyzeCommand")
                 } label: {
-                    Label {
-                        Text("분석")
-                    } icon: {
-                        UpstreamIcon(name: "Search.png", size: 18)
-                    }
+                    IconLabel(title: "분석", icon: "Search.png", size: 20)
                 }
                 .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.return, modifiers: .control)
@@ -74,13 +74,15 @@ struct UtilTistoryTab: View {
 
             GridRow {
                 Text("다운로드 위치").fontWeight(.bold).foregroundStyle(.secondary)
-                Text(vm.string("SaveDirectory"))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .help(vm.string("SaveDirectory"))
+                // Text="{Binding SaveDirectory, UpdateSourceTrigger=PropertyChanged}" + 폴더 드롭(TxtSaveDirectory_PreviewDragOver / Drop)
+                TextField("", text: engine.string(vm, "SaveDirectory"))
+                    .textFieldStyle(.roundedBorder)
+                    .dropDestination(for: URL.self) { urls, _ in
+                        guard let folder = UtilFileActions.droppedFolder(urls) else { return false }
+                        engine.invoke(vm, "ChangeSaveDirectory", [.string(folder)])
+                        return true
+                    }
+                    .help("폴더를 이곳에 드래그하여 다운로드 위치를 변경할 수 있습니다.")
                 IconButton(title: " 변경", icon: "AddFolder.png", enabled: isUnlocked) {
                     // BtnChangeFolder_Click
                     if let folder = UtilFileActions.openFolder(title: "다운로드 파일을 저장할 폴더를 선택하세요",
@@ -112,7 +114,7 @@ struct UtilTistoryTab: View {
                 TableColumn("용량", sortUsing: UtilColumnSort(prop: "FileSizeBytes")) { item in
                     Text(item.string("FileSize")).monospacedDigit()
                 }
-                    .width(min: 70, ideal: 90)
+                .width(min: 70, ideal: 90)
 
                 TableColumn("진행률", sortUsing: UtilColumnSort(prop: "Progress")) { item in UtilProgressCell(item: item) }
                     .width(min: 100, ideal: 140)
@@ -122,12 +124,13 @@ struct UtilTistoryTab: View {
                 }
                 .width(min: 60, ideal: 90)
 
-                TableColumn("전체선택/해제") { item in
+                // 머리글은 "전체 선택 / 해제" 체크박스뿐이다(표 아래 체크박스로 옮김).
+                TableColumn("") { item in
                     Toggle("", isOn: engine.bool(item, "IsSelected"))
                         .labelsHidden()
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
-                .width(min: 80, ideal: 90)
+                .width(min: 44, ideal: 64)
             }
             .overlay {
                 if vm.isVisible("HintVisibility") {
@@ -144,11 +147,11 @@ struct UtilTistoryTab: View {
                                                    ?? vm.string("SaveDirectory")
                                            }))
 
-            // 표 머리글에 체크박스를 둘 수 없어 표 아래에 둔다(ChkAll_Checked / ChkAll_Unchecked).
+            // 표 머리글에 체크박스를 둘 수 없어 표 아래에 둔다(HeaderCheckBox_Click).
             HStack {
                 Spacer()
-                Toggle("전체선택/해제", isOn: Binding(get: { allChecked }, set: { checkAll($0) }))
-                    .help("전체 선택/해제")
+                Toggle("전체 선택 / 해제", isOn: Binding(get: { allChecked }, set: { checkAll($0) }))
+                    .help("전체 선택 / 해제")
                     .disabled(!isUnlocked)
             }
             .padding(.horizontal, 12)
@@ -156,10 +159,23 @@ struct UtilTistoryTab: View {
         }
     }
 
+    /// HeaderCheckBox_Click: 머리글 체크 상태를 모든 항목의 IsSelected에 넣는다.
     private func checkAll(_ isOn: Bool) {
         allChecked = isOn
         for item in engine.items(vm, "FileItems") {
             engine.bool(item, "IsSelected").wrappedValue = isOn
+        }
+    }
+}
+
+/// upstream LeftSlideToggleStyle: 왼쪽에 슬라이드 스위치, 오른쪽에 내용(스위치는 macOS 기본 스위치)
+private struct UtilLeftSwitchToggleStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 10) {
+            Toggle(isOn: configuration.$isOn) { configuration.label }
+                .toggleStyle(.switch)
+                .labelsHidden()
+            configuration.label
         }
     }
 }

@@ -1,5 +1,5 @@
-// upstream: RomForge/Controls/Patch/NormalTab.xaml(.cs), RomForge.Core/Services/Patch/PatchVersionInfoExtractor.cs(DefaultNamingFormat)
-// ViewModel: NormalPatchMainViewModel, PatchSlotViewModel, SourceHashViewModel
+// upstream: RomForge/Controls/Patch/NormalTab.xaml(.cs)
+// ViewModel: NormalPatchMainViewModel, PatchSlotViewModel, SourceHashViewModel, NamingFormatPreset
 import AppKit
 import SwiftUI
 
@@ -10,7 +10,8 @@ struct PatchNormalTab: View {
     @Environment(EngineClient.self) private var engine
     let vmId: Int?
 
-    @State private var namingHover = false
+    /// NamingPresets(정적 속성 → NamingFormatPresets.All) 컬렉션 번호
+    @State private var namingPresetsId: Int?
 
     /// NormalTab.xaml.cs의 PatchExtensions.AllowedExtensions(code-behind 전용 상수)
     private static let patchExtensions = [".ips", ".bps", ".ups", ".ppf", ".aps", ".xdelta", ".dcp"]
@@ -18,8 +19,8 @@ struct PatchNormalTab: View {
     private static var patchFilter: String {
         "패치 파일|\(patchExtensions.map { "*" + $0 }.joined(separator: ";"))|모든 파일|*.*"
     }
-    /// PatchVersionInfoExtractor.DefaultNamingFormat(const라 브리지로 읽을 수 없어 값을 옮겨 적는다)
-    private static let defaultNamingFormat = "{fileName} (v{Version}_{Date:yyMMdd})"
+    private static let viewModelType = "RomForge.ViewModels.Patch.NormalPatchMainViewModel"
+    private static let namingFormatTip = "사용 가능한 값: {fileName}, {Version}, {Date:yyMMdd}, {Lan1:code1}, {Lan2:code1}"
 
     var body: some View {
         ChildVM(id: vmId) { vm in
@@ -32,14 +33,19 @@ struct PatchNormalTab: View {
                 }
                 Spacer(minLength: 0)
                 options(vm)
-                PatchProgressFooter(label: vm.string("ProgressLabel"),
-                                    percent: vm.string("ProgressPercent"),
-                                    speed: vm.string("ProgressSpeed"),
-                                    time: vm.string("ProgressTime"),
-                                    value: vm["ProgressPct"]?.double ?? 0)
+                ToolProgressBar(vm: vm)
+                    .padding(.horizontal, 8)
+                    .frame(height: 28)
             }
             .padding(5)
             .observeLists(engine, vm, ["PatchSlots"])
+            .task {
+                // ComboBox ItemsSource="{Binding NamingPresets}": 정적 속성이라 describe에 없어 정적 getter로 목록을 받는다.
+                guard namingPresetsId == nil,
+                      let id = await engine.callStatic(Self.viewModelType, "get_NamingPresets")?.refId else { return }
+                await engine.observeList(id)
+                namingPresetsId = id
+            }
             .task(id: vm.ref("SourceHash")) {
                 // Loaded: 원본 후보 선택·GD-ROM 해시 기준 창을 ViewModel의 Func 속성에 건다.
                 await PatchDialogs.bind(engine, normalVM: vm.id, sourceHash: vm.ref("SourceHash"))
@@ -60,9 +66,9 @@ struct PatchNormalTab: View {
         return HStack(alignment: .top, spacing: 2) {
             PatchDropZone(enabled: idle, tooltip: vm.string("SourcePath"),
                           onDrop: { dropOnSource(vm, $0) }, onClick: { pickSource(vm) }) {
-                PatchZoneLabel(icon: "AddFile.png", text: vm.string("SourceLabel"), caption: "원본")
+                PatchZoneLabel(icon: "Resource.png", text: vm.string("SourceLabel"), caption: "원본")
             }
-            .frame(minHeight: isMulti ? 38 : 50, maxHeight: isMulti ? .infinity : 50)
+            .frame(minHeight: isMulti ? 38 : 65, maxHeight: isMulti ? .infinity : 65)
 
             patchColumn(vm, idle: idle, isMulti: isMulti)
         }
@@ -78,7 +84,7 @@ struct PatchNormalTab: View {
                               onDrop: { dropOnSlot(vm, first, $0) }, onClick: { pickPatch(first) }) {
                     PatchZoneLabel(icon: "Patch.png", text: first.string("Label"), caption: "패치")
                 }
-                .frame(height: 50)
+                .frame(height: 65)
             }
 
             if isMulti {
@@ -166,7 +172,7 @@ struct PatchNormalTab: View {
                 PatchSourceHashBox(hash: hash)
             }
         } else if vm["SourceHintVisible"]?.bool == true {
-            formatsHint(icon: "AddFile.png", title: "원본 자동 압축해제 지원 포맷:",
+            formatsHint(icon: "Resource.png", title: "원본 자동 압축해제 지원 포맷:",
                         formats: ["ZIP", "RAR", "7Z", "CHD", "RVZ"])
         }
     }
@@ -210,11 +216,9 @@ struct PatchNormalTab: View {
         }
     }
 
-    /// upstream은 이 묶음 위에 마우스가 있을 때(IsMouseOver)만 형식 입력·예상 파일명을 보여 준다.
+    /// 형식 고르기 · 형식 입력 · 예상 파일명은 NamingEnabled일 때만 보인다.
     private func namingSection(_ vm: RemoteObject) -> some View {
-        let enabled = vm["NamingEnabled"]?.bool ?? false
-
-        return VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 4) {
             Toggle(isOn: engine.bool(vm, "NamingEnabled")) {
                 HStack(spacing: 12) {
                     Text("결과 파일명에 버전/날짜 자동 표기").bold()
@@ -224,24 +228,11 @@ struct PatchNormalTab: View {
                 }
             }
 
-            if namingHover {
-                HStack(spacing: 8) {
-                    HStack(spacing: 4) {
-                        TextField("", text: engine.string(vm, "NamingFormat"))
-                            .textFieldStyle(.roundedBorder)
-                            .help("사용 가능한 값: {fileName}, {Version}, {Date:yyMMdd}")
-                            .disabled(!enabled)
-                        // ResetNamingFormat_Click
-                        IconButton(title: "초기화", icon: "Clear.png", enabled: enabled) {
-                            engine.string(vm, "NamingFormat").wrappedValue = Self.defaultNamingFormat
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-
-                    Text("{fileName}, {Version}, {Date:yyMMdd} 형식이 올바르지 않으면 기본값으로 대체됩니다")
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+            if vm["NamingEnabled"]?.bool == true {
+                HStack(spacing: 4) {
+                    namingPresetPicker(vm)
+                        .frame(width: 320)
+                    namingFormatField(vm)
                 }
 
                 HStack(spacing: 0) {
@@ -259,8 +250,51 @@ struct PatchNormalTab: View {
                 .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
             }
         }
-        .contentShape(Rectangle())
-        .onHover { namingHover = $0 }
+    }
+
+    /// ComboBox ItemsSource=NamingPresets, SelectedItem=SelectedNamingPreset(양방향), 항목 글자=Name.
+    /// IsSeparator 항목은 고를 수 없는 구분선이다.
+    private func namingPresetPicker(_ vm: RemoteObject) -> some View {
+        let presets = engine.store.items(namingPresetsId).compactMap { engine.store.object($0.refId) }
+        let selection = engine.selectedItem(vm, "SelectedNamingPreset")
+        let listed = presets.contains { $0.id == selection.wrappedValue }
+
+        return Picker("", selection: selection) {
+            if !listed {
+                Text("").tag(selection.wrappedValue)
+            }
+            ForEach(Array(presets.enumerated()), id: \.offset) { _, preset in
+                if preset["IsSeparator"]?.bool == true {
+                    Divider()
+                } else {
+                    Text(preset.string("Name")).tag(Int?.some(preset.id))
+                }
+            }
+        }
+        .labelsHidden()
+        .pickerStyle(.menu)
+    }
+
+    /// TextBox Text=NamingFormat, IsReadOnly=IsNamingFormatReadOnly(커스텀 프리셋일 때만 고칠 수 있다)
+    @ViewBuilder
+    private func namingFormatField(_ vm: RemoteObject) -> some View {
+        if vm["IsNamingFormatReadOnly"]?.bool == false {
+            TextField("", text: engine.string(vm, "NamingFormat"))
+                .textFieldStyle(.roundedBorder)
+                .help(Self.namingFormatTip)
+        } else {
+            // 읽기 전용 TextBox: 선택·복사만 된다
+            let format = vm.string("NamingFormat")
+            Text(format.isEmpty ? " " : format)
+                .textSelection(.enabled)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 4)
+                .background(RoundedRectangle(cornerRadius: 5).strokeBorder(Color.secondary.opacity(0.4)))
+                .help(Self.namingFormatTip)
+        }
     }
 }
 

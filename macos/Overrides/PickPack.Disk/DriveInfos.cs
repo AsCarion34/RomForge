@@ -1,8 +1,6 @@
-using PickPack.Disk.ETC;
-
-namespace PickPack.Disk
+namespace PickPack.Disk.Helpers
 {
-    // upstream PickPack.Disk/DriveInfos.cs의 macOS 대체.
+    // upstream PickPack.Disk/Helpers/DriveInfos.cs의 macOS 대체.
     // upstream은 Windows 드라이브 문자와 WMI로 물리 디스크를 찾는다. macOS에서는 diskutil의 외장 물리 디스크만 보여 준다.
     // 공개 API는 upstream과 같게 유지해야 한다(ZipImageToolMainViewModel이 사용).
     public class DriveInfos(string devicePath, string model, long sizeBytes, int diskNumber, string? driveLetter)

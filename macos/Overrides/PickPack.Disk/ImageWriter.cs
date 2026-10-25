@@ -1,22 +1,17 @@
-using PickPack.Disk.ETC;
+using PickPack.Disk.Helpers;
+using PickPack.Disk.Models;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading.Channels;
 
-namespace PickPack.Disk
+namespace PickPack.Disk.Services
 {
-    // upstream PickPack.Disk/ImageWriter.cs의 macOS 대체. upstream이 바뀌면 같은 부분을 맞춘다.
+    // upstream PickPack.Disk/Services/ImageWriter.cs의 macOS 대체. upstream이 바뀌면 같은 부분을 맞춘다.
     // upstream과 다른 곳(모두 "macOS:" 주석):
     //  1) 장치: \\.\PhysicalDriveN 대신 /dev/rdiskN(필요하면 관리자 인증)
     //  2) 크기: macOS 원시 장치는 FileStream.Length가 0이므로 diskutil 크기를 쓴다
     //  3) 원시 장치는 섹터 단위로만 쓸 수 있으므로 마지막 블록을 섹터 크기로 맞춰(0으로 채워) 쓴다
-    public struct DataChunk
-    {
-        public byte[] Buffer;
-        public int ValidLength;
-    }
-
     public class ImageWriter
     {
         #region Field
@@ -187,6 +182,7 @@ namespace PickPack.Disk
                 }
                 catch (IOException ex)
                 {
+                    // macOS: 마지막 P/Invoke의 errno와 예외 메시지를 보여 준다.
                     int errorCode = Marshal.GetLastPInvokeError();
 
                     throw new Win32Exception(errorCode == 0 ? -1 : errorCode, $"{WorkTitle} 실패 ({ex.Message})");

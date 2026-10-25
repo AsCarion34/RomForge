@@ -1,5 +1,5 @@
 // upstream: RomForge/Controls/WiiU/ConverterTab.xaml(.cs)
-// ViewModel: RomForge.ViewModels.WiiU.ConverterMainViewModel (WiiUMainViewModel.ConverterVM), 항목 RomForge.Core.Models.WiiU.WiiUFileItem
+// ViewModel: RomForge.ViewModels.WiiU.ConverterMainViewModel (WiiUMainViewModel.ConverterVM), 항목 RomForge.Core.Models.WiiU.FileItem
 import AppKit
 import SwiftUI
 
@@ -23,10 +23,18 @@ struct WiiUConverterTab: View {
                 .padding(.horizontal, 5)
         } options: {
             VStack(spacing: 8) {
+                // TextBox(OutputPath, AllowDrop) + 찾아보기(BrowseOutputCommand), IsEnabled = !IsConverting
                 HStack(spacing: 5) {
-                    TextField("출력 폴더를 선택하세요", text: engine.string(vm, "OutputPath"))
-                        .textFieldStyle(.roundedBorder)
-                    ToolIconButton(icon: "AddFolder.png") { engine.run(vm, "BrowseOutputCommand") }
+                    HStack {
+                        TextField("출력 폴더를 드래그하거나 선택하세요", text: engine.string(vm, "OutputPath"))
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    .wiiUOutputFolderDrop(enabled: !converting) { folder in
+                        engine.string(vm, "OutputPath").wrappedValue = folder
+                    }
+                    ToolIconButton(icon: "AddFolder.png", enabled: engine.canRun(vm, "BrowseOutputCommand")) {
+                        engine.run(vm, "BrowseOutputCommand")
+                    }
                 }
                 .disabled(converting)
 
@@ -91,7 +99,7 @@ struct WiiUConverterTab: View {
 
     private var hint: some View {
         VStack(spacing: 6) {
-            UpstreamIcon(name: "drag.png", size: 28)
+            UpstreamIcon(name: "Info.png", size: 28)
             Text("WUP/Loadiine 폴더, wud/wux/wua 파일을 여기에 드래그&드롭하세요").font(.headline)
             Text("하기 기준으로 상호 변환합니다").fontWeight(.bold).foregroundStyle(.orange)
 

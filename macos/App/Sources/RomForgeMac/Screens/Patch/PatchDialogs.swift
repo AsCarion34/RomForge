@@ -1,4 +1,5 @@
-// upstream: RomForge/Controls/Patch/NormalTab.xaml.cs (ShowSourceSelectionDialogAsync, ShowGdRomLayoutDialogAsync, FormatSize)
+// upstream: RomForge/Controls/Patch/NormalTab.xaml.cs
+// (code-behind: ShowSourceSelectionDialogAsync · ShowGdRomLayoutDialogAsync · FormatSize)
 // ViewModel: NormalPatchMainViewModel.RequestSourceSelectionAsync, SourceHashViewModel.RequestGdRomLayoutAsync
 import AppKit
 import SwiftUI

@@ -19,6 +19,7 @@ RomForge for macOS는 [RomForge](https://github.com/sinjunyoung/RomForge)(GPL-2.
 | SharpCompress | zip·7z·rar 읽기 | MIT |
 | SixLabors.ImageSharp | 이미지 처리 | Six Labors Split License 1.0 |
 | ZstdSharp, K4os.Compression.LZ4, SharpZipLib, HtmlAgilityPack, LibDeflate.NET(libdeflate), System.IO.Hashing 등 | 압축·해시·HTML | MIT |
+| NAudio.Core, NLayer | WAV 읽기·MP3 디코딩(PSP 배경음) | MIT |
 | Blake3 (.NET) | BLAKE3 해시 | BSD-2-Clause |
 | DotNetZip | zip | Ms-PL |
 | custom-install-finalize.3dsx | 3DS SD 설치 마무리 | MIT (ihaveamac/custom-install) |

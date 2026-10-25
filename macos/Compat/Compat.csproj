@@ -17,7 +17,9 @@
   <ItemGroup>
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
     <PackageReference Include="SharpCompress" Version="0.50.0" />
-    <PackageReference Include="System.IO.Hashing" Version="10.0.9" />
+    <!-- NAudio의 Windows 재생기(WaveOutEvent) 대체를 NAudio.Wave 이름공간에 두려고 NAudio.Core만 참조한다(NAudio.Wave/WaveOutEvent.cs) -->
+    <PackageReference Include="NAudio.Core" Version="2.2.1" />
+    <PackageReference Include="System.IO.Hashing" Version="10.0.12" />
   </ItemGroup>
 
 </Project>

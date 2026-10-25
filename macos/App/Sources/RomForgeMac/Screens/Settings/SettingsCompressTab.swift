@@ -2,8 +2,8 @@
 // ViewModel: CompressSettingsMainViewModel (SettingsMainViewModel.Compress)
 import SwiftUI
 
-/// 압축 설정: CHDMAN(chd) / Switch(nsz,xcz) / Azahar(zcci) / Dolphin(rvz).
-/// 하위 탭 선택은 SelectedTabIndex(MainViewModel이 Switch "설정" 버튼으로 1로 바꾼다)에 맞춘다.
+/// 압축 설정: CHDMAN (chd) / Switch (nsz,xcz) / 3DS Azahar (zcci) / GC, Wii Dolphin (rvz).
+/// 하위 탭 선택은 TabControl SelectedIndex="{Binding SelectedTabIndex}"에 맞춘다.
 struct SettingsCompressTab: View {
     @Environment(EngineClient.self) private var engine
     let vm: RemoteObject
@@ -11,10 +11,10 @@ struct SettingsCompressTab: View {
     var body: some View {
         VStack(spacing: 0) {
             Picker("", selection: engine.int(vm, "SelectedTabIndex")) {
-                Label { Text("CHDMAN(chd)") } icon: { UpstreamIcon(name: "Mame.png", size: 16) }.tag(0)
-                Label { Text("Switch(nsz,xcz)") } icon: { UpstreamIcon(name: "Switch.png", size: 16) }.tag(1)
-                Label { Text("Azahar(zcci)") } icon: { UpstreamIcon(name: "Azahar.png", size: 16) }.tag(2)
-                Label { Text("Dolphin(rvz)") } icon: { UpstreamIcon(name: "Dolphin.png", size: 16) }.tag(3)
+                Label { Text("CHDMAN (chd)") } icon: { UpstreamIcon(name: "Mame.png", size: 16) }.tag(0)
+                Label { Text("Switch (nsz,xcz)") } icon: { UpstreamIcon(name: "Switch.png", size: 16) }.tag(1)
+                Label { Text("3DS Azahar (zcci)") } icon: { UpstreamIcon(name: "Azahar.png", size: 16) }.tag(2)
+                Label { Text("GC, Wii Dolphin (rvz)") } icon: { UpstreamIcon(name: "Dolphin.png", size: 16) }.tag(3)
             }
             .pickerStyle(.segmented)
             .labelsHidden()
@@ -54,16 +54,10 @@ struct SettingsCompressTab: View {
 
     // MARK: Switch
 
+    /// 압축 레벨(3~18) / 압축 모드(블록 | 블록리스)
     private var switchOptions: some View {
         Group {
-            OptionCard {
-                SettingsLevelLegend(marks: ["무압축(NSP)", "3: 최대 속도", "9: 균형", "18: 권장"])
-                HStack(spacing: 5) {
-                    UpstreamIcon(name: "Level.png", size: 24)
-                    LevelSlider(vm: vm, prop: "SwitchCompressLevel", range: 2...18,
-                                textConverter: "CompressLevelTextConverter", colorConverter: "LevelToColorConverter")
-                }
-            }
+            levelCard(prop: "SwitchCompressLevel")
 
             OptionCard {
                 HStack(spacing: 8) {
@@ -76,9 +70,6 @@ struct SettingsCompressTab: View {
                 }
                 .toggleStyle(SettingsRadioStyle())
             }
-
-            Toggle("압축 무결성 검증 : 압축 후 원본과 해시 비교 검증", isOn: engine.bool(vm, "SwitchIsValidationEnabled"))
-                .padding(.top, 5)
         }
     }
 

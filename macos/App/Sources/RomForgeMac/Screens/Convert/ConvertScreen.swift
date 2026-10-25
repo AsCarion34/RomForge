@@ -4,6 +4,7 @@ import AppKit
 import SwiftUI
 
 /// 변환 탭: 파일 목록(번호·파일명·입력·출력·용량·진행률) + 출력 폴더 변경 + 파일/폴더 추가 · 선택/전체 삭제 · 시작 · 취소.
+/// upstream 탭에는 표준 진행 줄(progressArea)이 없다(항목별 진행률만 있다). 그래서 ToolProgressBar를 두지 않는다.
 /// 생략한 code-behind: ScrollToItemRequested(변환 중인 항목으로 스크롤).
 struct ConvertScreen: View {
     @Environment(EngineClient.self) private var engine
@@ -138,13 +139,13 @@ struct ConvertScreen: View {
         Label {
             Text(title)
         } icon: {
-            Image(nsImage: ConvertScreen.icon(icon, size: 16))
+            UpstreamAssets.menuImage(icon, size: 16)
         }
     }
 
     // MARK: - 출력 폴더
 
-    /// [출력 폴더 변경 토글] [OutputPath 입력(토글이 켜졌을 때)] [찾아보기(토글이 켜졌을 때)], 작업 중에는 전체 비활성
+    /// [출력 폴더 변경 스위치] [OutputPath 입력(스위치가 켜졌을 때)] [찾아보기(스위치가 켜졌을 때)], 작업 중에는 전체 비활성
     private func outputRow(_ vm: RemoteObject, locked: Bool) -> some View {
         let custom = vm["UseCustomOutputPath"]?.bool ?? false
 
@@ -152,9 +153,16 @@ struct ConvertScreen: View {
             Toggle(isOn: engine.bool(vm, "UseCustomOutputPath")) {
                 Text("출력 폴더 변경").bold()
             }
+            .toggleStyle(ConvertSlideToggleStyle())
+
             TextField("", text: engine.string(vm, "OutputPath"))
                 .textFieldStyle(.roundedBorder)
                 .disabled(!custom)
+                // TxtOutputPath_PreviewDragOver · TxtOutputPath_Drop(입력란이 켜졌을 때만)
+                .dropDestination(for: URL.self) { urls, _ in
+                    custom && !locked && dropOutputFolder(vm, urls)
+                }
+
             ToolIconButton(icon: "AddFolder.png", enabled: custom && engine.canRun(vm, "BrowseOutputCommand")) {
                 engine.run(vm, "BrowseOutputCommand")
             }
@@ -203,17 +211,52 @@ struct ConvertScreen: View {
         selection.removeAll()
     }
 
-    /// MenuItem_OpenFolder_Click: 첫 선택 항목의 폴더를 연다.
+    /// MenuItem_OpenFolder_Click: 첫 선택 항목이 있는 폴더를 연다(OpenFolder: 폴더가 있을 때만).
     private func openFolder(_ ids: Set<Int>, rows: [RemoteObject]) {
         guard let path = rows.first(where: { ids.contains($0.id) })?.string("FilePath"), !path.isEmpty else { return }
-        NSWorkspace.shared.open(URL(fileURLWithPath: (path as NSString).deletingLastPathComponent))
+        let folder = (path as NSString).deletingLastPathComponent
+        guard FileManager.default.fileExists(atPath: folder) else { return }
+        NSWorkspace.shared.open(URL(fileURLWithPath: folder))
     }
 
-    /// 메뉴·툴바처럼 AppKit이 그리는 자리에 넣을 upstream 아이콘(크기를 정한 사본)
-    fileprivate static func icon(_ name: String, size: CGFloat) -> NSImage {
-        guard let image = UpstreamAssets.nsImage(name)?.copy() as? NSImage else { return NSImage() }
-        image.size = NSSize(width: size, height: size)
-        return image
+    /// TxtOutputPath_PreviewDragOver: 첫 항목이 폴더일 때만 받는다.
+    /// TxtOutputPath_Drop: 그 폴더를 OutputPath로 쓴다(파일이면 상위 폴더를 쓰는 분기는 DragOver가 막아 실제로는 폴더만 온다).
+    private func dropOutputFolder(_ vm: RemoteObject, _ urls: [URL]) -> Bool {
+        var isDirectory: ObjCBool = false
+        guard let path = urls.first?.path,
+              FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory), isDirectory.boolValue
+        else { return false }
+
+        engine.string(vm, "OutputPath").wrappedValue = path
+        return true
+    }
+}
+
+/// upstream LeftSlideToggleStyle: 밀어서 켜는 스위치를 문구 왼쪽에 둔다(macOS 기본 .switch는 스위치가 문구 오른쪽에 온다).
+/// upstream은 스위치와 문구가 한 버튼이라 문구를 눌러도 바뀐다.
+private struct ConvertSlideToggleStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        SlideToggle(configuration: configuration)
+    }
+
+    private struct SlideToggle: View {
+        let configuration: ToggleStyleConfiguration
+        @Environment(\.isEnabled) private var isEnabled
+
+        var body: some View {
+            HStack(spacing: 8) {
+                Toggle(isOn: configuration.$isOn) { configuration.label }
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+                configuration.label
+                    .opacity(isEnabled ? 1 : 0.5)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        if isEnabled { configuration.isOn.toggle() }
+                    }
+            }
+            .fixedSize()
+        }
     }
 }
 
@@ -272,6 +315,7 @@ private struct ConvertHintLine: Identifiable {
     enum Run {
         case plain(String)   // #CCCCCC
         case strong(String)  // #FFFFFF Bold
+        case bright(String)  // #FFFFFF(굵지 않음)
         case separator       // "  |  " #555555
         case convert         // " ➔ " #AB47BC
         case compress        // " ➔ " #FF9800
@@ -288,6 +332,7 @@ private struct ConvertHintLine: Identifiable {
             switch run {
             case .plain(let s): result + Text(verbatim: s).foregroundStyle(.secondary)
             case .strong(let s): result + Text(verbatim: s).bold()
+            case .bright(let s): result + Text(verbatim: s)
             case .separator: result + Text(verbatim: "  |  ").foregroundStyle(.tertiary)
             case .convert: result + Text(verbatim: " ➔ ").bold().foregroundStyle(.purple)
             case .compress: result + Text(verbatim: " ➔ ").bold().foregroundStyle(.orange)
@@ -298,7 +343,8 @@ private struct ConvertHintLine: Identifiable {
 }
 
 private struct ConvertHint: View {
-    private static let consoles: [ConvertHintLine] = [
+    /// Grid.Row 0~3
+    private static let upperRows: [ConvertHintLine] = [
         ConvertHintLine(icon: "Switch.png", name: "Switch", runs: [
             .plain(": NSP"), .convert, .strong("NSZ, XCI, XCZ"), .separator,
             .plain("NSZ"), .convert, .strong("NSP, XCI, XCZ"), .separator,
@@ -311,12 +357,22 @@ private struct ConvertHint: View {
             .plain("WUD/WUX"), .convert, .strong("WUA, WUP, Loadiine"), .separator,
             .plain("WUA"), .convert, .strong("WUP, Loadiine"),
         ]),
+        ConvertHintLine(icon: "Dolphin.png", name: "GC/Wii", runs: [
+            .plain(": ISO(GC/Wii), GCM, WBFS, WIA, GCZ"), .compress, .strong("RVZ"), .separator,
+            .strong("RVZ"), .decompress, .plain("ISO(GC/Wii), WBFS"), .separator,
+            .strong("ISO(Wii)"), .compress, .strong("WBFS"), .separator,
+            .strong("WBFS"), .decompress, .plain("ISO(Wii)"),
+        ]),
         ConvertHintLine(icon: "3DS.png", name: "3DS", runs: [
             .plain(": 3DS(CCI와 같은 포맷)"), .convert, .strong("CIA, ZCCI"), .separator,
             .plain("CCI"), .convert, .strong("CIA, ZCCI"), .separator,
             .plain("CIA"), .convert, .strong("CCI, ZCCI"), .separator,
             .plain("ZCCI"), .convert, .strong("CCI, CIA"),
         ]),
+    ]
+
+    /// Grid.Row 5~7(Row 4는 Height="10" 빈 줄)
+    private static let lowerRows: [ConvertHintLine] = [
         ConvertHintLine(icon: "PS1.png", name: "PS", runs: [
             .plain(": ISO"), .compress, .strong("CSO, ZSO, CHD"), .separator,
             .plain("CSO"), .convert, .strong("ISO, ZSO, CHD"), .separator,
@@ -324,27 +380,19 @@ private struct ConvertHint: View {
             .plain("CHD(ISO 기반)"), .convert, .strong("ISO, CSO, ZSO"), .separator,
             .plain("PBP"), .decompress, .strong("CUE+BIN"),
         ]),
-    ]
-
-    private static let images: [ConvertHintLine] = [
         ConvertHintLine(icon: "Mame.png", name: "CHDMAN", runs: [
             .plain(": ISO(표준), CUE+BIN, GDI+BIN+RAW, CCD+IMG+SUB"), .compress, .strong("CHD"), .separator,
             .strong("CHD"), .decompress, .plain("ISO, CUE+BIN, GDI+BIN+RAW"),
         ]),
-        ConvertHintLine(icon: "Dolphin.png", name: "GC/Wii", runs: [
-            .plain(": ISO(GC/Wii), GCM, WBFS, WIA, GCZ"), .compress, .strong("RVZ"), .separator,
-            .strong("RVZ"), .decompress, .plain("ISO(GC/Wii), WBFS"), .separator,
-            .strong("ISO(Wii)"), .compress, .strong("WBFS"), .separator,
-            .strong("WBFS"), .decompress, .plain("ISO(Wii)"),
-        ]),
-        ConvertHintLine(icon: "CUE.png", name: "CD Image", runs: [
-            .plain(": MDF+MDS, CCD+IMG+SUB"), .convert, .strong("BIN+CUE, ISO"),
+        ConvertHintLine(icon: "CD.png", name: "CD Image", runs: [
+            .plain(": MDF+MDS, CCD+IMG+SUB"), .convert, .strong("BIN+CUE, ISO"), .separator,
+            .bright("BIN+CUE(단일 트랙)"), .convert, .strong("ISO"),
         ]),
     ]
 
     var body: some View {
         VStack(spacing: 0) {
-            UpstreamIcon(name: "drag.png", size: 28)
+            UpstreamIcon(name: "Info.png", size: 28)
                 .padding(.bottom, 8)
             Text("파일 또는 폴더를 여기에 드래그&드롭하세요")
                 .font(.headline)
@@ -354,12 +402,12 @@ private struct ConvertHint: View {
                 .padding(.top, 8)
 
             Grid(alignment: .leading, horizontalSpacing: 0, verticalSpacing: 4) {
-                ForEach(Self.consoles) { line in row(line) }
+                ForEach(Self.upperRows) { line in row(line) }
                 // RowDefinition Height="10"(빈 줄). 가로 크기는 표 너비에 영향을 주지 않게 한다.
                 Color.clear
                     .frame(height: 6)
                     .gridCellUnsizedAxes(.horizontal)
-                ForEach(Self.images) { line in row(line) }
+                ForEach(Self.lowerRows) { line in row(line) }
             }
             .font(.caption)
             .padding(.top, 15)

@@ -3,8 +3,8 @@
 import AppKit
 import SwiftUI
 
-/// 리팩 탭: [파일 | 설정] 하위 탭, 작업 폴더, 언팩 / 리팩 / 언팩 + 리팩 (Full), 진행 상황.
-/// code-behind의 SyncAll·SyncContext·Btn*_Click을 같은 순서로 옮겼다. 빌드는 ViewModel.StartAsync가 한다.
+/// 리팩 탭: [파일 | 설정] 하위 탭, 작업 폴더, 언팩 / 리팩 (폴더 기반) / 언팩 + 리팩 (Full), 진행 상황.
+/// code-behind의 SyncAll·SyncContext·Btn*_Click·TxtOutputPath_Drop을 같은 순서로 옮겼다. 빌드는 ViewModel.StartAsync가 한다.
 struct SwitchRepackTab: View {
     @Environment(EngineClient.self) private var engine
     let vm: RemoteObject
@@ -36,19 +36,23 @@ struct SwitchRepackTab: View {
             controls(state, idle: idle)
         }
         .task(id: vm.id) {
-            // RepackTab_Loaded: FileListChanged 구독 + SyncAll
-            await state.files.prepare(engine, importer: true)
+            // RepackTab_Loaded: titleList ViewModel의 LogAction, FileListChanged 구독 + SyncAll
+            await state.files.prepare(engine, titleList: true)
+            if let titleVM = state.files.titleVMId {
+                await bindLog(titleVM)
+            }
             syncAll(state)
         }
     }
 
     private func controls(_ state: SwitchRepackState, idle: Bool) -> some View {
         VStack(spacing: 8) {
+            // txtOutput: PreviewDragOver/Drop(TxtOutputPath_*) — 폴더를 끌어다 놓으면 OutputPath
             HStack(spacing: 5) {
-                TextField("작업 폴더를 선택하세요", text: engine.string(vm, "OutputPath"))
-                    .textFieldStyle(.roundedBorder)
+                SwitchPathField(vm: vm, prop: "OutputPath", hint: "작업 폴더를 드래그하거나 선택하세요")
                 ToolIconButton(icon: "AddFolder.png") { engine.run(vm, "BrowseOutputCommand") }
             }
+            .switchFolderDrop(engine, vm, "OutputPath")
             .disabled(!idle)
 
             // 열 너비 * : * : 2*
@@ -57,23 +61,32 @@ struct SwitchRepackTab: View {
                     RunCancelButton(title: "언팩", icon: "Unpack.png",
                                      isRunning: vm["IsUnpackRunning"]?.bool ?? false,
                                      enabled: vm["UnpackEnabled"]?.bool ?? true) { start(state, "UnpackOnly") }
-                    RunCancelButton(title: "리팩", icon: "Repack.png",
+                    RunCancelButton(title: "리팩 (폴더 기반)", icon: "Repack.png",
                                      isRunning: vm["IsRebuildRunning"]?.bool ?? false,
                                      enabled: vm["RebuildEnabled"]?.bool ?? true) { start(state, "RebuildOnly") }
                 }
-                RunCancelButton(title: "언팩 + 리팩 (Full)", icon: "Run.png",
+                RunCancelButton(title: "언팩 + 리팩 (Full)", icon: "UnRepack.png",
                                  isRunning: vm["IsFullRunning"]?.bool ?? false,
                                  enabled: vm["StartEnabled"]?.bool ?? true) { start(state, "FullProcess") }
             }
 
-            if vm["IsLocked"]?.bool == true {
-                SwitchProgressBlock(vm: vm, details: false)
-            }
+            SwitchRepackProgress(vm: vm)
         }
     }
 
     private var unpackedDir: String {
         (vm.string("OutputPath") as NSString).appendingPathComponent("unpacked")
+    }
+
+    /// `vm.LogAction = (msg, level) => ViewModel.AppendLog(msg, level)`
+    private func bindLog(_ titleVM: Int) async {
+        let repackVM = vm.id
+        await engine.bindCallback(titleVM, "LogAction", name: "switch.repack.\(repackVM).titleListLog") { [engine] args in
+            let message = args.first ?? .string("")
+            let level = args.count > 1 ? args[1] : .string("Info")
+            Task { await engine.call(repackVM, "AppendLog", [message, level]) }
+            return .null
+        }
     }
 
     /// SyncAll: 300ms 뒤 언어 탭을 다시 읽고 Context를 갱신한다(앞선 요청은 취소).
@@ -116,13 +129,9 @@ struct SwitchRepackTab: View {
                 return
             }
 
-            var files = await state.files.refreshedItems(engine)
-
             // RecalcIfNeededAsync(언팩·Full만)
-            if mode != "RebuildOnly", files.contains(where: { $0["IsKeyMissing"]?.bool == true }) {
-                await SwitchBridge.recalcKeyMissing(engine, files)
-                files = await state.files.refreshedItems(engine)
-                await state.language.update(engine, files: files, unpackedDir: nil)
+            if mode != "RebuildOnly" {
+                await recalcIfNeeded(state)
             }
 
             if mode == "FullProcess" {
@@ -131,6 +140,42 @@ struct SwitchRepackTab: View {
 
             guard await syncContext(state) else { return }
             await engine.call(vm.id, "StartAsync", [.string(mode)])
+        }
+    }
+
+    /// RecalcIfNeededAsync: titleList.RecalcKeyMissingFiles(완료 콜백에서 언어 탭 갱신)가 끝날 때까지 기다린다.
+    private func recalcIfNeeded(_ state: SwitchRepackState) async {
+        let files = await state.files.refreshedItems(engine)
+        guard files.contains(where: { $0["IsKeyMissing"]?.bool == true }), let titleVM = state.files.titleVMId else { return }
+
+        await SwitchBridge.callUntilCompleted(engine, titleVM, "RecalcKeyMissingFiles")
+        await state.language.update(engine, files: await state.files.refreshedItems(engine), unpackedDir: nil)
+    }
+}
+
+/// RepackTab progressArea: 표준 진행 줄(ToolProgressBar) + IsIndeterminate일 때 흐르는 막대(MarqueeAnimation).
+/// 진행률을 모를 때 upstream은 ProgressPercent·ProgressTime을 비운다.
+private struct SwitchRepackProgress: View {
+    let vm: RemoteObject
+
+    var body: some View {
+        if vm["IsIndeterminate"]?.bool == true {
+            HStack(spacing: 10) {
+                Text(vm.string("ProgressLabel"))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Spacer(minLength: 0)
+                Text(vm.string("ProgressSpeed"))
+                    .foregroundStyle(.secondary)
+                ProgressView()
+                    .progressViewStyle(.linear)
+                    .frame(width: 140)
+            }
+            .font(.caption.monospacedDigit())
+            .frame(minHeight: 22)
+        } else {
+            ToolProgressBar(vm: vm)
         }
     }
 }

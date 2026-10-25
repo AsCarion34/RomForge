@@ -98,7 +98,7 @@ extension EngineClient {
 
 // MARK: - 셀
 
-/// 확장자 배지(upstream ExtensionColorMap 색)
+/// 확장자 배지(upstream ExtensionColorMap 색). 글자는 upstream처럼 ViewModel 값 그대로 쓴다.
 struct ExtensionBadge: View {
     let item: RemoteObject
     var textProp = "Extension"
@@ -106,7 +106,7 @@ struct ExtensionBadge: View {
 
     var body: some View {
         let hex = item[colorProp]?["$color"]?.string
-        Text(item.string(textProp).uppercased())
+        Text(item.string(textProp))
             .font(.caption.weight(.semibold))
             .padding(.horizontal, 6).padding(.vertical, 2)
             .background(Color(hex: hex).opacity(0.85), in: Capsule())

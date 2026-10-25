@@ -1,15 +1,14 @@
 // upstream: NSW.WPF/UI/FileManagerControl.xaml(.cs)
-// ViewModel: NSW.WPF/ViewModels/GameFile(항목). 목록은 컨트롤이 가진 ObservableCollection<GameFile>(엔진에 생성)
+// ViewModel: 없음(컨트롤이 가진 ObservableCollection<GameFile>을 엔진에 만든다), 항목 NSW.WPF.ViewModels.GameFile
 import AppKit
 import SwiftUI
 
-/// 병합·버전 무시 탭의 파일 목록.
+/// 병합·버전 무시 탭의 파일 목록. FileListChanged는 이제 구독하는 탭이 없어 옮기지 않는다.
+/// ExtraButton1·2는 upstream에서 숨김(Collapsed)이고 쓰는 곳이 없어 옮기지 않는다.
 struct SwitchFileManager: View {
     @Environment(EngineClient.self) private var engine
     let list: SwitchGameFileList
     var enabled = true
-    /// FileListChanged(파일 추가·삭제 후)
-    var onFileListChanged: () async -> Void = {}
 
     @State private var selection = Set<Int>()
     @State private var sortOrder: [SwitchColumnSort] = []
@@ -23,16 +22,17 @@ struct SwitchFileManager: View {
         }
         .padding(10)
         .disabled(!enabled)
-        .task { await list.prepare(engine, importer: false) }
+        .task { await list.prepare(engine, titleList: false) }
     }
 
     private func table(_ items: [RemoteObject]) -> some View {
         Table(SwitchColumnSort.apply(sortOrder, to: items), selection: $selection, sortOrder: $sortOrder) {
-            // Res.Header_Type
-            TableColumn("종류", sortUsing: SwitchColumnSort(prop: "FileType")) { item in
+            // 머리글: Categories.png(글자 없음), Tag="FileType"
+            TableColumn("", sortUsing: SwitchColumnSort(prop: "FileType")) { item in
                 SwitchBadge(text: item.string("FileType"), background: item["TypeBackground"]?.color, foreground: item["TypeForeground"]?.color)
+                    .frame(maxWidth: .infinity)
             }
-            .width(80)
+            .width(70)
             TableColumn("타이틀", sortUsing: SwitchColumnSort(prop: "TitleName")) { item in SwitchTitleCell(item: item).cellEnvironment(engine) }
                 .width(min: 200, ideal: 380)
             TableColumn("버전", sortUsing: SwitchColumnSort(prop: "Version")) { item in
@@ -42,11 +42,12 @@ struct SwitchFileManager: View {
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
             .width(120)
-            // Res.Header_Ext
-            TableColumn("확장자", sortUsing: SwitchColumnSort(prop: "Extension")) { item in
+            // 머리글: Extension.png(글자 없음), Tag="Extension"
+            TableColumn("", sortUsing: SwitchColumnSort(prop: "Extension")) { item in
                 SwitchBadge(text: item.string("Extension"), background: item["ExtensionBackground"]?.color, foreground: item["ExtensionForeground"]?.color)
+                    .frame(maxWidth: .infinity)
             }
-            .width(90)
+            .width(50)
             // Res.Header_Size
             TableColumn("용량", sortUsing: SwitchColumnSort(prop: "FileSize")) { item in
                 Text(item.string("FileSize")).monospacedDigit().frame(maxWidth: .infinity, alignment: .trailing)
@@ -99,12 +100,10 @@ struct SwitchFileManager: View {
 
     /// AddFilesAsync(Common.Utils.ExpandPaths(paths))
     private func addFiles(_ paths: [String]) async {
-        guard let listId = list.listId else { return }
-        await SwitchFileManagerImport.addFiles(engine, listId: listId, paths: paths)
-        await onFileListChanged()
+        await SwitchFileManagerImport.addFiles(engine, list: list, paths: paths)
     }
 
-    /// BtnRemoveFile_Click
+    /// BtnRemoveFile_Click: GameFiles.Remove(item)
     private func removeFiles(_ ids: Set<Int>, from items: [RemoteObject]) {
         guard let listId = list.listId, !ids.isEmpty else { return }
         let ordered = SwitchBridge.ordered(ids, in: items)
@@ -114,130 +113,100 @@ struct SwitchFileManager: View {
             for id in ordered {
                 await engine.call(listId, "Remove", [EngineClient.ref(id)])
             }
-            await onFileListChanged()
         }
     }
 
-    /// BtnRemoveAllFiles_Click
+    /// BtnRemoveAllFiles_Click: GameFiles.Clear()
     private func removeAll() {
         guard let listId = list.listId else { return }
         selection.removeAll()
-
-        Task {
-            await engine.call(listId, "Clear")
-            await onFileListChanged()
-        }
+        Task { await engine.call(listId, "Clear") }
     }
 }
 
-/// FileManagerControl.AddFilesAsync.
-/// 이 메서드는 upstream .xaml.cs 안에 있어 엔진에 없다(엔진 빌드는 .xaml.cs를 뺀다). 같은 순서로 upstream 메서드
-/// (MetadataReader.GetGameFileInfo/GetMetadataFromContainer, MetadataResult.GetEffectiveDisplayVersion,
-/// Extensions.ToBitmapImage, new GameFile)를 엔진에서 부른다. SwitchGameFileImporter와 달리 기존 항목을 교체하지 않는다.
+/// FileManagerControl.AddFilesAsync · RecalcKeyMissingFilesAsync · ApplyInfo.
+/// 이 메서드들은 upstream .xaml.cs 안에 있어 엔진에 없다(엔진 빌드는 .xaml.cs를 뺀다). 같은 순서로 upstream 메서드
+/// (Common.Utils.ExpandPaths, new GameFile, KeySet.Clone, MetadataReader.ReadGameFileInfo, Extensions.ToBitmapImage)를 엔진에서 부른다.
 @MainActor
 enum SwitchFileManagerImport {
     private static let reader = "NSW.Core.MetadataReader"
 
-    static func addFiles(_ engine: EngineClient, listId: Int, paths: [String]) async {
+    /// 먼저 '분석중…'(키가 없으면 '키 없음') 항목을 모두 넣고, 키가 있으면 하나씩 정보를 읽어 채운다.
+    static func addFiles(_ engine: EngineClient, list: SwitchGameFileList, paths: [String]) async {
+        guard let listId = list.listId else { return }
         let keySet = await SwitchBridge.keySet(engine)
 
-        // 기존 경로(OrdinalIgnoreCase)
-        var existing = Set(engine.store.items(listId).compactMap { engine.store.object($0.refId)?.string("FilePath").lowercased() })
-
+        // candidates = paths.Where(p => SupportedExtensions.Contains(Path.GetExtension(p)))
         let expanded = await SwitchBridge.values(engine, of: await SwitchBridge.expandPaths(engine, paths)).compactMap(\.string)
-        let supported = SwitchGameFileList.supportedExtensions.map { String($0.dropFirst()) }
-        let newPaths = expanded
-            .filter { supported.contains(($0 as NSString).pathExtension.lowercased()) }
-            .filter { existing.insert($0.lowercased()).inserted }
+        let candidates = expanded.filter { SwitchGameFileList.supports($0) }
 
-        guard !newPaths.isEmpty else { return }
+        // GameFiles.Any(f => string.Equals(f.FilePath, path, StringComparison.OrdinalIgnoreCase))
+        var existing = Set(await list.refreshedItems(engine).map { $0.string("FilePath").lowercased() })
+        let fileType = await SwitchBridge.resource(engine, keySet == nil ? "Status_NoKey" : "Status_Analyzing")
+        var added: [(id: Int, path: String)] = []
 
-        let noKey = await SwitchBridge.resource(engine, "Status_NoKey")
-        let analyzing = await SwitchBridge.resource(engine, "Status_Analyzing")
+        for path in candidates where existing.insert(path.lowercased()).inserted {
+            // new GameFile(path) { FileType, TitleName = Path.GetFileNameWithoutExtension(path) }
+            guard let file = await engine.create("NSW.WPF.ViewModels.GameFile", [.string(path)]) else { continue }
+            await engine.set(file, "FileType", .string(fileType))
+            await engine.set(file, "TitleName", .string(((path as NSString).lastPathComponent as NSString).deletingPathExtension))
+            await engine.call(listId, "Add", [EngineClient.ref(file)])
+            added.append((file, path))
+        }
 
-        for path in newPaths {
-            var titleName = ((path as NSString).lastPathComponent as NSString).deletingPathExtension
-            var icon = JSONValue.null
+        guard let keySet else { return }
 
-            if let keySet {
-                if let info = await gameFileInfo(engine, keySet, path) {
-                    if !info.string("TitleName").isEmpty { titleName = info.string("TitleName") }
-                    if let iconData = info["IconData"], iconData.refId != nil {
-                        icon = await engine.callStatic("NSW.WPF.Services.Extensions", "ToBitmapImage", [iconData]) ?? .null
-                    }
-                }
-
-                // try { allMeta = MetadataReader.GetMetadataFromContainer(keySet, path); } catch { allMeta = []; }
-                let allMeta = await metadata(engine, keySet, path)
-
-                if !allMeta.isEmpty {
-                    let apps = allMeta.filter { $0.string("Type") == "Application" }
-                    for app in apps {
-                        await add(engine, listId, path, fileType: "B", titleId: app["TitleId"], version: await version(engine, app), titleName: titleName, icon: icon)
-                    }
-
-                    let patches = allMeta.filter { $0.string("Type") == "Patch" }
-                    for patch in patches {
-                        await add(engine, listId, path, fileType: "U", titleId: patch["TitleId"], version: await version(engine, patch), titleName: titleName, icon: icon)
-                    }
-
-                    var seen = Set<String>()
-                    let dlcs = allMeta
-                        .filter { ["AddOnContent", "Delta"].contains($0.string("Type")) }
-                        .filter { seen.insert($0.string("TitleId").lowercased()).inserted }
-                    for dlc in dlcs {
-                        let titleId = dlc.string("TitleId")
-                        let name = titleName.isEmpty ? titleId : "\(titleName) (DLC \(titleId.suffix(4)))"
-                        await add(engine, listId, path, fileType: "D", titleId: dlc["TitleId"], version: await version(engine, dlc), titleName: name, icon: icon)
-                    }
-
-                    if !apps.isEmpty || !patches.isEmpty || !dlcs.isEmpty { continue }
-                }
-            }
-
-            var fileType = keySet == nil ? noKey : analyzing
-            var titleId = JSONValue.null
-            var version = JSONValue.null
-
-            if let keySet, let info = await gameFileInfo(engine, keySet, path) {
-                titleId = info["TitleId"] ?? .null
-                version = info["DisplayVersion"] ?? .null
-                fileType = info.string("Type")
-            }
-
-            await add(engine, listId, path, fileType: fileType, titleId: titleId, version: version, titleName: titleName, icon: icon)
+        for file in added {
+            await applyInfo(engine, file.id, keySet: keySet, path: file.path)
         }
     }
 
-    private static func gameFileInfo(_ engine: EngineClient, _ keySet: Int, _ path: String) async -> RemoteObject? {
-        await SwitchBridge.object(engine, await engine.callStatic(reader, "GetGameFileInfo", [EngineClient.ref(keySet), .string(path)]))
-    }
+    /// RecalcKeyMissingFilesAsync: '키 없음' 항목의 정보를 다시 읽는다.
+    static func recalcKeyMissing(_ engine: EngineClient, list: SwitchGameFileList) async {
+        guard let keySet = await SwitchBridge.keySet(engine) else { return }
 
-    private static func metadata(_ engine: EngineClient, _ keySet: Int, _ path: String) async -> [RemoteObject] {
-        guard let list = try? await SwitchBridge.callStatic(engine, reader, "GetMetadataFromContainer", [EngineClient.ref(keySet), .string(path)]) else { return [] }
-
-        var result: [RemoteObject] = []
-        for value in await SwitchBridge.values(engine, of: list) {
-            if let meta = await SwitchBridge.object(engine, value) { result.append(meta) }
+        let targets = await list.refreshedItems(engine).filter { $0["IsKeyMissing"]?.bool == true }
+        for file in targets {
+            await applyInfo(engine, file.id, keySet: keySet, path: file.string("FilePath"))
         }
-        return result
     }
 
-    private static func version(_ engine: EngineClient, _ meta: RemoteObject) async -> JSONValue? {
-        await engine.call(meta.id, "GetEffectiveDisplayVersion")
-    }
+    /// `info = await Task.Run(() => { try { return MetadataReader.ReadGameFileInfo(keySet.Clone(), path); } catch { return null; } });`
+    /// `ApplyInfo(vm, info)`
+    private static func applyInfo(_ engine: EngineClient, _ file: Int, keySet: Int, path: String) async {
+        var temporary: [Int] = []
+        var info: RemoteObject?
 
-    /// GameFiles.Add(new GameFile(path) { FileType, TitleID, Version, TitleName, Icon })
-    private static func add(_ engine: EngineClient, _ listId: Int, _ path: String, fileType: String, titleId: JSONValue?, version: JSONValue?,
-                            titleName: String, icon: JSONValue) async {
-        guard let file = await engine.create("NSW.WPF.ViewModels.GameFile", [.string(path)]) else { return }
+        if let clone = await engine.call(keySet, "Clone")?.refId {
+            temporary.append(clone)
+            let result = try? await engine.callStaticThrowing(reader, "ReadGameFileInfo", [EngineClient.ref(clone), .string(path)], options: .background)
+            if let id = result?.refId {
+                temporary.append(id)
+                info = await engine.describe(id)
+            }
+        }
 
-        await engine.set(file, "FileType", .string(fileType))
-        await engine.set(file, "TitleID", titleId ?? .null)
-        await engine.set(file, "Version", version ?? .null)
-        await engine.set(file, "TitleName", .string(titleName))
-        if icon != .null { await engine.set(file, "Icon", icon) }
+        guard let info else {
+            await engine.set(file, "FileType", .string("?"))
+            await SwitchBridge.release(engine, temporary)
+            return
+        }
 
-        await engine.call(listId, "Add", [EngineClient.ref(file)])
+        let titleName = info.string("TitleName")
+        if !titleName.isEmpty {
+            await engine.set(file, "TitleName", .string(titleName))
+        }
+
+        if let iconData = info["IconData"], let iconDataId = iconData.refId {
+            temporary.append(iconDataId)
+            let icon = await engine.callStatic("NSW.WPF.Services.Extensions", "ToBitmapImage", [iconData])
+            await engine.set(file, "Icon", icon ?? .null)
+        }
+
+        await engine.set(file, "Naming", info["Naming"] ?? .null)
+        await engine.set(file, "TitleID", info["TitleId"] ?? .null)
+        await engine.set(file, "Version", info["DisplayVersion"] ?? .null)
+        await engine.set(file, "FileType", info["Type"] ?? .string("?"))
+        await SwitchBridge.release(engine, temporary)
     }
 }

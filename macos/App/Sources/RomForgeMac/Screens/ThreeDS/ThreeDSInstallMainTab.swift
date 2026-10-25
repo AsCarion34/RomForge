@@ -173,7 +173,7 @@ struct ThreeDSInstallMainTab: View {
             .string(volume.devicePath), .string(volume.model), .number(Double(volume.sizeBytes)),
             .int(volume.diskNumber), .string(volume.path),
         ]
-        guard let id = await engine.create("PickPack.Disk.DriveInfos", args) else { return nil }
+        guard let id = await engine.create("PickPack.Disk.Helpers.DriveInfos", args) else { return nil }
         let text = await engine.call(id, "ToString")?.string
         _ = try? await engine.request("release", ["objs": .array([.int(id)])])
         return text
@@ -200,7 +200,8 @@ struct ThreeDSInstallMainTab: View {
                     .controlSize(.small)
             }
             if busy {
-                ProgressView(value: min(max((vm["Progress"]?.double ?? 0) / 100, 0), 1))
+                // ScaleTransform ScaleX="{Binding ProgressPct, Converter=ProgressToStarConverter}"
+                ProgressView(value: min(max((vm["ProgressPct"]?.double ?? 0) / 100, 0), 1))
                     .frame(width: 140)
             }
         }
@@ -227,8 +228,9 @@ struct ThreeDSVolume: Sendable {
     let diskNumber: Int
 }
 
-/// upstream DriveInfos.GetDriveInfos() 자리. macOS 엔진의 DriveInfos는 빈 목록을 돌려주므로(물리 디스크 쓰기 미구현)
-/// 연결된 로컬 볼륨 중 디스크 장치가 있는 것(시동 디스크 제외)을 찾는다. upstream처럼 이동식·고정 디스크를 모두 넣는다.
+/// upstream DriveInfos.GetDriveInfos() 자리. macOS 엔진의 DriveInfos.GetDriveInfos()는 외장 물리 디스크를 돌려주지만
+/// DriveLetter가 볼륨 이름이라 SdPath(SD 카드 루트 경로)로 쓸 수 없다. 그래서 연결된 로컬 볼륨 중 디스크 장치가 있는 것
+/// (시동 디스크 제외)을 찾아 마운트 경로를 DriveLetter 자리에 넣는다. upstream처럼 이동식·고정 디스크를 모두 넣는다.
 enum ThreeDSVolumeScanner {
     static func scan() -> [ThreeDSVolume] {
         let keys: [URLResourceKey] = [.volumeIsRootFileSystemKey, .volumeIsLocalKey, .volumeIsBrowsableKey, .volumeNameKey]

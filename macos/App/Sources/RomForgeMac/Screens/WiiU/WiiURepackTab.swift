@@ -3,7 +3,7 @@
 import AppKit
 import SwiftUI
 
-/// WiiU 리팩 탭: 타이틀 목록(본편/업데이트/DLC), 출력 포맷, 작업 폴더, 언팩 / 리팩 (폴더 기반) / 언팩 + 리팩 (Full).
+/// WiiU 리팩 탭: 타이틀 목록(본편/업데이트/DLC), 출력 포맷, 작업 폴더, 언팩 / 리팩 (폴더 기반) / 언팩 + 리팩 (Full), 진행 상황.
 struct WiiURepackTab: View {
     @Environment(EngineClient.self) private var engine
     let vm: RemoteObject
@@ -35,15 +35,24 @@ struct WiiURepackTab: View {
                     }
                     .disabled(!idle)
                     Spacer()
+                    // BtnHelp_Click
                     ToolIconButton(icon: "Help.png", help: "도움말") {
                         WiiUPanels.openURL("https://sinjunyoung.github.io/RomForge/wiiu-repack/")
                     }
                 }
 
+                // TextBox(OutputPath, AllowDrop) + 찾아보기(BrowseOutputCommand), IsEnabled = IsIdle
                 HStack(spacing: 5) {
-                    TextField("작업 폴더를 선택하세요", text: engine.string(vm, "OutputPath"))
-                        .textFieldStyle(.roundedBorder)
-                    ToolIconButton(icon: "AddFolder.png") { engine.run(vm, "BrowseOutputCommand") }
+                    HStack {
+                        TextField("작업 폴더를 드래그하거나 선택하세요", text: engine.string(vm, "OutputPath"))
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    .wiiUOutputFolderDrop(enabled: idle) { folder in
+                        engine.string(vm, "OutputPath").wrappedValue = folder
+                    }
+                    ToolIconButton(icon: "AddFolder.png", enabled: engine.canRun(vm, "BrowseOutputCommand")) {
+                        engine.run(vm, "BrowseOutputCommand")
+                    }
                 }
                 .disabled(!idle)
 
@@ -51,18 +60,18 @@ struct WiiURepackTab: View {
                 HStack(spacing: 5) {
                     HStack(spacing: 5) {
                         RunCancelButton(title: "언팩", icon: "Unpack.png",
-                                       isRunning: vm["IsUnpackRunning"]?.bool ?? false,
-                                       enabled: vm["UnpackEnabled"]?.bool ?? true) { start("UnpackOnly") }
+                                        isRunning: vm["IsUnpackRunning"]?.bool ?? false,
+                                        enabled: vm["UnpackEnabled"]?.bool ?? true) { start("UnpackOnly") }
                         RunCancelButton(title: "리팩 (폴더 기반)", icon: "Repack.png",
-                                       isRunning: vm["IsRebuildRunning"]?.bool ?? false,
-                                       enabled: vm["RebuildEnabled"]?.bool ?? true) { start("RebuildOnly") }
+                                        isRunning: vm["IsRebuildRunning"]?.bool ?? false,
+                                        enabled: vm["RebuildEnabled"]?.bool ?? true) { start("RebuildOnly") }
                     }
-                    RunCancelButton(title: "언팩 + 리팩 (Full)", icon: "Run.png",
-                                   isRunning: vm["IsFullRunning"]?.bool ?? false,
-                                   enabled: vm["StartEnabled"]?.bool ?? true) { start("FullProcess") }
+                    RunCancelButton(title: "언팩 + 리팩 (Full)", icon: "UnRepack.png",
+                                    isRunning: vm["IsFullRunning"]?.bool ?? false,
+                                    enabled: vm["StartEnabled"]?.bool ?? true) { start("FullProcess") }
                 }
 
-                WiiUProgressRow(vm: vm)
+                ToolProgressBar(vm: vm)
             }
         }
     }
@@ -86,7 +95,8 @@ struct WiiURepackTab: View {
                 WiiUPatchCell(item: item,
                               assign: { path in assignPatch(item, path) },
                               selectFolder: { selectPatchFolder(item) },
-                              selectArchive: { selectPatchArchive(item) })
+                              selectArchive: { selectPatchArchive(item) },
+                              removePatch: { removePatch(item) })
             }
             .width(80)
             TableColumn("용량") { item in
@@ -117,23 +127,26 @@ struct WiiURepackTab: View {
             // LvFiles_KeyUp: Entries.Remove(SelectedEntry)
             if let selected = vm["SelectedEntry"]?.refId { removeEntry(selected) }
         }
+        // LvFiles_ContextMenuOpening: 선택된 항목이 없으면 메뉴를 열지 않는다.
         .contextMenu(forSelectionType: Int.self) { ids in
             if let id = ids.first {
-                Button("폴더 열기") {
+                Button {
+                    // MenuItem_OpenFolder_Click: Path.GetDirectoryName(FilePath).OpenFolder()
                     if let entry = engine.store.object(id) {
                         WiiUPanels.showFolder((entry.string("FilePath") as NSString).deletingLastPathComponent)
                     }
+                } label: {
+                    WiiUMenuLabel(title: "폴더 열기", icon: "AddFolder.png")
                 }
                 Divider()
-                Button("한글패치 취소") {
-                    // BtnRemovePatch_Click: SelectedEntry.PatchPath = null
-                    Task { await engine.set(id, "PatchPath", .null) }
+                Button { removeEntry(id) } label: {
+                    WiiUMenuLabel(title: "선택 삭제", icon: "Delete.png")
                 }
-                Divider()
-                Button("선택 삭제") { removeEntry(id) }
-                Button("전체 삭제") {
+                Button {
                     // BtnClear_Click: Entries.Clear()
                     Task { await engine.call(vm.ref("Entries"), "Clear") }
+                } label: {
+                    WiiUMenuLabel(title: "전체 삭제", icon: "Clear.png")
                 }
             }
         }
@@ -141,7 +154,7 @@ struct WiiURepackTab: View {
 
     private var hint: some View {
         VStack(spacing: 6) {
-            UpstreamIcon(name: "drag.png", size: 28)
+            UpstreamIcon(name: "Info.png", size: 28)
             Text("게임 파일 / 폴더를 여기에 드래그&드롭하세요").font(.headline)
             Text("본편/업데이트/DLC는 title ID로 자동 분류됩니다").foregroundStyle(.orange)
             HStack(spacing: 6) {
@@ -156,11 +169,12 @@ struct WiiURepackTab: View {
 
     // MARK: 동작
 
+    /// BtnRemove_Click / LvFiles_KeyUp: Entries.Remove(SelectedEntry)
     private func removeEntry(_ id: Int) {
         Task { await engine.call(vm.ref("Entries"), "Remove", [EngineClient.ref(id)]) }
     }
 
-    /// BtnUnpack_Click / BtnRebuild_Click / BtnStart_Click
+    /// BtnUnpack_Click / BtnRebuild_Click / BtnStart_Click: 작업 중이면 Cancel(), 아니면 StartAsync(BuildMode)
     private func start(_ mode: String) {
         if vm["IsLocked"]?.bool == true {
             engine.invoke(vm, "Cancel")
@@ -176,12 +190,18 @@ struct WiiURepackTab: View {
         }
     }
 
-    /// PatchMenu_SelectArchive_Click
+    /// PatchMenu_SelectArchive_Click: Filter = "압축파일 (*.zip;*.7z)|*.zip;*.7z"
     private func selectPatchArchive(_ entry: RemoteObject) {
         let files = WiiUPanels.openFiles(title: "\(entry.string("TitleName"))에 적용할 한글패치 압축파일 선택", extensions: ["zip", "7z"])
         if let file = files.first {
             Task { await engine.set(entry.id, "PatchPath", .string(file)) }
         }
+    }
+
+    /// 패치 칸 메뉴 "선택 취소"(BtnRemovePatch_Click: SelectedEntry.PatchPath = null).
+    /// WPF에서는 칸을 누를 때 그 행이 선택되므로 메뉴를 연 행의 항목에 적용한다.
+    private func removePatch(_ entry: RemoteObject) {
+        Task { await engine.set(entry.id, "PatchPath", .null) }
     }
 
     /// PatchDropTarget_Drop: PatchDropValidator.IsValidPatchPath면 PatchPath에 넣는다.
@@ -194,17 +214,19 @@ struct WiiURepackTab: View {
     }
 }
 
-/// 패치 칸: 누르면 메뉴(폴더 선택/압축파일 선택), 하나를 끌어다 놓으면 지정
+/// 패치 칸: 누르면 메뉴(폴더 선택 / 압축파일 선택 / 선택 취소), 하나를 끌어다 놓으면 지정
 private struct WiiUPatchCell: View {
     let item: RemoteObject
     let assign: (String) -> Void
     let selectFolder: () -> Void
     let selectArchive: () -> Void
+    let removePatch: () -> Void
 
     var body: some View {
         Menu {
-            Button("폴더 선택...", action: selectFolder)
-            Button("압축파일 선택(zip/7z)...", action: selectArchive)
+            Button(action: selectFolder) { WiiUMenuLabel(title: "폴더 선택...", icon: "AddFolder.png") }
+            Button(action: selectArchive) { WiiUMenuLabel(title: "압축파일 선택(zip/7z)...", icon: "ZipFolder.png") }
+            Button(action: removePatch) { WiiUMenuLabel(title: "선택 취소", icon: "Cancel.png") }
         } label: {
             UpstreamAssets.menuImage((item.string("PatchIconSource") as NSString).lastPathComponent, size: 18)
         }

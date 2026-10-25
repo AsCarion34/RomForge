@@ -15,12 +15,14 @@ enum ScreenRouter {
             SwitchScreen(vmId: vmId)
         case .wiiu:
             WiiUScreen(vmId: vmId)
-        case .n3ds:
-            ThreeDSScreen(vmId: vmId)
         case .wii:
             WiiScreen(vmId: vmId)
-        case .ps:
-            PSScreen(vmId: vmId)
+        case .n3ds:
+            ThreeDSScreen(vmId: vmId)
+        case .psvita:
+            PSVitaScreen(vmId: vmId)
+        case .psp:
+            PSPScreen(vmId: vmId)
         case .util:
             UtilScreen(vmId: vmId)
         case .settings:

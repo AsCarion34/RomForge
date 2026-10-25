@@ -1,9 +1,9 @@
 using System.Text.RegularExpressions;
 using Microsoft.Win32.SafeHandles;
 
-namespace PickPack.Disk.ETC
+namespace PickPack.Disk.Helpers
 {
-    // upstream PickPack.Disk/ETC/DiskUtil.cs의 macOS 대체(DeviceIoControl·GetDiskFreeSpaceEx → ioctl·diskutil·DriveInfo).
+    // upstream PickPack.Disk/Helpers/DiskUtil.cs의 macOS 대체(DeviceIoControl·GetDiskFreeSpaceEx → ioctl·diskutil·DriveInfo).
     // 공개 API는 upstream과 같게 유지해야 한다.
     public static class DiskUtil
     {

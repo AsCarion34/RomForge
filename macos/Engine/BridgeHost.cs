@@ -36,7 +36,8 @@ namespace RomForge.Mac.Engine;
 ///   image {img}                      이미지 바이트(base64) 또는 앱 번들 리소스 이름
 ///   release {objs[]}                 더 쓰지 않는 객체 번호 해제
 /// 엔진 → 앱 알림
-///   ready {root}, changed {obj, props}, collection {obj, items}, commands {updates[]}, engineError {message}
+///   ready {root}, changed {obj, props}, collection {obj, items, groupBy?}, commands {updates[]}, engineError {message}
+///   (list 응답과 collection 알림의 groupBy: upstream이 기본 컬렉션 뷰에 PropertyGroupDescription을 넣은 경우 그 속성 이름들)
 /// 엔진 → 앱 요청(upstream 코드가 띄우는 창): ui.messageBox, ui.openFile, ui.saveFile, ui.openFolder, ui.password, ui.clipboard, ui.callback
 /// </summary>
 internal static class BridgeHost
@@ -428,7 +429,27 @@ internal sealed class BridgeSession
         if (_observedLists.Add(id) && obj is INotifyCollectionChanged ncc)
             ncc.CollectionChanged += OnCollectionChanged;
 
-        return new JsonObject { ["obj"] = id, ["items"] = EncodeItems(enumerable) };
+        return CollectionMessage(id, enumerable);
+    }
+
+    /// <summary>
+    /// list 응답·collection 알림. upstream이 CollectionViewSource.GetDefaultView로 정렬·묶음을 정한 컬렉션은
+    /// 그 뷰 순서로 보내고, 묶음 기준 속성 이름을 groupBy로 붙인다(앱이 묶음 머리글을 그린다).
+    /// </summary>
+    private JsonObject CollectionMessage(int id, IEnumerable enumerable)
+    {
+        var message = new JsonObject { ["obj"] = id };
+
+        if (System.Windows.Data.CollectionViewSource.TryGetDefaultView(enumerable, out var view))
+        {
+            enumerable = view;
+
+            if (view.GroupPropertyNames.Count > 0)
+                message["groupBy"] = new JsonArray([.. view.GroupPropertyNames.Select(n => (JsonNode?)n)]);
+        }
+
+        message["items"] = EncodeItems(enumerable);
+        return message;
     }
 
     private JsonArray EncodeItems(IEnumerable enumerable)
@@ -692,7 +713,7 @@ internal sealed class BridgeSession
             _pendingLists.TryRemove(id, out _);
 
             if (_registry.TryGet(id, out var obj) && obj is IEnumerable enumerable)
-                _transport.Notify("collection", new JsonObject { ["obj"] = id, ["items"] = EncodeItems(enumerable) });
+                _transport.Notify("collection", CollectionMessage(id, enumerable));
         }
 
         // WPF는 입력이 있을 때마다 CanExecute를 다시 확인한다. 여기서는 변경이 있을 때마다 확인한다.

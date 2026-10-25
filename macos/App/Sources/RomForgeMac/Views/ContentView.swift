@@ -4,8 +4,9 @@ import AppKit
 import SwiftUI
 
 /// upstream MainWindow.xaml의 탭 구성과 같게 둔다(제목·아이콘·ViewModel 속성 이름).
+/// 순서가 MainViewModel.SelectedTabIndex와 같아야 한다(upstream TabControl 순서).
 enum AppTab: Int, CaseIterable, Identifiable {
-    case patch, compress, convert, nswitch, wiiu, n3ds, wii, ps, util, settings
+    case patch, compress, convert, nswitch, wiiu, wii, n3ds, psvita, psp, util, settings
 
     var id: Int { rawValue }
 
@@ -16,9 +17,10 @@ enum AppTab: Int, CaseIterable, Identifiable {
         case .convert: "변환"
         case .nswitch: "Switch"
         case .wiiu: "WiiU"
-        case .n3ds: "3DS"
         case .wii: "Wii"
-        case .ps: "PS"
+        case .n3ds: "3DS"
+        case .psvita: "PS Vita"
+        case .psp: "PSP"
         case .util: "유틸"
         case .settings: "설정"
         }
@@ -31,9 +33,10 @@ enum AppTab: Int, CaseIterable, Identifiable {
         case .convert: "Convert.png"
         case .nswitch: "Switch.png"
         case .wiiu: "WiiU.png"
-        case .n3ds: "3DS.png"
         case .wii: "Wii.png"
-        case .ps: "PS1.png"
+        case .n3ds: "3DS.png"
+        case .psvita: "Vita.png"
+        case .psp: "PSP.png"
         case .util: "Utility.png"
         case .settings: "Settings.png"
         }
@@ -47,9 +50,10 @@ enum AppTab: Int, CaseIterable, Identifiable {
         case .convert: "UnifiedConvertVM"
         case .nswitch: "SwitchMainVM"
         case .wiiu: "WiiUMainVM"
-        case .n3ds: "Main3DsVM"
         case .wii: "WiiMainVM"
-        case .ps: "PSMainVM"
+        case .n3ds: "Main3DsVM"
+        case .psvita: "PSVitaMainVM"
+        case .psp: "PSPMainVM"
         case .util: "UtilMainVM"
         case .settings: "Settings"
         }
@@ -66,6 +70,15 @@ struct ContentView: View {
     private var topmost: Bool {
         let settings = engine.store.object(root?.ref("Settings"))
         return engine.store.object(settings?.ref("General"))?["Topmost"]?.bool ?? false
+    }
+
+    private struct Taskbar: Equatable {
+        var state: String
+        var value: Double
+    }
+
+    private var taskbar: Taskbar {
+        Taskbar(state: root?["TaskbarProgressState"]?.string ?? "None", value: root?["TaskbarProgressValue"]?.double ?? 0)
     }
 
     var body: some View {
@@ -114,6 +127,10 @@ struct ContentView: View {
                 for window in NSApp.windows where window.isVisible {
                     window.level = isTopmost ? .floating : .normal
                 }
+            }
+            // upstream: Window.TaskbarItemInfo(ProgressValue·ProgressState) → Dock 아이콘 진행 막대
+            .onChange(of: taskbar, initial: true) { _, value in
+                DockProgress.update(state: value.state, value: value.value)
             }
             .overlay(alignment: .bottom) { errorBanner }
         } else {

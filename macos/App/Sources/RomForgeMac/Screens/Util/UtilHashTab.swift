@@ -2,7 +2,7 @@
 // ViewModel: HashMainViewModel (UtilMainViewModel.HashVM)
 import SwiftUI
 
-/// Hash 계산: 알고리즘·대소문자 선택 / 파일 목록(결과·복사) / 버튼
+/// 해시 계산: 알고리즘·대소문자 선택 / 파일 목록(결과·복사) / 버튼
 struct UtilHashTab: View {
     @Environment(EngineClient.self) private var engine
     let vm: RemoteObject

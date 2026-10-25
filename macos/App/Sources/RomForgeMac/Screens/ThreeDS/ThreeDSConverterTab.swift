@@ -1,5 +1,5 @@
 // upstream: RomForge/Controls/3DS/ConverterTab.xaml(.cs)
-// ViewModel: ConverterMainViewModel (Main3DsVM.ConverterVM), _3DSFileItem
+// ViewModel: ConverterMainViewModel (Main3DsVM.ConverterVM), FileItem
 import AppKit
 import SwiftUI
 

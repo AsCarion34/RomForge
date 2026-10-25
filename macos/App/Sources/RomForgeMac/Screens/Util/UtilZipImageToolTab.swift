@@ -16,13 +16,7 @@ struct UtilZipImageToolTab: View {
         ToolLayout(vm: vm, lists: ["UsbDrives", "SegmentSizeOptions", "CompressionLevelOptions", "LogEntries"]) {
             VStack(alignment: .leading, spacing: 6) {
                 driveRow
-                // TabControl SelectedIndex="{Binding SelectedTabIndex}": [굽기 | 저장]
-                InnerTabs(titles: ["굽기", "저장"], selection: engine.int(vm, "SelectedTabIndex")) { index in
-                    Group {
-                        if index == 1 { readTab } else { writeTab }
-                    }
-                    .padding(8)
-                }
+                tabs
                 statusBar
             }
             .padding(8)
@@ -51,6 +45,32 @@ struct UtilZipImageToolTab: View {
             }
             .labelsHidden()
             .disabled(!isIdle)
+        }
+    }
+
+    // MARK: 탭
+
+    /// TabControl SelectedIndex="{Binding SelectedTabIndex}": [굽기 | 저장].
+    /// TabItem IsEnabled="{Binding IsIdle}": 작업 중에는 탭을 바꿀 수 없다(내용의 굽기·저장 버튼은 "취소"로 남는다).
+    /// 공용 InnerTabs는 머리만 막는 방법이 없어 같은 분할 컨트롤을 여기서 그린다.
+    private var tabs: some View {
+        let selected = vm["SelectedTabIndex"]?.int ?? 0
+
+        return VStack(spacing: 0) {
+            Picker("", selection: engine.int(vm, "SelectedTabIndex")) {
+                Text("굽기").tag(0)
+                Text("저장").tag(1)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .disabled(!isIdle)
+            .padding(.bottom, 6)
+
+            Group {
+                if selected == 1 { readTab } else { writeTab }
+            }
+            .padding(8)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
     }
 
@@ -141,10 +161,11 @@ struct UtilZipImageToolTab: View {
         }
     }
 
-    /// DriveInfos.GetDriveInfos() → UsbDrives를 비우고 채운 뒤, 항목이 있으면 마지막 항목을 SelectedDrive로
+    /// await Task.Run(() => DriveInfos.GetDriveInfos()) → UsbDrives를 비우고 채운 뒤, 항목이 있으면 마지막 항목을 SelectedDrive로
     private func initializeDrives() async {
         guard let usbDrives = vm.ref("UsbDrives"),
-              let infosId = await engine.callStatic("PickPack.Disk.DriveInfos", "GetDriveInfos")?.refId else { return }
+              let infosId = await engine.callStatic("PickPack.Disk.Helpers.DriveInfos", "GetDriveInfos", options: .background)?.refId
+        else { return }
 
         await engine.observeList(infosId)
         let infos = engine.store.items(infosId)

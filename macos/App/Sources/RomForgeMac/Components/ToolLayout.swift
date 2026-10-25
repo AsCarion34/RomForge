@@ -25,7 +25,7 @@ struct ToolLayout<Main: View, Options: View>: View {
 
             if let logs, vm?.ref(logs) != nil {
                 Divider()
-                LogListView(listId: vm?.ref(logs))
+                LogListView(listId: vm?.ref(logs), owner: vm?.has("ClearLog") == true ? vm?.id : nil)
                     .frame(minHeight: 100, idealHeight: 150, maxHeight: 240)
             }
         }

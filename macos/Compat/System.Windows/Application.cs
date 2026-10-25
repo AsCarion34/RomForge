@@ -42,6 +42,9 @@ public class Window
 
     public Visibility Visibility { get; set; }
 
+    /// <summary>엔진에는 실제 창이 없어 항상 false다.</summary>
+    public bool IsActive => false;
+
     public void Close() { }
 }
 

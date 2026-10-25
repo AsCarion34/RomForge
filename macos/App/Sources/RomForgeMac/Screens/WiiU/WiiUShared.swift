@@ -1,5 +1,5 @@
-// upstream: NSW.WPF/UI/IconButton.xaml(.cs), RomForge/Controls/WiiU/*.xaml 공통 배치(진행 줄 · 빈 목록 안내)
-// ViewModel: WiiUMainViewModel 하위 탭 공용 보조 뷰
+// upstream: RomForge/Controls/WiiU/RepackTab.xaml(.cs), RomForge/Controls/WiiU/ConverterTab.xaml(.cs)
+// ViewModel: WiiUMainViewModel 하위 탭 공용 보조 뷰(대화상자 · 출력 폴더 드롭 · 메뉴 항목 · 배지 · 타이틀 칸 · 출력 형식 콤보)
 import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
@@ -43,28 +43,42 @@ enum WiiUPanels {
     static func openURL(_ string: String) {
         if let url = URL(string: string) { NSWorkspace.shared.open(url) }
     }
+
+    /// TxtOutputPath_PreviewDragOver: 첫 항목이 폴더일 때만 받는다(그 밖에는 DragDropEffects.None이라 Drop이 오지 않는다).
+    /// TxtOutputPath_Drop: 그 폴더를 OutputPath로.
+    static func droppedFolder(_ urls: [URL]) -> String? {
+        guard let first = urls.first else { return nil }
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: first.path, isDirectory: &isDirectory), isDirectory.boolValue else { return nil }
+        return first.path
+    }
+}
+
+extension View {
+    /// 출력(작업) 폴더 TextBox의 AllowDrop + TxtOutputPath_PreviewDragOver / TxtOutputPath_Drop.
+    /// TextBox가 IsEnabled=false이면 드롭을 받지 않는다(enabled).
+    func wiiUOutputFolderDrop(enabled: Bool, onFolder: @escaping (String) -> Void) -> some View {
+        dropDestination(for: URL.self) { urls, _ in
+            guard enabled, let folder = WiiUPanels.droppedFolder(urls) else { return false }
+            onFolder(folder)
+            return true
+        }
+    }
 }
 
 // MARK: - 보조 뷰
 
-/// 진행 줄: ProgressLabel · ProgressPercent · ProgressSpeed · ProgressTime · 막대(ProgressPct)
-struct WiiUProgressRow: View {
-    let vm: RemoteObject
+/// MenuItem(Header + MenuItem.Icon)
+struct WiiUMenuLabel: View {
+    let title: String
+    let icon: String
 
     var body: some View {
-        HStack(spacing: 10) {
-            Text(vm.string("ProgressLabel"))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .truncationMode(.tail)
-            Spacer(minLength: 0)
-            Text(vm.string("ProgressPercent")).foregroundStyle(.green).fontWeight(.semibold)
-            Text(vm.string("ProgressSpeed")).foregroundStyle(.secondary)
-            Text(vm.string("ProgressTime")).foregroundStyle(.green)
-            ProgressView(value: min(max((vm["ProgressPct"]?.double ?? 0) / 100, 0), 1))
-                .frame(width: 140)
+        Label {
+            Text(title)
+        } icon: {
+            UpstreamAssets.menuImage(icon, size: 16)
         }
-        .font(.caption.monospacedDigit())
     }
 }
 

@@ -2,8 +2,8 @@
 // ViewModel: SettingsMainViewModel (MainViewModel.Settings)
 import SwiftUI
 
-/// 설정 탭: 일반 / 패치 / 압축 / PS. 선택은 SettingsMainViewModel.SubTabIndex(TwoWay)에 맞춘다
-/// (MainViewModel이 PS 패킹·Switch 압축의 "설정" 버튼으로 이 값을 바꾼다).
+/// 설정 탭: 일반 / 패치 / 압축 / PSP. 선택은 SettingsMainViewModel.SubTabIndex(TwoWay)에 맞춘다
+/// (MainViewModel이 PSP 패킹의 "설정" 버튼으로 이 값을 바꾼다).
 struct SettingsScreen: View {
     let vmId: Int
 
@@ -12,7 +12,7 @@ struct SettingsScreen: View {
             SubTab(title: "일반", icon: "Settings.png", vmProp: "General"),
             SubTab(title: "패치", icon: "Patch.png", vmProp: "Patch"),
             SubTab(title: "압축", icon: "Compress.png", vmProp: "Compress"),
-            SubTab(title: "PS", icon: "PS1.png", vmProp: "PS1"),
+            SubTab(title: "PSP", icon: "PSP.png", vmProp: "PS1"),
         ]
     }
 

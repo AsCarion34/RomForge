@@ -97,13 +97,16 @@ struct ThreeDSInstalledTitlesTab: View {
     private func content(_ titles: RemoteObject) -> some View {
         ZStack {
             if titles.isVisible("LoadingVisibility") {
-                // LoadingText·LoadingProgress: code-behind의 onProgress와 같은 값을 ViewModel(ProgressText, Progress)도 갖는다.
+                // LoadingText·LoadingProgress: code-behind의 onProgress가 "로딩 중... 현재 / 전체"와 현재/전체로 바꾼다.
+                // 같은 때 ViewModel도 ProgressLabel·ProgressPct를 같은 값으로 바꾸므로 그것을 보여 준다
+                // (아직 진행 보고가 없으면 XAML 기본값 "로딩 중...").
+                let label = vm.string("ProgressLabel")
                 VStack(spacing: 12) {
                     Text("⏳").font(.system(size: 36))
-                    Text(vm.string("ProgressText").nonEmpty ?? "로딩 중...")
+                    Text(label.hasPrefix("로딩 중") ? label : "로딩 중...")
                         .font(.headline)
                         .foregroundStyle(.secondary)
-                    ProgressView(value: min(max((vm["Progress"]?.double ?? 0) / 100, 0), 1))
+                    ProgressView(value: min(max((vm["ProgressPct"]?.double ?? 0) / 100, 0), 1))
                         .frame(width: 240)
                 }
             }
@@ -170,13 +173,13 @@ struct ThreeDSInstalledTitlesTab: View {
 
     // MARK: code-behind 처리기
 
-    /// LoadTitles_Click: LoadTitlesAsync(onProgress) — 실패하면 "로드 실패: …"
-    /// (onProgress가 하던 LoadingText·LoadingProgress 갱신은 ViewModel의 ProgressText·Progress로 보여 준다)
+    /// LoadTitles_Click: LoadTitlesAsync(onProgress) — 실패하면 "로드 실패: …" + 오류음
+    /// (onProgress가 하던 LoadingText·LoadingProgress 갱신은 ViewModel의 ProgressLabel·ProgressPct로 보여 준다)
     private func load() {
         run("LoadTitlesAsync", [.null, .null], failure: "로드 실패")
     }
 
-    /// RecoverTitleDb_Click: RecoverTitleDbAsync() — 실패하면 "복구 실패: …"
+    /// RecoverTitleDb_Click: RecoverTitleDbAsync() — 실패하면 "복구 실패: …" + 오류음
     private func recover() {
         run("RecoverTitleDbAsync", [.null], failure: "복구 실패")
     }
@@ -188,13 +191,14 @@ struct ThreeDSInstalledTitlesTab: View {
         threeDSTitlesBusy.insert(installer.id)
         Task {
             if case .failure(let error) = await ThreeDSBridge.call(engine, installer.id, method, args) {
-                ThreeDSBridge.log(engine, installer, "\(failure): \(error.localizedDescription)", "Error")
+                await ThreeDSBridge.fail(engine, installer, "\(failure): \(error.localizedDescription)")
             }
             threeDSTitlesBusy.remove(installer.id)
         }
     }
 
     /// ExtractTitle_Click: SaveFileDialog → ExtractTitleAsync(선택, 경로, asCci) → 파일이 있으면 "추출 완료: …"
+    /// (실패하면 "추출 실패: …" + 오류음)
     private func extract(_ rows: [RemoteObject], _ ids: Set<Int>, asCci: Bool) {
         guard let selected = rows.first(where: { ids.contains($0.id) }) else { return }
 
@@ -211,7 +215,7 @@ struct ThreeDSInstalledTitlesTab: View {
                     ThreeDSBridge.log(engine, installer, "추출 완료: \(path)", "Ok")
                 }
             case .failure(let error):
-                ThreeDSBridge.log(engine, installer, "추출 실패: \(error.localizedDescription)", "Error")
+                await ThreeDSBridge.fail(engine, installer, "추출 실패: \(error.localizedDescription)")
             }
         }
     }

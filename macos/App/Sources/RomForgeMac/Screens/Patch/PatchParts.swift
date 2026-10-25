@@ -1,5 +1,6 @@
-// upstream: RomForge/Controls/Patch/NormalTab.xaml(.cs), RomForge/Controls/Patch/ArcadeTab.xaml(.cs), RomForge/Controls/Patch/VitaTab.xaml(.cs), RomForge/Controls/Patch/Pc98Tab.xaml(.cs) (DropZone·안내·진행률 줄 공통 부분)
-// ViewModel: NormalPatchMainViewModel, ArcadePatchMainViewModel, VitaPatchMainViewModel, Pc98PatchMainViewModel
+// upstream: RomForge/Controls/Patch/NormalTab.xaml(.cs), RomForge/Controls/Patch/ArcadeTab.xaml(.cs), RomForge/Controls/Patch/Pc98Tab.xaml(.cs)
+// ViewModel: NormalPatchMainViewModel, ArcadePatchMainViewModel, Pc98PatchMainViewModel
+// (하위 탭 공통 부분: DropZone · 클릭 메뉴 · 안내 · 포맷 배지 · 경고 창)
 import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
@@ -12,17 +13,12 @@ enum PatchUI {
         engine.store.object(engine.rootId)?["IsIdle"]?.bool ?? true
     }
 
-    /// "/Assets/Images/Patch.png" 같은 upstream 리소스 경로에서 파일 이름만
-    static func assetName(_ path: String) -> String {
-        (path as NSString).lastPathComponent
-    }
-
     static func isDirectory(_ path: String) -> Bool {
         var isDir: ObjCBool = false
         return FileManager.default.fileExists(atPath: path, isDirectory: &isDir) && isDir.boolValue
     }
 
-    /// code-behind의 OpenFileDialog / VistaFolderBrowserDialog 자리.
+    /// code-behind의 OpenFileDialog / OpenFolderDialog 자리.
     /// filter는 upstream WPF 필터 문자열을 그대로 받고 UiHostHandler와 같은 규칙으로 쓴다('*.*'가 있으면 형식을 제한하지 않음).
     static func choosePath(title: String, filter: String? = nil, folder: Bool = false) -> String? {
         let panel = NSOpenPanel()
@@ -47,14 +43,98 @@ enum PatchUI {
 
         return panel.runModal() == .OK ? panel.url?.path : nil
     }
+
+    /// MessageBox.Show(text, "오류", OK, Warning). 드롭 처리 도중에 모달 창을 열지 않도록 다음 차례에 띄운다.
+    static func warn(_ text: String, caption: String = "오류") {
+        Task { @MainActor in
+            let alert = NSAlert()
+            alert.messageText = caption
+            alert.informativeText = text
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "확인")
+            alert.runModal()
+        }
+    }
+
+    // MARK: 패치 경로(ArcadeTab · Pc98Tab 공통)
+
+    /// SelectFile_Click의 OpenFileDialog.Filter
+    static let patchFileFilter = "패치 파일 (*.ips;*.zip)|*.ips;*.zip|IPS 파일 (*.ips)|*.ips|ZIP 압축 파일 (*.zip)|*.zip|모든 파일 (*.*)|*.*"
+
+    /// 패치 DropZone의 Border.ContextMenu: [폴더 선택... (SelectFolder_Click) | 파일 선택 (*.ips, *.zip)... (SelectFile_Click)]
+    static func patchPathMenu(_ assign: @escaping (String) -> Void) -> [PatchMenuItem] {
+        [
+            PatchMenuItem(title: "폴더 선택...", icon: "AddFolder.png") {
+                if let path = choosePath(title: "패치 폴더 선택", folder: true) { assign(path) }
+            },
+            PatchMenuItem(title: "파일 선택 (*.ips, *.zip)...", icon: "ZipFolder.png") {
+                if let path = choosePath(title: "패치 파일 선택", filter: patchFileFilter) { assign(path) }
+            },
+        ]
+    }
+
+    /// ArcadePatchDrop_Drop · PatchDrop_Drop: 첫 항목이 폴더 · .ips · .zip이면 넣고, 아니면 경고한다.
+    static func dropPatchPath(_ paths: [String], _ assign: (String) -> Void) {
+        guard let path = paths.first else { return }
+        let ext = (path as NSString).pathExtension.lowercased()
+
+        if isDirectory(path) || ext == "ips" || ext == "zip" {
+            assign(path)
+        } else {
+            warn("폴더 또는 IPS/ZIP 파일만 등록할 수 있습니다.")
+        }
+    }
+
+    // MARK: 클릭 메뉴
+
+    /// MouseLeftButtonDown에서 ContextMenu.IsOpen = true 하던 자리: 마우스 위치에 같은 메뉴를 띄운다.
+    static func popUpMenu(_ items: [PatchMenuItem]) {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+
+        for item in items {
+            let handler = PatchMenuHandler(item.action)
+            let menuItem = NSMenuItem(title: item.title, action: #selector(PatchMenuHandler.runAction), keyEquivalent: "")
+            menuItem.target = handler
+            menuItem.representedObject = handler // target은 약한 참조라 메뉴 항목이 붙잡아 둔다
+
+            if let image = UpstreamAssets.nsImage(item.icon)?.copy() as? NSImage {
+                image.size = NSSize(width: 16, height: 16)
+                menuItem.image = image
+            }
+            menu.addItem(menuItem)
+        }
+
+        menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
+    }
+}
+
+/// ContextMenu의 MenuItem 하나(Header · Icon · Click)
+struct PatchMenuItem: Identifiable {
+    let title: String
+    let icon: String
+    let action: () -> Void
+    var id: String { title }
+}
+
+private final class PatchMenuHandler: NSObject {
+    let action: () -> Void
+
+    init(_ action: @escaping () -> Void) {
+        self.action = action
+    }
+
+    @objc func runAction() { action() }
 }
 
 /// upstream DropZone 스타일 Border: 파일 드롭(Drop)과 클릭(MouseLeftButtonDown)을 받는 상자.
+/// menu가 있으면 Border.ContextMenu처럼 오른쪽 클릭으로 열리고, 왼쪽 클릭에도 같은 메뉴를 띄운다(code-behind가 IsOpen = true).
 struct PatchDropZone<Content: View>: View {
     var enabled = true
     var tooltip: String? = nil
     let onDrop: ([String]) -> Void
     var onClick: (() -> Void)? = nil
+    var menu: [PatchMenuItem] = []
     @ViewBuilder var content: Content
 
     @State private var targeted = false
@@ -69,8 +149,10 @@ struct PatchDropZone<Content: View>: View {
                                         style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
             .contentShape(shape)
             .onTapGesture {
-                if enabled { onClick?() }
+                guard enabled else { return }
+                if menu.isEmpty { onClick?() } else { PatchUI.popUpMenu(menu) }
             }
+            .modifier(PatchContextMenu(items: enabled ? menu : []))
             .dropDestination(for: URL.self) { urls, _ in
                 guard enabled, !urls.isEmpty else { return false }
                 onDrop(urls.map(\.path))
@@ -78,6 +160,26 @@ struct PatchDropZone<Content: View>: View {
             } isTargeted: { targeted = $0 && enabled }
             .help(tooltip ?? "")
             .opacity(enabled ? 1 : 0.55)
+    }
+}
+
+/// Border.ContextMenu(오른쪽 클릭). 항목이 없거나(메뉴 없는 상자) IsEnabled=False면 메뉴를 붙이지 않는다.
+private struct PatchContextMenu: ViewModifier {
+    let items: [PatchMenuItem]
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if items.isEmpty {
+            content
+        } else {
+            content.contextMenu {
+                ForEach(items) { item in
+                    Button(action: item.action) {
+                        Label { Text(item.title) } icon: { UpstreamAssets.menuImage(item.icon) }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -129,38 +231,6 @@ struct PatchHintOverlay: View {
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .allowsHitTesting(false)
-    }
-}
-
-/// 하위 탭 아래쪽 진행률 줄: [ProgressLabel] [ProgressPercent] [ProgressSpeed] [ProgressTime] [막대 140]
-struct PatchProgressFooter: View {
-    let label: String
-    let percent: String
-    var speed: String? = nil
-    var time: String? = nil
-    /// 0~100
-    let value: Double
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Text(label)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Text(percent).fontWeight(.semibold).monospacedDigit()
-            if let speed {
-                Text(speed).foregroundStyle(.secondary).monospacedDigit()
-            }
-            if let time {
-                Text(time).monospacedDigit()
-            }
-            ProgressView(value: min(max(value / 100, 0), 1))
-                .frame(width: 140)
-        }
-        .font(.caption)
-        .padding(.horizontal, 8)
-        .frame(height: 28)
     }
 }
 

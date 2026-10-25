@@ -2,14 +2,14 @@
 // ViewModel: UtilMainViewModel (MainViewModel.UtilMainVM)
 import SwiftUI
 
-/// 유틸 탭: Hash 계산 / 티스토리 다운로더 / SD 굽기 / certs.bin 추출 / Cue 생성.
+/// 유틸 탭: 해시 계산 / 티스토리 다운로더 / SD 굽기 / certs.bin 추출 / Cue 생성.
 /// 선택은 UtilMainViewModel.SubTabIndex(TwoWay)에 맞춘다.
 struct UtilScreen: View {
     let vmId: Int
 
     private var tabs: [SubTab] {
         [
-            SubTab(title: "Hash 계산", icon: "Hash.png", vmProp: "HashVM"),
+            SubTab(title: "해시 계산", icon: "Hash.png", vmProp: "HashVM"),
             SubTab(title: "티스토리 다운로더", icon: "Tistory.png", vmProp: "TistoryVM"),
             SubTab(title: "SD 굽기", icon: "SD.png", vmProp: "ZipImageToolVM"),
             SubTab(title: "certs.bin 추출", icon: "Certs.png", vmProp: "CertsVM"),
@@ -33,16 +33,18 @@ struct UtilScreen: View {
         }
     }
 
-    /// SD 굽기: IsNotAdmin이면 "관리자 권한이 필요합니다.", IsAdmin이면 ZipImageToolTab
-    /// (macOS 엔진은 root 권한으로 실행 중일 때만 관리자로 본다)
+    /// SD 굽기: IsAdmin이면 ZipImageToolTab, IsNotAdmin이면 "관리자 권한이 필요합니다."
+    /// (macOS 엔진은 작업 직전에 관리자 인증을 받으므로 IsAdmin을 true로 돌려준다)
     @ViewBuilder
     private func sdTab(main: RemoteObject, tool: RemoteObject) -> some View {
         if main["IsAdmin"]?.bool == true {
             UtilZipImageToolTab(vm: tool)
         } else {
             ToolLayout(vm: tool, lists: ["LogEntries"]) {
-                Text("관리자 권한이 필요합니다.")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                if main["IsNotAdmin"]?.bool == true {
+                    Text("관리자 권한이 필요합니다.")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             }
         }
     }

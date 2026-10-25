@@ -1,5 +1,5 @@
 // upstream: RomForge/Controls/Patch/ArcadeTab.xaml(.cs)
-// ViewModel: ArcadePatchMainViewModel, ArcadeMatchItem, PatchEntry, PatchPackage
+// ViewModel: ArcadePatchMainViewModel, ArcadeMatchItem, Entry, Package
 import AppKit
 import SwiftUI
 
@@ -13,27 +13,28 @@ struct PatchArcadeTab: View {
             let idle = PatchUI.rootIsIdle(engine)
 
             VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 5) {
-                    // ArcadeSourceDrop_Drop
+                HStack(spacing: 2) {
+                    // ArcadeSourceDrop_Drop · ArcadeSourceDrop_MouseLeftButtonDown
                     PatchDropZone(enabled: idle, tooltip: vm.string("SourcePath"),
-                                  onDrop: { engine.string(vm, "SourcePath").wrappedValue = $0[0] }) {
-                        PatchZoneLabel(icon: "ZipFile.png", text: vm.string("SourceLabel"), caption: "원본 ZIP")
+                                  onDrop: { dropSource(vm, $0) }, onClick: { pickSource(vm) }) {
+                        PatchZoneLabel(icon: "ArcadeCartridge.png", text: vm.string("SourceLabel"), caption: "원본")
                     }
-                    // ArcadePatchDrop_Drop
+                    // ArcadePatchDrop_Drop · ArcadePatchDrop_MouseLeftButtonDown(ContextMenu: SelectFolder_Click · SelectFile_Click)
                     PatchDropZone(enabled: idle, tooltip: vm.string("PatchPath"),
-                                  onDrop: { engine.string(vm, "PatchPath").wrappedValue = $0[0] }) {
-                        PatchZoneLabel(icon: "ZipFolder.png", text: vm.string("PatchLabel"), caption: "패치(IPS/폴더/ZIP)")
+                                  onDrop: { PatchUI.dropPatchPath($0) { engine.string(vm, "PatchPath").wrappedValue = $0 } },
+                                  menu: PatchUI.patchPathMenu { engine.string(vm, "PatchPath").wrappedValue = $0 }) {
+                        PatchZoneLabel(icon: "Patch.png", text: vm.string("PatchLabel"), caption: "패치")
                     }
                 }
-                .frame(height: 50)
+                .frame(height: 65)
 
                 HStack(spacing: 8) {
                     Text("패치 선택:").font(.caption)
                     packagePicker(vm)
                         .help("다른 패치 패키지로 변경")
                 }
-                .padding(.leading, 4)
-                .padding(.top, 4)
+                .padding(.leading, 2)
+                .padding(.top, 5)
 
                 ZStack {
                     ScrollView {
@@ -53,12 +54,28 @@ struct PatchArcadeTab: View {
                 }
                 .frame(maxHeight: .infinity)
 
-                PatchProgressFooter(label: vm.string("ProgressSummary"),
-                                    percent: vm.string("TotalProgressText"),
-                                    value: vm["TotalProgress"]?.double ?? 0)
+                PatchArcadeProgress(vm: vm)
             }
             .padding(5)
             .observeLists(engine, vm, ["MatchItems", "AllPatchEntries", "AvailablePatchPackages"])
+        }
+    }
+
+    /// ArcadeSourceDrop_MouseLeftButtonDown
+    private func pickSource(_ vm: RemoteObject) {
+        if let path = PatchUI.choosePath(title: "원본 ZIP 파일 선택", filter: "ZIP 압축 파일 (*.zip)|*.zip") {
+            engine.string(vm, "SourcePath").wrappedValue = path
+        }
+    }
+
+    /// ArcadeSourceDrop_Drop: 첫 항목이 .zip이면 넣고, 아니면 경고한다.
+    private func dropSource(_ vm: RemoteObject, _ paths: [String]) {
+        guard let path = paths.first else { return }
+
+        if (path as NSString).pathExtension.lowercased() == "zip" {
+            engine.string(vm, "SourcePath").wrappedValue = path
+        } else {
+            PatchUI.warn("ZIP 파일만 선택 가능합니다.")
         }
     }
 
@@ -160,7 +177,7 @@ private struct PatchArcadeMatchCard: View {
             .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(border))
     }
 
-    /// ComboBox ItemsSource=AllPatchEntries, SelectedItem=PatchEntry(OneWay) + PatchPicker_SelectionChanged → ManualMatch
+    /// ComboBox ItemsSource=AllPatchEntries(Entry), SelectedItem=PatchEntry(OneWay) + PatchPicker_SelectionChanged → ManualMatch
     private var entryPicker: some View {
         let current = item.ref("PatchEntry")
         let selection = Binding<Int?>(
@@ -183,16 +200,40 @@ private struct PatchArcadeMatchCard: View {
         .pickerStyle(.menu)
     }
 
-    /// new PatchEntry { DisplayName = Path.GetFileName(path), EntryPath = path } → ArcadeVM.ManualMatch(item, entry)
+    /// new Entry { DisplayName = Path.GetFileName(path), EntryPath = path } → ArcadeVM.ManualMatch(item, entry)
     private func manualMatch(path: String) {
         let arcadeId = arcade.id
         let itemId = item.id
 
         Task {
-            guard let entry = await engine.create("RomForge.Core.Models.Patch.PatchEntry") else { return }
+            guard let entry = await engine.create("RomForge.Core.Models.Patch.Entry") else { return }
             await engine.set(entry, "DisplayName", .string((path as NSString).lastPathComponent))
             await engine.set(entry, "EntryPath", .string(path))
             await engine.call(arcadeId, "ManualMatch", [EngineClient.ref(itemId), EngineClient.ref(entry)])
         }
+    }
+}
+
+/// 진행률 줄: [ProgressSummary] [TotalProgressText] [TotalProgress 막대 140]
+/// (아케이드 탭 XAML은 표준 progressArea가 아니라 이 세 속성을 쓴다)
+private struct PatchArcadeProgress: View {
+    let vm: RemoteObject
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text(vm.string("ProgressSummary"))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+            Spacer(minLength: 0)
+            Text(vm.string("TotalProgressText"))
+                .fontWeight(.bold)
+                .foregroundStyle(.green)
+            ProgressView(value: min(max((vm["TotalProgress"]?.double ?? 0) / 100, 0), 1))
+                .frame(width: 140)
+        }
+        .font(.caption.monospacedDigit())
+        .padding(.horizontal, 8)
+        .frame(height: 28)
     }
 }

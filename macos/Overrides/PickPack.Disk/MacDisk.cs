@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text.Json;
 using Microsoft.Win32.SafeHandles;
 
-namespace PickPack.Disk.ETC
+namespace PickPack.Disk.Helpers
 {
     // macOS 물리 디스크 접근. PickPack.Disk의 macOS 대체 파일(DriveInfos, DiskUtil, PartitionUtil, ImageWriter, ImageReader)이 쓴다.
     // - 목록: diskutil의 "external physical" 디스크만(내장·부팅 디스크는 아예 보이지 않는다)

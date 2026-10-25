@@ -51,7 +51,7 @@ struct ThreeDSInstallTab: View {
         }
         .overlay {
             if install.isVisible("HintVisibility") {
-                ThreeDSHint(icon: "drag.png", iconSize: 40,
+                ThreeDSHint(icon: "Info.png", iconSize: 40,
                             title: "파일 또는 폴더를 여기에 드래그&드롭하세요",
                             detail: "3DS 실기에 게임을 설치합니다",
                             badges: ["3DS", "CCI", "CIA", "ZCCI"])
@@ -101,12 +101,12 @@ struct ThreeDSInstallTab: View {
 
     // MARK: code-behind 처리기
 
-    /// Install.AddFiles(paths). 실패하면 Vm.AppendLog("오류: …", Error)
+    /// Install.AddFiles(paths). 실패하면 Vm.AppendLog("오류: …", Error) + SoundPlayer.PlayErrorAsync()
     private func addFiles(_ install: RemoteObject, _ paths: [String]) {
         guard !paths.isEmpty else { return }
         Task {
             if case .failure(let error) = await ThreeDSBridge.call(engine, install.id, "AddFiles", [.strings(paths)]) {
-                ThreeDSBridge.log(engine, vm, "오류: \(error.localizedDescription)", "Error")
+                await ThreeDSBridge.fail(engine, vm, "오류: \(error.localizedDescription)")
             }
         }
     }
@@ -133,7 +133,7 @@ struct ThreeDSInstallTab: View {
     }
 
     /// Install_Click: IsInstalling = true → 목록 순서대로 InstallAsync(항목, _installCts.Token) → IsInstalling = false.
-    /// 오류가 나면 "오류: …"를 남기고 멈춘다. 취소(OperationCanceledException)는 조용히 끝낸다.
+    /// 오류가 나면 "오류: …"를 남기고(오류음) 멈춘다. 취소(OperationCanceledException)는 조용히 끝낸다.
     private func startInstall(_ install: RemoteObject) {
         let installer = vm
         guard threeDSInstallRuns[installer.id] == nil else { return }   // 이미 설치 중
@@ -154,7 +154,7 @@ struct ThreeDSInstallTab: View {
             } catch let error as EngineError where error.isCancellation {
                 // catch (OperationCanceledException) { }
             } catch {
-                ThreeDSBridge.log(engine, installer, "오류: \(error.localizedDescription)", "Error")
+                await ThreeDSBridge.fail(engine, installer, "오류: \(error.localizedDescription)")
             }
 
             engine.bool(install, "IsInstalling").wrappedValue = false
@@ -207,7 +207,8 @@ private struct ThreeDSLanguageCell: View {
 }
 
 /// upstream LanguageLabelConverter(Locale3dsLanguageToLabelConverter) 결과.
-/// 목록 원소(LanguageCandidates의 값)는 이름 문자열로 오므로 valueType으로 열거형 값을 만들어 같은 변환기를 한 번씩 돌려 받아 둔다.
+/// 목록 원소(LanguageCandidates의 값, _3DS.Core.Enums.LocaleLanguage)는 이름 문자열로 오므로
+/// valueType으로 열거형 값을 만들어 같은 변환기를 한 번씩 돌려 받아 둔다.
 @MainActor
 @Observable
 private final class ThreeDSLanguageLabels {
@@ -228,7 +229,7 @@ private final class ThreeDSLanguageLabels {
             let params: [String: JSONValue] = [
                 "converter": .string("Locale3dsLanguageToLabelConverter"),
                 "value": .string(name),
-                "valueType": .string("_3DS.Core.Enums.Locale3dsLanguage"),
+                "valueType": .string("_3DS.Core.Enums.LocaleLanguage"),
             ]
             if let text = (try? await engine.request("convert", params))?.string {
                 result[name] = text

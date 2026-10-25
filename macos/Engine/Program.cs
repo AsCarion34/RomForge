@@ -24,6 +24,9 @@ public static class Program
         if (args.Contains("--test-disks"))
             return Diagnostics.TestDisks();
 
+        if (args.Contains("--test-audio"))
+            return Diagnostics.TestAudio(app);
+
         if (args.Contains("--dump-schema"))
             return SchemaDump.Run(app, args);
 
