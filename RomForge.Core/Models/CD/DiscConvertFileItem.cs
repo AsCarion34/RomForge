@@ -1,4 +1,6 @@
-﻿using Common.WPF.ViewModels;
+﻿using CD.Core.Services.Readers;
+using CD.Core.Services.Writers;
+using Common.WPF.ViewModels;
 using RomForge.Core.Models.Compression;
 using RomForge.Core.Services.Compression;
 using System.Windows.Media;
@@ -78,7 +80,22 @@ public class DiscConvertFileItem : ConvertibleFileItemBase
             return [defaultTarget, "CSO", "ZSO", "CHD"];
         }
 
+        if (extension.Equals("cue", StringComparison.OrdinalIgnoreCase))
+            return CanConvertCueToIso(FilePath) ? [defaultTarget, "ISO"] : [defaultTarget];
+
         return [defaultTarget];
+    }
+
+    private static bool CanConvertCueToIso(string cuePath)
+    {
+        try
+        {
+            return CookedIsoWriter.CanWrite(DiscImageReaderFactory.Resolve(cuePath).Read(cuePath));
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     protected override string FormatSize(long bytes) => PickPack.Disk.Helpers.FileSize.FormatSize(bytes);

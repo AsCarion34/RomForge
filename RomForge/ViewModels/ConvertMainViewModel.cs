@@ -646,6 +646,15 @@ public class ConvertMainViewModel : ToolTabViewModel
             return;
         }
 
+        if (ext == "cue" && target == "ISO")
+        {
+            var cueImage = DiscImageReaderFactory.Resolve(item.FilePath).Read(item.FilePath);
+
+            await CookedIsoWriter.WriteAsync(cueImage, ResolveOutputDir(item.FilePath), item.FileName, progress, ct);
+
+            return;
+        }
+
         FileConverter converter = new(AppConfig.Instance.Chdman.Compression);
 
         converter.LogMessage += (_, e) => AppendLog(e.Message, e.Level);

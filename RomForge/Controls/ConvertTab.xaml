@@ -294,6 +294,10 @@
                             <Run Text=": MDF+MDS, CCD+IMG+SUB" Foreground="#CCCCCC"/>
                             <Run Text=" ➔ " Foreground="#AB47BC" FontWeight="Bold"/>
                             <Run Text="BIN+CUE, ISO" Foreground="#FFFFFF" FontWeight="Bold"/>
+                            <Run Text="  |  " Foreground="#555555"/>
+                            <Run Text="BIN+CUE(단일 트랙)" Foreground="#FFFFFF" />
+                            <Run Text=" ➔ " Foreground="#AB47BC" FontWeight="Bold"/>
+                            <Run Text="ISO" Foreground="#FFFFFF" FontWeight="Bold"/>
                         </TextBlock>
                 
                     </Grid>
